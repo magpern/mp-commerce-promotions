@@ -15,6 +15,8 @@ final class MigrationRunner {
 
 	public const OPTION_SCHEMA_VERSION = 'mp_cp_schema_version';
 
+	private const REDEMPTIONS_UNIQUE_KEY_NAME = 'order_promotion_unique';
+
 	private wpdb $wpdb;
 
 	public function __construct( wpdb $wpdb ) {
@@ -67,6 +69,16 @@ final class MigrationRunner {
 			return;
 		}
 
+		if ( $this->must_abort_for_redemptions_unique_preflight() ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log(
+					'[mp-commerce-promotions] Migration blocked: duplicate (order_id, promotion_id) rows exist in mp_cp_redemptions with non-null order_id. Remove duplicates before upgrading to schema 1.1.0.'
+				);
+			}
+			return;
+		}
+
 		$statements = array(
 			Schema::promotions_create_sql( $this->wpdb ),
 			Schema::redemptions_create_sql( $this->wpdb ),
@@ -87,7 +99,86 @@ final class MigrationRunner {
 			return;
 		}
 
+		if ( ! $this->verify_post_migration_schema() ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log(
+					'[mp-commerce-promotions] Migration incomplete: expected redemptions unique index "' . self::REDEMPTIONS_UNIQUE_KEY_NAME . '" not found; schema version not updated.'
+				);
+			}
+			return;
+		}
+
 		$this->set_current_version( Schema::SCHEMA_VERSION );
+	}
+
+	/**
+	 * Block dbDelta when upgrading to >= 1.1.0 if duplicate non-null (order_id, promotion_id) pairs exist.
+	 */
+	private function must_abort_for_redemptions_unique_preflight(): bool {
+		if ( version_compare( Schema::SCHEMA_VERSION, '1.1.0', '<' ) ) {
+			return false;
+		}
+
+		if ( version_compare( $this->get_current_version(), '1.1.0', '>=' ) ) {
+			return false;
+		}
+
+		if ( ! $this->redemptions_table_exists() ) {
+			return false;
+		}
+
+		return $this->redemptions_has_duplicate_non_null_order_promotion_pairs();
+	}
+
+	private function redemptions_table_exists(): bool {
+		$table = Schema::redemptions_table( $this->wpdb );
+		if ( ! is_string( $table ) || $table === '' ) {
+			return false;
+		}
+
+		$sql   = $this->wpdb->prepare( 'SHOW TABLES LIKE %s', $table );
+		$found = $this->wpdb->get_var( $sql );
+		return $found === $table;
+	}
+
+	private function redemptions_has_duplicate_non_null_order_promotion_pairs(): bool {
+		$table = Schema::redemptions_table( $this->wpdb );
+		if ( ! is_string( $table ) || $table === '' || ! preg_match( '/^[a-zA-Z0-9_]+$/', $table ) ) {
+			return false;
+		}
+
+		$sql = "SELECT 1 FROM `{$table}` WHERE order_id IS NOT NULL GROUP BY order_id, promotion_id HAVING COUNT(*) > 1 LIMIT 1";
+
+		$found = $this->wpdb->get_var( $sql );
+		return $found !== null && $found !== '';
+	}
+
+	/**
+	 * After dbDelta, ensure invariants for the declared SCHEMA_VERSION hold before bumping the option.
+	 */
+	private function verify_post_migration_schema(): bool {
+		if ( version_compare( Schema::SCHEMA_VERSION, '1.1.0', '>=' ) ) {
+			return $this->redemptions_unique_order_promotion_index_exists();
+		}
+
+		return true;
+	}
+
+	private function redemptions_unique_order_promotion_index_exists(): bool {
+		$table = Schema::redemptions_table( $this->wpdb );
+		if ( ! is_string( $table ) || $table === '' || ! preg_match( '/^[a-zA-Z0-9_]+$/', $table ) ) {
+			return false;
+		}
+
+		$key = self::REDEMPTIONS_UNIQUE_KEY_NAME;
+		if ( ! preg_match( '/^[a-zA-Z0-9_]+$/', $key ) ) {
+			return false;
+		}
+
+		$sql  = "SHOW INDEX FROM `{$table}` WHERE Key_name = '{$key}'";
+		$rows = $this->wpdb->get_results( $sql, ARRAY_A );
+		return is_array( $rows ) && count( $rows ) > 0;
 	}
 
 	private function tables_exist(): bool {

@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.0.0';
+	public const SCHEMA_VERSION = '1.1.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -83,7 +83,8 @@ PRIMARY KEY  (id),
 KEY promotion_id (promotion_id),
 KEY order_id (order_id),
 KEY customer_id (customer_id),
-KEY status (status)
+KEY status (status),
+UNIQUE KEY order_promotion_unique (order_id, promotion_id)
 ) {$collate};";
 	}
 
