@@ -51,8 +51,8 @@ final class Plugin {
 		}
 
 		$promotions_page = null;
-		if ( $this->promotion_repository !== null ) {
-			$promotions_page = new PromotionsPage( $this->promotion_repository );
+		if ( $this->promotion_repository !== null && $this->promotion_service !== null ) {
+			$promotions_page = new PromotionsPage( $this->promotion_repository, $this->promotion_service );
 		}
 
 		$this->woo_bridge = new WooCommerceBridge();

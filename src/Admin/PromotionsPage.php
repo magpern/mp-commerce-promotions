@@ -1,6 +1,6 @@
 <?php
 /**
- * Read-only WooCommerce submenu: promotions list.
+ * WooCommerce submenu: promotions list and draft creation.
  *
  * @package MP\CommercePromotions
  */
@@ -11,13 +11,20 @@ namespace MP\CommercePromotions\Admin;
 
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionRepository;
+use MP\CommercePromotions\Service\PromotionService;
+use RuntimeException;
 
 final class PromotionsPage {
 
+	private const NONCE_ACTION = 'mp_cp_create_promotion';
+
 	private PromotionRepository $promotions;
 
-	public function __construct( PromotionRepository $promotions ) {
-		$this->promotions = $promotions;
+	private PromotionService $promotion_service;
+
+	public function __construct( PromotionRepository $promotions, PromotionService $promotion_service ) {
+		$this->promotions         = $promotions;
+		$this->promotion_service = $promotion_service;
 	}
 
 	public function render(): void {
@@ -25,11 +32,16 @@ final class PromotionsPage {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mp-commerce-promotions' ) );
 		}
 
+		$this->handle_post_create();
+
 		$list = $this->promotions->find_all( 100, 0 );
 
 		echo '<div class="wrap">';
+		$this->render_notices();
 		echo '<h1>' . esc_html__( 'Commerce Promotions', 'mp-commerce-promotions' ) . '</h1>';
-		echo '<p>' . esc_html__( 'Read-only list of promotions from the database. Create, edit, and delete are not available in this version.', 'mp-commerce-promotions' ) . '</p>';
+		echo '<p>' . esc_html__( 'Create draft promotions by name. The list below is read-only for editing; rule editing and status controls are not implemented yet.', 'mp-commerce-promotions' ) . '</p>';
+
+		$this->render_create_form();
 
 		if ( count( $list ) === 0 ) {
 			echo '<p>' . esc_html__( 'No promotions found.', 'mp-commerce-promotions' ) . '</p>';
@@ -72,6 +84,91 @@ final class PromotionsPage {
 
 		echo '</tbody></table>';
 		echo '</div>';
+	}
+
+	private function handle_post_create(): void {
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_create_promotion_submit'] ) ) {
+			return;
+		}
+
+		$redirect_base = $this->promotions_admin_url();
+
+		if ( ! isset( $_POST[ self::NONCE_ACTION ] ) ) {
+			wp_safe_redirect( add_query_arg( 'mp_cp_error', 'missing_nonce', $redirect_base ) );
+			exit;
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST[ self::NONCE_ACTION ] ) );
+		if ( ! wp_verify_nonce( $nonce, self::NONCE_ACTION ) ) {
+			wp_safe_redirect( add_query_arg( 'mp_cp_error', 'invalid_nonce', $redirect_base ) );
+			exit;
+		}
+
+		$name = '';
+		if ( isset( $_POST['promotion_name'] ) ) {
+			$name = sanitize_text_field( wp_unslash( (string) $_POST['promotion_name'] ) );
+		}
+
+		if ( $name === '' ) {
+			wp_safe_redirect( add_query_arg( 'mp_cp_error', 'empty_name', $redirect_base ) );
+			exit;
+		}
+
+		try {
+			$this->promotion_service->create_draft( $name, (int) get_current_user_id() );
+		} catch ( RuntimeException $e ) {
+			wp_safe_redirect( add_query_arg( 'mp_cp_error', 'create_failed', $redirect_base ) );
+			exit;
+		}
+
+		wp_safe_redirect( add_query_arg( 'mp_cp_created', '1', $redirect_base ) );
+		exit;
+	}
+
+	private function promotions_admin_url(): string {
+		return admin_url( 'admin.php?page=mp-commerce-promotions' );
+	}
+
+	private function render_notices(): void {
+		if ( isset( $_GET['mp_cp_created'] ) && (string) wp_unslash( $_GET['mp_cp_created'] ) === '1' ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Draft promotion created.', 'mp-commerce-promotions' ) . '</p></div>';
+		}
+
+		if ( isset( $_GET['mp_cp_error'] ) ) {
+			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_error'] ) );
+			$msg  = $this->error_message_for_code( $code );
+			if ( $msg !== '' ) {
+				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
+			}
+		}
+	}
+
+	private function error_message_for_code( string $code ): string {
+		switch ( $code ) {
+			case 'invalid_nonce':
+			case 'missing_nonce':
+				return __( 'Security check failed. Please try again.', 'mp-commerce-promotions' );
+			case 'empty_name':
+				return __( 'Please enter a promotion name.', 'mp-commerce-promotions' );
+			case 'create_failed':
+				return __( 'Could not create the promotion. Please try again.', 'mp-commerce-promotions' );
+			default:
+				return '';
+		}
+	}
+
+	private function render_create_form(): void {
+		echo '<h2>' . esc_html__( 'Create draft promotion', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<form method="post" action="' . esc_url( $this->promotions_admin_url() ) . '" style="margin-bottom:1.5em;">';
+		wp_nonce_field( self::NONCE_ACTION, self::NONCE_ACTION );
+		echo '<p><label for="mp_cp_promotion_name">' . esc_html__( 'Promotion name', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<input type="text" class="regular-text" id="mp_cp_promotion_name" name="promotion_name" maxlength="191" required /></p>';
+		echo '<p><button type="submit" name="mp_cp_create_promotion_submit" value="1" class="button button-primary">' . esc_html__( 'Create draft promotion', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form>';
 	}
 
 	private function format_usage( Promotion $promo ): string {

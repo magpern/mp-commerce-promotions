@@ -36,9 +36,9 @@ Provide a structured foundation for commerce promotions using:
 ## Domain and persistence
 
 - **`Promotion`** / **`PromotionStatus`** / **`PromotionFactory`** — validated domain model; `conditions`, `actions`, and `restrictions` are PHP arrays in memory.
-- **`PromotionRepository`** — reads/writes the `{prefix}mp_cp_promotions` table using `$wpdb` (`insert`, `update`, `find`, `find_by_uuid`, `delete`, `find_all`, `count_all`). JSON columns are stored as **LONGTEXT** via `wp_json_encode()`; loads decode defensively (invalid JSON becomes an empty array). No public REST layer; the admin list is **read-only**.
+- **`PromotionRepository`** — reads/writes the `{prefix}mp_cp_promotions` table using `$wpdb` (`insert`, `update`, `find`, `find_by_uuid`, `delete`, `find_all`, `count_all`). JSON columns are stored as **LONGTEXT** via `wp_json_encode()`; loads decode defensively (invalid JSON becomes an empty array). No public REST layer; admin list is read-only for **editing** rows (creation uses `PromotionService`).
 - **`AuditLogEntry`** / **`AuditLogRepository`** — append-only writes to `{prefix}mp_cp_audit_log`; **raw IP addresses are never stored** (only a SHA-256 hash of a validated `REMOTE_ADDR` when present).
-- **`AuditLogger`** / **`PromotionService`** — internal orchestration: `PromotionService::create_draft()` persists a draft and records `promotion.created` in the audit log. No admin UI or REST exposure yet.
+- **`AuditLogger`** / **`PromotionService`** — internal orchestration: `PromotionService::create_draft()` persists a draft and records `promotion.created` in the audit log (used by admin create form).
 
 ## Evaluation pipeline
 
@@ -50,7 +50,7 @@ Provide a structured foundation for commerce promotions using:
 
 ## Admin UI
 
-- **WooCommerce → Promotions** shows a **read-only** table of promotions from the custom table. **Create, edit, delete,** and row actions are **not** implemented yet.
+- **WooCommerce → Promotions** lists promotions from the custom table and includes a **Create draft promotion** form (name + nonce + capability). **Edit, delete,** status controls, and **rule editing** are **not** implemented yet.
 
 ## Install (development)
 
