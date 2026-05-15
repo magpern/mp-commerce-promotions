@@ -335,6 +335,31 @@ final class Promotion {
 		);
 	}
 
+	public function with_usage_count( int $usage_count ): self {
+		if ( $usage_count < 0 ) {
+			throw new InvalidArgumentException( 'Promotion usage_count must be >= 0.' );
+		}
+
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$usage_count,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
 	/**
 	 * @param array<mixed> $conditions
 	 * @param array<mixed> $actions

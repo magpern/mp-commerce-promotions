@@ -15,11 +15,13 @@ use MP\CommercePromotions\Admin\PromotionsPage;
 use MP\CommercePromotions\Domain\AuditLogRepository;
 use MP\CommercePromotions\Domain\PromotionFactory;
 use MP\CommercePromotions\Domain\PromotionRepository;
+use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use MP\CommercePromotions\Woo\CartPromotionApplier;
+use MP\CommercePromotions\Woo\OrderPromotionRecorder;
 use MP\CommercePromotions\Woo\WooCommerceBridge;
 use wpdb;
 
@@ -41,6 +43,8 @@ final class Plugin {
 
 	private ?PromotionService $promotion_service = null;
 
+	private ?RedemptionRepository $redemption_repository = null;
+
 	public function __construct() {
 		global $wpdb;
 		if ( $wpdb instanceof wpdb ) {
@@ -54,6 +58,8 @@ final class Plugin {
 				$this->promotion_factory,
 				$this->audit_logger
 			);
+
+			$this->redemption_repository = new RedemptionRepository( $wpdb );
 		}
 
 		$this->woo_bridge           = new WooCommerceBridge();
@@ -74,6 +80,15 @@ final class Plugin {
 				$cart_builder
 			);
 			$this->woo_bridge->set_cart_promotion_applier( $cart_applier );
+
+			if ( $this->redemption_repository !== null && $this->audit_logger !== null ) {
+				$order_recorder = new OrderPromotionRecorder(
+					$this->redemption_repository,
+					$this->promotion_repository,
+					$this->audit_logger
+				);
+				$this->woo_bridge->set_order_promotion_recorder( $order_recorder );
+			}
 		} elseif ( $this->woo_bridge->is_available() ) {
 			$cart_builder = new CartContextBuilder();
 			$this->woo_bridge->set_cart_context_builder( $cart_builder );

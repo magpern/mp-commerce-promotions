@@ -16,6 +16,8 @@ use MP\CommercePromotions\Engine\PromotionEvaluator;
 
 final class CartPromotionApplier {
 
+	public const SESSION_KEY = 'mp_cp_applied_promotion';
+
 	private PromotionRepository $promotions;
 
 	private PromotionEvaluator $evaluator;
@@ -41,6 +43,7 @@ final class CartPromotionApplier {
 		 * @param bool $enabled Whether to run cart promotion fee logic.
 		 */
 		if ( ! apply_filters( 'mp_cp_enable_cart_discounts', true ) ) {
+			$this->clear_applied_promotion_session();
 			return;
 		}
 
@@ -65,27 +68,80 @@ final class CartPromotionApplier {
 		$context = $this->context_builder->build_from_cart();
 		$subtotal = $context->get_cart_subtotal();
 		if ( $subtotal === null || $subtotal <= 0 ) {
+			$this->clear_applied_promotion_session();
 			return;
 		}
 
 		$active = $this->promotions->find_active( 50 );
 		foreach ( $active as $promotion ) {
-			if ( ! $this->apply_first_percentage_fee_for_promotion( $promotion, $context, $subtotal, $cart ) ) {
-				continue;
+			$applied = $this->apply_first_percentage_fee_for_promotion( $promotion, $context, $subtotal, $cart );
+			if ( is_array( $applied ) ) {
+				$this->store_applied_promotion_session(
+					$applied['promotion'],
+					$applied['discount'],
+					$applied['percentage']
+				);
+				return;
 			}
+		}
+
+		$this->clear_applied_promotion_session();
+	}
+
+	private function store_applied_promotion_session( Promotion $promotion, float $discount, float $percentage ): void {
+		if ( ! function_exists( 'WC' ) ) {
 			return;
+		}
+
+		$wc = WC();
+		if ( ! is_object( $wc ) || empty( $wc->session ) ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$wc->session->set(
+			self::SESSION_KEY,
+			array(
+				'promotion_id'     => $pid,
+				'promotion_uuid'   => $promotion->get_uuid(),
+				'promotion_name'   => $promotion->get_name(),
+				'discount_amount'  => $discount,
+				'action_type'      => 'percentage_discount',
+				'percentage'       => $percentage,
+			)
+		);
+	}
+
+	private function clear_applied_promotion_session(): void {
+		if ( ! function_exists( 'WC' ) ) {
+			return;
+		}
+
+		$wc = WC();
+		if ( ! is_object( $wc ) || empty( $wc->session ) ) {
+			return;
+		}
+
+		$session = $wc->session;
+		if ( $session instanceof \ArrayAccess ) {
+			unset( $session[ self::SESSION_KEY ] );
 		}
 	}
 
 	/**
 	 * @param object $cart WooCommerce cart (WC_Cart).
+	 * @return array<string, mixed>|false
 	 */
 	private function apply_first_percentage_fee_for_promotion(
 		Promotion $promotion,
 		EvaluationContext $context,
 		float $subtotal,
 		$cart
-	): bool {
+	) {
 		$result = $this->evaluator->evaluate( $promotion, $context );
 		if ( ! $result->is_eligible() ) {
 			return false;
@@ -135,7 +191,11 @@ final class CartPromotionApplier {
 			);
 
 			$cart->add_fee( $label, -$discount, false );
-			return true;
+			return array(
+				'promotion'  => $promotion,
+				'discount'   => $discount,
+				'percentage' => $pct,
+			);
 		}
 
 		return false;
