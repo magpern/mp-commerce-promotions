@@ -174,6 +174,49 @@ final class PromotionRepository {
 	}
 
 	/**
+	 * @return list<Promotion>
+	 */
+	public function find_all( int $limit = 50, int $offset = 0 ): array {
+		$limit  = max( 1, min( 100, $limit ) );
+		$offset = max( 0, $offset );
+
+		$table = Schema::promotions_table( $this->wpdb );
+		$sql   = "SELECT * FROM {$table} ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d";
+
+		$prepared = $this->wpdb->prepare( $sql, $limit, $offset );
+		if ( ! is_string( $prepared ) ) {
+			return array();
+		}
+
+		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		$out = array();
+		foreach ( $rows as $row ) {
+			$p = $this->row_to_promotion( $row );
+			if ( $p instanceof Promotion ) {
+				$out[] = $p;
+			}
+		}
+
+		return $out;
+	}
+
+	public function count_all(): int {
+		$table = Schema::promotions_table( $this->wpdb );
+		$sql   = "SELECT COUNT(*) FROM {$table}";
+
+		$count = $this->wpdb->get_var( $sql );
+		if ( ! is_numeric( $count ) ) {
+			return 0;
+		}
+
+		return (int) $count;
+	}
+
+	/**
 	 * @param array<string, mixed>|object|null $row
 	 */
 	private function row_to_promotion( $row ): ?Promotion {

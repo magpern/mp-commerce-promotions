@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace MP\CommercePromotions;
 
 use MP\CommercePromotions\Admin\AdminMenu;
+use MP\CommercePromotions\Admin\PromotionsPage;
 use MP\CommercePromotions\Domain\AuditLogRepository;
 use MP\CommercePromotions\Domain\PromotionFactory;
 use MP\CommercePromotions\Domain\PromotionRepository;
@@ -49,8 +50,13 @@ final class Plugin {
 			);
 		}
 
+		$promotions_page = null;
+		if ( $this->promotion_repository !== null ) {
+			$promotions_page = new PromotionsPage( $this->promotion_repository );
+		}
+
 		$this->woo_bridge = new WooCommerceBridge();
-		$this->admin_menu = new AdminMenu( $this->woo_bridge );
+		$this->admin_menu = new AdminMenu( $this->woo_bridge, $promotions_page );
 	}
 
 	public function init(): void {

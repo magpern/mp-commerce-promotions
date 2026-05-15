@@ -36,7 +36,7 @@ Provide a structured foundation for commerce promotions using:
 ## Domain and persistence
 
 - **`Promotion`** / **`PromotionStatus`** / **`PromotionFactory`** — validated domain model; `conditions`, `actions`, and `restrictions` are PHP arrays in memory.
-- **`PromotionRepository`** — reads/writes the `{prefix}mp_cp_promotions` table using `$wpdb` (`insert`, `update`, `find`, `find_by_uuid`, `delete`). JSON columns are stored as **LONGTEXT** via `wp_json_encode()`; loads decode defensively (invalid JSON becomes an empty array). This layer is **internal** only (no admin UI or REST exposure yet).
+- **`PromotionRepository`** — reads/writes the `{prefix}mp_cp_promotions` table using `$wpdb` (`insert`, `update`, `find`, `find_by_uuid`, `delete`, `find_all`, `count_all`). JSON columns are stored as **LONGTEXT** via `wp_json_encode()`; loads decode defensively (invalid JSON becomes an empty array). No public REST layer; the admin list is **read-only**.
 - **`AuditLogEntry`** / **`AuditLogRepository`** — append-only writes to `{prefix}mp_cp_audit_log`; **raw IP addresses are never stored** (only a SHA-256 hash of a validated `REMOTE_ADDR` when present).
 - **`AuditLogger`** / **`PromotionService`** — internal orchestration: `PromotionService::create_draft()` persists a draft and records `promotion.created` in the audit log. No admin UI or REST exposure yet.
 
@@ -47,6 +47,10 @@ Provide a structured foundation for commerce promotions using:
 - **Actions** — implement `ActionInterface::preview()` and return **`ActionResult`** (type + payload); previews only, **no cart mutation or discounts applied**.
 - **`PromotionEvaluator::evaluate()`** — loads rule objects from a **`Promotion`**’s `conditions` / `actions` arrays only; **no database, WooCommerce, or audit calls** in this phase.
 - **Demo types supported:** `minimum_subtotal` (condition) and `percentage_discount` (action preview).
+
+## Admin UI
+
+- **WooCommerce → Promotions** shows a **read-only** table of promotions from the custom table. **Create, edit, delete,** and row actions are **not** implemented yet.
 
 ## Install (development)
 
