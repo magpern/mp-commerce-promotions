@@ -15,7 +15,7 @@ Provide a structured foundation for commerce promotions using:
 
 ## Status
 
-**Early development / scaffold phase.** The codebase is **not production-feature-complete** yet (no automatic discount application at checkout; admin cart preview is read-only).
+**Early development / scaffold phase.** Storefront **v1** applies at most **one** eligible **active** promotion as a **negative WooCommerce cart fee** (percentage of cart subtotal only). **Redemption tracking**, **coupons**, **BOGO**, and **automatic multi-promotion stacking** are **not** implemented. Disable cart fees globally with: `add_filter( 'mp_cp_enable_cart_discounts', '__return_false' );`
 
 ## Requirements
 
@@ -36,7 +36,7 @@ Provide a structured foundation for commerce promotions using:
 ## Domain and persistence
 
 - **`Promotion`** / **`PromotionStatus`** / **`PromotionFactory`** — validated domain model; `conditions`, `actions`, and `restrictions` are PHP arrays in memory.
-- **`PromotionRepository`** — reads/writes the `{prefix}mp_cp_promotions` table using `$wpdb` (`insert`, `update`, `find`, `find_by_uuid`, `delete`, `find_all`, `count_all`). JSON columns are stored as **LONGTEXT** via `wp_json_encode()`; loads decode defensively (invalid JSON becomes an empty array). No public REST layer; admin list is read-only for **editing** rows (creation uses `PromotionService`).
+- **`PromotionRepository`** — reads/writes the `{prefix}mp_cp_promotions` table using `$wpdb` (`insert`, `update`, `find`, `find_by_uuid`, `find_by_id_or_uuid`, `find_active`, `delete`, `find_all`, `count_all`). JSON columns are stored as **LONGTEXT** via `wp_json_encode()`; loads decode defensively (invalid JSON becomes an empty array). No public REST layer; admin list is read-only for **editing** rows (creation uses `PromotionService`).
 - **`AuditLogEntry`** / **`AuditLogRepository`** — append-only writes to `{prefix}mp_cp_audit_log`; **raw IP addresses are never stored** (only a SHA-256 hash of a validated `REMOTE_ADDR` when present).
 - **`AuditLogger`** / **`PromotionService`** — internal orchestration: `PromotionService::create_draft()` persists a draft and records `promotion.created`; `update_promotion()` records `promotion.updated`; `change_status()` applies allowed lifecycle transitions and records `promotion.status_changed`.
 
@@ -45,14 +45,15 @@ Provide a structured foundation for commerce promotions using:
 - **`EvaluationContext`** — generic inputs (`customer_id`, `cart_subtotal`, `currency`, `items`, `metadata`); no WooCommerce cart objects.
 - **`CartContextBuilder`** (WooCommerce) — read-only mapping from `WC()->cart` into **`EvaluationContext`** (product line summaries + `product_cat` term IDs); returns an empty context when WooCommerce or the cart is unavailable.
 - **Conditions** — implement `ConditionInterface::evaluate()` and return **`ConditionResult`** (pass/fail with optional message).
-- **Actions** — implement `ActionInterface::preview()` and return **`ActionResult`** (type + payload); previews only, **no cart mutation or discounts applied**.
+- **Actions** — implement `ActionInterface::preview()` and return **`ActionResult`** (type + payload). The evaluator uses previews only; **`CartPromotionApplier`** turns the first eligible **`percentage_discount`** into a cart fee on the storefront.
 - **`PromotionEvaluator::evaluate()`** — loads rule objects from a **`Promotion`**’s `conditions` / `actions` arrays only; **no database, WooCommerce, or audit calls** in this phase.
-- **Demo types supported:** `minimum_subtotal` (condition) and `percentage_discount` (action preview).
-- **Admin cart preview** — **Edit promotion** can run **`PromotionEvaluator`** against the current session cart via **`CartContextBuilder`**; **admin-only**, **no persistence**, **no discount application**.
+- **Demo types supported:** `minimum_subtotal` (condition) and `percentage_discount` (action preview / v1 fee source).
+- **Admin cart preview** — **Edit promotion** can run **`PromotionEvaluator`** against the current session cart via **`CartContextBuilder`**; **admin-only**, **no persistence**, **does not add cart fees**.
+- **Storefront cart fees (v1)** — **`CartPromotionApplier`** runs on **`woocommerce_cart_calculate_fees`** (priority **20**): loads **`find_active()`** promotions in priority order, evaluates with **`CartContextBuilder`**, applies the **first** eligible promotion’s **first** **`percentage_discount`** as **`WC()->cart->add_fee( $label, -$discount, false )`** (subtotal × percentage / 100, clamped to subtotal). **No order redemption**, **no coupons**, **no stacking** beyond the single winner. Toggle with filter **`mp_cp_enable_cart_discounts`** (default `true`).
 
 ## Admin UI
 
-- **WooCommerce → Promotions** lists promotions (status column is read-only), supports **Create draft promotion** (name + nonce), and **Edit** opens a detail page (`promotion` query arg: numeric id or UUID). **Status** is changed only via **controlled POST actions** (Activate / Pause / Archive); **archived** promotions **cannot be reactivated**. The main form edits name, description, priority, dates, and **raw JSON** for conditions, actions, and restrictions (validated as JSON arrays). **Preview against current cart** runs **`PromotionEvaluator`** in-memory using **`CartContextBuilder`** (no DB writes, no discounts). **Hard delete UI**, **visual rule builder**, and **REST/AJAX** are **not** implemented yet.
+- **WooCommerce → Promotions** lists promotions (status column is read-only), supports **Create draft promotion** (name + nonce), and **Edit** opens a detail page (`promotion` query arg: numeric id or UUID). **Status** is changed only via **controlled POST actions** (Activate / Pause / Archive); **archived** promotions **cannot be reactivated**. The main form edits name, description, priority, dates, and **raw JSON** for conditions, actions, and restrictions (validated as JSON arrays). **Preview against current cart** runs **`PromotionEvaluator`** in-memory using **`CartContextBuilder`** (no DB writes; **does not** add storefront fees). **Hard delete UI**, **visual rule builder**, and **REST/AJAX** are **not** implemented yet.
 
 ## Install (development)
 

@@ -66,6 +66,52 @@ final class PromotionRepository {
 		return $this->find_by_uuid( $identifier );
 	}
 
+	/**
+	 * Active promotions whose date window includes "now" (site timezone MySQL string).
+	 *
+	 * @return list<Promotion>
+	 */
+	public function find_active( int $limit = 50 ): array {
+		$limit = max( 1, min( 100, $limit ) );
+
+		$table = Schema::promotions_table( $this->wpdb );
+		$now   = current_time( 'mysql' );
+
+		$sql = "SELECT * FROM {$table}
+			WHERE status = %s
+			AND ( starts_at IS NULL OR starts_at <= %s )
+			AND ( ends_at IS NULL OR ends_at >= %s )
+			ORDER BY priority ASC, id ASC
+			LIMIT %d";
+
+		$prepared = $this->wpdb->prepare(
+			$sql,
+			PromotionStatus::ACTIVE,
+			$now,
+			$now,
+			$limit
+		);
+
+		if ( ! is_string( $prepared ) ) {
+			return array();
+		}
+
+		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		$out = array();
+		foreach ( $rows as $row ) {
+			$p = $this->row_to_promotion( $row );
+			if ( $p instanceof Promotion ) {
+				$out[] = $p;
+			}
+		}
+
+		return $out;
+	}
+
 	public function insert( Promotion $promotion ): int {
 		$now = current_time( 'mysql' );
 

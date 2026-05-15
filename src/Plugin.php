@@ -19,6 +19,7 @@ use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Woo\CartContextBuilder;
+use MP\CommercePromotions\Woo\CartPromotionApplier;
 use MP\CommercePromotions\Woo\WooCommerceBridge;
 use wpdb;
 
@@ -63,7 +64,17 @@ final class Plugin {
 		$this->woo_bridge->init();
 
 		$cart_builder = null;
-		if ( $this->woo_bridge->is_available() ) {
+		if ( $this->woo_bridge->is_available() && $this->promotion_repository !== null ) {
+			$cart_builder = new CartContextBuilder();
+			$this->woo_bridge->set_cart_context_builder( $cart_builder );
+
+			$cart_applier = new CartPromotionApplier(
+				$this->promotion_repository,
+				$this->promotion_evaluator,
+				$cart_builder
+			);
+			$this->woo_bridge->set_cart_promotion_applier( $cart_applier );
+		} elseif ( $this->woo_bridge->is_available() ) {
 			$cart_builder = new CartContextBuilder();
 			$this->woo_bridge->set_cart_context_builder( $cart_builder );
 		}
