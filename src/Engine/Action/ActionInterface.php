@@ -1,6 +1,6 @@
 <?php
 /**
- * Future rule action contract (no cart effects yet).
+ * Rule action contract (preview only; no mutation).
  *
  * @package MP\CommercePromotions
  */
@@ -9,10 +9,11 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Engine\Action;
 
+use MP\CommercePromotions\Engine\EvaluationContext;
+
 interface ActionInterface {
 
-	/**
-	 * Machine-readable action type (e.g. free_product).
-	 */
 	public function get_type(): string;
+
+	public function preview( EvaluationContext $context ): ActionResult;
 }

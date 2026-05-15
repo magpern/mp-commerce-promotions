@@ -40,6 +40,14 @@ Provide a structured foundation for commerce promotions using:
 - **`AuditLogEntry`** / **`AuditLogRepository`** — append-only writes to `{prefix}mp_cp_audit_log`; **raw IP addresses are never stored** (only a SHA-256 hash of a validated `REMOTE_ADDR` when present).
 - **`AuditLogger`** / **`PromotionService`** — internal orchestration: `PromotionService::create_draft()` persists a draft and records `promotion.created` in the audit log. No admin UI or REST exposure yet.
 
+## Evaluation pipeline
+
+- **`EvaluationContext`** — generic inputs (`customer_id`, `cart_subtotal`, `currency`, `items`, `metadata`); no WooCommerce cart objects.
+- **Conditions** — implement `ConditionInterface::evaluate()` and return **`ConditionResult`** (pass/fail with optional message).
+- **Actions** — implement `ActionInterface::preview()` and return **`ActionResult`** (type + payload); previews only, **no cart mutation or discounts applied**.
+- **`PromotionEvaluator::evaluate()`** — loads rule objects from a **`Promotion`**’s `conditions` / `actions` arrays only; **no database, WooCommerce, or audit calls** in this phase.
+- **Demo types supported:** `minimum_subtotal` (condition) and `percentage_discount` (action preview).
+
 ## Install (development)
 
 Copy this folder into `wp-content/plugins/`, then activate **MP Commerce Promotions** in the WordPress admin.
