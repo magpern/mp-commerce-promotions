@@ -134,7 +134,7 @@ final class PromotionsPage {
 	}
 
 	private function render_notices(): void {
-		if ( isset( $_GET['mp_cp_created'] ) && (string) wp_unslash( $_GET['mp_cp_created'] ) === '1' ) {
+		if ( isset( $_GET['mp_cp_created'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_created'] ) ) === '1' ) {
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Draft promotion created.', 'mp-commerce-promotions' ) . '</p></div>';
 		}
 
