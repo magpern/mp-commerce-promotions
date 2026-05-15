@@ -50,7 +50,7 @@ Provide a structured foundation for commerce promotions using:
 
 ## Admin UI
 
-- **WooCommerce → Promotions** lists promotions from the custom table and includes a **Create draft promotion** form (name + nonce + capability). **Edit, delete,** status controls, and **rule editing** are **not** implemented yet.
+- **WooCommerce → Promotions** lists promotions, supports **Create draft promotion** (name + nonce), and **Edit** opens a detail page (`promotion` query arg: numeric id or UUID). The detail form edits scalars plus **raw JSON** for conditions, actions, and restrictions (validated as JSON arrays). **Visual rule builder**, **delete/archive** controls beyond stored fields, and **REST/AJAX** are **not** implemented yet.
 
 ## Install (development)
 

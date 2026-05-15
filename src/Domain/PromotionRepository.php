@@ -53,6 +53,19 @@ final class PromotionRepository {
 		return $this->row_to_promotion( $row );
 	}
 
+	public function find_by_id_or_uuid( string $identifier ): ?Promotion {
+		$identifier = trim( $identifier );
+		if ( $identifier === '' ) {
+			return null;
+		}
+
+		if ( ctype_digit( $identifier ) ) {
+			return $this->find( (int) $identifier );
+		}
+
+		return $this->find_by_uuid( $identifier );
+	}
+
 	public function insert( Promotion $promotion ): int {
 		$now = current_time( 'mysql' );
 

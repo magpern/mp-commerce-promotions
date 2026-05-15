@@ -230,6 +230,137 @@ final class Promotion {
 		return $this->updated_at;
 	}
 
+	public function with_name( string $name ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->usage_count,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	public function with_description( ?string $description ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->usage_count,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	public function with_status( string $status ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->usage_count,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	public function with_priority( int $priority ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->usage_count,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	public function with_date_window( ?string $starts_at, ?string $ends_at ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$starts_at,
+			$ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->usage_count,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	/**
+	 * @param array<mixed> $conditions
+	 * @param array<mixed> $actions
+	 * @param array<mixed> $restrictions
+	 */
+	public function with_rules( array $conditions, array $actions, array $restrictions ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$conditions,
+			$actions,
+			$restrictions,
+			$this->usage_limit,
+			$this->usage_count,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
 	/**
 	 * @param mixed $value Raw DB value or array.
 	 * @return array<mixed>

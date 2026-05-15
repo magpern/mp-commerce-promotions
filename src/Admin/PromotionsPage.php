@@ -1,6 +1,6 @@
 <?php
 /**
- * WooCommerce submenu: promotions list and draft creation.
+ * WooCommerce submenu: promotions list, creation, and edit routing.
  *
  * @package MP\CommercePromotions
  */
@@ -22,14 +22,29 @@ final class PromotionsPage {
 
 	private PromotionService $promotion_service;
 
-	public function __construct( PromotionRepository $promotions, PromotionService $promotion_service ) {
+	private PromotionEditPage $edit_page;
+
+	public function __construct(
+		PromotionRepository $promotions,
+		PromotionService $promotion_service,
+		PromotionEditPage $edit_page
+	) {
 		$this->promotions         = $promotions;
 		$this->promotion_service = $promotion_service;
+		$this->edit_page         = $edit_page;
 	}
 
 	public function render(): void {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mp-commerce-promotions' ) );
+		}
+
+		if ( isset( $_GET['promotion'] ) ) {
+			$promotion_key = sanitize_text_field( wp_unslash( (string) $_GET['promotion'] ) );
+			if ( $promotion_key !== '' ) {
+				$this->edit_page->render( $promotion_key );
+				return;
+			}
 		}
 
 		$this->handle_post_create();
@@ -39,7 +54,7 @@ final class PromotionsPage {
 		echo '<div class="wrap">';
 		$this->render_notices();
 		echo '<h1>' . esc_html__( 'Commerce Promotions', 'mp-commerce-promotions' ) . '</h1>';
-		echo '<p>' . esc_html__( 'Create draft promotions by name. The list below is read-only for editing; rule editing and status controls are not implemented yet.', 'mp-commerce-promotions' ) . '</p>';
+		echo '<p>' . esc_html__( 'Create draft promotions, then use Edit to change details and raw JSON rules. Visual rule builder and delete/archive controls are not implemented yet.', 'mp-commerce-promotions' ) . '</p>';
 
 		$this->render_create_form();
 
@@ -70,9 +85,21 @@ final class PromotionsPage {
 			if ( ! $promo instanceof Promotion ) {
 				continue;
 			}
+			$pid = $promo->get_id();
+			$edit  = '';
+			if ( $pid !== null && $pid > 0 ) {
+				$edit_url = add_query_arg(
+					array(
+						'page'      => 'mp-commerce-promotions',
+						'promotion' => (string) $pid,
+					),
+					admin_url( 'admin.php' )
+				);
+				$edit = ' <a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'mp-commerce-promotions' ) . '</a>';
+			}
 			echo '<tr>';
-			echo '<td>' . esc_html( (string) ( $promo->get_id() ?? '' ) ) . '</td>';
-			echo '<td>' . esc_html( $promo->get_name() ) . '</td>';
+			echo '<td>' . esc_html( (string) ( $pid ?? '' ) ) . '</td>';
+			echo '<td>' . esc_html( $promo->get_name() ) . $edit . '</td>';
 			echo '<td>' . esc_html( $promo->get_status() ) . '</td>';
 			echo '<td>' . esc_html( (string) $promo->get_priority() ) . '</td>';
 			echo '<td>' . esc_html( $this->format_usage( $promo ) ) . '</td>';
@@ -156,6 +183,8 @@ final class PromotionsPage {
 				return __( 'Please enter a promotion name.', 'mp-commerce-promotions' );
 			case 'create_failed':
 				return __( 'Could not create the promotion. Please try again.', 'mp-commerce-promotions' );
+			case 'promotion_not_found':
+				return __( 'That promotion could not be found.', 'mp-commerce-promotions' );
 			default:
 				return '';
 		}

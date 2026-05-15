@@ -58,4 +58,35 @@ final class PromotionService {
 
 		return $saved;
 	}
+
+	public function update_promotion( Promotion $promotion, ?int $actor_user_id = null ): Promotion {
+		$id = $promotion->get_id();
+		if ( $id === null || $id <= 0 ) {
+			throw new RuntimeException( 'Promotion id is required for update.' );
+		}
+
+		$ok = $this->promotions->update( $promotion );
+		if ( ! $ok ) {
+			throw new RuntimeException( 'Failed to update promotion.' );
+		}
+
+		$reloaded = $this->promotions->find( $id );
+		if ( $reloaded === null ) {
+			throw new RuntimeException( 'Promotion was not found after update.' );
+		}
+
+		$this->audit->log(
+			'promotion.updated',
+			$reloaded->get_id(),
+			array(
+				'id'     => $reloaded->get_id(),
+				'uuid'   => $reloaded->get_uuid(),
+				'name'   => $reloaded->get_name(),
+				'status' => $reloaded->get_status(),
+			),
+			$actor_user_id
+		);
+
+		return $reloaded;
+	}
 }

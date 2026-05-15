@@ -1,0 +1,287 @@
+<?php
+/**
+ * Single promotion admin detail and JSON rule editing.
+ *
+ * @package MP\CommercePromotions
+ */
+
+declare(strict_types=1);
+
+namespace MP\CommercePromotions\Admin;
+
+use MP\CommercePromotions\Domain\Promotion;
+use MP\CommercePromotions\Domain\PromotionRepository;
+use MP\CommercePromotions\Domain\PromotionStatus;
+use MP\CommercePromotions\Service\PromotionService;
+use RuntimeException;
+
+final class PromotionEditPage {
+
+	private PromotionRepository $promotions;
+
+	private PromotionService $promotion_service;
+
+	public function __construct( PromotionRepository $promotions, PromotionService $promotion_service ) {
+		$this->promotions         = $promotions;
+		$this->promotion_service = $promotion_service;
+	}
+
+	public function render( string $identifier ): void {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mp-commerce-promotions' ) );
+		}
+
+		$promotion = $this->promotions->find_by_id_or_uuid( $identifier );
+		if ( $promotion === null ) {
+			wp_safe_redirect( add_query_arg( 'mp_cp_error', 'promotion_not_found', $this->list_url() ) );
+			exit;
+		}
+
+		$this->handle_post_update( $promotion );
+
+		$promotion = $this->promotions->find_by_id_or_uuid( $identifier );
+		if ( $promotion === null ) {
+			wp_safe_redirect( add_query_arg( 'mp_cp_error', 'promotion_not_found', $this->list_url() ) );
+			exit;
+		}
+
+		echo '<div class="wrap">';
+		$this->render_notices();
+		echo '<h1>' . esc_html__( 'Edit promotion', 'mp-commerce-promotions' ) . '</h1>';
+		echo '<p>';
+		echo '<a href="' . esc_url( $this->list_url() ) . '">' . esc_html__( '← Back to promotions', 'mp-commerce-promotions' ) . '</a>';
+		echo '</p>';
+
+		$this->render_form( $promotion );
+		echo '</div>';
+	}
+
+	private function handle_post_update( Promotion $promotion ): void {
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_update_promotion_submit'] ) ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$nonce_action = 'mp_cp_update_promotion_' . $pid;
+		if ( ! isset( $_POST['mp_cp_update_nonce'] ) ) {
+			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'missing_nonce' ), $this->edit_url( (string) $pid ) ) );
+			exit;
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_update_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'invalid_nonce' ), $this->edit_url( (string) $pid ) ) );
+			exit;
+		}
+
+		$post_id = isset( $_POST['mp_cp_promotion_id'] ) ? (int) $_POST['mp_cp_promotion_id'] : 0;
+		if ( $post_id !== $pid ) {
+			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'id_mismatch' ), $this->edit_url( (string) $pid ) ) );
+			exit;
+		}
+
+		$name = isset( $_POST['promotion_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['promotion_name'] ) ) : '';
+		if ( $name === '' ) {
+			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'empty_name' ), $this->edit_url( (string) $pid ) ) );
+			exit;
+		}
+
+		$description = isset( $_POST['promotion_description'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['promotion_description'] ) ) : '';
+		if ( $description === '' ) {
+			$description = null;
+		}
+
+		$status = isset( $_POST['promotion_status'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['promotion_status'] ) ) : '';
+		if ( ! PromotionStatus::is_valid( $status ) ) {
+			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'invalid_status' ), $this->edit_url( (string) $pid ) ) );
+			exit;
+		}
+
+		$priority = isset( $_POST['promotion_priority'] ) ? (int) $_POST['promotion_priority'] : 0;
+		if ( $priority < 0 ) {
+			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'invalid_priority' ), $this->edit_url( (string) $pid ) ) );
+			exit;
+		}
+
+		$starts_raw = isset( $_POST['promotion_starts_at'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['promotion_starts_at'] ) ) : '';
+		$ends_raw   = isset( $_POST['promotion_ends_at'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['promotion_ends_at'] ) ) : '';
+		$starts_at  = $starts_raw === '' ? null : $starts_raw;
+		$ends_at    = $ends_raw === '' ? null : $ends_raw;
+
+		$conditions_raw    = isset( $_POST['promotion_conditions_json'] ) ? wp_unslash( (string) $_POST['promotion_conditions_json'] ) : '';
+		$actions_raw       = isset( $_POST['promotion_actions_json'] ) ? wp_unslash( (string) $_POST['promotion_actions_json'] ) : '';
+		$restrictions_raw  = isset( $_POST['promotion_restrictions_json'] ) ? wp_unslash( (string) $_POST['promotion_restrictions_json'] ) : '';
+
+		$conditions = $this->decode_json_array_field( $conditions_raw );
+		$actions      = $this->decode_json_array_field( $actions_raw );
+		$restrictions = $this->decode_json_array_field( $restrictions_raw );
+
+		if ( $conditions === null || $actions === null || $restrictions === null ) {
+			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'invalid_json' ), $this->edit_url( (string) $pid ) ) );
+			exit;
+		}
+
+		try {
+			$updated = $promotion
+				->with_name( $name )
+				->with_description( $description )
+				->with_status( $status )
+				->with_priority( $priority )
+				->with_date_window( $starts_at, $ends_at )
+				->with_rules( $conditions, $actions, $restrictions );
+
+			$this->promotion_service->update_promotion( $updated, (int) get_current_user_id() );
+		} catch ( RuntimeException $e ) {
+			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'update_failed' ), $this->edit_url( (string) $pid ) ) );
+			exit;
+		}
+
+		wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_saved' => '1' ), $this->edit_url( (string) $pid ) ) );
+		exit;
+	}
+
+	/**
+	 * @return array<mixed>|null Null when invalid JSON or not an array (empty input → empty array).
+	 */
+	private function decode_json_array_field( string $raw ): ?array {
+		$trimmed = trim( $raw );
+		if ( $trimmed === '' ) {
+			return array();
+		}
+
+		$decoded = json_decode( $trimmed, true );
+		if ( JSON_ERROR_NONE !== json_last_error() ) {
+			return null;
+		}
+		if ( ! is_array( $decoded ) ) {
+			return null;
+		}
+
+		return $decoded;
+	}
+
+	private function render_notices(): void {
+		if ( isset( $_GET['mp_cp_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_saved'] ) ) === '1' ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Promotion saved.', 'mp-commerce-promotions' ) . '</p></div>';
+		}
+
+		if ( isset( $_GET['mp_cp_error'] ) ) {
+			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_error'] ) );
+			$msg  = $this->error_message_for_code( $code );
+			if ( $msg !== '' ) {
+				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
+			}
+		}
+	}
+
+	private function error_message_for_code( string $code ): string {
+		switch ( $code ) {
+			case 'invalid_nonce':
+			case 'missing_nonce':
+				return __( 'Security check failed. Please try again.', 'mp-commerce-promotions' );
+			case 'id_mismatch':
+				return __( 'Invalid form submission.', 'mp-commerce-promotions' );
+			case 'empty_name':
+				return __( 'Please enter a promotion name.', 'mp-commerce-promotions' );
+			case 'invalid_status':
+				return __( 'Invalid status selected.', 'mp-commerce-promotions' );
+			case 'invalid_priority':
+				return __( 'Priority must be zero or greater.', 'mp-commerce-promotions' );
+			case 'invalid_json':
+				return __( 'Conditions, actions, and restrictions must be valid JSON arrays.', 'mp-commerce-promotions' );
+			case 'update_failed':
+				return __( 'Could not save the promotion. Please try again.', 'mp-commerce-promotions' );
+			default:
+				return '';
+		}
+	}
+
+	private function render_form( Promotion $promotion ): void {
+		$id = $promotion->get_id();
+		if ( $id === null || $id <= 0 ) {
+			return;
+		}
+
+		$nonce_action = 'mp_cp_update_promotion_' . $id;
+		$form_action  = $this->edit_url( (string) $id );
+
+		echo '<form method="post" action="' . esc_url( $form_action ) . '">';
+		wp_nonce_field( $nonce_action, 'mp_cp_update_nonce' );
+		echo '<input type="hidden" name="mp_cp_promotion_id" value="' . esc_attr( (string) $id ) . '" />';
+
+		echo '<table class="form-table" role="presentation"><tbody>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_name">' . esc_html__( 'Name', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_name" name="promotion_name" maxlength="191" required value="' . esc_attr( $promotion->get_name() ) . '" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_desc">' . esc_html__( 'Description', 'mp-commerce-promotions' ) . '</label></th><td>';
+		$desc = $promotion->get_description() ?? '';
+		echo '<textarea class="large-text" rows="3" id="mp_cp_desc" name="promotion_description">' . esc_textarea( $desc ) . '</textarea></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_status">' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select id="mp_cp_status" name="promotion_status">';
+		foreach ( PromotionStatus::all() as $st ) {
+			echo '<option value="' . esc_attr( $st ) . '"' . selected( $promotion->get_status(), $st, false ) . '>' . esc_html( $st ) . '</option>';
+		}
+		echo '</select></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_priority">' . esc_html__( 'Priority', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_priority" name="promotion_priority" min="0" step="1" value="' . esc_attr( (string) $promotion->get_priority() ) . '" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_starts">' . esc_html__( 'Starts at', 'mp-commerce-promotions' ) . '</label></th><td>';
+		$starts = $promotion->get_starts_at() ?? '';
+		echo '<input type="text" class="regular-text" id="mp_cp_starts" name="promotion_starts_at" value="' . esc_attr( $starts ) . '" placeholder="' . esc_attr__( 'YYYY-MM-DD HH:MM:SS or leave empty', 'mp-commerce-promotions' ) . '" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_ends">' . esc_html__( 'Ends at', 'mp-commerce-promotions' ) . '</label></th><td>';
+		$ends = $promotion->get_ends_at() ?? '';
+		echo '<input type="text" class="regular-text" id="mp_cp_ends" name="promotion_ends_at" value="' . esc_attr( $ends ) . '" placeholder="' . esc_attr__( 'YYYY-MM-DD HH:MM:SS or leave empty', 'mp-commerce-promotions' ) . '" /></td></tr>';
+
+		$cond_json = wp_json_encode( $promotion->get_conditions(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		if ( ! is_string( $cond_json ) ) {
+			$cond_json = '[]';
+		}
+		echo '<tr><th scope="row"><label for="mp_cp_cond">' . esc_html__( 'Conditions (JSON)', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<textarea class="large-text code" rows="8" id="mp_cp_cond" name="promotion_conditions_json">' . esc_textarea( $cond_json ) . '</textarea></td></tr>';
+
+		$act_json = wp_json_encode( $promotion->get_actions(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		if ( ! is_string( $act_json ) ) {
+			$act_json = '[]';
+		}
+		echo '<tr><th scope="row"><label for="mp_cp_act">' . esc_html__( 'Actions (JSON)', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<textarea class="large-text code" rows="8" id="mp_cp_act" name="promotion_actions_json">' . esc_textarea( $act_json ) . '</textarea></td></tr>';
+
+		$res_json = wp_json_encode( $promotion->get_restrictions(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		if ( ! is_string( $res_json ) ) {
+			$res_json = '[]';
+		}
+		echo '<tr><th scope="row"><label for="mp_cp_res">' . esc_html__( 'Restrictions (JSON)', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<textarea class="large-text code" rows="8" id="mp_cp_res" name="promotion_restrictions_json">' . esc_textarea( $res_json ) . '</textarea></td></tr>';
+
+		echo '</tbody></table>';
+
+		echo '<p class="submit"><button type="submit" name="mp_cp_update_promotion_submit" value="1" class="button button-primary">' . esc_html__( 'Save promotion', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form>';
+	}
+
+	private function list_url(): string {
+		return admin_url( 'admin.php?page=mp-commerce-promotions' );
+	}
+
+	private function edit_url( string $promotion_identifier ): string {
+		return add_query_arg(
+			array(
+				'page'       => 'mp-commerce-promotions',
+				'promotion'  => $promotion_identifier,
+			),
+			admin_url( 'admin.php' )
+		);
+	}
+}
