@@ -37,6 +37,7 @@ final class PromotionEditPage {
 			exit;
 		}
 
+		$this->handle_post_change_status( $promotion );
 		$this->handle_post_update( $promotion );
 
 		$promotion = $this->promotions->find_by_id_or_uuid( $identifier );
@@ -52,8 +53,53 @@ final class PromotionEditPage {
 		echo '<a href="' . esc_url( $this->list_url() ) . '">' . esc_html__( '← Back to promotions', 'mp-commerce-promotions' ) . '</a>';
 		echo '</p>';
 
+		$this->render_status_section( $promotion );
 		$this->render_form( $promotion );
 		echo '</div>';
+	}
+
+	private function handle_post_change_status( Promotion $promotion ): void {
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		$action = isset( $_POST['mp_cp_action'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_action'] ) ) : '';
+		if ( $action !== 'change_status' ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$nonce_action = 'mp_cp_change_status_' . $pid;
+		if ( ! isset( $_POST['mp_cp_change_status_nonce'] ) ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_status_error' => 'missing_nonce' ) );
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_change_status_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_status_error' => 'invalid_nonce' ) );
+		}
+
+		$post_promo_id = isset( $_POST['promotion_id'] ) ? (int) $_POST['promotion_id'] : 0;
+		if ( $post_promo_id !== $pid ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_status_error' => 'id_mismatch' ) );
+		}
+
+		$new_status = isset( $_POST['new_status'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['new_status'] ) ) : '';
+		if ( $new_status === '' ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_status_error' => 'invalid_status' ) );
+		}
+
+		try {
+			$this->promotion_service->change_status( $promotion, $new_status, (int) get_current_user_id() );
+		} catch ( RuntimeException $e ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_status_error' => 'status_change_failed' ) );
+		}
+
+		$this->redirect_to_edit( $pid, array( 'mp_cp_status_saved' => '1' ) );
 	}
 
 	private function handle_post_update( Promotion $promotion ): void {
@@ -99,12 +145,6 @@ final class PromotionEditPage {
 			$description = null;
 		}
 
-		$status = isset( $_POST['promotion_status'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['promotion_status'] ) ) : '';
-		if ( ! PromotionStatus::is_valid( $status ) ) {
-			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'invalid_status' ), $this->edit_url( (string) $pid ) ) );
-			exit;
-		}
-
 		$priority = isset( $_POST['promotion_priority'] ) ? (int) $_POST['promotion_priority'] : 0;
 		if ( $priority < 0 ) {
 			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'invalid_priority' ), $this->edit_url( (string) $pid ) ) );
@@ -133,7 +173,7 @@ final class PromotionEditPage {
 			$updated = $promotion
 				->with_name( $name )
 				->with_description( $description )
-				->with_status( $status )
+				->with_status( $promotion->get_status() )
 				->with_priority( $priority )
 				->with_date_window( $starts_at, $ends_at )
 				->with_rules( $conditions, $actions, $restrictions );
@@ -173,6 +213,18 @@ final class PromotionEditPage {
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Promotion saved.', 'mp-commerce-promotions' ) . '</p></div>';
 		}
 
+		if ( isset( $_GET['mp_cp_status_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_status_saved'] ) ) === '1' ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Promotion status updated.', 'mp-commerce-promotions' ) . '</p></div>';
+		}
+
+		if ( isset( $_GET['mp_cp_status_error'] ) ) {
+			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_status_error'] ) );
+			$msg  = $this->status_error_message_for_code( $code );
+			if ( $msg !== '' ) {
+				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
+			}
+		}
+
 		if ( isset( $_GET['mp_cp_error'] ) ) {
 			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_error'] ) );
 			$msg  = $this->error_message_for_code( $code );
@@ -191,8 +243,6 @@ final class PromotionEditPage {
 				return __( 'Invalid form submission.', 'mp-commerce-promotions' );
 			case 'empty_name':
 				return __( 'Please enter a promotion name.', 'mp-commerce-promotions' );
-			case 'invalid_status':
-				return __( 'Invalid status selected.', 'mp-commerce-promotions' );
 			case 'invalid_priority':
 				return __( 'Priority must be zero or greater.', 'mp-commerce-promotions' );
 			case 'invalid_json':
@@ -202,6 +252,68 @@ final class PromotionEditPage {
 			default:
 				return '';
 		}
+	}
+
+	private function status_error_message_for_code( string $code ): string {
+		switch ( $code ) {
+			case 'invalid_nonce':
+			case 'missing_nonce':
+				return __( 'Security check failed while changing status. Please try again.', 'mp-commerce-promotions' );
+			case 'id_mismatch':
+				return __( 'Invalid status form submission.', 'mp-commerce-promotions' );
+			case 'invalid_status':
+				return __( 'Invalid target status.', 'mp-commerce-promotions' );
+			case 'status_change_failed':
+				return __( 'That status change is not allowed or could not be saved.', 'mp-commerce-promotions' );
+			default:
+				return '';
+		}
+	}
+
+	private function render_status_section( Promotion $promotion ): void {
+		$id = $promotion->get_id();
+		if ( $id === null || $id <= 0 ) {
+			return;
+		}
+
+		$status = $promotion->get_status();
+		echo '<div class="card" style="max-width:720px;padding:12px 16px;margin:16px 0;">';
+		echo '<h2 style="margin-top:0;">' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p><strong>' . esc_html__( 'Current:', 'mp-commerce-promotions' ) . '</strong> ' . esc_html( $status ) . '</p>';
+
+		if ( $status === PromotionStatus::ARCHIVED ) {
+			echo '<p class="description">' . esc_html__( 'Archived promotions cannot be reactivated.', 'mp-commerce-promotions' ) . '</p>';
+			echo '</div>';
+			return;
+		}
+
+		echo '<p>' . esc_html__( 'Change status using the actions below. Status cannot be edited from the main form.', 'mp-commerce-promotions' ) . '</p>';
+
+		$url = $this->edit_url( (string) $id );
+
+		if ( $status === PromotionStatus::DRAFT ) {
+			$this->render_status_action_form( $url, $id, PromotionStatus::ACTIVE, __( 'Activate', 'mp-commerce-promotions' ) );
+			$this->render_status_action_form( $url, $id, PromotionStatus::ARCHIVED, __( 'Archive', 'mp-commerce-promotions' ) );
+		} elseif ( $status === PromotionStatus::ACTIVE ) {
+			$this->render_status_action_form( $url, $id, PromotionStatus::PAUSED, __( 'Pause', 'mp-commerce-promotions' ) );
+			$this->render_status_action_form( $url, $id, PromotionStatus::ARCHIVED, __( 'Archive', 'mp-commerce-promotions' ) );
+		} elseif ( $status === PromotionStatus::PAUSED ) {
+			$this->render_status_action_form( $url, $id, PromotionStatus::ACTIVE, __( 'Activate', 'mp-commerce-promotions' ) );
+			$this->render_status_action_form( $url, $id, PromotionStatus::ARCHIVED, __( 'Archive', 'mp-commerce-promotions' ) );
+		}
+
+		echo '</div>';
+	}
+
+	private function render_status_action_form( string $action_url, int $promotion_id, string $new_status, string $label ): void {
+		$nonce_action = 'mp_cp_change_status_' . $promotion_id;
+		echo '<form method="post" action="' . esc_url( $action_url ) . '" style="display:inline-block;margin:0 8px 8px 0;">';
+		wp_nonce_field( $nonce_action, 'mp_cp_change_status_nonce' );
+		echo '<input type="hidden" name="mp_cp_action" value="change_status" />';
+		echo '<input type="hidden" name="promotion_id" value="' . esc_attr( (string) $promotion_id ) . '" />';
+		echo '<input type="hidden" name="new_status" value="' . esc_attr( $new_status ) . '" />';
+		echo '<button type="submit" class="button">' . esc_html( $label ) . '</button>';
+		echo '</form>';
 	}
 
 	private function render_form( Promotion $promotion ): void {
@@ -226,12 +338,9 @@ final class PromotionEditPage {
 		$desc = $promotion->get_description() ?? '';
 		echo '<textarea class="large-text" rows="3" id="mp_cp_desc" name="promotion_description">' . esc_textarea( $desc ) . '</textarea></td></tr>';
 
-		echo '<tr><th scope="row"><label for="mp_cp_status">' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</label></th><td>';
-		echo '<select id="mp_cp_status" name="promotion_status">';
-		foreach ( PromotionStatus::all() as $st ) {
-			echo '<option value="' . esc_attr( $st ) . '"' . selected( $promotion->get_status(), $st, false ) . '>' . esc_html( $st ) . '</option>';
-		}
-		echo '</select></td></tr>';
+		echo '<tr><th scope="row">' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</th><td>';
+		echo '<p class="description" style="margin:0;">' . esc_html( $promotion->get_status() ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'Use the status actions above to change draft, active, paused, or archived.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_priority">' . esc_html__( 'Priority', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_priority" name="promotion_priority" min="0" step="1" value="' . esc_attr( (string) $promotion->get_priority() ) . '" /></td></tr>';
@@ -283,5 +392,20 @@ final class PromotionEditPage {
 			),
 			admin_url( 'admin.php' )
 		);
+	}
+
+	/**
+	 * @param array<string, string> $extra_query
+	 */
+	private function redirect_to_edit( int $promotion_id, array $extra_query = array() ): void {
+		$args = array_merge(
+			array(
+				'page'      => 'mp-commerce-promotions',
+				'promotion' => (string) $promotion_id,
+			),
+			$extra_query
+		);
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
+		exit;
 	}
 }

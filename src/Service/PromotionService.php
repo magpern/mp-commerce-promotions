@@ -12,6 +12,7 @@ namespace MP\CommercePromotions\Service;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionFactory;
 use MP\CommercePromotions\Domain\PromotionRepository;
+use MP\CommercePromotions\Domain\PromotionStatus;
 use RuntimeException;
 
 final class PromotionService {
@@ -57,6 +58,70 @@ final class PromotionService {
 		);
 
 		return $saved;
+	}
+
+	public function change_status( Promotion $promotion, string $new_status, ?int $actor_user_id = null ): Promotion {
+		if ( ! PromotionStatus::is_valid( $new_status ) ) {
+			throw new RuntimeException( 'Invalid promotion status.' );
+		}
+
+		$old_status = $promotion->get_status();
+		if ( ! self::is_allowed_status_transition( $old_status, $new_status ) ) {
+			throw new RuntimeException( 'Promotion status transition is not allowed.' );
+		}
+
+		$id = $promotion->get_id();
+		if ( $id === null || $id <= 0 ) {
+			throw new RuntimeException( 'Promotion id is required for status change.' );
+		}
+
+		$updated_model = $promotion->with_status( $new_status );
+		$ok            = $this->promotions->update( $updated_model );
+		if ( ! $ok ) {
+			throw new RuntimeException( 'Failed to update promotion status.' );
+		}
+
+		$reloaded = $this->promotions->find( $id );
+		if ( $reloaded === null ) {
+			throw new RuntimeException( 'Promotion was not found after status change.' );
+		}
+
+		$this->audit->log(
+			'promotion.status_changed',
+			$reloaded->get_id(),
+			array(
+				'id'         => $reloaded->get_id(),
+				'uuid'       => $reloaded->get_uuid(),
+				'old_status' => $old_status,
+				'new_status' => $new_status,
+				'name'       => $reloaded->get_name(),
+			),
+			$actor_user_id
+		);
+
+		return $reloaded;
+	}
+
+	/**
+	 * Allowed transitions only (archived is terminal).
+	 */
+	private static function is_allowed_status_transition( string $from, string $to ): bool {
+		if ( $from === $to ) {
+			return false;
+		}
+
+		$key = $from . ':' . $to;
+
+		static $allowed = array(
+			PromotionStatus::DRAFT . ':' . PromotionStatus::ACTIVE    => true,
+			PromotionStatus::DRAFT . ':' . PromotionStatus::ARCHIVED => true,
+			PromotionStatus::ACTIVE . ':' . PromotionStatus::PAUSED  => true,
+			PromotionStatus::ACTIVE . ':' . PromotionStatus::ARCHIVED => true,
+			PromotionStatus::PAUSED . ':' . PromotionStatus::ACTIVE    => true,
+			PromotionStatus::PAUSED . ':' . PromotionStatus::ARCHIVED => true,
+		);
+
+		return isset( $allowed[ $key ] );
 	}
 
 	public function update_promotion( Promotion $promotion, ?int $actor_user_id = null ): Promotion {

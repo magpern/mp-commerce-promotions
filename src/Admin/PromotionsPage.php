@@ -54,7 +54,7 @@ final class PromotionsPage {
 		echo '<div class="wrap">';
 		$this->render_notices();
 		echo '<h1>' . esc_html__( 'Commerce Promotions', 'mp-commerce-promotions' ) . '</h1>';
-		echo '<p>' . esc_html__( 'Create draft promotions, then use Edit to change details and raw JSON rules. Visual rule builder and delete/archive controls are not implemented yet.', 'mp-commerce-promotions' ) . '</p>';
+		echo '<p>' . esc_html__( 'Create draft promotions, then use Edit to change details, raw JSON rules, and status (via action buttons on the edit screen). Hard delete and visual rule builder are not implemented yet.', 'mp-commerce-promotions' ) . '</p>';
 
 		$this->render_create_form();
 
