@@ -13,6 +13,18 @@ use InvalidArgumentException;
 
 final class Redemption {
 
+	public const STATUS_RECORDED = 'recorded';
+
+	public const STATUS_REVERSED = 'reversed';
+
+	/**
+	 * @var list<string>
+	 */
+	private const ALLOWED_STATUSES = array(
+		self::STATUS_RECORDED,
+		self::STATUS_REVERSED,
+	);
+
 	private ?int $id;
 
 	private int $promotion_id;
@@ -53,9 +65,7 @@ final class Redemption {
 		}
 
 		$status = trim( $status );
-		if ( $status === '' ) {
-			throw new InvalidArgumentException( 'Redemption status must not be empty.' );
-		}
+		self::assert_valid_status( $status );
 
 		$this->id              = $id;
 		$this->promotion_id    = $promotion_id;
@@ -181,5 +191,31 @@ final class Redemption {
 
 	public function get_created_at(): ?string {
 		return $this->created_at;
+	}
+
+	public function with_status( string $status ): self {
+		$status = trim( $status );
+		self::assert_valid_status( $status );
+
+		return new self(
+			$this->id,
+			$this->promotion_id,
+			$this->order_id,
+			$this->customer_id,
+			$this->code,
+			$this->discount_amount,
+			$this->currency,
+			$status,
+			$this->redeemed_at,
+			$this->created_at
+		);
+	}
+
+	private static function assert_valid_status( string $status ): void {
+		if ( ! in_array( $status, self::ALLOWED_STATUSES, true ) ) {
+			throw new InvalidArgumentException(
+				'Redemption status must be one of: recorded, reversed.'
+			);
+		}
 	}
 }

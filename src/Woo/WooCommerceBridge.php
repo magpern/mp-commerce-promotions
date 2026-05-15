@@ -23,6 +23,8 @@ final class WooCommerceBridge {
 
 	private bool $order_checkout_hook_registered = false;
 
+	private bool $order_reversal_hooks_registered = false;
+
 	public function init(): void {
 		$this->available = class_exists( \WooCommerce::class, false )
 			&& function_exists( 'WC' );
@@ -76,6 +78,26 @@ final class WooCommerceBridge {
 				2
 			);
 			$this->order_checkout_hook_registered = true;
+		}
+
+		if (
+			$this->order_promotion_recorder !== null
+			&& $this->available
+			&& ! $this->order_reversal_hooks_registered
+		) {
+			$r = $this->order_promotion_recorder;
+
+			add_action( 'woocommerce_order_status_cancelled', array( $r, 'on_order_status_reversal' ), 10, 2 );
+			add_action( 'woocommerce_order_status_failed', array( $r, 'on_order_status_reversal' ), 10, 2 );
+			add_action( 'woocommerce_order_status_refunded', array( $r, 'on_order_status_reversal' ), 10, 2 );
+
+			add_action( 'woocommerce_before_trash_order', array( $r, 'on_woocommerce_before_trash_order' ), 10, 2 );
+			add_action( 'woocommerce_before_delete_order', array( $r, 'on_woocommerce_before_delete_order' ), 10, 2 );
+
+			add_action( 'before_trash_post', array( $r, 'on_before_trash_post_for_reversal' ), 10, 1 );
+			add_action( 'before_delete_post', array( $r, 'on_before_delete_post_for_reversal' ), 10, 2 );
+
+			$this->order_reversal_hooks_registered = true;
 		}
 	}
 

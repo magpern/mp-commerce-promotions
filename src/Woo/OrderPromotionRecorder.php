@@ -19,6 +19,8 @@ final class OrderPromotionRecorder {
 
 	private const META_REDEMPTION_RECORDED = '_mp_cp_redemption_recorded';
 
+	private const META_REDEMPTION_REVERSED = '_mp_cp_redemption_reversed';
+
 	private const META_VALUE_YES = 'yes';
 
 	private RedemptionRepository $redemptions;
@@ -117,7 +119,7 @@ final class OrderPromotionRecorder {
 				null,
 				$discount,
 				$currency,
-				'recorded',
+				Redemption::STATUS_RECORDED,
 				$now,
 				$now
 			);
@@ -169,6 +171,190 @@ final class OrderPromotionRecorder {
 				);
 			}
 		}
+	}
+
+	/**
+	 * Reverse a recorded redemption when the order is cancelled, failed, refunded, trashed, or deleted.
+	 * Idempotent via `_mp_cp_redemption_reversed` = yes.
+	 *
+	 * @param int $order_id WooCommerce order ID.
+	 */
+	public function reverse_for_order( int $order_id ): void {
+		try {
+			if ( $order_id <= 0 || ! function_exists( 'wc_get_order' ) ) {
+				return;
+			}
+
+			$order = wc_get_order( $order_id );
+			if ( ! is_object( $order ) || ! is_a( $order, 'WC_Order', false ) ) {
+				return;
+			}
+
+			if ( $order->get_meta( self::META_REDEMPTION_REVERSED, true ) === self::META_VALUE_YES ) {
+				return;
+			}
+
+			if ( $order->get_meta( self::META_REDEMPTION_RECORDED, true ) !== self::META_VALUE_YES ) {
+				return;
+			}
+
+			$promotion_id = (int) $order->get_meta( '_mp_cp_promotion_id', true );
+			if ( $promotion_id <= 0 ) {
+				return;
+			}
+
+			$redemption = $this->redemptions->find_recorded_for_order_and_promotion( $order_id, $promotion_id );
+			if ( $redemption === null ) {
+				return;
+			}
+
+			$reversed = $redemption->with_status( Redemption::STATUS_REVERSED );
+			if ( ! $this->redemptions->update( $reversed ) ) {
+				return;
+			}
+
+			$promotion = $this->promotions->find( $promotion_id );
+			if ( $promotion !== null ) {
+				$new_usage = max( 0, $promotion->get_usage_count() - 1 );
+				$this->promotions->update( $promotion->with_usage_count( $new_usage ) );
+			}
+
+			$order->update_meta_data( self::META_REDEMPTION_REVERSED, self::META_VALUE_YES );
+			$this->audit->log(
+				'promotion.redemption_reversed',
+				$promotion_id,
+				array(
+					'promotion_id' => $promotion_id,
+					'order_id'     => $order_id,
+				),
+				null
+			);
+			$order->save();
+		} catch ( Throwable $e ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log(
+					sprintf(
+						'[mp-commerce-promotions] OrderPromotionRecorder::reverse_for_order: %s',
+						$e->getMessage()
+					)
+				);
+			}
+		}
+	}
+
+	/**
+	 * @param int|\WC_Order $order_id Order ID or order object (WooCommerce passes both shapes across hooks).
+	 * @param mixed         $order    Optional WC_Order (second argument on status / trash / delete hooks).
+	 */
+	public function on_order_status_reversal( $order_id, $order = null ): void {
+		$id = $this->resolve_order_id_from_hook_args( $order_id, $order );
+		if ( $id > 0 ) {
+			$this->reverse_for_order( $id );
+		}
+	}
+
+	/**
+	 * @param int|\WC_Order $order_id Order ID or order object.
+	 * @param mixed         $order    Optional WC_Order.
+	 */
+	public function on_woocommerce_before_trash_order( $order_id, $order = null ): void {
+		$id = $this->resolve_order_id_from_hook_args( $order_id, $order );
+		if ( $id > 0 ) {
+			$this->reverse_for_order( $id );
+		}
+	}
+
+	/**
+	 * @param int|\WC_Order $order_id Order ID or order object.
+	 * @param mixed         $order    Optional WC_Order.
+	 */
+	public function on_woocommerce_before_delete_order( $order_id, $order = null ): void {
+		$id = $this->resolve_order_id_from_hook_args( $order_id, $order );
+		if ( $id > 0 ) {
+			$this->reverse_for_order( $id );
+		}
+	}
+
+	/**
+	 * CPT fallback when the order is a `shop_order` post (legacy storage).
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public function on_before_trash_post_for_reversal( $post_id ): void {
+		$post_id = (int) $post_id;
+		if ( $post_id <= 0 ) {
+			return;
+		}
+
+		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post || $post->post_type !== 'shop_order' ) {
+			return;
+		}
+
+		if ( ! function_exists( 'wc_get_order' ) ) {
+			return;
+		}
+
+		$order = wc_get_order( $post_id );
+		if ( ! is_object( $order ) || ! is_a( $order, 'WC_Order', false ) ) {
+			return;
+		}
+
+		$this->reverse_for_order( $post_id );
+	}
+
+	/**
+	 * CPT fallback when the order post is permanently deleted.
+	 *
+	 * @param int          $post_id Post ID.
+	 * @param \WP_Post|null $post   Post object (optional).
+	 */
+	public function on_before_delete_post_for_reversal( $post_id, $post = null ): void {
+		$post_id = (int) $post_id;
+		if ( $post_id <= 0 ) {
+			return;
+		}
+
+		if ( $post instanceof \WP_Post ) {
+			if ( $post->post_type !== 'shop_order' ) {
+				return;
+			}
+		} else {
+			$p = get_post( $post_id );
+			if ( ! $p instanceof \WP_Post || $p->post_type !== 'shop_order' ) {
+				return;
+			}
+		}
+
+		if ( ! function_exists( 'wc_get_order' ) ) {
+			return;
+		}
+
+		$order = wc_get_order( $post_id );
+		if ( ! is_object( $order ) || ! is_a( $order, 'WC_Order', false ) ) {
+			return;
+		}
+
+		$this->reverse_for_order( $post_id );
+	}
+
+	/**
+	 * @param mixed $first  Typically order ID (int) or WC_Order.
+	 * @param mixed $second Typically WC_Order or null.
+	 */
+	private function resolve_order_id_from_hook_args( $first, $second ): int {
+		if ( is_object( $first ) && is_a( $first, 'WC_Order', false ) ) {
+			return (int) $first->get_id();
+		}
+		if ( is_object( $second ) && is_a( $second, 'WC_Order', false ) ) {
+			return (int) $second->get_id();
+		}
+		if ( is_numeric( $first ) ) {
+			return (int) $first;
+		}
+
+		return 0;
 	}
 
 	/**

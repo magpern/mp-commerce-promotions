@@ -61,6 +61,54 @@ final class RedemptionRepository {
 		return $new_id > 0 ? $new_id : 0;
 	}
 
+	public function update( Redemption $redemption ): bool {
+		$id = $redemption->get_id();
+		if ( $id === null || $id <= 0 ) {
+			return false;
+		}
+
+		$table = Schema::redemptions_table( $this->wpdb );
+
+		$updated = $this->wpdb->update(
+			$table,
+			array( 'status' => $redemption->get_status() ),
+			array( 'id' => $id ),
+			array( '%s' ),
+			array( '%d' )
+		);
+
+		if ( false === $updated ) {
+			return false;
+		}
+
+		return (int) $updated > 0;
+	}
+
+	public function find_recorded_for_order_and_promotion( int $order_id, int $promotion_id ): ?Redemption {
+		if ( $order_id <= 0 || $promotion_id <= 0 ) {
+			return null;
+		}
+
+		$table = Schema::redemptions_table( $this->wpdb );
+		$sql   = "SELECT * FROM {$table} WHERE order_id = %d AND promotion_id = %d AND status = %s LIMIT 1";
+
+		$prepared = $this->wpdb->prepare( $sql, $order_id, $promotion_id, Redemption::STATUS_RECORDED );
+		if ( ! is_string( $prepared ) ) {
+			return null;
+		}
+
+		$row = $this->wpdb->get_row( $prepared, ARRAY_A );
+		if ( ! is_array( $row ) ) {
+			return null;
+		}
+
+		try {
+			return Redemption::from_array( $row );
+		} catch ( \InvalidArgumentException $e ) {
+			return null;
+		}
+	}
+
 	public function exists_for_order_and_promotion( int $order_id, int $promotion_id ): bool {
 		if ( $order_id <= 0 || $promotion_id <= 0 ) {
 			return false;
