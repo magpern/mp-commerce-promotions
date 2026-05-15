@@ -11,10 +11,7 @@ namespace MP\CommercePromotions\Domain;
 
 final class PromotionFactory {
 
-	private function __construct() {
-	}
-
-	public static function create_draft( string $name, ?int $created_by = null ): Promotion {
+	public function create_draft( string $name, ?int $created_by = null ): Promotion {
 		$uuid = function_exists( 'wp_generate_uuid4' ) ? wp_generate_uuid4() : '';
 		if ( ! is_string( $uuid ) || $uuid === '' ) {
 			throw new \RuntimeException( 'Unable to generate promotion UUID.' );
