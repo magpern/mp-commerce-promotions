@@ -61,6 +61,44 @@ final class RedemptionRepository {
 		return $new_id > 0 ? $new_id : 0;
 	}
 
+	public function exists_for_order_and_promotion( int $order_id, int $promotion_id ): bool {
+		if ( $order_id <= 0 || $promotion_id <= 0 ) {
+			return false;
+		}
+
+		$table = Schema::redemptions_table( $this->wpdb );
+		$sql   = "SELECT 1 FROM {$table} WHERE order_id = %d AND promotion_id = %d LIMIT 1";
+
+		$prepared = $this->wpdb->prepare( $sql, $order_id, $promotion_id );
+		if ( ! is_string( $prepared ) ) {
+			return false;
+		}
+
+		$found = $this->wpdb->get_var( $prepared );
+		return $found !== null && $found !== '' && (int) $found > 0;
+	}
+
+	public function count_for_order( int $order_id ): int {
+		if ( $order_id <= 0 ) {
+			return 0;
+		}
+
+		$table = Schema::redemptions_table( $this->wpdb );
+		$sql   = "SELECT COUNT(*) FROM {$table} WHERE order_id = %d";
+
+		$prepared = $this->wpdb->prepare( $sql, $order_id );
+		if ( ! is_string( $prepared ) ) {
+			return 0;
+		}
+
+		$count = $this->wpdb->get_var( $prepared );
+		if ( ! is_numeric( $count ) ) {
+			return 0;
+		}
+
+		return (int) $count;
+	}
+
 	/**
 	 * @return list<Redemption>
 	 */

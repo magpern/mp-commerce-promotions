@@ -17,6 +17,10 @@ use Throwable;
 
 final class OrderPromotionRecorder {
 
+	private const META_REDEMPTION_RECORDED = '_mp_cp_redemption_recorded';
+
+	private const META_VALUE_YES = 'yes';
+
 	private RedemptionRepository $redemptions;
 
 	private PromotionRepository $promotions;
@@ -83,15 +87,27 @@ final class OrderPromotionRecorder {
 				return;
 			}
 
-			$cid = (int) $order->get_customer_id();
-			$customer_id = $cid > 0 ? $cid : null;
+			$cid           = (int) $order->get_customer_id();
+			$customer_id   = $cid > 0 ? $cid : null;
+			$currency      = $order->get_currency();
+			$currency      = is_string( $currency ) && $currency !== '' ? $currency : null;
+			$now           = current_time( 'mysql' );
 
-			$currency = $order->get_currency();
-			if ( ! is_string( $currency ) || $currency === '' ) {
-				$currency = null;
+			if ( $this->redemptions->exists_for_order_and_promotion( $order_id, $promotion_id ) ) {
+				$this->apply_promotion_meta_to_order(
+					$order,
+					$promotion_id,
+					$uuid,
+					$name,
+					$discount,
+					$action_type,
+					$percentage
+				);
+				$order->update_meta_data( self::META_REDEMPTION_RECORDED, self::META_VALUE_YES );
+				$order->save();
+				$this->clear_applied_promotion_session();
+				return;
 			}
-
-			$now = current_time( 'mysql' );
 
 			$redemption = new Redemption(
 				null,
@@ -111,15 +127,16 @@ final class OrderPromotionRecorder {
 				return;
 			}
 
-			$order->update_meta_data( '_mp_cp_promotion_id', (string) $promotion_id );
-			$order->update_meta_data( '_mp_cp_promotion_uuid', sanitize_text_field( $uuid ) );
-			$order->update_meta_data( '_mp_cp_promotion_name', sanitize_text_field( $name ) );
-			$discount_meta = function_exists( 'wc_format_decimal' )
-				? wc_format_decimal( $discount )
-				: (string) $discount;
-			$order->update_meta_data( '_mp_cp_discount_amount', $discount_meta );
-			$order->update_meta_data( '_mp_cp_action_type', sanitize_text_field( $action_type ) );
-			$order->update_meta_data( '_mp_cp_percentage', function_exists( 'wc_format_decimal' ) ? wc_format_decimal( $percentage ) : (string) $percentage );
+			$this->apply_promotion_meta_to_order(
+				$order,
+				$promotion_id,
+				$uuid,
+				$name,
+				$discount,
+				$action_type,
+				$percentage
+			);
+			$order->update_meta_data( self::META_REDEMPTION_RECORDED, self::META_VALUE_YES );
 
 			$promotion = $this->promotions->find( $promotion_id );
 			if ( $promotion !== null ) {
@@ -140,6 +157,7 @@ final class OrderPromotionRecorder {
 			);
 
 			$order->save();
+			$this->clear_applied_promotion_session();
 		} catch ( Throwable $e ) {
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
@@ -150,6 +168,46 @@ final class OrderPromotionRecorder {
 					)
 				);
 			}
+		}
+	}
+
+	/**
+	 * @param \WC_Order $order
+	 */
+	private function apply_promotion_meta_to_order(
+		$order,
+		int $promotion_id,
+		string $uuid,
+		string $name,
+		float $discount,
+		string $action_type,
+		float $percentage
+	): void {
+		$order->update_meta_data( '_mp_cp_promotion_id', (string) $promotion_id );
+		$order->update_meta_data( '_mp_cp_promotion_uuid', sanitize_text_field( $uuid ) );
+		$order->update_meta_data( '_mp_cp_promotion_name', sanitize_text_field( $name ) );
+		$discount_meta = function_exists( 'wc_format_decimal' )
+			? wc_format_decimal( $discount )
+			: (string) $discount;
+		$order->update_meta_data( '_mp_cp_discount_amount', $discount_meta );
+		$order->update_meta_data( '_mp_cp_action_type', sanitize_text_field( $action_type ) );
+		$order->update_meta_data(
+			'_mp_cp_percentage',
+			function_exists( 'wc_format_decimal' ) ? wc_format_decimal( $percentage ) : (string) $percentage
+		);
+	}
+
+	private function clear_applied_promotion_session(): void {
+		if ( ! function_exists( 'WC' ) || ! WC() || ! WC()->session ) {
+			return;
+		}
+
+		$session = WC()->session;
+		if ( $session instanceof \ArrayAccess ) {
+			unset( $session[ CartPromotionApplier::SESSION_KEY ] );
+		}
+		if ( method_exists( $session, 'set' ) ) {
+			$session->set( CartPromotionApplier::SESSION_KEY, null );
 		}
 	}
 }

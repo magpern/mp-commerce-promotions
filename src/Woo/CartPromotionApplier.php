@@ -130,6 +130,9 @@ final class CartPromotionApplier {
 		if ( $session instanceof \ArrayAccess ) {
 			unset( $session[ self::SESSION_KEY ] );
 		}
+		if ( method_exists( $session, 'set' ) ) {
+			$session->set( self::SESSION_KEY, null );
+		}
 	}
 
 	/**
