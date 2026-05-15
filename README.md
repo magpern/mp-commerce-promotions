@@ -23,6 +23,16 @@ Provide a structured foundation for commerce promotions using:
 - PHP 7.4+
 - WooCommerce (recommended for admin integration and future features)
 
+## Database
+
+- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.0.0`** (see `Schema::SCHEMA_VERSION`).
+- **Tables** (after activation / migration), using the site table prefix (e.g. `wp_`):
+  - `{prefix}mp_cp_promotions` — promotion definitions (JSON-like rules in `LONGTEXT` columns).
+  - `{prefix}mp_cp_redemptions` — usage against orders.
+  - `{prefix}mp_cp_audit_log` — append-only audit trail.
+- **Deactivation:** tables and `mp_cp_schema_version` are **not** removed; migrations are **additive** and intended to be **rollback-safe** (no `DROP TABLE` / data deletion in core flows).
+- **Migrations:** `MigrationRunner` runs `dbDelta()` from Schema DDL on activation when the stored version is behind `Schema::SCHEMA_VERSION`.
+
 ## Install (development)
 
 Copy this folder into `wp-content/plugins/`, then activate **MP Commerce Promotions** in the WordPress admin.
