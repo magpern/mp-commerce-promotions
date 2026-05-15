@@ -33,6 +33,11 @@ Provide a structured foundation for commerce promotions using:
 - **Deactivation:** tables and `mp_cp_schema_version` are **not** removed; migrations are **additive** and intended to be **rollback-safe** (no `DROP TABLE` / data deletion in core flows).
 - **Migrations:** `MigrationRunner` runs `dbDelta()` from Schema DDL on activation when the stored version is behind `Schema::SCHEMA_VERSION`.
 
+## Domain and persistence
+
+- **`Promotion`** / **`PromotionStatus`** / **`PromotionFactory`** — validated domain model; `conditions`, `actions`, and `restrictions` are PHP arrays in memory.
+- **`PromotionRepository`** — reads/writes the `{prefix}mp_cp_promotions` table using `$wpdb` (`insert`, `update`, `find`, `find_by_uuid`, `delete`). JSON columns are stored as **LONGTEXT** via `wp_json_encode()`; loads decode defensively (invalid JSON becomes an empty array). This layer is **internal** only (no admin UI or REST exposure yet).
+
 ## Install (development)
 
 Copy this folder into `wp-content/plugins/`, then activate **MP Commerce Promotions** in the WordPress admin.

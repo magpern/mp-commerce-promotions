@@ -1,6 +1,6 @@
 <?php
 /**
- * Promotion lifecycle status (string constants; no persistence).
+ * Promotion lifecycle status (string constants).
  *
  * @package MP\CommercePromotions
  */
@@ -15,6 +15,8 @@ final class PromotionStatus {
 
 	public const ACTIVE = 'active';
 
+	public const PAUSED = 'paused';
+
 	public const ARCHIVED = 'archived';
 
 	private function __construct() {
@@ -27,6 +29,7 @@ final class PromotionStatus {
 		return array(
 			self::DRAFT,
 			self::ACTIVE,
+			self::PAUSED,
 			self::ARCHIVED,
 		);
 	}
