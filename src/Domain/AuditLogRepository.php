@@ -63,7 +63,7 @@ final class AuditLogRepository {
 			return array();
 		}
 
-		$limit = max( 1, min( 500, $limit ) );
+		$limit = max( 1, min( 100, $limit ) );
 
 		$table = Schema::audit_log_table( $this->wpdb );
 		$sql   = "SELECT * FROM {$table} WHERE promotion_id = %d ORDER BY created_at DESC, id DESC LIMIT %d";

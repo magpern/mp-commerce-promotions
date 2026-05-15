@@ -9,9 +9,13 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Admin;
 
+use MP\CommercePromotions\Domain\AuditLogEntry;
+use MP\CommercePromotions\Domain\AuditLogRepository;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
+use MP\CommercePromotions\Domain\Redemption;
+use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\EvaluationResult;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Service\PromotionService;
@@ -33,16 +37,26 @@ final class PromotionEditPage {
 
 	private ?string $cart_preview_error = null;
 
+	private ?RedemptionRepository $redemptions;
+
+	private ?AuditLogRepository $audit_logs;
+
+	private const ADMIN_USAGE_AUDIT_LIMIT = 25;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionService $promotion_service,
 		?CartContextBuilder $cart_context_builder = null,
-		?PromotionEvaluator $promotion_evaluator = null
+		?PromotionEvaluator $promotion_evaluator = null,
+		?RedemptionRepository $redemptions = null,
+		?AuditLogRepository $audit_logs = null
 	) {
 		$this->promotions             = $promotions;
 		$this->promotion_service      = $promotion_service;
 		$this->cart_context_builder   = $cart_context_builder;
 		$this->promotion_evaluator    = $promotion_evaluator ?? new PromotionEvaluator();
+		$this->redemptions            = $redemptions;
+		$this->audit_logs             = $audit_logs;
 	}
 
 	public function render( string $identifier ): void {
@@ -79,6 +93,8 @@ final class PromotionEditPage {
 		$this->render_status_section( $promotion );
 		$this->render_cart_preview_section( $promotion );
 		$this->render_form( $promotion );
+		$this->render_usage_redemptions_section( $promotion );
+		$this->render_audit_log_section( $promotion );
 		echo '</div>';
 	}
 
@@ -515,6 +531,129 @@ final class PromotionEditPage {
 
 		echo '<p class="submit"><button type="submit" name="mp_cp_update_promotion_submit" value="1" class="button button-primary">' . esc_html__( 'Save promotion', 'mp-commerce-promotions' ) . '</button></p>';
 		echo '</form>';
+	}
+
+	private function render_usage_redemptions_section( Promotion $promotion ): void {
+		if ( $this->redemptions === null ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$rows = $this->redemptions->find_for_promotion( $pid, self::ADMIN_USAGE_AUDIT_LIMIT );
+
+		echo '<div class="card" style="max-width:960px;padding:12px 16px;margin:16px 0;">';
+		echo '<h2 style="margin-top:0;">' . esc_html__( 'Usage / Redemptions', 'mp-commerce-promotions' ) . '</h2>';
+
+		if ( $rows === array() ) {
+			echo '<p class="description">' . esc_html__( 'No redemptions recorded.', 'mp-commerce-promotions' ) . '</p>';
+			echo '</div>';
+			return;
+		}
+
+		echo '<table class="widefat striped"><thead><tr>';
+		echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Order ID', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Customer ID', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Discount Amount', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Currency', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Redeemed At', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Created At', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $rows as $r ) {
+			if ( ! $r instanceof Redemption ) {
+				continue;
+			}
+			$rid   = $r->get_id();
+			$oid   = $r->get_order_id();
+			$cid   = $r->get_customer_id();
+			$disc  = $r->get_discount_amount();
+			$cur   = $r->get_currency();
+			$stat  = $r->get_status();
+			$redAt = $r->get_redeemed_at();
+			$creAt = $r->get_created_at();
+
+			echo '<tr>';
+			echo '<td>' . esc_html( $rid !== null ? (string) $rid : '—' ) . '</td>';
+			echo '<td>' . esc_html( $oid !== null ? (string) $oid : '—' ) . '</td>';
+			echo '<td>' . esc_html( $cid !== null ? (string) $cid : '—' ) . '</td>';
+			echo '<td>' . esc_html( function_exists( 'wc_format_decimal' ) ? wc_format_decimal( (string) $disc ) : (string) $disc ) . '</td>';
+			echo '<td>' . esc_html( $cur !== null && $cur !== '' ? $cur : '—' ) . '</td>';
+			echo '<td>' . esc_html( $stat ) . '</td>';
+			echo '<td>' . esc_html( $redAt !== null && $redAt !== '' ? $redAt : '—' ) . '</td>';
+			echo '<td>' . esc_html( $creAt !== null && $creAt !== '' ? $creAt : '—' ) . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
+		echo '</div>';
+	}
+
+	private function render_audit_log_section( Promotion $promotion ): void {
+		if ( $this->audit_logs === null ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$rows = $this->audit_logs->find_for_promotion( $pid, self::ADMIN_USAGE_AUDIT_LIMIT );
+
+		echo '<div class="card" style="max-width:960px;padding:12px 16px;margin:16px 0;">';
+		echo '<h2 style="margin-top:0;">' . esc_html__( 'Audit Log', 'mp-commerce-promotions' ) . '</h2>';
+
+		if ( $rows === array() ) {
+			echo '<p class="description">' . esc_html__( 'No audit entries recorded.', 'mp-commerce-promotions' ) . '</p>';
+			echo '</div>';
+			return;
+		}
+
+		echo '<table class="widefat striped"><thead><tr>';
+		echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Action', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Actor User ID', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'IP Hash', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Created At', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Context', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $rows as $entry ) {
+			if ( ! $entry instanceof AuditLogEntry ) {
+				continue;
+			}
+			$eid    = $entry->get_id();
+			$action = $entry->get_action();
+			$actor  = $entry->get_actor_user_id();
+			$ip     = $entry->get_ip_hash();
+			$cat    = $entry->get_created_at();
+			$ctx    = $entry->get_context();
+
+			$ctx_json = wp_json_encode( $ctx, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+			if ( ! is_string( $ctx_json ) ) {
+				$ctx_json = '{}';
+			}
+
+			echo '<tr>';
+			echo '<td>' . esc_html( $eid !== null ? (string) $eid : '—' ) . '</td>';
+			echo '<td>' . esc_html( $action ) . '</td>';
+			echo '<td>' . esc_html( $actor !== null ? (string) $actor : '—' ) . '</td>';
+			echo '<td>' . esc_html( $ip !== null && $ip !== '' ? $ip : '—' ) . '</td>';
+			echo '<td>' . esc_html( $cat !== null && $cat !== '' ? $cat : '—' ) . '</td>';
+			echo '<td><pre class="code" style="max-height:140px;overflow:auto;font-size:11px;margin:0;white-space:pre-wrap;">'
+				. esc_html( $ctx_json )
+				. '</pre></td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
+		echo '</div>';
 	}
 
 	private function list_url(): string {

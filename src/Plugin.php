@@ -100,7 +100,9 @@ final class Plugin {
 				$this->promotion_repository,
 				$this->promotion_service,
 				$cart_builder,
-				$this->promotion_evaluator
+				$this->promotion_evaluator,
+				$this->redemption_repository,
+				$this->audit_log_repository
 			);
 			$promotions_page = new PromotionsPage( $this->promotion_repository, $this->promotion_service, $edit_page );
 		}

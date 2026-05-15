@@ -182,7 +182,7 @@ final class RedemptionRepository {
 		$limit = max( 1, min( 100, $limit ) );
 
 		$table = Schema::redemptions_table( $this->wpdb );
-		$sql   = "SELECT * FROM {$table} WHERE promotion_id = %d ORDER BY redeemed_at DESC, id DESC LIMIT %d";
+		$sql   = "SELECT * FROM {$table} WHERE promotion_id = %d ORDER BY created_at DESC, id DESC LIMIT %d";
 
 		$prepared = $this->wpdb->prepare( $sql, $promotion_id, $limit );
 		if ( ! is_string( $prepared ) ) {
