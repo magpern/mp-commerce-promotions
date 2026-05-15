@@ -15,7 +15,7 @@ Provide a structured foundation for commerce promotions using:
 
 ## Status
 
-**Early development / scaffold phase.** The codebase is **not production-feature-complete** yet (no full promotion evaluation, cart wiring, or data persistence in the current release).
+**Early development / scaffold phase.** The codebase is **not production-feature-complete** yet (no automatic discount application at checkout; admin cart preview is read-only).
 
 ## Requirements
 
@@ -43,14 +43,16 @@ Provide a structured foundation for commerce promotions using:
 ## Evaluation pipeline
 
 - **`EvaluationContext`** — generic inputs (`customer_id`, `cart_subtotal`, `currency`, `items`, `metadata`); no WooCommerce cart objects.
+- **`CartContextBuilder`** (WooCommerce) — read-only mapping from `WC()->cart` into **`EvaluationContext`** (product line summaries + `product_cat` term IDs); returns an empty context when WooCommerce or the cart is unavailable.
 - **Conditions** — implement `ConditionInterface::evaluate()` and return **`ConditionResult`** (pass/fail with optional message).
 - **Actions** — implement `ActionInterface::preview()` and return **`ActionResult`** (type + payload); previews only, **no cart mutation or discounts applied**.
 - **`PromotionEvaluator::evaluate()`** — loads rule objects from a **`Promotion`**’s `conditions` / `actions` arrays only; **no database, WooCommerce, or audit calls** in this phase.
 - **Demo types supported:** `minimum_subtotal` (condition) and `percentage_discount` (action preview).
+- **Admin cart preview** — **Edit promotion** can run **`PromotionEvaluator`** against the current session cart via **`CartContextBuilder`**; **admin-only**, **no persistence**, **no discount application**.
 
 ## Admin UI
 
-- **WooCommerce → Promotions** lists promotions (status column is read-only), supports **Create draft promotion** (name + nonce), and **Edit** opens a detail page (`promotion` query arg: numeric id or UUID). **Status** is changed only via **controlled POST actions** (Activate / Pause / Archive); **archived** promotions **cannot be reactivated**. The main form edits name, description, priority, dates, and **raw JSON** for conditions, actions, and restrictions (validated as JSON arrays). **Hard delete UI**, **visual rule builder**, and **REST/AJAX** are **not** implemented yet.
+- **WooCommerce → Promotions** lists promotions (status column is read-only), supports **Create draft promotion** (name + nonce), and **Edit** opens a detail page (`promotion` query arg: numeric id or UUID). **Status** is changed only via **controlled POST actions** (Activate / Pause / Archive); **archived** promotions **cannot be reactivated**. The main form edits name, description, priority, dates, and **raw JSON** for conditions, actions, and restrictions (validated as JSON arrays). **Preview against current cart** runs **`PromotionEvaluator`** in-memory using **`CartContextBuilder`** (no DB writes, no discounts). **Hard delete UI**, **visual rule builder**, and **REST/AJAX** are **not** implemented yet.
 
 ## Install (development)
 

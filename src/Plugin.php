@@ -15,8 +15,10 @@ use MP\CommercePromotions\Admin\PromotionsPage;
 use MP\CommercePromotions\Domain\AuditLogRepository;
 use MP\CommercePromotions\Domain\PromotionFactory;
 use MP\CommercePromotions\Domain\PromotionRepository;
+use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PromotionService;
+use MP\CommercePromotions\Woo\CartContextBuilder;
 use MP\CommercePromotions\Woo\WooCommerceBridge;
 use wpdb;
 
@@ -24,7 +26,9 @@ final class Plugin {
 
 	private WooCommerceBridge $woo_bridge;
 
-	private AdminMenu $admin_menu;
+	private ?AdminMenu $admin_menu = null;
+
+	private PromotionEvaluator $promotion_evaluator;
 
 	private ?PromotionRepository $promotion_repository = null;
 
@@ -51,20 +55,33 @@ final class Plugin {
 			);
 		}
 
-		$promotions_page = null;
-		if ( $this->promotion_repository !== null && $this->promotion_service !== null ) {
-			$edit_page       = new PromotionEditPage( $this->promotion_repository, $this->promotion_service );
-			$promotions_page = new PromotionsPage( $this->promotion_repository, $this->promotion_service, $edit_page );
-		}
-
-		$this->woo_bridge = new WooCommerceBridge();
-		$this->admin_menu = new AdminMenu( $this->woo_bridge, $promotions_page );
+		$this->woo_bridge           = new WooCommerceBridge();
+		$this->promotion_evaluator = new PromotionEvaluator();
 	}
 
 	public function init(): void {
 		$this->woo_bridge->init();
 
-		if ( is_admin() ) {
+		$cart_builder = null;
+		if ( $this->woo_bridge->is_available() ) {
+			$cart_builder = new CartContextBuilder();
+			$this->woo_bridge->set_cart_context_builder( $cart_builder );
+		}
+
+		$promotions_page = null;
+		if ( $this->promotion_repository !== null && $this->promotion_service !== null ) {
+			$edit_page       = new PromotionEditPage(
+				$this->promotion_repository,
+				$this->promotion_service,
+				$cart_builder,
+				$this->promotion_evaluator
+			);
+			$promotions_page = new PromotionsPage( $this->promotion_repository, $this->promotion_service, $edit_page );
+		}
+
+		$this->admin_menu = new AdminMenu( $this->woo_bridge, $promotions_page );
+
+		if ( is_admin() && $this->admin_menu !== null ) {
 			$this->admin_menu->register();
 		}
 	}

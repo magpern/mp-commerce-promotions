@@ -12,8 +12,12 @@ namespace MP\CommercePromotions\Admin;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
+use MP\CommercePromotions\Engine\EvaluationResult;
+use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Service\PromotionService;
+use MP\CommercePromotions\Woo\CartContextBuilder;
 use RuntimeException;
+use Throwable;
 
 final class PromotionEditPage {
 
@@ -21,9 +25,24 @@ final class PromotionEditPage {
 
 	private PromotionService $promotion_service;
 
-	public function __construct( PromotionRepository $promotions, PromotionService $promotion_service ) {
-		$this->promotions         = $promotions;
-		$this->promotion_service = $promotion_service;
+	private ?CartContextBuilder $cart_context_builder;
+
+	private PromotionEvaluator $promotion_evaluator;
+
+	private ?EvaluationResult $cart_preview_result = null;
+
+	private ?string $cart_preview_error = null;
+
+	public function __construct(
+		PromotionRepository $promotions,
+		PromotionService $promotion_service,
+		?CartContextBuilder $cart_context_builder = null,
+		?PromotionEvaluator $promotion_evaluator = null
+	) {
+		$this->promotions             = $promotions;
+		$this->promotion_service      = $promotion_service;
+		$this->cart_context_builder   = $cart_context_builder;
+		$this->promotion_evaluator    = $promotion_evaluator ?? new PromotionEvaluator();
 	}
 
 	public function render( string $identifier ): void {
@@ -37,8 +56,12 @@ final class PromotionEditPage {
 			exit;
 		}
 
+		$this->cart_preview_result = null;
+		$this->cart_preview_error  = null;
+
 		$this->handle_post_change_status( $promotion );
 		$this->handle_post_update( $promotion );
+		$this->handle_post_preview( $promotion );
 
 		$promotion = $this->promotions->find_by_id_or_uuid( $identifier );
 		if ( $promotion === null ) {
@@ -54,8 +77,61 @@ final class PromotionEditPage {
 		echo '</p>';
 
 		$this->render_status_section( $promotion );
+		$this->render_cart_preview_section( $promotion );
 		$this->render_form( $promotion );
 		echo '</div>';
+	}
+
+	private function handle_post_preview( Promotion $promotion ): void {
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_preview_cart_submit'] ) ) {
+			return;
+		}
+
+		$action = isset( $_POST['mp_cp_action'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_action'] ) ) : '';
+		if ( $action !== 'preview_cart' ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		if ( $this->cart_context_builder === null ) {
+			$this->cart_preview_error = __( 'Cart preview is not available.', 'mp-commerce-promotions' );
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_preview_cart_nonce'] ) ) {
+			$this->cart_preview_error = __( 'Security check failed (preview).', 'mp-commerce-promotions' );
+			return;
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_preview_cart_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, 'mp_cp_preview_cart_' . $pid ) ) {
+			$this->cart_preview_error = __( 'Security check failed (preview).', 'mp-commerce-promotions' );
+			return;
+		}
+
+		$post_id = isset( $_POST['promotion_id'] ) ? (int) $_POST['promotion_id'] : 0;
+		if ( $post_id !== $pid ) {
+			$this->cart_preview_error = __( 'Invalid preview form submission.', 'mp-commerce-promotions' );
+			return;
+		}
+
+		try {
+			$context = $this->cart_context_builder->build_from_cart();
+			$this->cart_preview_result = $this->promotion_evaluator->evaluate( $promotion, $context );
+		} catch ( Throwable $e ) {
+			$this->cart_preview_error = __( 'Preview failed.', 'mp-commerce-promotions' );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				$this->cart_preview_error .= ' ' . $e->getMessage();
+			}
+		}
 	}
 
 	private function handle_post_change_status( Promotion $promotion ): void {
@@ -314,6 +390,67 @@ final class PromotionEditPage {
 		echo '<input type="hidden" name="new_status" value="' . esc_attr( $new_status ) . '" />';
 		echo '<button type="submit" class="button">' . esc_html( $label ) . '</button>';
 		echo '</form>';
+	}
+
+	private function render_cart_preview_section( Promotion $promotion ): void {
+		$id = $promotion->get_id();
+		if ( $id === null || $id <= 0 ) {
+			return;
+		}
+
+		echo '<div class="card" style="max-width:720px;padding:12px 16px;margin:16px 0;">';
+		echo '<h2 style="margin-top:0;">' . esc_html__( 'Cart preview', 'mp-commerce-promotions' ) . '</h2>';
+
+		if ( $this->cart_context_builder === null ) {
+			echo '<p class="description">' . esc_html__( 'WooCommerce is unavailable or the cart context builder is not loaded, so preview against the current cart is disabled.', 'mp-commerce-promotions' ) . '</p>';
+			echo '</div>';
+			return;
+		}
+
+		$url = $this->edit_url( (string) $id );
+		echo '<form method="post" action="' . esc_url( $url ) . '">';
+		wp_nonce_field( 'mp_cp_preview_cart_' . $id, 'mp_cp_preview_cart_nonce' );
+		echo '<input type="hidden" name="mp_cp_action" value="preview_cart" />';
+		echo '<input type="hidden" name="promotion_id" value="' . esc_attr( (string) $id ) . '" />';
+		echo '<p class="submit" style="margin:0;">';
+		echo '<button type="submit" name="mp_cp_preview_cart_submit" value="1" class="button">' . esc_html__( 'Preview against current cart', 'mp-commerce-promotions' ) . '</button>';
+		echo '</p>';
+		echo '<p class="description">' . esc_html__( 'Evaluates this promotion against the cart for the current session. Nothing is saved to the database; discounts are not applied.', 'mp-commerce-promotions' ) . '</p>';
+		echo '</form>';
+
+		if ( $this->cart_preview_error !== null && $this->cart_preview_error !== '' ) {
+			echo '<div class="notice notice-error inline" style="margin-top:12px;"><p>' . esc_html( $this->cart_preview_error ) . '</p></div>';
+		}
+
+		if ( $this->cart_preview_result instanceof EvaluationResult ) {
+			$result = $this->cart_preview_result;
+			echo '<hr style="margin:16px 0;" />';
+			echo '<p><strong>' . esc_html__( 'Eligible', 'mp-commerce-promotions' ) . ':</strong> ';
+			echo $result->is_eligible()
+				? esc_html__( 'Yes', 'mp-commerce-promotions' )
+				: esc_html__( 'No', 'mp-commerce-promotions' );
+			echo '</p>';
+
+			$messages = $result->get_messages();
+			if ( count( $messages ) > 0 ) {
+				echo '<p><strong>' . esc_html__( 'Messages', 'mp-commerce-promotions' ) . '</strong></p>';
+				echo '<ul style="list-style:disc;margin-left:1.5em;">';
+				foreach ( $messages as $message ) {
+					echo '<li>' . esc_html( (string) $message ) . '</li>';
+				}
+				echo '</ul>';
+			}
+
+			$action_results = $result->get_action_results();
+			echo '<p><strong>' . esc_html__( 'Action previews (JSON)', 'mp-commerce-promotions' ) . '</strong></p>';
+			$json = wp_json_encode( $action_results, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+			if ( ! is_string( $json ) ) {
+				$json = '[]';
+			}
+			echo '<pre class="code" style="max-height:240px;overflow:auto;background:#f6f7f7;padding:12px;">' . esc_html( $json ) . '</pre>';
+		}
+
+		echo '</div>';
 	}
 
 	private function render_form( Promotion $promotion ): void {
