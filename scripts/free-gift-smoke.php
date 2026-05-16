@@ -140,7 +140,7 @@ smoke_assert(
 $builder = SimpleRuleBuilder::build_from_post(
 	array(
 		'mp_cp_builder_condition_type'  => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
-		'mp_cp_builder_subtotal'        => '1',
+		'mp_cp_builder_amount'          => '1',
 		'mp_cp_builder_action_type'       => RuleTypes::ACTION_FREE_GIFT_PRODUCT,
 		'mp_cp_builder_gift_product_id'   => (string) $gift_product_id,
 		'mp_cp_builder_gift_quantity'     => '1',
