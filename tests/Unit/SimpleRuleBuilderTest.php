@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Tests\Unit;
 
 use InvalidArgumentException;
+use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
 use MP\CommercePromotions\Engine\RuleTypes;
 use MP\CommercePromotions\Service\SimpleRuleBuilder;
 use PHPUnit\Framework\TestCase;
@@ -209,6 +210,85 @@ final class SimpleRuleBuilderTest extends TestCase {
 		$this->assertSame( RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT, $built['conditions'][0]['type'] );
 		$this->assertSame( '<', $built['conditions'][0]['operator'] );
 		$this->assertSame( 1.0, $built['conditions'][0]['count'] );
+	}
+
+	public function test_builds_cheapest_item_discount_category_config(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type'              => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'mp_cp_builder_amount'                      => '1',
+				'mp_cp_builder_action_type'                 => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+				'mp_cp_builder_cheapest_scope'              => CheapestItemDiscountAction::SCOPE_CATEGORY,
+				'mp_cp_builder_cheapest_category_ids'       => '123, 124',
+				'mp_cp_builder_cheapest_required_quantity'    => '3',
+				'mp_cp_builder_cheapest_discounted_quantity' => '1',
+				'mp_cp_builder_cheapest_discount_percentage'  => '100',
+			)
+		);
+
+		$action = $built['actions'][0];
+		$this->assertSame( RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT, $action['type'] );
+		$this->assertSame( CheapestItemDiscountAction::SCOPE_CATEGORY, $action['scope'] );
+		$this->assertSame( array( 123, 124 ), $action['category_ids'] );
+		$this->assertSame( 3, $action['required_quantity'] );
+		$this->assertSame( 1, $action['discounted_quantity'] );
+		$this->assertSame( 100.0, $action['discount_percentage'] );
+	}
+
+	public function test_builds_cheapest_item_discount_products_config(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type'              => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'mp_cp_builder_amount'                      => '1',
+				'mp_cp_builder_action_type'                 => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+				'mp_cp_builder_cheapest_scope'              => CheapestItemDiscountAction::SCOPE_PRODUCTS,
+				'mp_cp_builder_cheapest_product_ids'        => '100, 101',
+				'mp_cp_builder_cheapest_required_quantity'    => '2',
+				'mp_cp_builder_cheapest_discounted_quantity' => '1',
+				'mp_cp_builder_cheapest_discount_percentage'  => '50',
+			)
+		);
+
+		$action = $built['actions'][0];
+		$this->assertSame( CheapestItemDiscountAction::SCOPE_PRODUCTS, $action['scope'] );
+		$this->assertSame( array( 100, 101 ), $action['product_ids'] );
+		$this->assertSame( 50.0, $action['discount_percentage'] );
+	}
+
+	public function test_rejects_invalid_cheapest_scope(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'invalid_cheapest_scope' );
+
+		SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type'             => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'mp_cp_builder_amount'                     => '1',
+				'mp_cp_builder_action_type'                => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+				'mp_cp_builder_cheapest_scope'             => 'invalid',
+				'mp_cp_builder_cheapest_category_ids'      => '10',
+				'mp_cp_builder_cheapest_required_quantity' => '1',
+				'mp_cp_builder_cheapest_discounted_quantity' => '1',
+				'mp_cp_builder_cheapest_discount_percentage' => '100',
+			)
+		);
+	}
+
+	public function test_rejects_missing_cheapest_category_ids(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'invalid_cheapest_category_ids' );
+
+		SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type'             => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'mp_cp_builder_amount'                     => '1',
+				'mp_cp_builder_action_type'                => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+				'mp_cp_builder_cheapest_scope'             => CheapestItemDiscountAction::SCOPE_CATEGORY,
+				'mp_cp_builder_cheapest_category_ids'    => '',
+				'mp_cp_builder_cheapest_required_quantity' => '3',
+				'mp_cp_builder_cheapest_discounted_quantity' => '1',
+				'mp_cp_builder_cheapest_discount_percentage' => '100',
+			)
+		);
 	}
 
 	public function test_rejects_invalid_fixed_amount(): void {

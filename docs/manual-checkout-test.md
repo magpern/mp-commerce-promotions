@@ -274,6 +274,18 @@ WP-CLI: `./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/stacki
 
 ---
 
+## 12. Cheapest item discount (BOGO groundwork)
+
+See **[manual-cheapest-item-test.md](manual-cheapest-item-test.md)** for buy-2-get-1-free style promotions, stacking/cap cases, code-linked fees, and known fee-offset limitations.
+
+WP-CLI evaluator smoke:
+
+```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/cheapest-item-smoke.php
+```
+
+---
+
 ## Pass criteria
 
 All checked items in sections **1–8** pass, and behavior matches **Known limitations** in section **9**.

@@ -33,7 +33,7 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * Rule evaluation pipeline with pluggable condition/action types (MVP set)
 * Conditions: minimum subtotal, product/category quantity, logged in, first order, customer role, billing country, customer email domain, customer redemption count (logged-in metadata when available)
 * Actions: percentage discount, fixed amount discount, free shipping (MVP fee offset), cheapest item discount (BOGO groundwork via negative fee)
-* Simple Rule Builder (one condition + one action, all MVP types) and raw JSON rule editing
+* Simple Rule Builder (one condition + one action, including cheapest item discount) and raw JSON rule editing
 * Rule validation panel in admin
 * WooCommerce admin: Promotions list with search, filters, and pagination
 * Promotion edit workflow: status actions, duplicate as draft, cart preview with evaluation trace (admin/debug)

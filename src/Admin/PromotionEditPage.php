@@ -29,6 +29,7 @@ use MP\CommercePromotions\Engine\PromotionEvaluationPlan;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Engine\PromotionPlanner;
 use MP\CommercePromotions\Engine\RuleRegistry;
+use MP\CommercePromotions\Engine\RuleTypes;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerationOutcome;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
@@ -822,6 +823,24 @@ final class PromotionEditPage {
 			'mp_cp_builder_redemption_count' => isset( $_POST['mp_cp_builder_redemption_count'] )
 				? wp_unslash( (string) $_POST['mp_cp_builder_redemption_count'] )
 				: '',
+			'mp_cp_builder_cheapest_scope'   => isset( $_POST['mp_cp_builder_cheapest_scope'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_cheapest_scope'] )
+				: '',
+			'mp_cp_builder_cheapest_category_ids' => isset( $_POST['mp_cp_builder_cheapest_category_ids'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_cheapest_category_ids'] )
+				: '',
+			'mp_cp_builder_cheapest_product_ids' => isset( $_POST['mp_cp_builder_cheapest_product_ids'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_cheapest_product_ids'] )
+				: '',
+			'mp_cp_builder_cheapest_required_quantity' => isset( $_POST['mp_cp_builder_cheapest_required_quantity'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_cheapest_required_quantity'] )
+				: '',
+			'mp_cp_builder_cheapest_discounted_quantity' => isset( $_POST['mp_cp_builder_cheapest_discounted_quantity'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_cheapest_discounted_quantity'] )
+				: '',
+			'mp_cp_builder_cheapest_discount_percentage' => isset( $_POST['mp_cp_builder_cheapest_discount_percentage'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_cheapest_discount_percentage'] )
+				: '',
 		);
 
 		try {
@@ -1502,14 +1521,88 @@ final class PromotionEditPage {
 				echo '<td>' . esc_html( $selected ? __( 'Yes', 'mp-commerce-promotions' ) : __( 'No', 'mp-commerce-promotions' ) ) . '</td>';
 				echo '<td><code>' . esc_html( isset( $trace['reason_code'] ) ? (string) $trace['reason_code'] : '' ) . '</code></td>';
 				$message = isset( $trace['message'] ) && is_string( $trace['message'] ) ? $trace['message'] : '';
+				if ( $message === '' && $type === RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT ) {
+					$message = $this->format_cheapest_item_preview_summary(
+						isset( $trace['preview'] ) && is_array( $trace['preview'] ) ? $trace['preview'] : array()
+					);
+				}
 				echo '<td>' . esc_html( $message ) . '</td>';
 				echo '<td>';
+				if ( $type === RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT ) {
+					$this->render_cheapest_item_preview_details(
+						isset( $trace['preview'] ) && is_array( $trace['preview'] ) ? $trace['preview'] : array()
+					);
+				}
 				$this->render_trace_json_pre( isset( $trace['preview'] ) && is_array( $trace['preview'] ) ? $trace['preview'] : array() );
 				echo '</td>';
 				echo '</tr>';
 			}
 			echo '</tbody></table>';
+			echo '<p class="description" style="margin-top:8px;">' . esc_html__(
+				'Cheapest item discount is applied as a cart fee in the MVP; product line prices are not changed.',
+				'mp-commerce-promotions'
+			) . '</p>';
 		}
+	}
+
+	/**
+	 * @param array<string, mixed> $preview Action trace preview (ActionResult::to_array shape).
+	 */
+	private function format_cheapest_item_preview_summary( array $preview ): string {
+		$payload = isset( $preview['payload'] ) && is_array( $preview['payload'] )
+			? $preview['payload']
+			: $preview;
+
+		if ( ! empty( $payload['not_applicable'] ) ) {
+			$reason = isset( $payload['reason'] ) ? (string) $payload['reason'] : 'not_applicable';
+			$eligible = isset( $payload['eligible_units'] ) ? (string) $payload['eligible_units'] : '?';
+			$required = isset( $payload['required_quantity'] ) ? (string) $payload['required_quantity'] : '?';
+
+			return sprintf(
+				/* translators: 1: reason code, 2: eligible unit count, 3: required quantity */
+				__( 'Not applicable (%1$s): %2$s eligible units, need %3$s.', 'mp-commerce-promotions' ),
+				$reason,
+				$eligible,
+				$required
+			);
+		}
+
+		$amount = isset( $payload['discount_amount'] ) ? (float) $payload['discount_amount'] : 0.0;
+		$units  = isset( $payload['discounted_units'] ) ? (int) $payload['discounted_units'] : 0;
+
+		return sprintf(
+			/* translators: 1: discount amount, 2: discounted unit count */
+			__( 'Calculated discount: %1$s (%2$d unit(s)).', 'mp-commerce-promotions' ),
+			(string) $amount,
+			$units
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $preview
+	 */
+	private function render_cheapest_item_preview_details( array $preview ): void {
+		$payload = isset( $preview['payload'] ) && is_array( $preview['payload'] )
+			? $preview['payload']
+			: $preview;
+
+		if ( $payload === array() ) {
+			return;
+		}
+
+		echo '<p class="description" style="margin:0 0 8px;">';
+		echo esc_html( $this->format_cheapest_item_preview_summary( $preview ) );
+		if ( isset( $payload['scope'] ) ) {
+			echo ' ';
+			echo esc_html(
+				sprintf(
+					/* translators: %s: scope label */
+					__( 'Scope: %s.', 'mp-commerce-promotions' ),
+					(string) $payload['scope']
+				)
+			);
+		}
+		echo '</p>';
 	}
 
 	/**
@@ -1752,7 +1845,33 @@ final class PromotionEditPage {
 		echo '<option value="percentage_discount">' . esc_html__( 'Percentage discount', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="fixed_amount_discount">' . esc_html__( 'Fixed amount discount', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="free_shipping">' . esc_html__( 'Free shipping', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="cheapest_item_discount">' . esc_html__( 'Cheapest item discount', 'mp-commerce-promotions' ) . '</option>';
 		echo '</select></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_cheapest_scope">' . esc_html__( 'Cheapest item scope', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select id="mp_cp_builder_cheapest_scope" name="mp_cp_builder_cheapest_scope">';
+		echo '<option value="category">' . esc_html__( 'Category', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="products">' . esc_html__( 'Products', 'mp-commerce-promotions' ) . '</option>';
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Category scope matches product category term IDs; products scope matches product post IDs. Variation-specific targeting is not supported yet.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_cheapest_category_ids">' . esc_html__( 'Cheapest item category IDs', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_cheapest_category_ids" name="mp_cp_builder_cheapest_category_ids" placeholder="10, 15" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_cheapest_product_ids">' . esc_html__( 'Cheapest item product IDs', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_cheapest_product_ids" name="mp_cp_builder_cheapest_product_ids" placeholder="100, 101" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_cheapest_required_quantity">' . esc_html__( 'Required quantity', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_cheapest_required_quantity" name="mp_cp_builder_cheapest_required_quantity" min="1" step="1" />';
+		echo '<p class="description">' . esc_html__( 'Minimum eligible units in cart before discount applies (e.g. 3 for buy 2 get 1 free).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_cheapest_discounted_quantity">' . esc_html__( 'Discounted quantity', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_cheapest_discounted_quantity" name="mp_cp_builder_cheapest_discounted_quantity" min="1" step="1" />';
+		echo '<p class="description">' . esc_html__( 'How many cheapest units receive the discount (must be <= required quantity).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_cheapest_discount_percentage">' . esc_html__( 'Discount percentage', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_cheapest_discount_percentage" name="mp_cp_builder_cheapest_discount_percentage" min="0.01" max="100" step="0.01" />';
+		echo '<p class="description">' . esc_html__( '100 = free unit; 50 = half off cheapest unit(s). Applied as a cart fee on the storefront.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_percentage">' . esc_html__( 'Percentage', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_builder_percentage" name="mp_cp_builder_percentage" min="0.01" max="100" step="0.01" /></td></tr>';
@@ -1779,7 +1898,7 @@ final class PromotionEditPage {
 				$this->render_recent_categories_id_helper_table();
 			},
 			__(
-				'The product_quantity condition uses WooCommerce product post IDs. The category_quantity condition uses product category term IDs (taxonomy product_cat).',
+				'The product_quantity condition uses WooCommerce product post IDs. The category_quantity condition uses product category term IDs (taxonomy product_cat). For cheapest_item_discount: category scope uses product category term IDs; products scope uses product post IDs. Variation-specific targeting is not implemented yet.',
 				'mp-commerce-promotions'
 			),
 			array(
@@ -2070,7 +2189,7 @@ final class PromotionEditPage {
 				);
 			},
 			__(
-				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action per promotion is applied on the storefront. Product and category IDs must be numeric WordPress IDs. Woo cart context enriches line items with unit_price, item_key, and product_name when available. cheapest_item_discount is BOGO groundwork: it discounts the cheapest eligible units as a negative cart fee (does not add free products or change line prices). Examples: buy 3 in category get cheapest free (100%, required_quantity 3, discounted_quantity 1); 50% off cheapest eligible product unit. free_shipping is an MVP fee offset equal to the current shipping total. Simple Rule Builder does not include cheapest_item_discount yet.',
+				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action per promotion is applied on the storefront. Product and category IDs must be numeric WordPress IDs. Woo cart context enriches line items with unit_price, item_key, and product_name when available. cheapest_item_discount is BOGO groundwork: it discounts the cheapest eligible units as a negative cart fee (does not add free products or change line prices). Examples: buy 3 in category get cheapest free (100%, required_quantity 3, discounted_quantity 1); 50% off cheapest eligible product unit. See docs/manual-cheapest-item-test.md for storefront verification. free_shipping is an MVP fee offset equal to the current shipping total. Simple Rule Builder supports cheapest_item_discount.',
 				'mp-commerce-promotions'
 			),
 			array(

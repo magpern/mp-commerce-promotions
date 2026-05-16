@@ -13,6 +13,8 @@ Use this checklist to verify **stackable** promotion fees, **subtotal cap**, **e
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/cheapest-item-smoke.php
 ```
 
+**Cheapest item discount:** stackable promotions can combine a `cheapest_item_discount` fee with other discount fees (subtotal cap applies). See [manual-cheapest-item-test.md](manual-cheapest-item-test.md).
+
 ---
 
 ## Current behavior (summary)

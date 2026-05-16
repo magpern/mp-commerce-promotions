@@ -530,17 +530,7 @@ final class PromotionRuleValidator {
 		}
 
 		if ( $type === RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT ) {
-			try {
-				CheapestItemDiscountAction::from_config( $raw );
-			} catch ( InvalidArgumentException $e ) {
-				$issues[] = $this->error(
-					sprintf(
-						/* translators: %s: zero-based action index */
-						__( 'cheapest_item_discount at index %s has invalid configuration.', 'mp-commerce-promotions' ),
-						(string) $index
-					)
-				);
-			}
+			$this->validate_cheapest_item_discount( $index, $raw, $issues );
 			return;
 		}
 
@@ -563,6 +553,150 @@ final class PromotionRuleValidator {
 					/* translators: %s: zero-based action index */
 					__( 'fixed_amount_discount at index %s has an invalid amount.', 'mp-commerce-promotions' ),
 					(string) $index
+				)
+			);
+		}
+	}
+
+	/**
+	 * @param array<string, mixed>                        $raw
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function validate_cheapest_item_discount( int $index, array $raw, array &$issues ): void {
+		if ( ! isset( $raw['scope'] ) || ! is_string( $raw['scope'] ) || trim( $raw['scope'] ) === '' ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'cheapest_item_discount at index %s is missing scope (use category or products).', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		$scope = trim( $raw['scope'] );
+		if ( $scope !== CheapestItemDiscountAction::SCOPE_CATEGORY && $scope !== CheapestItemDiscountAction::SCOPE_PRODUCTS ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'cheapest_item_discount at index %s has invalid scope (must be category or products).', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		if ( $scope === CheapestItemDiscountAction::SCOPE_CATEGORY ) {
+			if ( ! isset( $raw['category_ids'] ) || ! is_array( $raw['category_ids'] ) || count( $raw['category_ids'] ) === 0 ) {
+				$issues[] = $this->error(
+					sprintf(
+						/* translators: %s: zero-based action index */
+						__( 'cheapest_item_discount at index %s is missing category_ids.', 'mp-commerce-promotions' ),
+						(string) $index
+					)
+				);
+				return;
+			}
+		} elseif ( ! isset( $raw['product_ids'] ) || ! is_array( $raw['product_ids'] ) || count( $raw['product_ids'] ) === 0 ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'cheapest_item_discount at index %s is missing product_ids.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		if ( ! isset( $raw['discount_percentage'] ) || ! is_numeric( $raw['discount_percentage'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'cheapest_item_discount at index %s is missing or has an invalid discount_percentage.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		$pct = (float) $raw['discount_percentage'];
+		if ( $pct <= 0 || $pct > 100 ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'cheapest_item_discount at index %s discount_percentage must be > 0 and <= 100.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		if ( ! isset( $raw['required_quantity'] ) || ! is_numeric( $raw['required_quantity'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'cheapest_item_discount at index %s is missing or has an invalid required_quantity.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		$required = (int) $raw['required_quantity'];
+		if ( $required < 1 ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'cheapest_item_discount at index %s required_quantity must be >= 1.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		if ( ! isset( $raw['discounted_quantity'] ) || ! is_numeric( $raw['discounted_quantity'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'cheapest_item_discount at index %s is missing or has an invalid discounted_quantity.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		$discounted = (int) $raw['discounted_quantity'];
+		if ( $discounted < 1 ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'cheapest_item_discount at index %s discounted_quantity must be >= 1.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		if ( $discounted > $required ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'cheapest_item_discount at index %s discounted_quantity must be <= required_quantity.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		try {
+			CheapestItemDiscountAction::from_config( $raw );
+		} catch ( InvalidArgumentException $e ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: zero-based action index, 2: detail */
+					__( 'cheapest_item_discount at index %1$s has invalid IDs or field values (%2$s).', 'mp-commerce-promotions' ),
+					(string) $index,
+					$e->getMessage()
 				)
 			);
 		}

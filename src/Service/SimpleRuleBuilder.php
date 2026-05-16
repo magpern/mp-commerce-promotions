@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Service;
 
 use InvalidArgumentException;
+use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\FreeShippingAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
@@ -168,6 +169,10 @@ final class SimpleRuleBuilder {
 			return array( 'type' => RuleTypes::ACTION_FREE_SHIPPING );
 		}
 
+		if ( $type === RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT ) {
+			return self::build_cheapest_item_discount_action( $post );
+		}
+
 		$amount = self::parse_required_float( $post, 'mp_cp_builder_fixed_amount', 'invalid_fixed_amount' );
 		new FixedAmountDiscountAction( $amount );
 
@@ -175,6 +180,71 @@ final class SimpleRuleBuilder {
 			'type'   => RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT,
 			'amount' => $amount,
 		);
+	}
+
+	/**
+	 * @param array<string, mixed> $post
+	 * @return array<string, mixed>
+	 */
+	private static function build_cheapest_item_discount_action( array $post ): array {
+		$scope = isset( $post['mp_cp_builder_cheapest_scope'] )
+			? trim( (string) $post['mp_cp_builder_cheapest_scope'] )
+			: '';
+
+		if ( $scope !== CheapestItemDiscountAction::SCOPE_CATEGORY && $scope !== CheapestItemDiscountAction::SCOPE_PRODUCTS ) {
+			throw new InvalidArgumentException( 'invalid_cheapest_scope' );
+		}
+
+		$required_quantity   = self::parse_required_positive_int( $post, 'mp_cp_builder_cheapest_required_quantity', 'invalid_cheapest_required_quantity' );
+		$discounted_quantity = self::parse_required_positive_int( $post, 'mp_cp_builder_cheapest_discounted_quantity', 'invalid_cheapest_discounted_quantity' );
+		if ( $discounted_quantity > $required_quantity ) {
+			throw new InvalidArgumentException( 'invalid_cheapest_discounted_quantity' );
+		}
+
+		$discount_percentage = self::parse_required_float( $post, 'mp_cp_builder_cheapest_discount_percentage', 'invalid_cheapest_discount_percentage' );
+		if ( $discount_percentage <= 0 || $discount_percentage > 100 ) {
+			throw new InvalidArgumentException( 'invalid_cheapest_discount_percentage' );
+		}
+
+		$config = array(
+			'type'                => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+			'scope'               => $scope,
+			'discount_percentage' => $discount_percentage,
+			'required_quantity'   => $required_quantity,
+			'discounted_quantity' => $discounted_quantity,
+		);
+
+		if ( $scope === CheapestItemDiscountAction::SCOPE_CATEGORY ) {
+			$config['category_ids'] = self::parse_comma_int_list( $post, 'mp_cp_builder_cheapest_category_ids', 'invalid_cheapest_category_ids' );
+		} else {
+			$config['product_ids'] = self::parse_comma_int_list( $post, 'mp_cp_builder_cheapest_product_ids', 'invalid_cheapest_product_ids' );
+		}
+
+		CheapestItemDiscountAction::from_config( $config );
+
+		return $config;
+	}
+
+	/**
+	 * @param array<string, mixed> $post
+	 * @return list<int>
+	 */
+	private static function parse_comma_int_list( array $post, string $key, string $error_code ): array {
+		$strings = self::parse_comma_list( $post, $key, $error_code );
+		$ids     = array();
+
+		foreach ( $strings as $value ) {
+			if ( ! is_numeric( $value ) ) {
+				throw new InvalidArgumentException( $error_code );
+			}
+			$id = (int) $value;
+			if ( $id <= 0 ) {
+				throw new InvalidArgumentException( $error_code );
+			}
+			$ids[] = $id;
+		}
+
+		return array_values( array_unique( $ids, SORT_NUMERIC ) );
 	}
 
 	/**

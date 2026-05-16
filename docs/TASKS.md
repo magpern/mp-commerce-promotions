@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Cheapest item admin UX** — Simple Rule Builder; cart preview summaries; validator messages; `docs/manual-cheapest-item-test.md`
 - **BOGO groundwork** — `CartItemSelector`, cart item enrichment, `cheapest_item_discount` action (negative fee MVP); smoke `scripts/cheapest-item-smoke.php`
 - **Free shipping + customer usage rules** — `free_shipping` fee-offset action; `customer_redemption_count` condition; builder expansion; smoke `scripts/free-shipping-smoke.php`
 - **Stacking behavior docs and smoke** — manual-stacking-test.md, stale copy cleanup, cap smoke at natural subtotal

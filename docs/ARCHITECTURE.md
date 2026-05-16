@@ -298,7 +298,7 @@ customer_redemption_count
 
 `customer_redemption_count` compares metadata `customer_redemption_count` (integer) using `QuantityComparator` operators against JSON `count`. For logged-in carts, `CartContextBuilder` sets this via `RedemptionRepository::count_recorded_for_customer()` when the repository is wired. Guests omit the key and the condition fails safely.
 
-**Simple Rule Builder v0** supports all current condition and action types (including customer/location conditions and `free_shipping`).
+**Simple Rule Builder v0** supports all current condition and action types (including customer/location conditions, `free_shipping`, and `cheapest_item_discount`). Admin cart preview summarizes `discount_amount`, `discounted_units`, and `not_applicable` for cheapest-item actions. See [manual-cheapest-item-test.md](manual-cheapest-item-test.md).
 
 ### Current Actions
 

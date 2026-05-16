@@ -15,6 +15,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
 use MP\CommercePromotions\Engine\EvaluationContext;
 use MP\CommercePromotions\Engine\RuleTypes;
+use MP\CommercePromotions\Domain\Promotion;
+use MP\CommercePromotions\Domain\PromotionStatus;
+use MP\CommercePromotions\Service\PromotionRuleValidator;
+use MP\CommercePromotions\Service\SimpleRuleBuilder;
 
 $GLOBALS['smoke_failures'] = 0;
 
@@ -132,6 +136,78 @@ smoke_assert(
 	! empty( $payload_bad['not_applicable'] ) && (float) $payload_bad['discount_amount'] === 0.0,
 	'Insufficient eligible units returns not_applicable with discount_amount 0'
 );
+
+$builder_category = SimpleRuleBuilder::build_from_post(
+	array(
+		'mp_cp_builder_condition_type'              => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+		'mp_cp_builder_amount'                      => '1',
+		'mp_cp_builder_action_type'                 => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+		'mp_cp_builder_cheapest_scope'              => CheapestItemDiscountAction::SCOPE_CATEGORY,
+		'mp_cp_builder_cheapest_category_ids'       => '10',
+		'mp_cp_builder_cheapest_required_quantity'    => '3',
+		'mp_cp_builder_cheapest_discounted_quantity' => '1',
+		'mp_cp_builder_cheapest_discount_percentage'  => '100',
+	)
+);
+$built_action = CheapestItemDiscountAction::from_config( $builder_category['actions'][0] );
+$built_payload = $built_action->preview( $context )->get_payload();
+smoke_assert(
+	isset( $built_payload['discount_amount'] ) && abs( (float) $built_payload['discount_amount'] - 30.0 ) < 0.0001,
+	'SimpleRuleBuilder category config previews discount 30'
+);
+
+$builder_products = SimpleRuleBuilder::build_from_post(
+	array(
+		'mp_cp_builder_condition_type'              => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+		'mp_cp_builder_amount'                      => '1',
+		'mp_cp_builder_action_type'                 => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+		'mp_cp_builder_cheapest_scope'              => CheapestItemDiscountAction::SCOPE_PRODUCTS,
+		'mp_cp_builder_cheapest_product_ids'        => '100, 101',
+		'mp_cp_builder_cheapest_required_quantity'    => '2',
+		'mp_cp_builder_cheapest_discounted_quantity' => '1',
+		'mp_cp_builder_cheapest_discount_percentage'  => '50',
+	)
+);
+$built_products_action = CheapestItemDiscountAction::from_config( $builder_products['actions'][0] );
+$built_products_payload = $built_products_action->preview( $context )->get_payload();
+smoke_assert(
+	isset( $built_products_payload['discount_amount'] ) && abs( (float) $built_products_payload['discount_amount'] - 15.0 ) < 0.0001,
+	'SimpleRuleBuilder products config previews discount 15'
+);
+
+$validator = new PromotionRuleValidator();
+$invalid_promotion = Promotion::from_array(
+	array(
+		'uuid'       => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+		'name'       => 'Smoke invalid cheapest',
+		'status'     => PromotionStatus::ACTIVE,
+		'conditions' => array(
+			array(
+				'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'amount' => 1.0,
+			),
+		),
+		'actions'    => array(
+			array(
+				'type'                => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+				'scope'               => 'category',
+				'category_ids'        => array( 10 ),
+				'discount_percentage' => 100,
+				'required_quantity'   => 2,
+				'discounted_quantity' => 9,
+			),
+		),
+	)
+);
+$validator_issues = $validator->validate( $invalid_promotion );
+$has_specific_error = false;
+foreach ( $validator_issues as $issue ) {
+	if ( isset( $issue['message'] ) && strpos( (string) $issue['message'], 'discounted_quantity must be <= required_quantity' ) !== false ) {
+		$has_specific_error = true;
+		break;
+	}
+}
+smoke_assert( $has_specific_error, 'Validator reports discounted_quantity <= required_quantity error' );
 
 WP_CLI::log( 'CartPromotionApplier applies discount_amount as a negative fee when a promotion is eligible on the storefront.' );
 

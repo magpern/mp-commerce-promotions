@@ -327,6 +327,116 @@ final class PromotionRuleValidatorTest extends TestCase {
 		);
 	}
 
+	public function test_cheapest_item_validator_reports_missing_scope(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 1.0,
+				),
+			),
+			array(
+				array(
+					'type'                => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+					'category_ids'        => array( 10 ),
+					'discount_percentage' => 100,
+					'required_quantity'   => 3,
+					'discounted_quantity' => 1,
+				),
+			)
+		);
+
+		$this->assertTrue(
+			$this->has_error_containing(
+				$this->messages( $this->validator->validate( $promotion ) ),
+				'missing scope'
+			)
+		);
+	}
+
+	public function test_cheapest_item_validator_reports_missing_category_ids(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 1.0,
+				),
+			),
+			array(
+				array(
+					'type'                => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+					'scope'               => 'category',
+					'discount_percentage' => 100,
+					'required_quantity'   => 3,
+					'discounted_quantity' => 1,
+				),
+			)
+		);
+
+		$this->assertTrue(
+			$this->has_error_containing(
+				$this->messages( $this->validator->validate( $promotion ) ),
+				'missing category_ids'
+			)
+		);
+	}
+
+	public function test_cheapest_item_validator_reports_invalid_discount_percentage(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 1.0,
+				),
+			),
+			array(
+				array(
+					'type'                => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+					'scope'               => 'category',
+					'category_ids'        => array( 10 ),
+					'discount_percentage' => 150,
+					'required_quantity'   => 3,
+					'discounted_quantity' => 1,
+				),
+			)
+		);
+
+		$this->assertTrue(
+			$this->has_error_containing(
+				$this->messages( $this->validator->validate( $promotion ) ),
+				'discount_percentage must be'
+			)
+		);
+	}
+
+	public function test_cheapest_item_validator_reports_discounted_exceeds_required(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 1.0,
+				),
+			),
+			array(
+				array(
+					'type'                => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+					'scope'               => 'category',
+					'category_ids'        => array( 10 ),
+					'discount_percentage' => 100,
+					'required_quantity'   => 2,
+					'discounted_quantity' => 5,
+				),
+			)
+		);
+
+		$this->assertTrue(
+			$this->has_error_containing(
+				$this->messages( $this->validator->validate( $promotion ) ),
+				'discounted_quantity must be <= required_quantity'
+			)
+		);
+	}
+
 	public function test_free_shipping_action_validates_without_extra_fields(): void {
 		$promotion = PromotionTestFixtures::active_promotion(
 			array(

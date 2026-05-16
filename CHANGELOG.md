@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Cheapest item discount admin UX** — Simple Rule Builder support; cart preview summaries for `discount_amount` / `not_applicable`; clearer validator messages; `docs/manual-cheapest-item-test.md`.
 - **BOGO groundwork: `cheapest_item_discount` action** — `CartItemSelector` for product/category unit targeting; discounts cheapest eligible units (category or products scope) as a negative cart fee; preview includes `discount_amount` / `not_applicable`; `scripts/cheapest-item-smoke.php`. Does not add free products or change line prices.
 - **Cart item enrichment** — `unit_price`, `item_key`, and `product_name` on Woo cart context line items when available.
 - **`free_shipping` action** — preview `{ "free_shipping": true }`; storefront MVP applies a negative cart fee equal to current shipping total when > 0; dedicated fee labels; `scripts/free-shipping-smoke.php`.
