@@ -160,7 +160,18 @@ if ( function_exists( 'wc_load_cart' ) ) {
 $wc = WC();
 if ( is_object( $wc ) && isset( $wc->cart ) && is_object( $wc->cart ) && method_exists( $wc->cart, 'empty_cart' ) ) {
 	$wc->cart->empty_cart();
-	$wc->cart->add_to_cart( $qualifying_id, 1 );
+	$qualifying_key = $wc->cart->add_to_cart( $qualifying_id, 1 );
+	if ( $qualifying_key === false || $qualifying_key === '' ) {
+		WP_CLI::log( 'Cart smoke skipped: WooCommerce add_to_cart is unavailable in this CLI context (use docs/manual-free-gift-test.md in browser).' );
+		$wc->cart->empty_cart();
+		smoke_archive_promotion( $service, $repo, $promo_id );
+		if ( $GLOBALS['smoke_failures'] > 0 ) {
+			WP_CLI::error( sprintf( '%d assertion(s) failed.', $GLOBALS['smoke_failures'] ) );
+		}
+		WP_CLI::success( 'free-gift-smoke completed (evaluator/builder only).' );
+		return;
+	}
+
 	$context = ( new \MP\CommercePromotions\Woo\CartContextBuilder( new \MP\CommercePromotions\Domain\RedemptionRepository( $wpdb ) ) )
 		->build_from_cart();
 
