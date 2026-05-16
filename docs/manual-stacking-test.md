@@ -18,6 +18,8 @@ Use this checklist to verify **stackable** promotion fees, **subtotal cap**, **e
 
 **Free gift product:** `free_gift_product` adds a cart line at zero price and does not consume the discount-fee subtotal cap. See [manual-free-gift-test.md](manual-free-gift-test.md).
 
+**Usage limits:** global `usage_limit` and per-customer `customer_usage_limit` are enforced in the evaluator before conditions. See [manual-redemption-limits-test.md](manual-redemption-limits-test.md).
+
 ---
 
 ## Current behavior (summary)

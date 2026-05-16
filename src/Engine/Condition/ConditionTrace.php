@@ -27,6 +27,16 @@ final class ConditionTrace {
 	public const REASON_EMAIL_DOMAIN        = 'email_domain_not_matched';
 	public const REASON_REDEMPTION_COUNT_NOT_MET = 'redemption_count_not_met';
 
+	public const REASON_USAGE_LIMIT_REACHED = 'usage_limit_reached';
+
+	public const REASON_CUSTOMER_USAGE_LIMIT_REACHED = 'customer_usage_limit_reached';
+
+	public const REASON_CUSTOMER_REQUIRED_FOR_USAGE_TRACKING = 'customer_required_for_usage_tracking';
+
+	public const REASON_PROMOTION_NOT_STARTED = 'promotion_not_started';
+
+	public const REASON_PROMOTION_EXPIRED = 'promotion_expired';
+
 	private string $type;
 
 	private bool $passed;

@@ -133,6 +133,20 @@ final class SimpleRuleBuilderTest extends TestCase {
 		);
 	}
 
+	public function test_builds_minimum_cart_quantity_condition(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type' => RuleTypes::CONDITION_MINIMUM_CART_QUANTITY,
+				'mp_cp_builder_cart_quantity'  => '4',
+				'mp_cp_builder_action_type'    => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'mp_cp_builder_percentage'     => '10',
+			)
+		);
+
+		$this->assertSame( RuleTypes::CONDITION_MINIMUM_CART_QUANTITY, $built['conditions'][0]['type'] );
+		$this->assertSame( 4, $built['conditions'][0]['quantity'] );
+	}
+
 	public function test_builds_free_gift_product_action(): void {
 		$built = SimpleRuleBuilder::build_from_post(
 			array(

@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Woo;
 
+use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\RedemptionRepository;
+use MP\CommercePromotions\Engine\CartQuantityHelper;
 use MP\CommercePromotions\Engine\EvaluationContext;
 
 final class CartContextBuilder {
@@ -117,7 +119,8 @@ final class CartContextBuilder {
 		}
 
 		$metadata = array(
-			'source' => 'woocommerce_cart',
+			'source'              => 'woocommerce_cart',
+			'cart_total_quantity' => CartQuantityHelper::total_quantity_from_items( $items ),
 		);
 
 		if ( $customer_id !== null && $customer_id > 0 ) {
@@ -127,6 +130,40 @@ final class CartContextBuilder {
 		$this->enrich_billing_metadata( $customer_id, $metadata );
 
 		return new EvaluationContext( $customer_id, $subtotal, $currency, $items, $metadata );
+	}
+
+	/**
+	 * Add per-promotion redemption count metadata for logged-in customers.
+	 */
+	public function enrich_context_for_promotion( EvaluationContext $context, Promotion $promotion ): EvaluationContext {
+		$metadata     = $context->get_metadata();
+		$customer_id  = $context->get_customer_id();
+		$promotion_id = $promotion->get_id();
+
+		if (
+			$this->redemptions !== null
+			&& $customer_id !== null
+			&& $customer_id > 0
+			&& $promotion_id !== null
+			&& $promotion_id > 0
+		) {
+			$metadata['customer_promotion_redemption_count'] = $this->redemptions->count_recorded_for_customer_and_promotion(
+				$customer_id,
+				$promotion_id
+			);
+		}
+
+		if ( ! isset( $metadata['cart_total_quantity'] ) ) {
+			$metadata['cart_total_quantity'] = CartQuantityHelper::total_quantity_from_items( $context->get_items() );
+		}
+
+		return new EvaluationContext(
+			$context->get_customer_id(),
+			$context->get_cart_subtotal(),
+			$context->get_currency(),
+			$context->get_items(),
+			$metadata
+		);
 	}
 
 	/**

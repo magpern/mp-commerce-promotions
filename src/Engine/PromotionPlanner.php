@@ -48,7 +48,7 @@ final class PromotionPlanner {
 					$promotion,
 					$result,
 					false,
-					PromotionEvaluationDecision::REASON_NOT_ELIGIBLE
+					$this->resolve_ineligibility_reason( $result )
 				);
 				continue;
 			}
@@ -108,6 +108,23 @@ final class PromotionPlanner {
 		}
 
 		return new PromotionEvaluationPlan( $decisions );
+	}
+
+	private function resolve_ineligibility_reason( EvaluationResult $result ): string {
+		foreach ( $result->get_condition_traces() as $trace ) {
+			if ( ! is_array( $trace ) ) {
+				continue;
+			}
+			if ( ! empty( $trace['passed'] ) ) {
+				continue;
+			}
+			$reason_code = isset( $trace['reason_code'] ) ? trim( (string) $trace['reason_code'] ) : '';
+			if ( $reason_code !== '' ) {
+				return $reason_code;
+			}
+		}
+
+		return PromotionEvaluationDecision::REASON_NOT_ELIGIBLE;
 	}
 
 	/**

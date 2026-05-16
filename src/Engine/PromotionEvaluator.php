@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Engine;
 
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionStatus;
+use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\Action\ActionInterface;
 use MP\CommercePromotions\Engine\Action\ActionTrace;
 use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
@@ -27,11 +28,22 @@ use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\FirstOrderCondition;
 use MP\CommercePromotions\Engine\Condition\LoggedInCondition;
+use MP\CommercePromotions\Engine\Condition\MaximumCartQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\MinimumCartQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
 
 final class PromotionEvaluator {
+
+	private ?RedemptionRepository $redemptions;
+
+	private PromotionRestrictionEvaluator $restriction_evaluator;
+
+	public function __construct( ?RedemptionRepository $redemptions = null ) {
+		$this->redemptions           = $redemptions;
+		$this->restriction_evaluator = new PromotionRestrictionEvaluator( $redemptions );
+	}
 
 	/**
 	 * Evaluate promotion rules against a cart/order context (no persistence).
@@ -40,6 +52,19 @@ final class PromotionEvaluator {
 		if ( $promotion->get_status() !== PromotionStatus::ACTIVE ) {
 			return EvaluationResult::ineligible(
 				array( 'Promotion is not active.' )
+			);
+		}
+
+		$context = $this->enrich_context_for_promotion( $context, $promotion );
+
+		$restriction_trace = $this->restriction_evaluator->evaluate_restrictions( $promotion, $context );
+		if ( $restriction_trace !== null ) {
+			$message = $restriction_trace->get_message();
+
+			return EvaluationResult::ineligible(
+				array( $message !== null && $message !== '' ? $message : 'Promotion restrictions not satisfied.' ),
+				array( $restriction_trace->to_array() ),
+				$this->build_action_not_reached_traces( is_array( $promotion->get_actions() ) ? $promotion->get_actions() : array() )
 			);
 		}
 
@@ -269,6 +294,9 @@ final class PromotionEvaluator {
 		if ( $type === RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT ) {
 			return 'Invalid customer_redemption_count condition configuration.';
 		}
+		if ( $type === RuleTypes::CONDITION_MINIMUM_CART_QUANTITY || $type === RuleTypes::CONDITION_MAXIMUM_CART_QUANTITY ) {
+			return sprintf( 'Invalid %s condition configuration.', $type );
+		}
 
 		return 'Invalid condition configuration.';
 	}
@@ -400,11 +428,67 @@ final class PromotionEvaluator {
 			return $this->resolve_customer_redemption_count_condition( $raw );
 		}
 
+		if ( $type === RuleTypes::CONDITION_MINIMUM_CART_QUANTITY ) {
+			if ( ! isset( $raw['quantity'] ) || ! is_numeric( $raw['quantity'] ) ) {
+				return array( 'condition' => null, 'error' => 'invalid' );
+			}
+			try {
+				return array(
+					'condition' => new MinimumCartQuantityCondition( (int) $raw['quantity'] ),
+					'error'     => null,
+				);
+			} catch ( \InvalidArgumentException $e ) {
+				return array( 'condition' => null, 'error' => 'invalid' );
+			}
+		}
+
+		if ( $type === RuleTypes::CONDITION_MAXIMUM_CART_QUANTITY ) {
+			if ( ! isset( $raw['quantity'] ) || ! is_numeric( $raw['quantity'] ) ) {
+				return array( 'condition' => null, 'error' => 'invalid' );
+			}
+			try {
+				return array(
+					'condition' => new MaximumCartQuantityCondition( (int) $raw['quantity'] ),
+					'error'     => null,
+				);
+			} catch ( \InvalidArgumentException $e ) {
+				return array( 'condition' => null, 'error' => 'invalid' );
+			}
+		}
+
 		if ( $type === '' ) {
 			return array( 'condition' => null, 'error' => 'unknown' );
 		}
 
 		return array( 'condition' => null, 'error' => 'unknown' );
+	}
+
+	private function enrich_context_for_promotion( EvaluationContext $context, Promotion $promotion ): EvaluationContext {
+		$metadata                        = $context->get_metadata();
+		$metadata['cart_total_quantity'] = CartQuantityHelper::total_quantity_from_items( $context->get_items() );
+
+		$customer_id  = $context->get_customer_id();
+		$promotion_id = $promotion->get_id();
+		if (
+			$this->redemptions !== null
+			&& $customer_id !== null
+			&& $customer_id > 0
+			&& $promotion_id !== null
+			&& $promotion_id > 0
+		) {
+			$metadata['customer_promotion_redemption_count'] = $this->redemptions->count_recorded_for_customer_and_promotion(
+				$customer_id,
+				$promotion_id
+			);
+		}
+
+		return new EvaluationContext(
+			$context->get_customer_id(),
+			$context->get_cart_subtotal(),
+			$context->get_currency(),
+			$context->get_items(),
+			$metadata
+		);
 	}
 
 	/**

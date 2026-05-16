@@ -20,6 +20,8 @@ use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerEmailDomainCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
+use MP\CommercePromotions\Engine\Condition\MaximumCartQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\MinimumCartQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
@@ -120,6 +122,26 @@ final class SimpleRuleBuilder {
 				'type'     => RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT,
 				'operator' => $operator,
 				'count'    => $count,
+			);
+		}
+
+		if ( $type === RuleTypes::CONDITION_MINIMUM_CART_QUANTITY ) {
+			$quantity = self::parse_required_positive_int( $post, 'mp_cp_builder_cart_quantity', 'invalid_cart_quantity' );
+			new MinimumCartQuantityCondition( $quantity );
+
+			return array(
+				'type'     => RuleTypes::CONDITION_MINIMUM_CART_QUANTITY,
+				'quantity' => $quantity,
+			);
+		}
+
+		if ( $type === RuleTypes::CONDITION_MAXIMUM_CART_QUANTITY ) {
+			$quantity = self::parse_required_positive_int( $post, 'mp_cp_builder_cart_quantity', 'invalid_cart_quantity' );
+			new MaximumCartQuantityCondition( $quantity );
+
+			return array(
+				'type'     => RuleTypes::CONDITION_MAXIMUM_CART_QUANTITY,
+				'quantity' => $quantity,
 			);
 		}
 

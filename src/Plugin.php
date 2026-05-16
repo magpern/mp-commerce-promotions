@@ -80,7 +80,7 @@ final class Plugin {
 		}
 
 		$this->woo_bridge           = new WooCommerceBridge();
-		$this->promotion_evaluator = new PromotionEvaluator();
+		$this->promotion_evaluator = new PromotionEvaluator( $this->redemption_repository );
 	}
 
 	public function init(): void {

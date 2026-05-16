@@ -23,6 +23,8 @@ use MP\CommercePromotions\Engine\Condition\BillingCountryCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerEmailDomainCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
+use MP\CommercePromotions\Engine\Condition\MaximumCartQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\MinimumCartQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
@@ -38,6 +40,7 @@ final class PromotionRuleValidator {
 		$issues = array();
 
 		$this->append_status_issues( $promotion, $issues );
+		$this->append_usage_limit_issues( $promotion, $issues );
 		$this->append_application_rules_issues( $promotion, $issues );
 		$this->append_condition_issues( $promotion->get_conditions(), $issues );
 		$this->append_action_issues( $promotion->get_actions(), $issues );
@@ -48,6 +51,25 @@ final class PromotionRuleValidator {
 	/**
 	 * @param list<array{level: string, message: string}> $issues
 	 */
+	/**
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function append_usage_limit_issues( Promotion $promotion, array &$issues ): void {
+		$usage_limit = $promotion->get_usage_limit();
+		if ( $usage_limit !== null && $usage_limit < 1 ) {
+			$issues[] = $this->error(
+				__( 'usage_limit must be null or at least 1.', 'mp-commerce-promotions' )
+			);
+		}
+
+		$customer_limit = $promotion->get_customer_usage_limit();
+		if ( $customer_limit !== null && $customer_limit < 1 ) {
+			$issues[] = $this->error(
+				__( 'customer_usage_limit must be null or at least 1.', 'mp-commerce-promotions' )
+			);
+		}
+	}
+
 	/**
 	 * @param list<array{level: string, message: string}> $issues
 	 */
@@ -227,6 +249,11 @@ final class PromotionRuleValidator {
 			return;
 		}
 
+		if ( $type === RuleTypes::CONDITION_MINIMUM_CART_QUANTITY || $type === RuleTypes::CONDITION_MAXIMUM_CART_QUANTITY ) {
+			$this->validate_cart_quantity_condition( $index, $type, $raw, $issues );
+			return;
+		}
+
 		$issues[] = $this->error(
 			sprintf(
 				/* translators: %s: condition type string */
@@ -240,6 +267,54 @@ final class PromotionRuleValidator {
 	 * @param array<string, mixed>                        $raw
 	 * @param list<array{level: string, message: string}> $issues
 	 */
+	/**
+	 * @param array<string, mixed>                        $raw
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function validate_cart_quantity_condition( int $index, string $type, array $raw, array &$issues ): void {
+		if ( ! isset( $raw['quantity'] ) || ! is_numeric( $raw['quantity'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: condition type, 2: zero-based index */
+					__( '%1$s at index %2$s is missing or has an invalid quantity.', 'mp-commerce-promotions' ),
+					$type,
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		$quantity = (int) $raw['quantity'];
+		if ( $quantity < 1 ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: condition type, 2: zero-based index */
+					__( '%1$s at index %2$s quantity must be >= 1.', 'mp-commerce-promotions' ),
+					$type,
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		try {
+			if ( $type === RuleTypes::CONDITION_MINIMUM_CART_QUANTITY ) {
+				new MinimumCartQuantityCondition( $quantity );
+			} else {
+				new MaximumCartQuantityCondition( $quantity );
+			}
+		} catch ( InvalidArgumentException $e ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: condition type, 2: zero-based index */
+					__( '%1$s at index %2$s has invalid quantity.', 'mp-commerce-promotions' ),
+					$type,
+					(string) $index
+				)
+			);
+		}
+	}
+
 	private function validate_billing_country( int $index, array $raw, array &$issues ): void {
 		if ( ! isset( $raw['countries'] ) || ! is_array( $raw['countries'] ) ) {
 			$issues[] = $this->error(

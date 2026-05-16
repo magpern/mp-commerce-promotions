@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Redemption restrictions** — global/per-customer usage limits (schema 1.7.0), date enforcement, min/max cart quantity conditions, planner reason codes, smoke/docs
 - **Free gift product action** — `free_gift_product` cart line + zero price hook; `FreeGiftCartHandler`; order recording; builder; `docs/manual-free-gift-test.md`; smoke `scripts/free-gift-smoke.php`
 - **Cheapest item admin UX** — Simple Rule Builder; cart preview summaries; validator messages; `docs/manual-cheapest-item-test.md`
 - **BOGO groundwork** — `CartItemSelector`, cart item enrichment, `cheapest_item_discount` action (negative fee MVP); smoke `scripts/cheapest-item-smoke.php`

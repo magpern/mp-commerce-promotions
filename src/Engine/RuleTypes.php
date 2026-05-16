@@ -29,6 +29,10 @@ final class RuleTypes {
 
 	public const CONDITION_CUSTOMER_REDEMPTION_COUNT = 'customer_redemption_count';
 
+	public const CONDITION_MINIMUM_CART_QUANTITY = 'minimum_cart_quantity';
+
+	public const CONDITION_MAXIMUM_CART_QUANTITY = 'maximum_cart_quantity';
+
 	public const ACTION_PERCENTAGE_DISCOUNT = 'percentage_discount';
 
 	public const ACTION_FIXED_AMOUNT_DISCOUNT = 'fixed_amount_discount';

@@ -286,7 +286,19 @@ WP-CLI evaluator smoke:
 
 ---
 
-## 13. Free gift product
+## 13. Redemption limits and cart quantity
+
+See **[manual-redemption-limits-test.md](manual-redemption-limits-test.md)** for global/per-customer usage limits, date windows, and cart quantity conditions.
+
+WP-CLI smoke:
+
+```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/redemption-limits-smoke.php
+```
+
+---
+
+## 14. Free gift product
 
 See **[manual-free-gift-test.md](manual-free-gift-test.md)** for cart line addition, zero price, duplicate prevention, checkout recording, and reversal limitations.
 

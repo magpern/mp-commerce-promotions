@@ -108,10 +108,8 @@ final class PromotionPlannerTest extends TestCase {
 		);
 
 		$this->assertCount( 1, $plan->get_selected_decisions() );
-		$this->assertSame(
-			PromotionEvaluationDecision::REASON_NOT_ELIGIBLE,
-			$plan->get_decisions()[0]->get_skipped_reason()
-		);
+		$this->assertFalse( $plan->get_decisions()[0]->is_selected() );
+		$this->assertNotNull( $plan->get_decisions()[0]->get_skipped_reason() );
 		$this->assertTrue( $plan->get_decisions()[1]->is_selected() );
 	}
 

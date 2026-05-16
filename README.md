@@ -17,6 +17,7 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 - [docs/manual-stacking-test.md](docs/manual-stacking-test.md) — stackable fees, caps, exclusions, and max applications
 - [docs/manual-cheapest-item-test.md](docs/manual-cheapest-item-test.md) — cheapest item / BOGO fee-offset storefront verification
 - [docs/manual-free-gift-test.md](docs/manual-free-gift-test.md) — free gift product cart line storefront verification
+- [docs/manual-redemption-limits-test.md](docs/manual-redemption-limits-test.md) — usage limits, per-customer caps, dates, cart quantity conditions
 - [docs/manual-promotion-code-test.md](docs/manual-promotion-code-test.md) — promotion codes and coupon-field behavior
 
 WordPress.org-style [readme.txt](readme.txt) and [LICENSE](LICENSE) are included as distribution scaffolding.

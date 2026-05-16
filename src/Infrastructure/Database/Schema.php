@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.6.0';
+	public const SCHEMA_VERSION = '1.7.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -60,6 +60,7 @@ conditions longtext NULL,
 actions longtext NULL,
 restrictions longtext NULL,
 usage_limit int(10) unsigned NULL,
+customer_usage_limit int(10) unsigned NULL,
 usage_count int(10) unsigned NOT NULL default 0,
 application_mode varchar(32) NOT NULL default 'exclusive',
 stop_processing tinyint(1) NOT NULL default 1,

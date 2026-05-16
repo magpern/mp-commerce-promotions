@@ -28,6 +28,8 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_BILLING_COUNTRY,
 			RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN,
 			RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT,
+			RuleTypes::CONDITION_MINIMUM_CART_QUANTITY,
+			RuleTypes::CONDITION_MAXIMUM_CART_QUANTITY,
 		);
 	}
 
@@ -73,6 +75,8 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_BILLING_COUNTRY        => 'Billing country',
 			RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN  => 'Customer email domain',
 			RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT => 'Customer redemption count',
+			RuleTypes::CONDITION_MINIMUM_CART_QUANTITY   => 'Minimum cart quantity',
+			RuleTypes::CONDITION_MAXIMUM_CART_QUANTITY   => 'Maximum cart quantity',
 		);
 
 		return $labels[ $type ] ?? $type;

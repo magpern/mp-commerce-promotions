@@ -24,6 +24,7 @@ use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\EvaluationResult;
+use MP\CommercePromotions\Engine\Condition\ConditionTrace;
 use MP\CommercePromotions\Engine\PromotionEvaluationDecision;
 use MP\CommercePromotions\Engine\PromotionEvaluationPlan;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
@@ -1013,6 +1014,40 @@ final class PromotionEditPage {
 			exit;
 		}
 
+		$usage_limit = null;
+		if ( isset( $_POST['promotion_usage_limit'] ) && $_POST['promotion_usage_limit'] !== '' ) {
+			$usage_limit = (int) $_POST['promotion_usage_limit'];
+			if ( $usage_limit < 1 ) {
+				wp_safe_redirect(
+					add_query_arg(
+						array(
+							'promotion'   => (string) $pid,
+							'mp_cp_error' => 'invalid_usage_limit',
+						),
+						$this->edit_url( (string) $pid )
+					)
+				);
+				exit;
+			}
+		}
+
+		$customer_usage_limit = null;
+		if ( isset( $_POST['promotion_customer_usage_limit'] ) && $_POST['promotion_customer_usage_limit'] !== '' ) {
+			$customer_usage_limit = (int) $_POST['promotion_customer_usage_limit'];
+			if ( $customer_usage_limit < 1 ) {
+				wp_safe_redirect(
+					add_query_arg(
+						array(
+							'promotion'   => (string) $pid,
+							'mp_cp_error' => 'invalid_customer_usage_limit',
+						),
+						$this->edit_url( (string) $pid )
+					)
+				);
+				exit;
+			}
+		}
+
 		$excluded_ids = $this->parse_excluded_promotion_ids_from_post( $pid );
 		if ( $excluded_ids === null ) {
 			wp_safe_redirect(
@@ -1034,6 +1069,7 @@ final class PromotionEditPage {
 				->with_status( $promotion->get_status() )
 				->with_priority( $priority )
 				->with_date_window( $starts_at, $ends_at )
+				->with_usage_limits( $usage_limit, $customer_usage_limit )
 				->with_application_rules( $application_mode, $stop_processing, $max_apps )
 				->with_excluded_promotion_ids( $excluded_ids )
 				->with_rules( $conditions, $actions, $restrictions );
@@ -1664,11 +1700,23 @@ final class PromotionEditPage {
 				? $this->format_plan_skipped_reason_label( $reason )
 				: '—';
 
+			if ( ! $decision->is_selected() && $reason === PromotionEvaluationDecision::REASON_NOT_ELIGIBLE ) {
+				$trace_reason = $this->resolve_primary_ineligibility_reason_code( $decision->get_result() );
+				if ( $trace_reason !== null && $trace_reason !== '' ) {
+					$reason_label = $this->format_plan_skipped_reason_label( $trace_reason );
+				}
+			}
+
 			$details = '—';
 			$meta    = $decision->get_metadata();
 			if ( $meta !== array() ) {
 				$encoded = wp_json_encode( $meta, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 				$details = is_string( $encoded ) ? $encoded : '—';
+			} elseif ( ! $decision->get_result()->is_eligible() ) {
+				$messages = $decision->get_result()->get_messages();
+				if ( $messages !== array() ) {
+					$details = (string) $messages[0];
+				}
 			}
 
 			echo '<tr>';
@@ -1690,9 +1738,28 @@ final class PromotionEditPage {
 			PromotionEvaluationDecision::REASON_STOPPED_PROCESSING => 'stopped_processing',
 			PromotionEvaluationDecision::REASON_EXCLUDED_BY_SELECTED => 'excluded_by_selected_promotion',
 			PromotionEvaluationDecision::REASON_MAX_APPLICATIONS_REACHED => 'max_applications_reached',
+			ConditionTrace::REASON_USAGE_LIMIT_REACHED => 'usage_limit_reached',
+			ConditionTrace::REASON_CUSTOMER_USAGE_LIMIT_REACHED => 'customer_usage_limit_reached',
+			ConditionTrace::REASON_CUSTOMER_REQUIRED_FOR_USAGE_TRACKING => 'customer_required_for_usage_tracking',
+			ConditionTrace::REASON_PROMOTION_NOT_STARTED => 'promotion_not_started',
+			ConditionTrace::REASON_PROMOTION_EXPIRED => 'promotion_expired',
 		);
 
 		return $labels[ $reason ] ?? $reason;
+	}
+
+	private function resolve_primary_ineligibility_reason_code( EvaluationResult $result ): ?string {
+		foreach ( $result->get_condition_traces() as $trace ) {
+			if ( ! is_array( $trace ) || ! empty( $trace['passed'] ) ) {
+				continue;
+			}
+			$reason_code = isset( $trace['reason_code'] ) ? trim( (string) $trace['reason_code'] ) : '';
+			if ( $reason_code !== '' ) {
+				return $reason_code;
+			}
+		}
+
+		return null;
 	}
 
 	private function render_cart_preview_section( Promotion $promotion ): void {
@@ -1802,7 +1869,13 @@ final class PromotionEditPage {
 		echo '<option value="billing_country">' . esc_html__( 'Billing country', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="customer_email_domain">' . esc_html__( 'Customer email domain', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="customer_redemption_count">' . esc_html__( 'Customer redemption count', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="minimum_cart_quantity">' . esc_html__( 'Minimum cart quantity', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="maximum_cart_quantity">' . esc_html__( 'Maximum cart quantity', 'mp-commerce-promotions' ) . '</option>';
 		echo '</select></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_cart_quantity">' . esc_html__( 'Cart quantity', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_cart_quantity" name="mp_cp_builder_cart_quantity" min="1" step="1" />';
+		echo '<p class="description">' . esc_html__( 'Total units across all cart lines (minimum_cart_quantity / maximum_cart_quantity).', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_amount">' . esc_html__( 'Minimum subtotal amount', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_builder_amount" name="mp_cp_builder_amount" min="0" step="0.01" /></td></tr>';
@@ -2177,6 +2250,14 @@ final class PromotionEditPage {
 					__( 'Customer redemption count', 'mp-commerce-promotions' ),
 					"[\n  {\"type\":\"customer_redemption_count\",\"operator\":\"<\",\"count\":1}\n]"
 				);
+				$this->render_rule_template_readonly(
+					__( 'Minimum cart quantity', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"minimum_cart_quantity\",\"quantity\":3}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'Maximum cart quantity', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"maximum_cart_quantity\",\"quantity\":10}\n]"
+				);
 
 				echo '<h4 style="margin-top:1.5em;">' . esc_html__( 'Actions examples', 'mp-commerce-promotions' ) . '</h4>';
 
@@ -2257,6 +2338,16 @@ final class PromotionEditPage {
 		echo '<tr><th scope="row"><label for="mp_cp_ends">' . esc_html__( 'Ends at', 'mp-commerce-promotions' ) . '</label></th><td>';
 		$ends = $promotion->get_ends_at() ?? '';
 		echo '<input type="text" class="regular-text" id="mp_cp_ends" name="promotion_ends_at" value="' . esc_attr( $ends ) . '" placeholder="' . esc_attr__( 'YYYY-MM-DD HH:MM:SS or leave empty', 'mp-commerce-promotions' ) . '" /></td></tr>';
+
+		$usage_limit = $promotion->get_usage_limit();
+		echo '<tr><th scope="row"><label for="mp_cp_usage_limit">' . esc_html__( 'Global usage limit', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_usage_limit" name="promotion_usage_limit" min="1" step="1" value="' . esc_attr( $usage_limit !== null ? (string) $usage_limit : '' ) . '" />';
+		echo '<p class="description">' . esc_html__( 'Maximum total successful redemptions for this promotion (all customers). Leave empty for unlimited.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		$customer_usage_limit = $promotion->get_customer_usage_limit();
+		echo '<tr><th scope="row"><label for="mp_cp_customer_usage_limit">' . esc_html__( 'Per-customer usage limit', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_customer_usage_limit" name="promotion_customer_usage_limit" min="1" step="1" value="' . esc_attr( $customer_usage_limit !== null ? (string) $customer_usage_limit : '' ) . '" />';
+		echo '<p class="description">' . esc_html__( 'Maximum successful redemptions per customer account. Guests cannot satisfy per-customer limits. Leave empty for unlimited.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '</tbody></table></div>';
 

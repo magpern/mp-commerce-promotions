@@ -37,6 +37,8 @@ final class Promotion {
 
 	private ?int $usage_limit;
 
+	private ?int $customer_usage_limit;
+
 	private int $usage_count;
 
 	private string $application_mode;
@@ -67,6 +69,7 @@ final class Promotion {
 		array $actions,
 		array $restrictions,
 		?int $usage_limit,
+		?int $customer_usage_limit,
 		int $usage_count,
 		string $application_mode,
 		bool $stop_processing,
@@ -94,8 +97,11 @@ final class Promotion {
 		if ( $usage_count < 0 ) {
 			throw new InvalidArgumentException( 'Promotion usage_count must be >= 0.' );
 		}
-		if ( $usage_limit !== null && $usage_limit < 0 ) {
-			throw new InvalidArgumentException( 'Promotion usage_limit must be null or >= 0.' );
+		if ( $usage_limit !== null && $usage_limit < 1 ) {
+			throw new InvalidArgumentException( 'Promotion usage_limit must be null or >= 1.' );
+		}
+		if ( $customer_usage_limit !== null && $customer_usage_limit < 1 ) {
+			throw new InvalidArgumentException( 'Promotion customer_usage_limit must be null or >= 1.' );
 		}
 		$application_mode = trim( $application_mode );
 		if ( ! PromotionApplicationMode::is_valid( $application_mode ) ) {
@@ -118,8 +124,9 @@ final class Promotion {
 		$this->conditions   = $conditions;
 		$this->actions      = $actions;
 		$this->restrictions = $restrictions;
-		$this->usage_limit        = $usage_limit;
-		$this->usage_count        = $usage_count;
+		$this->usage_limit          = $usage_limit;
+		$this->customer_usage_limit = $customer_usage_limit;
+		$this->usage_count          = $usage_count;
 		$this->application_mode   = $application_mode;
 		$this->stop_processing    = $stop_processing;
 		$this->max_applications       = $max_applications;
@@ -136,8 +143,9 @@ final class Promotion {
 
 		$raw_id      = self::optional_int( $data['id'] ?? null );
 		$id          = ( $raw_id !== null && $raw_id > 0 ) ? $raw_id : null;
-		$usage_limit = self::optional_int( $data['usage_limit'] ?? null );
-		$created_by  = self::optional_int( $data['created_by'] ?? null );
+		$usage_limit          = self::optional_int( $data['usage_limit'] ?? null );
+		$customer_usage_limit = self::optional_int( $data['customer_usage_limit'] ?? null );
+		$created_by           = self::optional_int( $data['created_by'] ?? null );
 		$max_apps    = self::optional_int( $data['max_applications'] ?? null );
 
 		$application_mode = isset( $data['application_mode'] )
@@ -169,6 +177,7 @@ final class Promotion {
 			$actions,
 			$restrictions,
 			$usage_limit,
+			$customer_usage_limit,
 			(int) ( $data['usage_count'] ?? 0 ),
 			$application_mode,
 			self::normalize_stop_processing( $data['stop_processing'] ?? true ),
@@ -196,8 +205,9 @@ final class Promotion {
 			'conditions'   => $this->conditions,
 			'actions'      => $this->actions,
 			'restrictions' => $this->restrictions,
-			'usage_limit'        => $this->usage_limit,
-			'usage_count'        => $this->usage_count,
+			'usage_limit'          => $this->usage_limit,
+			'customer_usage_limit' => $this->customer_usage_limit,
+			'usage_count'          => $this->usage_count,
 			'application_mode'   => $this->application_mode,
 			'stop_processing'    => $this->stop_processing,
 			'max_applications'       => $this->max_applications,
@@ -265,6 +275,10 @@ final class Promotion {
 		return $this->usage_limit;
 	}
 
+	public function get_customer_usage_limit(): ?int {
+		return $this->customer_usage_limit;
+	}
+
 	public function get_usage_count(): int {
 		return $this->usage_count;
 	}
@@ -314,6 +328,7 @@ final class Promotion {
 			$this->actions,
 			$this->restrictions,
 			$this->usage_limit,
+			$this->customer_usage_limit,
 			$this->usage_count,
 			$this->application_mode,
 			$this->stop_processing,
@@ -339,6 +354,7 @@ final class Promotion {
 			$this->actions,
 			$this->restrictions,
 			$this->usage_limit,
+			$this->customer_usage_limit,
 			$this->usage_count,
 			$this->application_mode,
 			$this->stop_processing,
@@ -364,6 +380,7 @@ final class Promotion {
 			$this->actions,
 			$this->restrictions,
 			$this->usage_limit,
+			$this->customer_usage_limit,
 			$this->usage_count,
 			$this->application_mode,
 			$this->stop_processing,
@@ -389,6 +406,7 @@ final class Promotion {
 			$this->actions,
 			$this->restrictions,
 			$this->usage_limit,
+			$this->customer_usage_limit,
 			$this->usage_count,
 			$this->application_mode,
 			$this->stop_processing,
@@ -414,6 +432,7 @@ final class Promotion {
 			$this->actions,
 			$this->restrictions,
 			$this->usage_limit,
+			$this->customer_usage_limit,
 			$this->usage_count,
 			$this->application_mode,
 			$this->stop_processing,
@@ -443,7 +462,34 @@ final class Promotion {
 			$this->actions,
 			$this->restrictions,
 			$this->usage_limit,
+			$this->customer_usage_limit,
 			$usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
+			$this->excluded_promotion_ids,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	public function with_usage_limits( ?int $usage_limit, ?int $customer_usage_limit ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$usage_limit,
+			$customer_usage_limit,
+			$this->usage_count,
 			$this->application_mode,
 			$this->stop_processing,
 			$this->max_applications,
@@ -473,6 +519,7 @@ final class Promotion {
 			$actions,
 			$restrictions,
 			$this->usage_limit,
+			$this->customer_usage_limit,
 			$this->usage_count,
 			$this->application_mode,
 			$this->stop_processing,
@@ -501,6 +548,7 @@ final class Promotion {
 			$this->actions,
 			$this->restrictions,
 			$this->usage_limit,
+			$this->customer_usage_limit,
 			$this->usage_count,
 			$this->application_mode,
 			$this->stop_processing,
@@ -530,6 +578,7 @@ final class Promotion {
 			$this->actions,
 			$this->restrictions,
 			$this->usage_limit,
+			$this->customer_usage_limit,
 			$this->usage_count,
 			$application_mode,
 			$stop_processing,
