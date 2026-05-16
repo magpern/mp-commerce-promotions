@@ -1752,6 +1752,10 @@ final class PromotionEditPage {
 					__( 'First order', 'mp-commerce-promotions' ),
 					"[\n  {\"type\":\"first_order\"}\n]"
 				);
+				$this->render_rule_template_readonly(
+					__( 'Customer role', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"customer_role\",\"roles\":[\"customer\",\"vip\"]}\n]"
+				);
 
 				echo '<h4 style="margin-top:1.5em;">' . esc_html__( 'Actions examples', 'mp-commerce-promotions' ) . '</h4>';
 
@@ -1765,7 +1769,7 @@ final class PromotionEditPage {
 				);
 			},
 			__(
-				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action is applied in this MVP. Product and category IDs must be numeric WordPress IDs. first_order requires evaluation metadata has_previous_orders (not set from the cart yet — use raw JSON and future Woo enrichment). logged_in and first_order are not in the Simple Rule Builder v0 dropdown.',
+				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action is applied in this MVP. Product and category IDs must be numeric WordPress IDs. For logged-in carts, WooCommerce enriches has_previous_orders and customer_roles when APIs are available. customer_role roles are WordPress role slugs (compared case-insensitively). logged_in, first_order, and customer_role are raw JSON only (not in Simple Rule Builder v0).',
 				'mp-commerce-promotions'
 			),
 			array(

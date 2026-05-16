@@ -16,6 +16,7 @@ use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
 use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\ConditionInterface;
+use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\FirstOrderCondition;
 use MP\CommercePromotions\Engine\Condition\LoggedInCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
@@ -156,6 +157,21 @@ final class PromotionEvaluator {
 
 		if ( $type === RuleTypes::CONDITION_FIRST_ORDER ) {
 			return new FirstOrderCondition();
+		}
+
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_ROLE ) {
+			if ( ! isset( $raw['roles'] ) || ! is_array( $raw['roles'] ) ) {
+				return EvaluationResult::ineligible(
+					array( 'Invalid customer_role condition configuration.' )
+				);
+			}
+			try {
+				return new CustomerRoleCondition( $raw['roles'] );
+			} catch ( \InvalidArgumentException $e ) {
+				return EvaluationResult::ineligible(
+					array( 'Invalid customer_role condition configuration.' )
+				);
+			}
 		}
 
 		if ( $type === '' ) {

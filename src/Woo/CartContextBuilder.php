@@ -14,6 +14,17 @@ use MP\CommercePromotions\Engine\EvaluationContext;
 final class CartContextBuilder {
 
 	/**
+	 * Order statuses that count as a previous purchase for first_order.
+	 *
+	 * @var list<string>
+	 */
+	private const PREVIOUS_ORDER_STATUSES = array(
+		'completed',
+		'processing',
+		'on-hold',
+	);
+
+	/**
 	 * Build evaluation context from the current WooCommerce cart (read-only).
 	 */
 	public function build_from_cart(): EvaluationContext {
@@ -83,10 +94,76 @@ final class CartContextBuilder {
 
 		$metadata = array(
 			'source' => 'woocommerce_cart',
-			// first_order condition reads has_previous_orders; Woo order-history lookup is future work.
 		);
 
+		if ( $customer_id !== null && $customer_id > 0 ) {
+			$this->enrich_customer_metadata( $customer_id, $metadata );
+		}
+
 		return new EvaluationContext( $customer_id, $subtotal, $currency, $items, $metadata );
+	}
+
+	/**
+	 * @param array<string, mixed> $metadata
+	 */
+	private function enrich_customer_metadata( int $customer_id, array &$metadata ): void {
+		$has_previous = $this->customer_has_previous_orders( $customer_id );
+		if ( $has_previous !== null ) {
+			$metadata['has_previous_orders'] = $has_previous;
+		}
+
+		$roles = $this->customer_role_slugs( $customer_id );
+		if ( $roles !== null ) {
+			$metadata['customer_roles'] = $roles;
+		}
+	}
+
+	private function customer_has_previous_orders( int $customer_id ): ?bool {
+		if ( $customer_id <= 0 || ! function_exists( 'wc_get_orders' ) ) {
+			return null;
+		}
+
+		try {
+			$orders = wc_get_orders(
+				array(
+					'customer_id' => $customer_id,
+					'limit'       => 1,
+					'status'      => self::PREVIOUS_ORDER_STATUSES,
+					'return'      => 'ids',
+				)
+			);
+		} catch ( \Throwable $e ) {
+			return null;
+		}
+
+		if ( ! is_array( $orders ) ) {
+			return null;
+		}
+
+		return count( $orders ) > 0;
+	}
+
+	/**
+	 * @return list<string>|null Role slugs from WordPress user object, or null if unavailable.
+	 */
+	private function customer_role_slugs( int $customer_id ): ?array {
+		if ( $customer_id <= 0 || ! function_exists( 'get_userdata' ) ) {
+			return null;
+		}
+
+		$user = get_userdata( $customer_id );
+		if ( ! is_object( $user ) || ! isset( $user->roles ) || ! is_array( $user->roles ) ) {
+			return null;
+		}
+
+		$roles = array();
+		foreach ( $user->roles as $role ) {
+			if ( is_string( $role ) && $role !== '' ) {
+				$roles[] = $role;
+			}
+		}
+
+		return array_values( array_unique( $roles ) );
 	}
 
 	private function empty_context(): EvaluationContext {

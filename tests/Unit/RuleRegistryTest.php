@@ -21,6 +21,7 @@ final class RuleRegistryTest extends TestCase {
 		$this->assertContains( RuleTypes::CONDITION_CATEGORY_QUANTITY, $conditions );
 		$this->assertContains( RuleTypes::CONDITION_LOGGED_IN, $conditions );
 		$this->assertContains( RuleTypes::CONDITION_FIRST_ORDER, $conditions );
+		$this->assertContains( RuleTypes::CONDITION_CUSTOMER_ROLE, $conditions );
 	}
 
 	public function test_supported_actions_includes_mvp_types(): void {

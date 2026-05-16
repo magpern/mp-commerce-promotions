@@ -24,6 +24,7 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_CATEGORY_QUANTITY,
 			RuleTypes::CONDITION_LOGGED_IN,
 			RuleTypes::CONDITION_FIRST_ORDER,
+			RuleTypes::CONDITION_CUSTOMER_ROLE,
 		);
 	}
 

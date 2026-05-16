@@ -284,6 +284,40 @@ final class PromotionEvaluatorTest extends TestCase {
 		$this->assertFalse( $guest->is_eligible() );
 	}
 
+	public function test_customer_role_condition(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'  => RuleTypes::CONDITION_CUSTOMER_ROLE,
+					'roles' => array( 'customer' ),
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 5.0,
+				),
+			)
+		);
+
+		$pass = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context(
+				1,
+				10.0,
+				array(),
+				array( 'customer_roles' => array( 'customer' ) )
+			)
+		);
+		$this->assertTrue( $pass->is_eligible() );
+
+		$fail = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( 1, 10.0 )
+		);
+		$this->assertFalse( $fail->is_eligible() );
+	}
+
 	public function test_logged_in_and_first_order_conditions(): void {
 		$promotion = PromotionTestFixtures::active_promotion(
 			array(

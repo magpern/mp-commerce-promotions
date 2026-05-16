@@ -21,6 +21,8 @@ final class RuleTypes {
 
 	public const CONDITION_FIRST_ORDER = 'first_order';
 
+	public const CONDITION_CUSTOMER_ROLE = 'customer_role';
+
 	public const ACTION_PERCENTAGE_DISCOUNT = 'percentage_discount';
 
 	public const ACTION_FIXED_AMOUNT_DISCOUNT = 'fixed_amount_discount';

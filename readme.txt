@@ -27,7 +27,7 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * Custom promotion tables (not stored as native WooCommerce coupons)
 * Promotion lifecycle: draft, active, paused, archived
 * Rule evaluation pipeline with pluggable condition/action types (MVP set)
-* Conditions: minimum subtotal, product quantity, category quantity, logged in, first order (metadata)
+* Conditions: minimum subtotal, product quantity, category quantity, logged in, first order, customer role (Woo-enriched metadata when available)
 * Actions: percentage discount, fixed amount discount (via cart fees)
 * Simple Rule Builder (one condition + one action) and raw JSON rule editing
 * Rule validation panel in admin

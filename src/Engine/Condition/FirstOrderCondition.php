@@ -1,6 +1,6 @@
 <?php
 /**
- * Condition: customer has no previous orders (metadata-driven until Woo enrichment).
+ * Condition: customer has no previous orders (metadata has_previous_orders from cart context).
  *
  * @package MP\CommercePromotions
  */

@@ -15,6 +15,7 @@ use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
 use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
@@ -134,6 +135,11 @@ final class PromotionRuleValidator {
 			return;
 		}
 
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_ROLE ) {
+			$this->validate_customer_role( $index, $raw, $issues );
+			return;
+		}
+
 		$issues[] = $this->error(
 			sprintf(
 				/* translators: %s: condition type string */
@@ -141,6 +147,35 @@ final class PromotionRuleValidator {
 				$type
 			)
 		);
+	}
+
+	/**
+	 * @param array<string, mixed>                        $raw
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function validate_customer_role( int $index, array $raw, array &$issues ): void {
+		if ( ! isset( $raw['roles'] ) || ! is_array( $raw['roles'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based condition index */
+					__( 'customer_role at index %s is missing a roles array.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		try {
+			new CustomerRoleCondition( $raw['roles'] );
+		} catch ( InvalidArgumentException $e ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based condition index */
+					__( 'customer_role at index %s has invalid roles.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+		}
 	}
 
 	/**

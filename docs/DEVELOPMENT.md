@@ -202,9 +202,9 @@ composer install
 composer run test
 ```
 
-**Scope today:** pure PHP classes under domain/engine/services that do not call WordPress APIs — including `PromotionEvaluator`, `PromotionRuleValidator`, `SimpleRuleBuilder`, `Promotion`, `RuleRegistry`, discount actions, `logged_in` / `first_order` conditions, and `EvaluationContext`.
+**Scope today:** pure PHP classes under domain/engine/services that do not call WordPress APIs — including `PromotionEvaluator`, `PromotionRuleValidator`, `SimpleRuleBuilder`, `Promotion`, `RuleRegistry`, discount actions, customer conditions (`logged_in`, `first_order`, `customer_role`), and `EvaluationContext`. `CartContextBuilder` is exercised in production only; unit tests supply metadata manually.
 
-**Future work:** WordPress/WooCommerce integration tests (bootstrap WP test suite, repositories against test DB, checkout flows) and real Woo order-history metadata for `first_order` are **not** implemented yet.
+**Future work:** WordPress/WooCommerce integration tests (bootstrap WP test suite, repositories against test DB, checkout flows) are **not** implemented yet.
 
 Run the same checks locally before pushing:
 
