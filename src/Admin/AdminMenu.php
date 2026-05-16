@@ -1,6 +1,6 @@
 <?php
 /**
- * WooCommerce admin submenu: Promotions.
+ * WooCommerce admin submenu: Promotions and settings.
  *
  * @package MP\CommercePromotions
  */
@@ -19,9 +19,16 @@ final class AdminMenu {
 
 	private ?PromotionsPage $promotions_page;
 
-	public function __construct( WooCommerceBridge $woo_bridge, ?PromotionsPage $promotions_page = null ) {
-		$this->woo_bridge       = $woo_bridge;
-		$this->promotions_page = $promotions_page;
+	private ?SettingsPage $settings_page;
+
+	public function __construct(
+		WooCommerceBridge $woo_bridge,
+		?PromotionsPage $promotions_page = null,
+		?SettingsPage $settings_page = null
+	) {
+		$this->woo_bridge      = $woo_bridge;
+		$this->promotions_page   = $promotions_page;
+		$this->settings_page     = $settings_page;
 	}
 
 	public function register(): void {
@@ -33,17 +40,26 @@ final class AdminMenu {
 			return;
 		}
 
-		if ( $this->promotions_page === null ) {
-			return;
+		if ( $this->promotions_page !== null ) {
+			add_submenu_page(
+				'woocommerce',
+				__( 'Commerce Promotions', 'mp-commerce-promotions' ),
+				__( 'Promotions', 'mp-commerce-promotions' ),
+				'manage_woocommerce',
+				'mp-commerce-promotions',
+				array( $this->promotions_page, 'render' )
+			);
 		}
 
-		add_submenu_page(
-			'woocommerce',
-			__( 'Commerce Promotions', 'mp-commerce-promotions' ),
-			__( 'Promotions', 'mp-commerce-promotions' ),
-			'manage_woocommerce',
-			'mp-commerce-promotions',
-			array( $this->promotions_page, 'render' )
-		);
+		if ( $this->settings_page !== null ) {
+			add_submenu_page(
+				'woocommerce',
+				__( 'Commerce Promotion Settings', 'mp-commerce-promotions' ),
+				__( 'Promotion Settings', 'mp-commerce-promotions' ),
+				'manage_woocommerce',
+				SettingsPage::PAGE_SLUG,
+				array( $this->settings_page, 'render' )
+			);
+		}
 	}
 }

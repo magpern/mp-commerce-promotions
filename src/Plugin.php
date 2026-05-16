@@ -12,6 +12,7 @@ namespace MP\CommercePromotions;
 use MP\CommercePromotions\Admin\AdminMenu;
 use MP\CommercePromotions\Admin\PromotionEditPage;
 use MP\CommercePromotions\Admin\PromotionsPage;
+use MP\CommercePromotions\Admin\SettingsPage;
 use MP\CommercePromotions\Domain\AuditLogRepository;
 use MP\CommercePromotions\Domain\PromotionFactory;
 use MP\CommercePromotions\Domain\PromotionRepository;
@@ -19,6 +20,7 @@ use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PromotionService;
+use MP\CommercePromotions\Service\Settings;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use MP\CommercePromotions\Woo\CartPromotionApplier;
 use MP\CommercePromotions\Woo\OrderPromotionRecorder;
@@ -45,7 +47,10 @@ final class Plugin {
 
 	private ?RedemptionRepository $redemption_repository = null;
 
+	private Settings $settings;
+
 	public function __construct() {
+		$this->settings = new Settings();
 		global $wpdb;
 		if ( $wpdb instanceof wpdb ) {
 			$this->promotion_repository = new PromotionRepository( $wpdb );
@@ -77,7 +82,8 @@ final class Plugin {
 			$cart_applier = new CartPromotionApplier(
 				$this->promotion_repository,
 				$this->promotion_evaluator,
-				$cart_builder
+				$cart_builder,
+				$this->settings
 			);
 			$this->woo_bridge->set_cart_promotion_applier( $cart_applier );
 
@@ -107,7 +113,9 @@ final class Plugin {
 			$promotions_page = new PromotionsPage( $this->promotion_repository, $this->promotion_service, $edit_page );
 		}
 
-		$this->admin_menu = new AdminMenu( $this->woo_bridge, $promotions_page );
+		$settings_page = new SettingsPage( $this->settings );
+
+		$this->admin_menu = new AdminMenu( $this->woo_bridge, $promotions_page, $settings_page );
 
 		if ( is_admin() && $this->admin_menu !== null ) {
 			$this->admin_menu->register();

@@ -13,6 +13,7 @@ use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Engine\EvaluationContext;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
+use MP\CommercePromotions\Service\Settings;
 
 final class CartPromotionApplier {
 
@@ -24,25 +25,29 @@ final class CartPromotionApplier {
 
 	private CartContextBuilder $context_builder;
 
+	private Settings $settings;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionEvaluator $evaluator,
-		CartContextBuilder $context_builder
+		CartContextBuilder $context_builder,
+		Settings $settings
 	) {
 		$this->promotions       = $promotions;
 		$this->evaluator        = $evaluator;
 		$this->context_builder = $context_builder;
+		$this->settings         = $settings;
 	}
 
 	public function apply(): void {
 		/**
-		 * Disable cart discount fees without a settings UI.
+		 * Disable cart discount fees (admin setting or custom code).
 		 *
 		 * @since 0.1.0
 		 *
 		 * @param bool $enabled Whether to run cart promotion fee logic.
 		 */
-		if ( ! apply_filters( 'mp_cp_enable_cart_discounts', true ) ) {
+		if ( ! apply_filters( 'mp_cp_enable_cart_discounts', $this->settings->cart_discounts_enabled() ) ) {
 			$this->clear_applied_promotion_session();
 			return;
 		}
