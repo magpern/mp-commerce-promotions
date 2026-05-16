@@ -123,7 +123,7 @@ $rules = array(
 
 $updated = $draft
 	->with_rules( $rules['conditions'], $rules['actions'], $draft->get_restrictions() )
-	->with_priority( -99999 );
+	->with_priority( 0 );
 $service->update_promotion( $updated );
 $service->change_status( $updated, PromotionStatus::ACTIVE );
 
