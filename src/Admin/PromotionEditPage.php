@@ -129,6 +129,7 @@ final class PromotionEditPage {
 		$this->handle_post_update( $promotion );
 		$this->handle_post_create_promotion_code( $promotion );
 		$this->handle_post_change_promotion_code_status( $promotion );
+		$this->handle_post_change_batch_code_status( $promotion );
 		$this->handle_post_generate_code_batch( $promotion );
 		$this->handle_post_preview( $promotion );
 
@@ -340,6 +341,87 @@ final class PromotionEditPage {
 		}
 
 		return false;
+	}
+
+	private function handle_post_change_batch_code_status( Promotion $promotion ): void {
+		if ( $this->promotion_codes === null || $this->code_batches === null ) {
+			return;
+		}
+
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		$action = isset( $_POST['mp_cp_action'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_action'] ) ) : '';
+		if ( $action !== 'change_batch_code_status' ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$post_promotion_id = isset( $_POST['promotion_id'] ) ? (int) $_POST['promotion_id'] : 0;
+		if ( $post_promotion_id !== $pid ) {
+			$this->redirect_after_batch_code_status_change( $pid, 0, array( 'mp_cp_batch_code_status_error' => 'id_mismatch' ) );
+		}
+
+		$batch_id = isset( $_POST['batch_id'] ) ? (int) $_POST['batch_id'] : 0;
+		if ( $batch_id <= 0 ) {
+			$this->redirect_after_batch_code_status_change( $pid, 0, array( 'mp_cp_batch_code_status_error' => 'batch_not_found' ) );
+		}
+
+		$nonce_action = 'mp_cp_change_batch_code_status_' . $pid . '_' . $batch_id;
+		if ( ! isset( $_POST['mp_cp_change_batch_code_status_nonce'] ) ) {
+			$this->redirect_after_batch_code_status_change( $pid, $batch_id, array( 'mp_cp_batch_code_status_error' => 'missing_nonce' ) );
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_change_batch_code_status_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+			$this->redirect_after_batch_code_status_change( $pid, $batch_id, array( 'mp_cp_batch_code_status_error' => 'invalid_nonce' ) );
+		}
+
+		$from_status = isset( $_POST['from_status'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['from_status'] ) ) : '';
+		$to_status   = isset( $_POST['to_status'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['to_status'] ) ) : '';
+		if ( ! PromotionCode::is_valid_status( $from_status ) || ! PromotionCode::is_valid_status( $to_status ) ) {
+			$this->redirect_after_batch_code_status_change( $pid, $batch_id, array( 'mp_cp_batch_code_status_error' => 'invalid_transition' ) );
+		}
+
+		if ( ! $this->is_allowed_promotion_code_status_transition( $from_status, $to_status ) ) {
+			$this->redirect_after_batch_code_status_change( $pid, $batch_id, array( 'mp_cp_batch_code_status_error' => 'invalid_transition' ) );
+		}
+
+		$batch = $this->code_batches->find( $batch_id );
+		if ( $batch === null || $batch->get_promotion_id() !== $pid ) {
+			$this->redirect_after_batch_code_status_change( $pid, $batch_id, array( 'mp_cp_batch_code_status_error' => 'batch_not_found' ) );
+		}
+
+		$affected = $this->promotion_codes->bulk_update_status_for_batch( $batch_id, $from_status, $to_status );
+
+		if ( $this->audit_logger !== null && $affected > 0 ) {
+			$this->audit_logger->log(
+				'promotion_code.batch_status_changed',
+				$pid,
+				array(
+					'promotion_id'    => $pid,
+					'batch_id'        => $batch_id,
+					'from_status'     => $from_status,
+					'to_status'       => $to_status,
+					'affected_count'  => $affected,
+				),
+				(int) get_current_user_id()
+			);
+		}
+
+		$this->redirect_after_batch_code_status_change(
+			$pid,
+			$batch_id,
+			array(
+				'mp_cp_batch_code_status_saved' => '1',
+				'mp_cp_batch_affected'          => (string) $affected,
+			)
+		);
 	}
 
 	private function handle_post_download_generated_codes_csv( Promotion $promotion ): void {
@@ -749,6 +831,48 @@ final class PromotionEditPage {
 			if ( $msg !== '' ) {
 				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
 			}
+		}
+
+		if ( isset( $_GET['mp_cp_batch_code_status_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_batch_code_status_saved'] ) ) === '1' ) {
+			$affected = isset( $_GET['mp_cp_batch_affected'] ) ? (int) $_GET['mp_cp_batch_affected'] : 0;
+			echo '<div class="notice notice-success is-dismissible"><p>';
+			echo esc_html(
+				sprintf(
+					/* translators: %d: number of promotion codes updated */
+					_n(
+						'%d promotion code in this batch was updated.',
+						'%d promotion codes in this batch were updated.',
+						$affected,
+						'mp-commerce-promotions'
+					),
+					$affected
+				)
+			);
+			echo '</p></div>';
+		}
+
+		if ( isset( $_GET['mp_cp_batch_code_status_error'] ) ) {
+			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_batch_code_status_error'] ) );
+			$msg  = $this->batch_code_status_error_message_for_code( $code );
+			if ( $msg !== '' ) {
+				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
+			}
+		}
+	}
+
+	private function batch_code_status_error_message_for_code( string $code ): string {
+		switch ( $code ) {
+			case 'invalid_nonce':
+			case 'missing_nonce':
+				return __( 'Security check failed while changing batch code statuses. Please try again.', 'mp-commerce-promotions' );
+			case 'id_mismatch':
+				return __( 'Invalid batch code status form submission.', 'mp-commerce-promotions' );
+			case 'batch_not_found':
+				return __( 'Code batch not found for this promotion.', 'mp-commerce-promotions' );
+			case 'invalid_transition':
+				return __( 'That batch code status change is not allowed.', 'mp-commerce-promotions' );
+			default:
+				return '';
 		}
 	}
 
@@ -1499,6 +1623,8 @@ final class PromotionEditPage {
 		);
 		echo '</tbody></table>';
 
+		$this->render_batch_code_status_actions( $batch );
+
 		$this->render_batch_linked_codes_table(
 			$batch->get_promotion_id(),
 			$batch_id,
@@ -1507,6 +1633,71 @@ final class PromotionEditPage {
 
 		echo '</div>';
 	}
+
+
+	private function render_batch_code_status_actions( PromotionCodeBatch $batch ): void {
+		if ( $this->promotion_codes === null ) {
+			return;
+		}
+
+		$batch_id = $batch->get_id();
+		if ( $batch_id === null || $batch_id <= 0 ) {
+			return;
+		}
+
+		$promotion_id   = $batch->get_promotion_id();
+		$active_count   = $this->promotion_codes->count_for_batch_with_status( $batch_id, PromotionCode::STATUS_ACTIVE );
+		$disabled_count = $this->promotion_codes->count_for_batch_with_status( $batch_id, PromotionCode::STATUS_DISABLED );
+
+		if ( $active_count === 0 && $disabled_count === 0 ) {
+			return;
+		}
+
+		$form_action  = $this->batch_detail_url( $promotion_id, $batch_id );
+		$nonce_action = 'mp_cp_change_batch_code_status_' . $promotion_id . '_' . $batch_id;
+
+		echo '<h3>' . esc_html__( 'Batch code status', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<p class="description">' . esc_html__(
+			'Apply a status change to all matching codes in this batch. Expired codes are not re-enabled.',
+			'mp-commerce-promotions'
+		) . '</p>';
+
+		$buttons = array();
+
+		if ( $active_count > 0 ) {
+			$buttons[] = array(
+				'label'       => __( 'Disable active codes in this batch', 'mp-commerce-promotions' ),
+				'from_status' => PromotionCode::STATUS_ACTIVE,
+				'to_status'   => PromotionCode::STATUS_DISABLED,
+			);
+		}
+
+		if ( $disabled_count > 0 ) {
+			$buttons[] = array(
+				'label'       => __( 'Enable disabled codes in this batch', 'mp-commerce-promotions' ),
+				'from_status' => PromotionCode::STATUS_DISABLED,
+				'to_status'   => PromotionCode::STATUS_ACTIVE,
+			);
+			$buttons[] = array(
+				'label'       => __( 'Mark disabled codes expired', 'mp-commerce-promotions' ),
+				'from_status' => PromotionCode::STATUS_DISABLED,
+				'to_status'   => PromotionCode::STATUS_EXPIRED,
+			);
+		}
+
+		foreach ( $buttons as $button ) {
+			echo '<form method="post" action="' . esc_url( $form_action ) . '" style="display:inline-block;margin:0 8px 8px 0;">';
+			wp_nonce_field( $nonce_action, 'mp_cp_change_batch_code_status_nonce' );
+			echo '<input type="hidden" name="mp_cp_action" value="change_batch_code_status" />';
+			echo '<input type="hidden" name="promotion_id" value="' . esc_attr( (string) $promotion_id ) . '" />';
+			echo '<input type="hidden" name="batch_id" value="' . esc_attr( (string) $batch_id ) . '" />';
+			echo '<input type="hidden" name="from_status" value="' . esc_attr( $button['from_status'] ) . '" />';
+			echo '<input type="hidden" name="to_status" value="' . esc_attr( $button['to_status'] ) . '" />';
+			echo '<button type="submit" class="button">' . esc_html( $button['label'] ) . '</button>';
+			echo '</form>';
+		}
+	}
+
 
 	private function render_batch_detail_row( string $label, string $value ): void {
 		echo '<tr><th scope="row">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';
@@ -1649,6 +1840,18 @@ final class PromotionEditPage {
 	private function redirect_after_code_status_change( int $promotion_id, array $extra_query ): void {
 		$batch_id = isset( $_POST['batch'] ) ? (int) $_POST['batch'] : 0;
 		$base     = $batch_id > 0
+			? $this->batch_detail_url( $promotion_id, $batch_id )
+			: $this->edit_url( (string) $promotion_id );
+
+		wp_safe_redirect( add_query_arg( $extra_query, $base ) );
+		exit;
+	}
+
+	/**
+	 * @param array<string, string> $extra_query
+	 */
+	private function redirect_after_batch_code_status_change( int $promotion_id, int $batch_id, array $extra_query ): void {
+		$base = $batch_id > 0
 			? $this->batch_detail_url( $promotion_id, $batch_id )
 			: $this->edit_url( (string) $promotion_id );
 

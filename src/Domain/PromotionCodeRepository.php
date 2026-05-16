@@ -286,6 +286,55 @@ final class PromotionCodeRepository {
 		return (int) $count;
 	}
 
+	public function count_for_batch_with_status( int $batch_id, string $status ): int {
+		if ( $batch_id <= 0 || ! PromotionCode::is_valid_status( $status ) ) {
+			return 0;
+		}
+
+		$table = Schema::promotion_codes_table( $this->wpdb );
+		$sql   = "SELECT COUNT(*) FROM {$table} WHERE batch_id = %d AND status = %s";
+
+		$prepared = $this->wpdb->prepare( $sql, $batch_id, $status );
+		if ( ! is_string( $prepared ) ) {
+			return 0;
+		}
+
+		$count = $this->wpdb->get_var( $prepared );
+		if ( ! is_numeric( $count ) ) {
+			return 0;
+		}
+
+		return (int) $count;
+	}
+
+	public function bulk_update_status_for_batch( int $batch_id, string $from_status, string $to_status ): int {
+		if ( $batch_id <= 0 ) {
+			return 0;
+		}
+
+		if ( ! PromotionCode::is_valid_status( $from_status ) || ! PromotionCode::is_valid_status( $to_status ) ) {
+			return 0;
+		}
+
+		$table = Schema::promotion_codes_table( $this->wpdb );
+		$now   = current_time( 'mysql' );
+
+		$sql = "UPDATE {$table} SET status = %s, updated_at = %s WHERE batch_id = %d AND status = %s";
+
+		$prepared = $this->wpdb->prepare( $sql, $to_status, $now, $batch_id, $from_status );
+		if ( ! is_string( $prepared ) ) {
+			return 0;
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $prepared is from $wpdb->prepare().
+		$updated = $this->wpdb->query( $prepared );
+		if ( false === $updated ) {
+			return 0;
+		}
+
+		return (int) $updated;
+	}
+
 	public function is_code_usable( PromotionCode $code ): bool {
 		if ( $code->get_status() !== PromotionCode::STATUS_ACTIVE ) {
 			return false;
