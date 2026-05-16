@@ -15,7 +15,10 @@ use MP\CommercePromotions\Engine\Action\ActionInterface;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
 use MP\CommercePromotions\Engine\Condition\ConditionInterface;
+use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
+use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\QuantityComparator;
 
 final class PromotionEvaluator {
 
@@ -112,11 +115,86 @@ final class PromotionEvaluator {
 			}
 		}
 
+		if ( $type === 'product_quantity' ) {
+			return $this->resolve_quantity_condition(
+				$raw,
+				'product_quantity',
+				'product_id',
+				static function ( array $config ): ProductQuantityCondition {
+					return new ProductQuantityCondition(
+						(int) $config['id'],
+						(string) $config['operator'],
+						(float) $config['quantity']
+					);
+				}
+			);
+		}
+
+		if ( $type === 'category_quantity' ) {
+			return $this->resolve_quantity_condition(
+				$raw,
+				'category_quantity',
+				'category_id',
+				static function ( array $config ): CategoryQuantityCondition {
+					return new CategoryQuantityCondition(
+						(int) $config['id'],
+						(string) $config['operator'],
+						(float) $config['quantity']
+					);
+				}
+			);
+		}
+
 		if ( $type === '' ) {
 			return null;
 		}
 
 		return null;
+	}
+
+	/**
+	 * @param array<string, mixed>                              $raw
+	 * @param string                                            $type_label
+	 * @param string                                            $id_key
+	 * @param callable(array{id:int,operator:string,quantity:float}): ConditionInterface $factory
+	 * @return ConditionInterface|EvaluationResult|null
+	 */
+	private function resolve_quantity_condition( array $raw, string $type_label, string $id_key, callable $factory ) {
+		if ( ! isset( $raw[ $id_key ] ) || ! is_numeric( $raw[ $id_key ] ) ) {
+			return EvaluationResult::ineligible(
+				array( sprintf( 'Invalid %s condition configuration.', $type_label ) )
+			);
+		}
+		if ( ! isset( $raw['operator'] ) || ! is_string( $raw['operator'] ) ) {
+			return EvaluationResult::ineligible(
+				array( sprintf( 'Invalid %s condition configuration.', $type_label ) )
+			);
+		}
+		$operator = trim( $raw['operator'] );
+		if ( ! QuantityComparator::supports( $operator ) ) {
+			return EvaluationResult::ineligible(
+				array( sprintf( 'Invalid %s condition configuration.', $type_label ) )
+			);
+		}
+		if ( ! isset( $raw['quantity'] ) || ! is_numeric( $raw['quantity'] ) ) {
+			return EvaluationResult::ineligible(
+				array( sprintf( 'Invalid %s condition configuration.', $type_label ) )
+			);
+		}
+
+		$config = array(
+			'id'       => (int) $raw[ $id_key ],
+			'operator' => $operator,
+			'quantity' => (float) $raw['quantity'],
+		);
+
+		try {
+			return $factory( $config );
+		} catch ( \InvalidArgumentException $e ) {
+			return EvaluationResult::ineligible(
+				array( sprintf( 'Invalid %s condition configuration.', $type_label ) )
+			);
+		}
 	}
 
 	/**

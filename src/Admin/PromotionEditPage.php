@@ -511,7 +511,13 @@ final class PromotionEditPage {
 			$cond_json = '[]';
 		}
 		echo '<tr><th scope="row"><label for="mp_cp_cond">' . esc_html__( 'Conditions (JSON)', 'mp-commerce-promotions' ) . '</label></th><td>';
-		echo '<textarea class="large-text code" rows="8" id="mp_cp_cond" name="promotion_conditions_json">' . esc_textarea( $cond_json ) . '</textarea></td></tr>';
+		echo '<textarea class="large-text code" rows="8" id="mp_cp_cond" name="promotion_conditions_json">' . esc_textarea( $cond_json ) . '</textarea>';
+		echo '<p class="description">' . esc_html__( 'Supported condition types (all must pass):', 'mp-commerce-promotions' ) . '</p>';
+		echo '<pre class="code" style="max-height:200px;overflow:auto;background:#f6f7f7;padding:8px;">'
+			. esc_html(
+				"[\n  {\"type\":\"minimum_subtotal\",\"amount\":1}\n]\n\n[\n  {\"type\":\"product_quantity\",\"product_id\":3702,\"operator\":\">=\",\"quantity\":2}\n]\n\n[\n  {\"type\":\"category_quantity\",\"category_id\":123,\"operator\":\">=\",\"quantity\":2}\n]"
+			)
+			. '</pre></td></tr>';
 
 		$act_json = wp_json_encode( $promotion->get_actions(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( ! is_string( $act_json ) ) {
