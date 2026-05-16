@@ -18,6 +18,7 @@ use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\EvaluationResult;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
+use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use RuntimeException;
@@ -41,6 +42,8 @@ final class PromotionEditPage {
 
 	private ?AuditLogRepository $audit_logs;
 
+	private PromotionRuleValidator $rule_validator;
+
 	private const ADMIN_USAGE_AUDIT_LIMIT = 25;
 
 	public function __construct(
@@ -49,7 +52,8 @@ final class PromotionEditPage {
 		?CartContextBuilder $cart_context_builder = null,
 		?PromotionEvaluator $promotion_evaluator = null,
 		?RedemptionRepository $redemptions = null,
-		?AuditLogRepository $audit_logs = null
+		?AuditLogRepository $audit_logs = null,
+		?PromotionRuleValidator $rule_validator = null
 	) {
 		$this->promotions             = $promotions;
 		$this->promotion_service      = $promotion_service;
@@ -57,6 +61,7 @@ final class PromotionEditPage {
 		$this->promotion_evaluator    = $promotion_evaluator ?? new PromotionEvaluator();
 		$this->redemptions            = $redemptions;
 		$this->audit_logs             = $audit_logs;
+		$this->rule_validator         = $rule_validator ?? new PromotionRuleValidator();
 	}
 
 	public function render( string $identifier ): void {
@@ -91,6 +96,7 @@ final class PromotionEditPage {
 		echo '</p>';
 
 		$this->render_status_section( $promotion );
+		$this->render_rule_validation_section( $promotion );
 		$this->render_cart_preview_section( $promotion );
 		$this->render_form( $promotion );
 		$this->render_usage_redemptions_section( $promotion );
@@ -406,6 +412,36 @@ final class PromotionEditPage {
 		echo '<input type="hidden" name="new_status" value="' . esc_attr( $new_status ) . '" />';
 		echo '<button type="submit" class="button">' . esc_html( $label ) . '</button>';
 		echo '</form>';
+	}
+
+	private function render_rule_validation_section( Promotion $promotion ): void {
+		$issues = $this->rule_validator->validate( $promotion );
+
+		echo '<div class="card" style="max-width:720px;padding:12px 16px;margin:16px 0;">';
+		echo '<h2 style="margin-top:0;">' . esc_html__( 'Rule Validation', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="description">' . esc_html__( 'Read-only checks against supported condition and action types. Passing validation does not guarantee the promotion will apply to a specific cart.', 'mp-commerce-promotions' ) . '</p>';
+
+		if ( count( $issues ) === 0 ) {
+			echo '<p>' . esc_html__( 'No validation issues found.', 'mp-commerce-promotions' ) . '</p>';
+			echo '</div>';
+			return;
+		}
+
+		echo '<ul style="list-style:disc;margin-left:1.5em;">';
+		foreach ( $issues as $issue ) {
+			$level   = isset( $issue['level'] ) ? (string) $issue['level'] : 'info';
+			$message = isset( $issue['message'] ) ? (string) $issue['message'] : '';
+
+			$label = match ( $level ) {
+				'error' => __( 'Error', 'mp-commerce-promotions' ),
+				'warning' => __( 'Warning', 'mp-commerce-promotions' ),
+				default => __( 'Info', 'mp-commerce-promotions' ),
+			};
+
+			echo '<li><strong>' . esc_html( $label ) . ':</strong> ' . esc_html( $message ) . '</li>';
+		}
+		echo '</ul>';
+		echo '</div>';
 	}
 
 	private function render_cart_preview_section( Promotion $promotion ): void {

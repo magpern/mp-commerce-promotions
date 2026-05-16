@@ -19,6 +19,7 @@ use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Service\AuditLogger;
+use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Service\Settings;
 use MP\CommercePromotions\Woo\CartContextBuilder;
@@ -102,13 +103,15 @@ final class Plugin {
 
 		$promotions_page = null;
 		if ( $this->promotion_repository !== null && $this->promotion_service !== null ) {
-			$edit_page       = new PromotionEditPage(
+			$rule_validator = new PromotionRuleValidator();
+			$edit_page      = new PromotionEditPage(
 				$this->promotion_repository,
 				$this->promotion_service,
 				$cart_builder,
 				$this->promotion_evaluator,
 				$this->redemption_repository,
-				$this->audit_log_repository
+				$this->audit_log_repository,
+				$rule_validator
 			);
 			$promotions_page = new PromotionsPage( $this->promotion_repository, $this->promotion_service, $edit_page );
 		}
