@@ -40,6 +40,7 @@ final class RuleRegistry {
 			RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT,
 			RuleTypes::ACTION_FREE_SHIPPING,
 			RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+			RuleTypes::ACTION_FREE_GIFT_PRODUCT,
 		);
 	}
 
@@ -83,6 +84,7 @@ final class RuleRegistry {
 			RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT  => 'Fixed amount discount',
 			RuleTypes::ACTION_FREE_SHIPPING          => 'Free shipping',
 			RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT => 'Cheapest item discount',
+			RuleTypes::ACTION_FREE_GIFT_PRODUCT     => 'Free gift product',
 		);
 
 		return $labels[ $type ] ?? $type;

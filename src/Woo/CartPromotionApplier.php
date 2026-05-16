@@ -31,6 +31,8 @@ final class CartPromotionApplier {
 
 	public const ACTION_CHEAPEST_ITEM_DISCOUNT = 'cheapest_item_discount';
 
+	public const ACTION_FREE_GIFT_PRODUCT = 'free_gift_product';
+
 	private PromotionRepository $promotions;
 
 	private PromotionCodeRepository $promotion_codes;
@@ -43,20 +45,44 @@ final class CartPromotionApplier {
 
 	private Settings $settings;
 
+	private FreeGiftCartHandler $free_gift_handler;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionCodeRepository $promotion_codes,
 		PromotionEvaluator $evaluator,
 		CartContextBuilder $context_builder,
 		Settings $settings,
-		?PromotionPlanner $planner = null
+		?PromotionPlanner $planner = null,
+		?FreeGiftCartHandler $free_gift_handler = null
 	) {
-		$this->promotions      = $promotions;
-		$this->promotion_codes = $promotion_codes;
-		$this->evaluator       = $evaluator;
-		$this->planner         = $planner ?? new PromotionPlanner( $evaluator );
-		$this->context_builder = $context_builder;
-		$this->settings        = $settings;
+		$this->promotions         = $promotions;
+		$this->promotion_codes    = $promotion_codes;
+		$this->evaluator          = $evaluator;
+		$this->planner            = $planner ?? new PromotionPlanner( $evaluator );
+		$this->context_builder    = $context_builder;
+		$this->settings           = $settings;
+		$this->free_gift_handler  = $free_gift_handler ?? new FreeGiftCartHandler();
+	}
+
+	/**
+	 * Zero gift line prices before WooCommerce totals (woocommerce_before_calculate_totals).
+	 */
+	public function zero_free_gift_line_prices(): void {
+		if ( is_admin() && ! wp_doing_ajax() ) {
+			return;
+		}
+
+		if ( ! function_exists( 'WC' ) ) {
+			return;
+		}
+
+		$wc = WC();
+		if ( ! is_object( $wc ) || ! isset( $wc->cart ) || ! is_object( $wc->cart ) ) {
+			return;
+		}
+
+		FreeGiftCartHandler::zero_gift_line_prices( $wc->cart );
 	}
 
 	/**
@@ -93,9 +119,10 @@ final class CartPromotionApplier {
 			return;
 		}
 
-		$context  = $this->context_builder->build_from_cart();
-		$subtotal = $context->get_cart_subtotal();
-		if ( $subtotal === null || $subtotal <= 0 ) {
+		$context       = $this->context_builder->build_from_cart();
+		$paid_subtotal = FreeGiftCartHandler::paid_cart_subtotal( $cart );
+		$subtotal      = $paid_subtotal > 0 ? $paid_subtotal : ( $context->get_cart_subtotal() ?? 0.0 );
+		if ( $subtotal <= 0 ) {
 			$this->clear_applied_promotion_session();
 			return;
 		}
@@ -203,10 +230,6 @@ final class CartPromotionApplier {
 		$session_entries     = array();
 
 		foreach ( $decisions as $decision ) {
-			if ( $remaining_allowance <= 0 ) {
-				break;
-			}
-
 			$applied = $this->apply_first_discount_fee_for_decision(
 				$decision,
 				$context,
@@ -226,7 +249,8 @@ final class CartPromotionApplier {
 			}
 
 			$session_entries[] = $entry;
-			if ( (string) $applied['action_type'] !== self::ACTION_FREE_SHIPPING ) {
+			$applied_type        = (string) $applied['action_type'];
+			if ( $applied_type !== self::ACTION_FREE_SHIPPING && $applied_type !== self::ACTION_FREE_GIFT_PRODUCT ) {
 				$remaining_allowance -= (float) $applied['discount'];
 			}
 		}
@@ -262,6 +286,15 @@ final class CartPromotionApplier {
 		}
 		if ( isset( $applied['fixed_amount'] ) ) {
 			$entry['fixed_amount'] = (float) $applied['fixed_amount'];
+		}
+		if ( isset( $applied['product_id'] ) ) {
+			$entry['product_id'] = (int) $applied['product_id'];
+		}
+		if ( array_key_exists( 'variation_id', $applied ) ) {
+			$entry['variation_id'] = $applied['variation_id'] !== null ? (int) $applied['variation_id'] : null;
+		}
+		if ( isset( $applied['quantity'] ) ) {
+			$entry['quantity'] = (int) $applied['quantity'];
 		}
 
 		if ( $promotion_code !== null ) {
@@ -377,10 +410,61 @@ final class CartPromotionApplier {
 				if ( is_array( $applied ) ) {
 					return $applied;
 				}
+				continue;
+			}
+
+			if ( $type === self::ACTION_FREE_GIFT_PRODUCT ) {
+				$applied = $this->apply_free_gift_product( $promotion, $payload, $cart );
+				if ( is_array( $applied ) ) {
+					return $applied;
+				}
 			}
 		}
 
 		return false;
+	}
+
+	/**
+	 * @param array<string, mixed> $payload
+	 * @param object               $cart
+	 * @return array<string, mixed>|false
+	 */
+	private function apply_free_gift_product( Promotion $promotion, array $payload, $cart ) {
+		if ( ! isset( $payload['product_id'] ) || ! is_numeric( $payload['product_id'] ) ) {
+			return false;
+		}
+
+		$product_id = (int) $payload['product_id'];
+		$quantity   = isset( $payload['quantity'] ) && is_numeric( $payload['quantity'] ) ? (int) $payload['quantity'] : 0;
+		if ( $product_id <= 0 || $quantity < 1 ) {
+			return false;
+		}
+
+		$variation_id = null;
+		if ( isset( $payload['variation_id'] ) && is_numeric( $payload['variation_id'] ) && (int) $payload['variation_id'] > 0 ) {
+			$variation_id = (int) $payload['variation_id'];
+		}
+
+		$gift_payload = array(
+			'product_id' => $product_id,
+			'quantity'   => $quantity,
+		);
+		if ( $variation_id !== null ) {
+			$gift_payload['variation_id'] = $variation_id;
+		}
+
+		if ( ! $this->free_gift_handler->apply_gift( $promotion, $gift_payload, $cart ) ) {
+			return false;
+		}
+
+		return array(
+			'promotion'    => $promotion,
+			'discount'     => 0.0,
+			'action_type'  => self::ACTION_FREE_GIFT_PRODUCT,
+			'product_id'   => $product_id,
+			'variation_id' => $variation_id,
+			'quantity'     => $quantity,
+		);
 	}
 
 	/**

@@ -11,9 +11,12 @@ Use this checklist to verify **stackable** promotion fees, **subtotal cap**, **e
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/stacking-limits-smoke.php
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/free-shipping-smoke.php
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/cheapest-item-smoke.php
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/free-gift-smoke.php
 ```
 
 **Cheapest item discount:** stackable promotions can combine a `cheapest_item_discount` fee with other discount fees (subtotal cap applies). See [manual-cheapest-item-test.md](manual-cheapest-item-test.md).
+
+**Free gift product:** `free_gift_product` adds a cart line at zero price and does not consume the discount-fee subtotal cap. See [manual-free-gift-test.md](manual-free-gift-test.md).
 
 ---
 

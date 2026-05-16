@@ -133,6 +133,23 @@ final class SimpleRuleBuilderTest extends TestCase {
 		);
 	}
 
+	public function test_builds_free_gift_product_action(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'mp_cp_builder_amount'         => '10',
+				'mp_cp_builder_action_type'    => RuleTypes::ACTION_FREE_GIFT_PRODUCT,
+				'mp_cp_builder_gift_product_id' => '55',
+				'mp_cp_builder_gift_quantity'   => '2',
+			)
+		);
+
+		$action = $built['actions'][0];
+		$this->assertSame( RuleTypes::ACTION_FREE_GIFT_PRODUCT, $action['type'] );
+		$this->assertSame( 55, $action['product_id'] );
+		$this->assertSame( 2, $action['quantity'] );
+	}
+
 	public function test_builds_logged_in_and_free_shipping(): void {
 		$built = SimpleRuleBuilder::build_from_post(
 			array(

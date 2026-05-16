@@ -37,6 +37,8 @@ final class RuleTypes {
 
 	public const ACTION_CHEAPEST_ITEM_DISCOUNT = 'cheapest_item_discount';
 
+	public const ACTION_FREE_GIFT_PRODUCT = 'free_gift_product';
+
 	private function __construct() {
 	}
 }

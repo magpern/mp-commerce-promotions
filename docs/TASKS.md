@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Free gift product action** — `free_gift_product` cart line + zero price hook; `FreeGiftCartHandler`; order recording; builder; `docs/manual-free-gift-test.md`; smoke `scripts/free-gift-smoke.php`
 - **Cheapest item admin UX** — Simple Rule Builder; cart preview summaries; validator messages; `docs/manual-cheapest-item-test.md`
 - **BOGO groundwork** — `CartItemSelector`, cart item enrichment, `cheapest_item_discount` action (negative fee MVP); smoke `scripts/cheapest-item-smoke.php`
 - **Free shipping + customer usage rules** — `free_shipping` fee-offset action; `customer_redemption_count` condition; builder expansion; smoke `scripts/free-shipping-smoke.php`

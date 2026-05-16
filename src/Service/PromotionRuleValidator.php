@@ -14,6 +14,7 @@ use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
+use MP\CommercePromotions\Engine\Action\FreeGiftProductAction;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\FreeShippingAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
@@ -534,6 +535,11 @@ final class PromotionRuleValidator {
 			return;
 		}
 
+		if ( $type === RuleTypes::ACTION_FREE_GIFT_PRODUCT ) {
+			$this->validate_free_gift_product( $index, $raw, $issues );
+			return;
+		}
+
 		if ( ! isset( $raw['amount'] ) || ! is_numeric( $raw['amount'] ) ) {
 			$issues[] = $this->error(
 				sprintf(
@@ -553,6 +559,95 @@ final class PromotionRuleValidator {
 					/* translators: %s: zero-based action index */
 					__( 'fixed_amount_discount at index %s has an invalid amount.', 'mp-commerce-promotions' ),
 					(string) $index
+				)
+			);
+		}
+	}
+
+	/**
+	 * @param array<string, mixed>                        $raw
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function validate_free_gift_product( int $index, array $raw, array &$issues ): void {
+		if ( ! isset( $raw['product_id'] ) || ! is_numeric( $raw['product_id'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'free_gift_product at index %s is missing or has an invalid product_id.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		$product_id = (int) $raw['product_id'];
+		if ( $product_id <= 0 ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'free_gift_product at index %s product_id must be a positive integer.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		if ( isset( $raw['variation_id'] ) && $raw['variation_id'] !== null && $raw['variation_id'] !== '' ) {
+			if ( ! is_numeric( $raw['variation_id'] ) ) {
+				$issues[] = $this->error(
+					sprintf(
+						/* translators: %s: zero-based action index */
+						__( 'free_gift_product at index %s has an invalid variation_id.', 'mp-commerce-promotions' ),
+						(string) $index
+					)
+				);
+				return;
+			}
+			$variation_id = (int) $raw['variation_id'];
+			if ( $variation_id <= 0 ) {
+				$issues[] = $this->error(
+					sprintf(
+						/* translators: %s: zero-based action index */
+						__( 'free_gift_product at index %s variation_id must be a positive integer when set.', 'mp-commerce-promotions' ),
+						(string) $index
+					)
+				);
+				return;
+			}
+		}
+
+		if ( ! isset( $raw['quantity'] ) || ! is_numeric( $raw['quantity'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'free_gift_product at index %s is missing or has an invalid quantity.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		$quantity = (int) $raw['quantity'];
+		if ( $quantity < 1 ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based action index */
+					__( 'free_gift_product at index %s quantity must be >= 1.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		try {
+			FreeGiftProductAction::from_config( $raw );
+		} catch ( InvalidArgumentException $e ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: zero-based action index, 2: detail */
+					__( 'free_gift_product at index %1$s has invalid field values (%2$s).', 'mp-commerce-promotions' ),
+					(string) $index,
+					$e->getMessage()
 				)
 			);
 		}

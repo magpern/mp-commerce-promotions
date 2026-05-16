@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Service;
 
 use InvalidArgumentException;
 use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
+use MP\CommercePromotions\Engine\Action\FreeGiftProductAction;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\FreeShippingAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
@@ -173,6 +174,10 @@ final class SimpleRuleBuilder {
 			return self::build_cheapest_item_discount_action( $post );
 		}
 
+		if ( $type === RuleTypes::ACTION_FREE_GIFT_PRODUCT ) {
+			return self::build_free_gift_product_action( $post );
+		}
+
 		$amount = self::parse_required_float( $post, 'mp_cp_builder_fixed_amount', 'invalid_fixed_amount' );
 		new FixedAmountDiscountAction( $amount );
 
@@ -221,6 +226,30 @@ final class SimpleRuleBuilder {
 		}
 
 		CheapestItemDiscountAction::from_config( $config );
+
+		return $config;
+	}
+
+	/**
+	 * @param array<string, mixed> $post
+	 * @return array<string, mixed>
+	 */
+	private static function build_free_gift_product_action( array $post ): array {
+		$product_id = self::parse_required_positive_int( $post, 'mp_cp_builder_gift_product_id', 'invalid_gift_product_id' );
+		$quantity   = self::parse_required_positive_int( $post, 'mp_cp_builder_gift_quantity', 'invalid_gift_quantity' );
+
+		$config = array(
+			'type'       => RuleTypes::ACTION_FREE_GIFT_PRODUCT,
+			'product_id' => $product_id,
+			'quantity'   => $quantity,
+		);
+
+		$variation_id = self::parse_optional_positive_int( $post, 'mp_cp_builder_gift_variation_id' );
+		if ( $variation_id !== null ) {
+			$config['variation_id'] = $variation_id;
+		}
+
+		FreeGiftProductAction::from_config( $config );
 
 		return $config;
 	}
@@ -319,6 +348,26 @@ final class SimpleRuleBuilder {
 		$value = (int) $post[ $key ];
 		if ( $value <= 0 ) {
 			throw new InvalidArgumentException( $error_code );
+		}
+
+		return $value;
+	}
+
+	/**
+	 * @param array<string, mixed> $post
+	 */
+	private static function parse_optional_positive_int( array $post, string $key ): ?int {
+		if ( ! isset( $post[ $key ] ) || $post[ $key ] === '' ) {
+			return null;
+		}
+
+		if ( ! is_numeric( $post[ $key ] ) ) {
+			throw new InvalidArgumentException( 'invalid_gift_variation_id' );
+		}
+
+		$value = (int) $post[ $key ];
+		if ( $value <= 0 ) {
+			throw new InvalidArgumentException( 'invalid_gift_variation_id' );
 		}
 
 		return $value;

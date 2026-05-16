@@ -1846,7 +1846,20 @@ final class PromotionEditPage {
 		echo '<option value="fixed_amount_discount">' . esc_html__( 'Fixed amount discount', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="free_shipping">' . esc_html__( 'Free shipping', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="cheapest_item_discount">' . esc_html__( 'Cheapest item discount', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="free_gift_product">' . esc_html__( 'Free gift product', 'mp-commerce-promotions' ) . '</option>';
 		echo '</select></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_gift_product_id">' . esc_html__( 'Gift product ID', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_gift_product_id" name="mp_cp_builder_gift_product_id" min="1" step="1" />';
+		echo '<p class="description">' . esc_html__( 'WooCommerce product post ID to add as a free gift (free_gift_product action).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_gift_variation_id">' . esc_html__( 'Gift variation ID', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_gift_variation_id" name="mp_cp_builder_gift_variation_id" min="1" step="1" />';
+		echo '<p class="description">' . esc_html__( 'Optional variation post ID when the gift is a variable product.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_gift_quantity">' . esc_html__( 'Gift quantity', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_gift_quantity" name="mp_cp_builder_gift_quantity" min="1" step="1" value="1" />';
+		echo '<p class="description">' . esc_html__( 'How many gift units to add when the promotion applies (default 1).', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_cheapest_scope">' . esc_html__( 'Cheapest item scope', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<select id="mp_cp_builder_cheapest_scope" name="mp_cp_builder_cheapest_scope">';
@@ -2187,9 +2200,13 @@ final class PromotionEditPage {
 					__( 'Cheapest item discount (products)', 'mp-commerce-promotions' ),
 					"[\n  {\"type\":\"cheapest_item_discount\",\"scope\":\"products\",\"product_ids\":[100,101],\"discount_percentage\":50,\"required_quantity\":2,\"discounted_quantity\":1}\n]"
 				);
+				$this->render_rule_template_readonly(
+					__( 'Free gift product', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"free_gift_product\",\"product_id\":123,\"variation_id\":456,\"quantity\":1}\n]"
+				);
 			},
 			__(
-				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action per promotion is applied on the storefront. Product and category IDs must be numeric WordPress IDs. Woo cart context enriches line items with unit_price, item_key, and product_name when available. cheapest_item_discount is BOGO groundwork: it discounts the cheapest eligible units as a negative cart fee (does not add free products or change line prices). Examples: buy 3 in category get cheapest free (100%, required_quantity 3, discounted_quantity 1); 50% off cheapest eligible product unit. See docs/manual-cheapest-item-test.md for storefront verification. free_shipping is an MVP fee offset equal to the current shipping total. Simple Rule Builder supports cheapest_item_discount.',
+				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action per promotion is applied on the storefront. Product and category IDs must be numeric WordPress IDs. Woo cart context enriches line items with unit_price, item_key, and product_name when available. cheapest_item_discount is BOGO groundwork: it discounts the cheapest eligible units as a negative cart fee (does not add free products or change line prices). free_gift_product adds a configured product to the cart with mp_cp_free_gift metadata and zero line price (no negative fee). See docs/manual-free-gift-test.md. free_shipping is an MVP fee offset equal to the current shipping total. Simple Rule Builder supports cheapest_item_discount and free_gift_product.',
 				'mp-commerce-promotions'
 			),
 			array(

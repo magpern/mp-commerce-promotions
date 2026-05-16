@@ -608,6 +608,34 @@ final class PromotionEvaluatorTest extends TestCase {
 		$this->assertSame( 30.0, $result->get_action_results()[0]['payload']['discount_amount'] );
 	}
 
+	public function test_free_gift_product_action_preview_eligible(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 1.0,
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_FREE_GIFT_PRODUCT,
+					'product_id' => 42,
+					'quantity'   => 1,
+				),
+			)
+		);
+
+		$result = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( null, 50.0 )
+		);
+
+		$this->assertTrue( $result->is_eligible() );
+		$this->assertSame( RuleTypes::ACTION_FREE_GIFT_PRODUCT, $result->get_action_results()[0]['type'] );
+		$this->assertSame( 42, $result->get_action_results()[0]['payload']['product_id'] );
+		$this->assertSame( 1, $result->get_action_results()[0]['payload']['quantity'] );
+	}
+
 	public function test_free_shipping_action_preview_eligible(): void {
 		$promotion = PromotionTestFixtures::active_promotion(
 			array(

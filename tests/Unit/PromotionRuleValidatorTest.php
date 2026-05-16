@@ -437,6 +437,51 @@ final class PromotionRuleValidatorTest extends TestCase {
 		);
 	}
 
+	public function test_free_gift_product_action_validates(): void {
+		$valid = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 1.0,
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_FREE_GIFT_PRODUCT,
+					'product_id' => 99,
+					'quantity'   => 2,
+				),
+			)
+		);
+
+		$this->assertSame( array(), $this->validator->validate( $valid ) );
+	}
+
+	public function test_free_gift_product_rejects_invalid_product_id(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 1.0,
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_FREE_GIFT_PRODUCT,
+					'product_id' => 0,
+					'quantity'   => 1,
+				),
+			)
+		);
+
+		$this->assertTrue(
+			$this->has_error_containing(
+				$this->messages( $this->validator->validate( $promotion ) ),
+				'product_id must be a positive integer'
+			)
+		);
+	}
+
 	public function test_free_shipping_action_validates_without_extra_fields(): void {
 		$promotion = PromotionTestFixtures::active_promotion(
 			array(

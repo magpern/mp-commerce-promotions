@@ -101,6 +101,13 @@ final class AppliedPromotionSession {
 
 		$action_type = isset( $entry['action_type'] ) ? (string) $entry['action_type'] : '';
 
+		if ( $action_type === CartPromotionApplier::ACTION_FREE_GIFT_PRODUCT ) {
+			$product_id = isset( $entry['product_id'] ) ? (int) $entry['product_id'] : 0;
+			$quantity   = isset( $entry['quantity'] ) ? (int) $entry['quantity'] : 0;
+
+			return $product_id > 0 && $quantity >= 1;
+		}
+
 		return $action_type === CartPromotionApplier::ACTION_PERCENTAGE_DISCOUNT
 			|| $action_type === CartPromotionApplier::ACTION_FIXED_AMOUNT_DISCOUNT
 			|| $action_type === CartPromotionApplier::ACTION_FREE_SHIPPING

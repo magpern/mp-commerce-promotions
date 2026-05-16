@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`free_gift_product` action** — adds a configured product to the cart when a promotion applies; cart metadata (`mp_cp_free_gift`, promotion id/uuid/name); duplicate prevention; zero price via `woocommerce_before_calculate_totals`; session/order recording with `discount_amount` 0; Simple Rule Builder fields; `scripts/free-gift-smoke.php`; `docs/manual-free-gift-test.md`. Reversal does not remove gift lines from existing orders.
 - **Cheapest item discount admin UX** — Simple Rule Builder support; cart preview summaries for `discount_amount` / `not_applicable`; clearer validator messages; `docs/manual-cheapest-item-test.md`.
 - **BOGO groundwork: `cheapest_item_discount` action** — `CartItemSelector` for product/category unit targeting; discounts cheapest eligible units (category or products scope) as a negative cart fee; preview includes `discount_amount` / `not_applicable`; `scripts/cheapest-item-smoke.php`. Does not add free products or change line prices.
 - **Cart item enrichment** — `unit_price`, `item_key`, and `product_name` on Woo cart context line items when available.

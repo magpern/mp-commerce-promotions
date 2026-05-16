@@ -298,7 +298,7 @@ customer_redemption_count
 
 `customer_redemption_count` compares metadata `customer_redemption_count` (integer) using `QuantityComparator` operators against JSON `count`. For logged-in carts, `CartContextBuilder` sets this via `RedemptionRepository::count_recorded_for_customer()` when the repository is wired. Guests omit the key and the condition fails safely.
 
-**Simple Rule Builder v0** supports all current condition and action types (including customer/location conditions, `free_shipping`, and `cheapest_item_discount`). Admin cart preview summarizes `discount_amount`, `discounted_units`, and `not_applicable` for cheapest-item actions. See [manual-cheapest-item-test.md](manual-cheapest-item-test.md).
+**Simple Rule Builder v0** supports all current condition and action types (including customer/location conditions, `free_shipping`, `cheapest_item_discount`, and `free_gift_product`). Admin cart preview summarizes `discount_amount`, `discounted_units`, and `not_applicable` for cheapest-item actions. See [manual-cheapest-item-test.md](manual-cheapest-item-test.md) and [manual-free-gift-test.md](manual-free-gift-test.md).
 
 ### Current Actions
 
@@ -307,11 +307,14 @@ percentage_discount
 fixed_amount_discount
 free_shipping
 cheapest_item_discount
+free_gift_product
 ```
 
 `free_shipping` preview returns `{ "free_shipping": true }`. On the storefront, `CartPromotionApplier` adds a **negative cart fee** equal to the current WooCommerce shipping total when it is **> 0** (MVP fee-offset; not native shipping-method manipulation). Fee labels: `Commerce promotion: Free shipping - {name}` or `Commerce promotion code: Free shipping ****{last4}`. When shipping is zero or unavailable, no fee is added. Free shipping does not consume the cart subtotal discount cap allowance.
 
 `cheapest_item_discount` is **BOGO groundwork**: `CartItemSelector` filters cart line items by **category** or **product** scope, expands quantities into unit-price entries, and discounts the cheapest `discounted_quantity` units when eligible unit count ≥ `required_quantity`. Preview payload includes `discount_amount`, `discounted_units`, and `scope` (or `not_applicable` when quantity is insufficient). Storefront applies `discount_amount` as a negative fee (subtotal cap applies). Does **not** add free products, change line prices, or split cart lines. Examples: buy 3 in category get 1 free (`discount_percentage` 100, `required_quantity` 3, `discounted_quantity` 1); 50% off cheapest eligible product unit.
+
+`free_gift_product` preview returns `{ "product_id", "quantity", "variation_id?" }`. Storefront: `FreeGiftCartHandler` calls `WC_Cart::add_to_cart()` with cart item metadata (`mp_cp_free_gift=yes`, promotion id/uuid/name). Duplicate gifts for the same promotion + product/variation are skipped. `CartPromotionApplier::zero_free_gift_line_prices()` runs on `woocommerce_before_calculate_totals` (priority 20) to set gift line price to **0**. No negative fee for this action. Paid cart subtotal (excluding gift lines) drives eligibility and discount caps. Order recording stores `discount_amount` **0**; reversal does **not** remove gift lines from placed orders.
 
 **Cart line items** in `EvaluationContext` include `product_id`, `variation_id`, `quantity`, `line_subtotal`, `categories`, and when available from Woo: `unit_price`, `item_key`, `product_name`.
 
@@ -582,7 +585,7 @@ Current limitations include:
 - Exclusive promotions still allow only one selected promotion in a plan
 - Only first supported action per promotion is applied
 - Stackable multi-fee, exclusions, and max_applications are plan-level (not per-customer usage limits)
-- No free-product cart lines or line-price overrides yet (`cheapest_item_discount` is fee-offset BOGO groundwork only)
+- `free_gift_product` is MVP (configured IDs only; zero cart price; no stock reservation); `cheapest_item_discount` remains fee-offset BOGO groundwork only
 - `free_shipping` is fee-offset only (verify in browser checkout; block checkout not declared)
 - No partial refund proportional reversal
 - No advanced customer segmentation beyond role/country/email/redemption count

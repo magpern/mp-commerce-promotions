@@ -15,6 +15,7 @@ use MP\CommercePromotions\Engine\Action\ActionInterface;
 use MP\CommercePromotions\Engine\Action\ActionTrace;
 use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
+use MP\CommercePromotions\Engine\Action\FreeGiftProductAction;
 use MP\CommercePromotions\Engine\Action\FreeShippingAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
 use MP\CommercePromotions\Engine\Condition\BillingCountryCondition;
@@ -285,6 +286,9 @@ final class PromotionEvaluator {
 		if ( $type === RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT ) {
 			return 'Invalid cheapest_item_discount action configuration.';
 		}
+		if ( $type === RuleTypes::ACTION_FREE_GIFT_PRODUCT ) {
+			return 'Invalid free_gift_product action configuration.';
+		}
 
 		return 'Invalid action configuration.';
 	}
@@ -483,6 +487,17 @@ final class PromotionEvaluator {
 			try {
 				return array(
 					'action' => CheapestItemDiscountAction::from_config( $raw ),
+					'error'  => null,
+				);
+			} catch ( \InvalidArgumentException $e ) {
+				return array( 'action' => null, 'error' => 'invalid' );
+			}
+		}
+
+		if ( $type === RuleTypes::ACTION_FREE_GIFT_PRODUCT ) {
+			try {
+				return array(
+					'action' => FreeGiftProductAction::from_config( $raw ),
 					'error'  => null,
 				);
 			} catch ( \InvalidArgumentException $e ) {

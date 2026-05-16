@@ -34,6 +34,7 @@ final class RuleRegistryTest extends TestCase {
 		$this->assertContains( RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT, $actions );
 		$this->assertContains( RuleTypes::ACTION_FREE_SHIPPING, $actions );
 		$this->assertContains( RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT, $actions );
+		$this->assertContains( RuleTypes::ACTION_FREE_GIFT_PRODUCT, $actions );
 	}
 
 	public function test_unknown_condition_and_action_return_false(): void {

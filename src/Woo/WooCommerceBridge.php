@@ -7,6 +7,9 @@
  * Cart fee (negative fee discount):
  * - `woocommerce_cart_calculate_fees` → CartPromotionApplier::apply (priority 20)
  *
+ * Free gift line price:
+ * - `woocommerce_before_calculate_totals` → CartPromotionApplier::zero_free_gift_line_prices (priority 20)
+ *
  * Checkout recording:
  * - `woocommerce_checkout_create_order` → OrderPromotionRecorder::record_on_order_create (10, 2 args)
  *
@@ -39,6 +42,8 @@ final class WooCommerceBridge {
 	private ?CartPromotionApplier $cart_promotion_applier = null;
 
 	private bool $cart_fee_hook_registered = false;
+
+	private bool $cart_gift_price_hook_registered = false;
 
 	private ?OrderPromotionRecorder $order_promotion_recorder = null;
 
@@ -124,6 +129,15 @@ final class WooCommerceBridge {
 			20
 		);
 		$this->cart_fee_hook_registered = true;
+
+		if ( ! $this->cart_gift_price_hook_registered ) {
+			add_action(
+				'woocommerce_before_calculate_totals',
+				array( $this->cart_promotion_applier, 'zero_free_gift_line_prices' ),
+				20
+			);
+			$this->cart_gift_price_hook_registered = true;
+		}
 	}
 
 	/**

@@ -16,7 +16,7 @@ Commerce Promotions for WooCommerce is a **generic** promotion engine for stores
 
 This plugin is in **early development / MVP**. It is suitable for testing and internal pilots, not for claiming marketplace-ready or production-complete status without your own review.
 
-**How discounts work today (MVP):** eligible promotions apply as **negative WooCommerce cart fees** (`percentage_discount`, `fixed_amount_discount`, `free_shipping` shipping offset, or `cheapest_item_discount` for BOGO-style cheapest-unit targeting). Promotion codes are entered in the standard coupon field; matching codes use virtual coupon data with **zero** native coupon discount — the fee comes from this plugin.
+**How discounts work today (MVP):** eligible promotions apply as **negative WooCommerce cart fees** (`percentage_discount`, `fixed_amount_discount`, `free_shipping` shipping offset, or `cheapest_item_discount` for BOGO-style cheapest-unit targeting) or add a **free gift cart line** (`free_gift_product` at zero price). Promotion codes are entered in the standard coupon field; matching codes use virtual coupon data with **zero** native coupon discount — fees/gifts come from this plugin.
 
 **Promotion codes:** plain codes are **never stored**. Only a SHA-256 hash and last four characters are kept. **Generated batch codes** are shown **once** in admin (copy or CSV download); full codes cannot be recovered after you leave that screen.
 
@@ -32,8 +32,8 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * Declares compatibility with WooCommerce High-Performance Order Storage (HPOS)
 * Rule evaluation pipeline with pluggable condition/action types (MVP set)
 * Conditions: minimum subtotal, product/category quantity, logged in, first order, customer role, billing country, customer email domain, customer redemption count (logged-in metadata when available)
-* Actions: percentage discount, fixed amount discount, free shipping (MVP fee offset), cheapest item discount (BOGO groundwork via negative fee)
-* Simple Rule Builder (one condition + one action, including cheapest item discount) and raw JSON rule editing
+* Actions: percentage discount, fixed amount discount, free shipping (MVP fee offset), cheapest item discount (BOGO groundwork via negative fee), free gift product (adds cart line at zero price)
+* Simple Rule Builder (one condition + one action, including cheapest item and free gift) and raw JSON rule editing
 * Rule validation panel in admin
 * WooCommerce admin: Promotions list with search, filters, and pagination
 * Promotion edit workflow: status actions, duplicate as draft, cart preview with evaluation trace (admin/debug)
@@ -49,7 +49,8 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * **Not marketplace-ready** — missing automated tests, formal uninstall data policy UI, Composer/CI packaging, and broader compatibility certification
 * **Stacking rules** — exclusive (default) stops after one selection; stackable promotions can apply multiple fees (one action each; total discount capped at subtotal); code-linked promotions do not stack with automatic promotions
 * **Cart fees only** — not line-item or native coupon discount strategies; may affect reporting/tax expectations
-* **Limited condition/action types** — no free-product line items, line-price overrides, or native shipping-method control yet
+* **Limited condition/action types** — no automatic gift selection, variable-product UI, or native shipping-method control yet
+* **free_gift_product** — MVP adds configured product IDs to cart at zero price; reversal does not remove gift lines from existing orders
 * **cheapest_item_discount** — BOGO groundwork only (negative fee); does not add free products to the cart
 * **Free shipping** — fee-offset MVP only; browser checkout required to confirm shipping totals
 * **Simple Rule Builder** — one condition and one action only; complex multi-rule promotions need JSON

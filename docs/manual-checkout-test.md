@@ -286,6 +286,18 @@ WP-CLI evaluator smoke:
 
 ---
 
+## 13. Free gift product
+
+See **[manual-free-gift-test.md](manual-free-gift-test.md)** for cart line addition, zero price, duplicate prevention, checkout recording, and reversal limitations.
+
+WP-CLI smoke (evaluator + optional cart):
+
+```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/free-gift-smoke.php
+```
+
+---
+
 ## Pass criteria
 
 All checked items in sections **1–8** pass, and behavior matches **Known limitations** in section **9**.

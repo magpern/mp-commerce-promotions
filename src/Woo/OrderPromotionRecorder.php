@@ -222,6 +222,13 @@ final class OrderPromotionRecorder {
 			if ( $fixed_amount === null || $fixed_amount <= 0 ) {
 				return null;
 			}
+		} elseif (
+			$action_type === CartPromotionApplier::ACTION_FREE_SHIPPING
+			|| $action_type === CartPromotionApplier::ACTION_CHEAPEST_ITEM_DISCOUNT
+			|| $action_type === CartPromotionApplier::ACTION_FREE_GIFT_PRODUCT
+		) {
+			$percentage   = null;
+			$fixed_amount = null;
 		} else {
 			return null;
 		}
@@ -288,7 +295,7 @@ final class OrderPromotionRecorder {
 			$newly = true;
 		}
 
-		return array(
+		$summary = array(
 			'promotion_id'         => $promotion_id,
 			'promotion_uuid'       => $uuid,
 			'promotion_name'       => $name,
@@ -298,6 +305,20 @@ final class OrderPromotionRecorder {
 			'promotion_code_last4' => $code_meta['promotion_code_last4'] !== '' ? $code_meta['promotion_code_last4'] : null,
 			'newly_recorded'       => $newly,
 		);
+
+		if ( $action_type === CartPromotionApplier::ACTION_FREE_GIFT_PRODUCT ) {
+			if ( isset( $entry['product_id'] ) ) {
+				$summary['product_id'] = (int) $entry['product_id'];
+			}
+			if ( array_key_exists( 'variation_id', $entry ) ) {
+				$summary['variation_id'] = $entry['variation_id'] !== null ? (int) $entry['variation_id'] : null;
+			}
+			if ( isset( $entry['quantity'] ) ) {
+				$summary['quantity'] = (int) $entry['quantity'];
+			}
+		}
+
+		return $summary;
 	}
 
 	/**
