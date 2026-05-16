@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Promotion stacking groundwork** — application_mode / stop_processing / max_applications, PromotionPlanner, admin application rules
 - **WooCommerce HPOS compatibility** — `custom_order_tables` declaration; HPOS order-meta audit; blocks compatibility intentionally omitted
 - **Evaluation trace / explainability** — `ConditionTrace`, `ActionTrace`, `EvaluationResult` traces, admin cart preview tables, PHPUnit coverage
 - **Customer/location restrictions** — `billing_country`, `customer_email_domain`; Woo billing metadata enrichment

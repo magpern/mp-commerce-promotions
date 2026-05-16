@@ -13,6 +13,7 @@ use MP\CommercePromotions\Domain\AuditLogEntry;
 use MP\CommercePromotions\Domain\AuditLogRepository;
 use InvalidArgumentException;
 use MP\CommercePromotions\Domain\Promotion;
+use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Domain\PromotionCode;
 use MP\CommercePromotions\Domain\PromotionCodeBatch;
 use MP\CommercePromotions\Domain\PromotionCodeBatchRepository;
@@ -934,6 +935,41 @@ final class PromotionEditPage {
 			exit;
 		}
 
+		$application_mode = isset( $_POST['promotion_application_mode'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['promotion_application_mode'] ) )
+			: PromotionApplicationMode::EXCLUSIVE;
+		if ( ! PromotionApplicationMode::is_valid( $application_mode ) ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_application_mode',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
+			exit;
+		}
+
+		$stop_processing = isset( $_POST['promotion_stop_processing'] ) && (string) $_POST['promotion_stop_processing'] === '1';
+
+		$max_apps_raw = isset( $_POST['promotion_max_applications'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['promotion_max_applications'] ) )
+			: '';
+		$max_apps     = $max_apps_raw === '' ? null : (int) $max_apps_raw;
+		if ( $max_apps !== null && $max_apps < 1 ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_max_applications',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
+			exit;
+		}
+
 		try {
 			$updated = $promotion
 				->with_name( $name )
@@ -941,6 +977,7 @@ final class PromotionEditPage {
 				->with_status( $promotion->get_status() )
 				->with_priority( $priority )
 				->with_date_window( $starts_at, $ends_at )
+				->with_application_rules( $application_mode, $stop_processing, $max_apps )
 				->with_rules( $conditions, $actions, $restrictions );
 
 			$this->promotion_service->update_promotion( $updated, (int) get_current_user_id() );
@@ -1201,6 +1238,10 @@ final class PromotionEditPage {
 				return __( 'Please enter a promotion name.', 'mp-commerce-promotions' );
 			case 'invalid_priority':
 				return __( 'Priority must be zero or greater.', 'mp-commerce-promotions' );
+			case 'invalid_application_mode':
+				return __( 'Application mode must be exclusive or stackable.', 'mp-commerce-promotions' );
+			case 'invalid_max_applications':
+				return __( 'Max applications must be empty or at least 1.', 'mp-commerce-promotions' );
 			case 'invalid_json':
 				return __( 'Conditions, actions, and restrictions must be valid JSON arrays.', 'mp-commerce-promotions' );
 			case 'update_failed':
@@ -1911,6 +1952,32 @@ final class PromotionEditPage {
 		echo '<tr><th scope="row"><label for="mp_cp_ends">' . esc_html__( 'Ends at', 'mp-commerce-promotions' ) . '</label></th><td>';
 		$ends = $promotion->get_ends_at() ?? '';
 		echo '<input type="text" class="regular-text" id="mp_cp_ends" name="promotion_ends_at" value="' . esc_attr( $ends ) . '" placeholder="' . esc_attr__( 'YYYY-MM-DD HH:MM:SS or leave empty', 'mp-commerce-promotions' ) . '" /></td></tr>';
+
+		echo '</tbody></table></div>';
+
+		echo '<h2 class="mp-cp-edit-section-title" style="margin:1.5em 0 0.5em;">' . esc_html__( 'Application rules', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:0 0 16px;">';
+		echo '<p class="description">' . esc_html__(
+			'Controls how this promotion interacts with other eligible promotions in the evaluation plan. The storefront still applies one cart fee in this MVP, even when multiple promotions are selected in a stackable plan.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<table class="form-table" role="presentation"><tbody>';
+
+		$mode = $promotion->get_application_mode();
+		echo '<tr><th scope="row"><label for="mp_cp_application_mode">' . esc_html__( 'Application mode', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select id="mp_cp_application_mode" name="promotion_application_mode">';
+		echo '<option value="' . esc_attr( PromotionApplicationMode::EXCLUSIVE ) . '"' . selected( $mode, PromotionApplicationMode::EXCLUSIVE, false ) . '>' . esc_html__( 'Exclusive', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="' . esc_attr( PromotionApplicationMode::STACKABLE ) . '"' . selected( $mode, PromotionApplicationMode::STACKABLE, false ) . '>' . esc_html__( 'Stackable (groundwork)', 'mp-commerce-promotions' ) . '</option>';
+		echo '</select></td></tr>';
+
+		echo '<tr><th scope="row">' . esc_html__( 'Stop processing', 'mp-commerce-promotions' ) . '</th><td>';
+		echo '<label><input type="checkbox" name="promotion_stop_processing" value="1" ' . checked( $promotion->should_stop_processing(), true, false ) . ' /> ';
+		echo esc_html__( 'Stop evaluating further promotions after this one is selected in the plan', 'mp-commerce-promotions' ) . '</label></td></tr>';
+
+		$max_apps = $promotion->get_max_applications();
+		echo '<tr><th scope="row"><label for="mp_cp_max_applications">' . esc_html__( 'Max applications', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_max_applications" name="promotion_max_applications" min="1" step="1" value="' . esc_attr( $max_apps !== null ? (string) $max_apps : '' ) . '" />';
+		echo '<p class="description">' . esc_html__( 'Optional. Reserved for future use; leave empty for unlimited.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '</tbody></table></div>';
 

@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Service;
 
 use InvalidArgumentException;
 use MP\CommercePromotions\Domain\Promotion;
+use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
@@ -33,10 +34,46 @@ final class PromotionRuleValidator {
 		$issues = array();
 
 		$this->append_status_issues( $promotion, $issues );
+		$this->append_application_rules_issues( $promotion, $issues );
 		$this->append_condition_issues( $promotion->get_conditions(), $issues );
 		$this->append_action_issues( $promotion->get_actions(), $issues );
 
 		return $issues;
+	}
+
+	/**
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	/**
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function append_application_rules_issues( Promotion $promotion, array &$issues ): void {
+		$mode = $promotion->get_application_mode();
+		if ( ! PromotionApplicationMode::is_valid( $mode ) ) {
+			$issues[] = array(
+				'level'   => 'error',
+				'message' => __( 'Invalid application_mode. Allowed values: exclusive, stackable.', 'mp-commerce-promotions' ),
+			);
+			return;
+		}
+
+		if ( $mode === PromotionApplicationMode::STACKABLE ) {
+			$issues[] = array(
+				'level'   => 'info',
+				'message' => __(
+					'Stackable mode is groundwork; the storefront still applies one selected promotion fee in this MVP.',
+					'mp-commerce-promotions'
+				),
+			);
+		}
+
+		$max = $promotion->get_max_applications();
+		if ( $max !== null && $max < 1 ) {
+			$issues[] = array(
+				'level'   => 'error',
+				'message' => __( 'max_applications must be null or at least 1.', 'mp-commerce-promotions' ),
+			);
+		}
 	}
 
 	/**

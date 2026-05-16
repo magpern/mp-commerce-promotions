@@ -39,6 +39,12 @@ final class Promotion {
 
 	private int $usage_count;
 
+	private string $application_mode;
+
+	private bool $stop_processing;
+
+	private ?int $max_applications;
+
 	private ?int $created_by;
 
 	private ?string $created_at;
@@ -59,6 +65,9 @@ final class Promotion {
 		array $restrictions,
 		?int $usage_limit,
 		int $usage_count,
+		string $application_mode,
+		bool $stop_processing,
+		?int $max_applications,
 		?int $created_by,
 		?string $created_at,
 		?string $updated_at
@@ -84,6 +93,13 @@ final class Promotion {
 		if ( $usage_limit !== null && $usage_limit < 0 ) {
 			throw new InvalidArgumentException( 'Promotion usage_limit must be null or >= 0.' );
 		}
+		$application_mode = trim( $application_mode );
+		if ( ! PromotionApplicationMode::is_valid( $application_mode ) ) {
+			throw new InvalidArgumentException( 'Invalid promotion application_mode.' );
+		}
+		if ( $max_applications !== null && $max_applications < 1 ) {
+			throw new InvalidArgumentException( 'Promotion max_applications must be null or >= 1.' );
+		}
 
 		$this->id           = $id;
 		$this->uuid         = $uuid;
@@ -96,9 +112,12 @@ final class Promotion {
 		$this->conditions   = $conditions;
 		$this->actions      = $actions;
 		$this->restrictions = $restrictions;
-		$this->usage_limit  = $usage_limit;
-		$this->usage_count  = $usage_count;
-		$this->created_by   = $created_by;
+		$this->usage_limit        = $usage_limit;
+		$this->usage_count        = $usage_count;
+		$this->application_mode   = $application_mode;
+		$this->stop_processing    = $stop_processing;
+		$this->max_applications   = $max_applications;
+		$this->created_by         = $created_by;
 		$this->created_at   = $created_at;
 		$this->updated_at   = $updated_at;
 	}
@@ -112,6 +131,14 @@ final class Promotion {
 		$id          = ( $raw_id !== null && $raw_id > 0 ) ? $raw_id : null;
 		$usage_limit = self::optional_int( $data['usage_limit'] ?? null );
 		$created_by  = self::optional_int( $data['created_by'] ?? null );
+		$max_apps    = self::optional_int( $data['max_applications'] ?? null );
+
+		$application_mode = isset( $data['application_mode'] )
+			? trim( (string) $data['application_mode'] )
+			: PromotionApplicationMode::EXCLUSIVE;
+		if ( $application_mode === '' ) {
+			$application_mode = PromotionApplicationMode::EXCLUSIVE;
+		}
 
 		return new self(
 			$id,
@@ -127,6 +154,9 @@ final class Promotion {
 			$restrictions,
 			$usage_limit,
 			(int) ( $data['usage_count'] ?? 0 ),
+			$application_mode,
+			self::normalize_stop_processing( $data['stop_processing'] ?? true ),
+			$max_apps,
 			$created_by,
 			self::optional_string( $data['created_at'] ?? null ),
 			self::optional_string( $data['updated_at'] ?? null )
@@ -149,9 +179,12 @@ final class Promotion {
 			'conditions'   => $this->conditions,
 			'actions'      => $this->actions,
 			'restrictions' => $this->restrictions,
-			'usage_limit'  => $this->usage_limit,
-			'usage_count'  => $this->usage_count,
-			'created_by'   => $this->created_by,
+			'usage_limit'        => $this->usage_limit,
+			'usage_count'        => $this->usage_count,
+			'application_mode'   => $this->application_mode,
+			'stop_processing'    => $this->stop_processing,
+			'max_applications'   => $this->max_applications,
+			'created_by'         => $this->created_by,
 			'created_at'   => $this->created_at,
 			'updated_at'   => $this->updated_at,
 		);
@@ -218,6 +251,18 @@ final class Promotion {
 		return $this->usage_count;
 	}
 
+	public function get_application_mode(): string {
+		return $this->application_mode;
+	}
+
+	public function should_stop_processing(): bool {
+		return $this->stop_processing;
+	}
+
+	public function get_max_applications(): ?int {
+		return $this->max_applications;
+	}
+
 	public function get_created_by(): ?int {
 		return $this->created_by;
 	}
@@ -245,6 +290,9 @@ final class Promotion {
 			$this->restrictions,
 			$this->usage_limit,
 			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -266,6 +314,9 @@ final class Promotion {
 			$this->restrictions,
 			$this->usage_limit,
 			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -287,6 +338,9 @@ final class Promotion {
 			$this->restrictions,
 			$this->usage_limit,
 			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -308,6 +362,9 @@ final class Promotion {
 			$this->restrictions,
 			$this->usage_limit,
 			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -329,6 +386,9 @@ final class Promotion {
 			$this->restrictions,
 			$this->usage_limit,
 			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -354,6 +414,9 @@ final class Promotion {
 			$this->restrictions,
 			$this->usage_limit,
 			$usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -380,10 +443,55 @@ final class Promotion {
 			$restrictions,
 			$this->usage_limit,
 			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
 		);
+	}
+
+	public function with_application_rules(
+		string $application_mode,
+		bool $stop_processing,
+		?int $max_applications
+	): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->usage_count,
+			$application_mode,
+			$stop_processing,
+			$max_applications,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	/**
+	 * @param mixed $value
+	 */
+	private static function normalize_stop_processing( $value ): bool {
+		if ( $value === true || $value === 1 || $value === '1' ) {
+			return true;
+		}
+		if ( $value === false || $value === 0 || $value === '0' ) {
+			return false;
+		}
+
+		return true;
 	}
 
 	/**

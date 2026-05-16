@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Tests\Unit;
 
+use MP\CommercePromotions\Domain\Promotion;
+use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\RuleTypes;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
@@ -322,5 +324,40 @@ final class PromotionRuleValidatorTest extends TestCase {
 		}
 
 		return false;
+	}
+
+	public function test_stackable_mode_emits_info(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 0.0,
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 5.0,
+				),
+			)
+		)->with_application_rules( PromotionApplicationMode::STACKABLE, true, null );
+
+		$issues = $this->validator->validate( $promotion );
+		$this->assertContains( 'info', $this->levels( $issues ) );
+		$this->assertTrue(
+			$this->has_error_containing( $this->messages( $issues ), 'Stackable mode is groundwork' )
+		);
+	}
+
+	public function test_invalid_application_mode_in_domain_prevents_validator_path(): void {
+		$this->expectException( \InvalidArgumentException::class );
+		Promotion::from_array(
+			array(
+				'uuid'             => '11111111-1111-4111-8111-111111111111',
+				'name'             => 'Bad mode',
+				'status'           => PromotionStatus::DRAFT,
+				'application_mode' => 'combined',
+			)
+		);
 	}
 }

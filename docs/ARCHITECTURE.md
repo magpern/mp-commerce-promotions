@@ -168,7 +168,7 @@ src/Infrastructure/Database/MigrationRunner.php
 ### Current Schema Version
 
 ```text
-1.4.0
+1.5.0
 ```
 
 ---
@@ -312,6 +312,18 @@ fixed_amount_discount
 - Only the first supported action is currently applied in the MVP.
 - Unknown condition/action types should fail safely.
 - Evaluation should not mutate cart/order/database state.
+
+### Application planning (stacking groundwork)
+
+Each promotion row stores application strategy fields:
+
+- **`application_mode`** — `exclusive` (default) or `stackable` (groundwork for future multi-apply).
+- **`stop_processing`** — when true (default), no further promotions are selected in a plan after this one is selected.
+- **`max_applications`** — reserved for future caps; nullable today.
+
+`PromotionPlanner::plan()` evaluates promotions in caller order (typically priority, then id), builds a `PromotionEvaluationPlan` of `PromotionEvaluationDecision` entries (selected flag + `skipped_reason`: `not_eligible`, `blocked_by_exclusive_promotion`, `stopped_processing`), and does not apply cart fees.
+
+`CartPromotionApplier` uses the planner for automatic and code-linked promotions but still applies **only the first selected promotion’s first supported action** as a single negative fee (MVP unchanged on storefront).
 
 ---
 

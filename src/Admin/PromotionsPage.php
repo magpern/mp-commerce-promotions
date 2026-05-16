@@ -251,6 +251,7 @@ final class PromotionsPage {
 			__( 'Batches', 'mp-commerce-promotions' ),
 			__( 'Redemptions', 'mp-commerce-promotions' ),
 			__( 'Validation', 'mp-commerce-promotions' ),
+			__( 'Application', 'mp-commerce-promotions' ),
 			__( 'Priority', 'mp-commerce-promotions' ),
 			__( 'Usage', 'mp-commerce-promotions' ),
 			__( 'Starts', 'mp-commerce-promotions' ),
@@ -285,6 +286,7 @@ final class PromotionsPage {
 			echo '<td>' . esc_html( $this->format_batches_summary( $pid ) ) . '</td>';
 			echo '<td>' . esc_html( $this->format_redemptions_summary( $pid ) ) . '</td>';
 			echo '<td>' . esc_html( $this->format_validation_summary( $promo ) ) . '</td>';
+			echo '<td>' . esc_html( $this->format_application_summary( $promo ) ) . '</td>';
 			echo '<td>' . esc_html( (string) $promo->get_priority() ) . '</td>';
 			echo '<td>' . esc_html( $this->format_usage( $promo ) ) . '</td>';
 			echo '<td>' . esc_html( $this->format_datetime( $promo->get_starts_at() ) ) . '</td>';
@@ -468,6 +470,19 @@ final class PromotionsPage {
 			__( '%1$d / %2$d', 'mp-commerce-promotions' ),
 			$recorded,
 			$reversed
+		);
+	}
+
+	private function format_application_summary( Promotion $promotion ): string {
+		$mode = $promotion->get_application_mode();
+		$stop = $promotion->should_stop_processing()
+			? __( 'stop', 'mp-commerce-promotions' )
+			: __( 'continue', 'mp-commerce-promotions' );
+
+		return sprintf(
+			'%s / %s',
+			$mode,
+			$stop
 		);
 	}
 

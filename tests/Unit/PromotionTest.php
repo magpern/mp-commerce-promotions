@@ -9,6 +9,7 @@ namespace MP\CommercePromotions\Tests\Unit;
 
 use InvalidArgumentException;
 use MP\CommercePromotions\Domain\Promotion;
+use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\RuleTypes;
 use PHPUnit\Framework\TestCase;
@@ -71,6 +72,39 @@ final class PromotionTest extends TestCase {
 
 		$this->expectException( InvalidArgumentException::class );
 		$promotion->with_status( 'invalid' );
+	}
+
+	public function test_from_array_includes_application_rules_defaults(): void {
+		$promotion = Promotion::from_array(
+			array(
+				'uuid'   => '11111111-1111-4111-8111-111111111111',
+				'name'   => 'Promo',
+				'status' => PromotionStatus::DRAFT,
+			)
+		);
+
+		$this->assertSame( PromotionApplicationMode::EXCLUSIVE, $promotion->get_application_mode() );
+		$this->assertTrue( $promotion->should_stop_processing() );
+		$this->assertNull( $promotion->get_max_applications() );
+
+		$array = $promotion->to_array();
+		$this->assertSame( PromotionApplicationMode::EXCLUSIVE, $array['application_mode'] );
+		$this->assertTrue( $array['stop_processing'] );
+	}
+
+	public function test_with_application_rules(): void {
+		$promotion = Promotion::from_array(
+			array(
+				'uuid'   => '11111111-1111-4111-8111-111111111111',
+				'name'   => 'Promo',
+				'status' => PromotionStatus::DRAFT,
+			)
+		);
+
+		$updated = $promotion->with_application_rules( PromotionApplicationMode::STACKABLE, false, 3 );
+		$this->assertSame( PromotionApplicationMode::STACKABLE, $updated->get_application_mode() );
+		$this->assertFalse( $updated->should_stop_processing() );
+		$this->assertSame( 3, $updated->get_max_applications() );
 	}
 
 	public function test_with_usage_count_rejects_negative(): void {

@@ -14,7 +14,9 @@ use MP\CommercePromotions\Domain\PromotionCode;
 use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Engine\EvaluationContext;
+use MP\CommercePromotions\Engine\PromotionEvaluationDecision;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
+use MP\CommercePromotions\Engine\PromotionPlanner;
 use MP\CommercePromotions\Service\Settings;
 
 final class CartPromotionApplier {
@@ -31,6 +33,8 @@ final class CartPromotionApplier {
 
 	private PromotionEvaluator $evaluator;
 
+	private PromotionPlanner $planner;
+
 	private CartContextBuilder $context_builder;
 
 	private Settings $settings;
@@ -40,11 +44,13 @@ final class CartPromotionApplier {
 		PromotionCodeRepository $promotion_codes,
 		PromotionEvaluator $evaluator,
 		CartContextBuilder $context_builder,
-		Settings $settings
+		Settings $settings,
+		?PromotionPlanner $planner = null
 	) {
 		$this->promotions      = $promotions;
 		$this->promotion_codes = $promotion_codes;
 		$this->evaluator       = $evaluator;
+		$this->planner         = $planner ?? new PromotionPlanner( $evaluator );
 		$this->context_builder = $context_builder;
 		$this->settings        = $settings;
 	}
@@ -134,13 +140,20 @@ final class CartPromotionApplier {
 				return true;
 			}
 
-			$applied = $this->apply_first_discount_fee_for_promotion(
-				$promotion,
-				$context,
-				$subtotal,
-				$cart,
-				$promotion_code
-			);
+			$plan    = $this->planner->plan( array( $promotion ), $context );
+			$applied = false;
+			foreach ( $plan->get_selected_decisions() as $decision ) {
+				$applied = $this->apply_first_discount_fee_for_decision(
+					$decision,
+					$context,
+					$subtotal,
+					$cart,
+					$promotion_code
+				);
+				if ( is_array( $applied ) ) {
+					break;
+				}
+			}
 
 			if ( is_array( $applied ) ) {
 				$this->store_applied_promotion_session(
@@ -166,8 +179,10 @@ final class CartPromotionApplier {
 	 */
 	private function apply_automatic_first_eligible_promotion( $cart, EvaluationContext $context, float $subtotal ): void {
 		$active = $this->promotions->find_active( 50 );
-		foreach ( $active as $promotion ) {
-			$applied = $this->apply_first_discount_fee_for_promotion( $promotion, $context, $subtotal, $cart, null );
+		$plan   = $this->planner->plan( $active, $context );
+
+		foreach ( $plan->get_selected_decisions() as $decision ) {
+			$applied = $this->apply_first_discount_fee_for_decision( $decision, $context, $subtotal, $cart, null );
 			if ( is_array( $applied ) ) {
 				$this->store_applied_promotion_session(
 					$applied['promotion'],
@@ -241,15 +256,16 @@ final class CartPromotionApplier {
 	 * @param PromotionCode|null $promotion_code When set, fee label uses masked code last4.
 	 * @return array<string, mixed>|false
 	 */
-	private function apply_first_discount_fee_for_promotion(
-		Promotion $promotion,
+	private function apply_first_discount_fee_for_decision(
+		PromotionEvaluationDecision $decision,
 		EvaluationContext $context,
 		float $subtotal,
 		$cart,
 		?PromotionCode $promotion_code
 	) {
-		$result = $this->evaluator->evaluate( $promotion, $context );
-		if ( ! $result->is_eligible() ) {
+		$promotion = $decision->get_promotion();
+		$result    = $decision->get_result();
+		if ( ! $decision->is_selected() || ! $result->is_eligible() ) {
 			return false;
 		}
 
