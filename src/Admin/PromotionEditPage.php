@@ -29,6 +29,7 @@ use MP\CommercePromotions\Service\PromotionCodeBatchGenerationOutcome;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
+use MP\CommercePromotions\Service\SimpleRuleBuilder;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use RuntimeException;
 use Throwable;
@@ -126,6 +127,7 @@ final class PromotionEditPage {
 		$this->handle_post_download_generated_codes_csv( $promotion );
 
 		$this->handle_post_change_status( $promotion );
+		$this->handle_post_apply_rule_builder( $promotion );
 		$this->handle_post_update( $promotion );
 		$this->handle_post_create_promotion_code( $promotion );
 		$this->handle_post_change_promotion_code_status( $promotion );
@@ -674,6 +676,90 @@ final class PromotionEditPage {
 		$this->redirect_to_edit( $pid, array( 'mp_cp_status_saved' => '1' ) );
 	}
 
+	private function handle_post_apply_rule_builder( Promotion $promotion ): void {
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		$action = isset( $_POST['mp_cp_action'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_action'] ) ) : '';
+		if ( $action !== 'apply_rule_builder' ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mp-commerce-promotions' ) );
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$nonce_action = 'mp_cp_apply_rule_builder_' . $pid;
+		if ( ! isset( $_POST['mp_cp_apply_rule_builder_nonce'] ) ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_rule_builder_error' => 'missing_nonce' ) );
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_apply_rule_builder_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_rule_builder_error' => 'invalid_nonce' ) );
+		}
+
+		$post_id = isset( $_POST['mp_cp_promotion_id'] ) ? (int) $_POST['mp_cp_promotion_id'] : 0;
+		if ( $post_id !== $pid ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_rule_builder_error' => 'id_mismatch' ) );
+		}
+
+		$post = array(
+			'mp_cp_builder_condition_type' => isset( $_POST['mp_cp_builder_condition_type'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_condition_type'] )
+				: '',
+			'mp_cp_builder_action_type'    => isset( $_POST['mp_cp_builder_action_type'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_action_type'] )
+				: '',
+			'mp_cp_builder_amount'         => isset( $_POST['mp_cp_builder_amount'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_amount'] )
+				: '',
+			'mp_cp_builder_product_id'     => isset( $_POST['mp_cp_builder_product_id'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_product_id'] )
+				: '',
+			'mp_cp_builder_category_id'    => isset( $_POST['mp_cp_builder_category_id'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_category_id'] )
+				: '',
+			'mp_cp_builder_operator'       => isset( $_POST['mp_cp_builder_operator'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_operator'] )
+				: '',
+			'mp_cp_builder_quantity'       => isset( $_POST['mp_cp_builder_quantity'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_quantity'] )
+				: '',
+			'mp_cp_builder_percentage'     => isset( $_POST['mp_cp_builder_percentage'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_percentage'] )
+				: '',
+			'mp_cp_builder_fixed_amount'   => isset( $_POST['mp_cp_builder_fixed_amount'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_fixed_amount'] )
+				: '',
+		);
+
+		try {
+			$built = SimpleRuleBuilder::build_from_post( $post );
+		} catch ( InvalidArgumentException $e ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_rule_builder_error' => $e->getMessage() ) );
+		}
+
+		try {
+			$updated = $promotion->with_rules(
+				$built['conditions'],
+				$built['actions'],
+				$promotion->get_restrictions()
+			);
+			$this->promotion_service->update_promotion( $updated, (int) get_current_user_id() );
+		} catch ( RuntimeException $e ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_rule_builder_error' => 'update_failed' ) );
+		}
+
+		$this->redirect_to_edit( $pid, array( 'mp_cp_rule_builder_saved' => '1' ) );
+	}
+
 	private function handle_post_update( Promotion $promotion ): void {
 		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
 			return;
@@ -857,6 +943,50 @@ final class PromotionEditPage {
 			if ( $msg !== '' ) {
 				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
 			}
+		}
+
+		if ( isset( $_GET['mp_cp_rule_builder_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_rule_builder_saved'] ) ) === '1' ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Rules updated from the simple rule builder.', 'mp-commerce-promotions' ) . '</p></div>';
+		}
+
+		if ( isset( $_GET['mp_cp_rule_builder_error'] ) ) {
+			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_rule_builder_error'] ) );
+			$msg  = $this->rule_builder_error_message_for_code( $code );
+			if ( $msg !== '' ) {
+				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
+			}
+		}
+	}
+
+	private function rule_builder_error_message_for_code( string $code ): string {
+		switch ( $code ) {
+			case 'invalid_nonce':
+			case 'missing_nonce':
+				return __( 'Security check failed while applying the rule builder. Please try again.', 'mp-commerce-promotions' );
+			case 'id_mismatch':
+				return __( 'Invalid rule builder form submission.', 'mp-commerce-promotions' );
+			case 'invalid_condition_type':
+				return __( 'Please choose a supported condition type.', 'mp-commerce-promotions' );
+			case 'invalid_action_type':
+				return __( 'Please choose a supported action type.', 'mp-commerce-promotions' );
+			case 'invalid_operator':
+				return __( 'Please choose a supported operator.', 'mp-commerce-promotions' );
+			case 'invalid_amount':
+				return __( 'Enter a valid minimum subtotal amount.', 'mp-commerce-promotions' );
+			case 'invalid_product_id':
+				return __( 'Enter a valid numeric product ID greater than zero.', 'mp-commerce-promotions' );
+			case 'invalid_category_id':
+				return __( 'Enter a valid numeric category ID greater than zero.', 'mp-commerce-promotions' );
+			case 'invalid_quantity':
+				return __( 'Enter a valid quantity.', 'mp-commerce-promotions' );
+			case 'invalid_percentage':
+				return __( 'Enter a valid percentage greater than zero and up to 100.', 'mp-commerce-promotions' );
+			case 'invalid_fixed_amount':
+				return __( 'Enter a valid fixed discount amount greater than zero.', 'mp-commerce-promotions' );
+			case 'update_failed':
+				return __( 'Could not save rules from the builder. Please try again.', 'mp-commerce-promotions' );
+			default:
+				return '';
 		}
 	}
 
@@ -1087,6 +1217,70 @@ final class PromotionEditPage {
 		echo '</div>';
 	}
 
+	private function render_simple_rule_builder_section( Promotion $promotion ): void {
+		$id = $promotion->get_id();
+		if ( $id === null || $id <= 0 ) {
+			return;
+		}
+
+		$nonce_action = 'mp_cp_apply_rule_builder_' . $id;
+
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:8px 0 16px;">';
+		echo '<h3 style="margin-top:0;">' . esc_html__( 'Simple Rule Builder', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<p class="description">' . esc_html__(
+			'Build one condition and one action, then apply them to the JSON fields below. Name, status, priority, dates, and restrictions are not changed. Use the raw JSON fields for advanced edits.',
+			'mp-commerce-promotions'
+		) . '</p>';
+
+		wp_nonce_field( $nonce_action, 'mp_cp_apply_rule_builder_nonce' );
+
+		echo '<table class="form-table" role="presentation"><tbody>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_condition_type">' . esc_html__( 'Condition type', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select id="mp_cp_builder_condition_type" name="mp_cp_builder_condition_type">';
+		echo '<option value="minimum_subtotal">' . esc_html__( 'Minimum subtotal', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="product_quantity">' . esc_html__( 'Product quantity', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="category_quantity">' . esc_html__( 'Category quantity', 'mp-commerce-promotions' ) . '</option>';
+		echo '</select></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_amount">' . esc_html__( 'Minimum subtotal amount', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_amount" name="mp_cp_builder_amount" min="0" step="0.01" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_product_id">' . esc_html__( 'Product ID', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_product_id" name="mp_cp_builder_product_id" min="1" step="1" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_category_id">' . esc_html__( 'Category ID', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_category_id" name="mp_cp_builder_category_id" min="1" step="1" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_operator">' . esc_html__( 'Operator', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select id="mp_cp_builder_operator" name="mp_cp_builder_operator">';
+		foreach ( array( '>=', '>', '=', '<=', '<' ) as $op ) {
+			echo '<option value="' . esc_attr( $op ) . '">' . esc_html( $op ) . '</option>';
+		}
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Used for product quantity and category quantity conditions.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_quantity">' . esc_html__( 'Quantity', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_quantity" name="mp_cp_builder_quantity" min="0" step="1" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_action_type">' . esc_html__( 'Action type', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select id="mp_cp_builder_action_type" name="mp_cp_builder_action_type">';
+		echo '<option value="percentage_discount">' . esc_html__( 'Percentage discount', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="fixed_amount_discount">' . esc_html__( 'Fixed amount discount', 'mp-commerce-promotions' ) . '</option>';
+		echo '</select></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_percentage">' . esc_html__( 'Percentage', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_percentage" name="mp_cp_builder_percentage" min="0.01" max="100" step="0.01" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_fixed_amount">' . esc_html__( 'Fixed discount amount', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_fixed_amount" name="mp_cp_builder_fixed_amount" min="0.01" step="0.01" /></td></tr>';
+
+		echo '</tbody></table>';
+
+		echo '<p><button type="submit" class="button" name="mp_cp_action" value="apply_rule_builder">' . esc_html__( 'Apply builder to JSON', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</div>';
+	}
+
 	private function render_rule_templates_section(): void {
 		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:8px 0 16px;">';
 		echo '<h3 style="margin-top:0;">' . esc_html__( 'Rule templates', 'mp-commerce-promotions' ) . '</h3>';
@@ -1167,6 +1361,10 @@ final class PromotionEditPage {
 		echo '<tr><th scope="row"><label for="mp_cp_ends">' . esc_html__( 'Ends at', 'mp-commerce-promotions' ) . '</label></th><td>';
 		$ends = $promotion->get_ends_at() ?? '';
 		echo '<input type="text" class="regular-text" id="mp_cp_ends" name="promotion_ends_at" value="' . esc_attr( $ends ) . '" placeholder="' . esc_attr__( 'YYYY-MM-DD HH:MM:SS or leave empty', 'mp-commerce-promotions' ) . '" /></td></tr>';
+
+		echo '<tr><td colspan="2">';
+		$this->render_simple_rule_builder_section( $promotion );
+		echo '</td></tr>';
 
 		echo '<tr><td colspan="2">';
 		$this->render_rule_templates_section();
