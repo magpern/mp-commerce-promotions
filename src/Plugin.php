@@ -148,7 +148,15 @@ final class Plugin {
 				$batch_generator,
 				$this->audit_logger
 			);
-			$promotions_page = new PromotionsPage( $this->promotion_repository, $this->promotion_service, $edit_page );
+			$promotions_page = new PromotionsPage(
+				$this->promotion_repository,
+				$this->promotion_service,
+				$edit_page,
+				$this->promotion_code_repository,
+				$batch_repository,
+				$this->redemption_repository,
+				$rule_validator
+			);
 		}
 
 		$settings_page = new SettingsPage( $this->settings );

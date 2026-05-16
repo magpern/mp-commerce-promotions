@@ -11,8 +11,12 @@ namespace MP\CommercePromotions\Admin;
 
 use InvalidArgumentException;
 use MP\CommercePromotions\Domain\Promotion;
+use MP\CommercePromotions\Domain\PromotionCodeBatchRepository;
+use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
+use MP\CommercePromotions\Domain\RedemptionRepository;
+use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
 use RuntimeException;
 
@@ -28,14 +32,30 @@ final class PromotionsPage {
 
 	private PromotionEditPage $edit_page;
 
+	private ?PromotionCodeRepository $promotion_codes;
+
+	private ?PromotionCodeBatchRepository $code_batches;
+
+	private ?RedemptionRepository $redemptions;
+
+	private PromotionRuleValidator $rule_validator;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionService $promotion_service,
-		PromotionEditPage $edit_page
+		PromotionEditPage $edit_page,
+		?PromotionCodeRepository $promotion_codes = null,
+		?PromotionCodeBatchRepository $code_batches = null,
+		?RedemptionRepository $redemptions = null,
+		?PromotionRuleValidator $rule_validator = null
 	) {
 		$this->promotions         = $promotions;
 		$this->promotion_service = $promotion_service;
 		$this->edit_page         = $edit_page;
+		$this->promotion_codes   = $promotion_codes;
+		$this->code_batches      = $code_batches;
+		$this->redemptions       = $redemptions;
+		$this->rule_validator    = $rule_validator ?? new PromotionRuleValidator();
 	}
 
 	public function render(): void {
@@ -227,6 +247,10 @@ final class PromotionsPage {
 			__( 'ID', 'mp-commerce-promotions' ),
 			__( 'Name', 'mp-commerce-promotions' ),
 			__( 'Status', 'mp-commerce-promotions' ),
+			__( 'Codes', 'mp-commerce-promotions' ),
+			__( 'Batches', 'mp-commerce-promotions' ),
+			__( 'Redemptions', 'mp-commerce-promotions' ),
+			__( 'Validation', 'mp-commerce-promotions' ),
 			__( 'Priority', 'mp-commerce-promotions' ),
 			__( 'Usage', 'mp-commerce-promotions' ),
 			__( 'Starts', 'mp-commerce-promotions' ),
@@ -257,6 +281,10 @@ final class PromotionsPage {
 			echo '<td>' . esc_html( (string) ( $pid ?? '' ) ) . '</td>';
 			echo '<td>' . esc_html( $promo->get_name() ) . $edit . '</td>';
 			echo '<td>' . esc_html( $promo->get_status() ) . '</td>';
+			echo '<td>' . esc_html( $this->format_codes_summary( $pid ) ) . '</td>';
+			echo '<td>' . esc_html( $this->format_batches_summary( $pid ) ) . '</td>';
+			echo '<td>' . esc_html( $this->format_redemptions_summary( $pid ) ) . '</td>';
+			echo '<td>' . esc_html( $this->format_validation_summary( $promo ) ) . '</td>';
 			echo '<td>' . esc_html( (string) $promo->get_priority() ) . '</td>';
 			echo '<td>' . esc_html( $this->format_usage( $promo ) ) . '</td>';
 			echo '<td>' . esc_html( $this->format_datetime( $promo->get_starts_at() ) ) . '</td>';
@@ -406,6 +434,89 @@ final class PromotionsPage {
 		echo '<input type="text" class="regular-text" id="mp_cp_promotion_name" name="promotion_name" maxlength="191" required /></p>';
 		echo '<p><button type="submit" name="mp_cp_create_promotion_submit" value="1" class="button button-primary">' . esc_html__( 'Create draft promotion', 'mp-commerce-promotions' ) . '</button></p>';
 		echo '</form>';
+	}
+
+	private function format_codes_summary( ?int $promotion_id ): string {
+		if ( $promotion_id === null || $promotion_id <= 0 || $this->promotion_codes === null ) {
+			return '—';
+		}
+
+		$total  = $this->promotion_codes->count_for_promotion( $promotion_id );
+		$active = $this->promotion_codes->count_active_for_promotion( $promotion_id );
+
+		return sprintf(
+			/* translators: 1: active code count, 2: total code count */
+			__( '%1$d / %2$d', 'mp-commerce-promotions' ),
+			$active,
+			$total
+		);
+	}
+
+	private function format_batches_summary( ?int $promotion_id ): string {
+		if ( $promotion_id === null || $promotion_id <= 0 || $this->code_batches === null ) {
+			return '—';
+		}
+
+		return (string) $this->code_batches->count_for_promotion( $promotion_id );
+	}
+
+	private function format_redemptions_summary( ?int $promotion_id ): string {
+		if ( $promotion_id === null || $promotion_id <= 0 || $this->redemptions === null ) {
+			return '—';
+		}
+
+		$recorded = $this->redemptions->count_recorded_for_promotion( $promotion_id );
+		$reversed = $this->redemptions->count_reversed_for_promotion( $promotion_id );
+
+		return sprintf(
+			/* translators: 1: recorded redemption count, 2: reversed redemption count */
+			__( '%1$d / %2$d', 'mp-commerce-promotions' ),
+			$recorded,
+			$reversed
+		);
+	}
+
+	private function format_validation_summary( Promotion $promotion ): string {
+		$issues = $this->rule_validator->validate( $promotion );
+
+		$error_count   = 0;
+		$warning_count = 0;
+
+		foreach ( $issues as $issue ) {
+			if ( ! is_array( $issue ) ) {
+				continue;
+			}
+			$level = isset( $issue['level'] ) ? (string) $issue['level'] : '';
+			if ( $level === 'error' ) {
+				++$error_count;
+			} elseif ( $level === 'warning' ) {
+				++$warning_count;
+			}
+		}
+
+		if ( $error_count === 0 && $warning_count === 0 ) {
+			return __( 'OK', 'mp-commerce-promotions' );
+		}
+
+		$parts = array();
+
+		if ( $error_count > 0 ) {
+			$parts[] = sprintf(
+				/* translators: %d: error count */
+				_n( '%d error', '%d errors', $error_count, 'mp-commerce-promotions' ),
+				$error_count
+			);
+		}
+
+		if ( $warning_count > 0 ) {
+			$parts[] = sprintf(
+				/* translators: %d: warning count */
+				_n( '%d warning', '%d warnings', $warning_count, 'mp-commerce-promotions' ),
+				$warning_count
+			);
+		}
+
+		return implode( ', ', $parts );
 	}
 
 	private function format_usage( Promotion $promo ): string {

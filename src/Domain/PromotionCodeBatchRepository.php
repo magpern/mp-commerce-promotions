@@ -128,4 +128,25 @@ final class PromotionCodeBatchRepository {
 
 		return $out;
 	}
+
+	public function count_for_promotion( int $promotion_id ): int {
+		if ( $promotion_id <= 0 ) {
+			return 0;
+		}
+
+		$table = Schema::code_batches_table( $this->wpdb );
+		$sql   = "SELECT COUNT(*) FROM {$table} WHERE promotion_id = %d";
+
+		$prepared = $this->wpdb->prepare( $sql, $promotion_id );
+		if ( ! is_string( $prepared ) ) {
+			return 0;
+		}
+
+		$count = $this->wpdb->get_var( $prepared );
+		if ( ! is_numeric( $count ) ) {
+			return 0;
+		}
+
+		return (int) $count;
+	}
 }

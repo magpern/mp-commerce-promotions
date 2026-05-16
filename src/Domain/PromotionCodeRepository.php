@@ -286,6 +286,48 @@ final class PromotionCodeRepository {
 		return (int) $count;
 	}
 
+	public function count_for_promotion( int $promotion_id ): int {
+		if ( $promotion_id <= 0 ) {
+			return 0;
+		}
+
+		$table = Schema::promotion_codes_table( $this->wpdb );
+		$sql   = "SELECT COUNT(*) FROM {$table} WHERE promotion_id = %d";
+
+		$prepared = $this->wpdb->prepare( $sql, $promotion_id );
+		if ( ! is_string( $prepared ) ) {
+			return 0;
+		}
+
+		$count = $this->wpdb->get_var( $prepared );
+		if ( ! is_numeric( $count ) ) {
+			return 0;
+		}
+
+		return (int) $count;
+	}
+
+	public function count_active_for_promotion( int $promotion_id ): int {
+		if ( $promotion_id <= 0 ) {
+			return 0;
+		}
+
+		$table = Schema::promotion_codes_table( $this->wpdb );
+		$sql   = "SELECT COUNT(*) FROM {$table} WHERE promotion_id = %d AND status = %s";
+
+		$prepared = $this->wpdb->prepare( $sql, $promotion_id, PromotionCode::STATUS_ACTIVE );
+		if ( ! is_string( $prepared ) ) {
+			return 0;
+		}
+
+		$count = $this->wpdb->get_var( $prepared );
+		if ( ! is_numeric( $count ) ) {
+			return 0;
+		}
+
+		return (int) $count;
+	}
+
 	public function count_for_batch_with_status( int $batch_id, string $status ): int {
 		if ( $batch_id <= 0 || ! PromotionCode::is_valid_status( $status ) ) {
 			return 0;
