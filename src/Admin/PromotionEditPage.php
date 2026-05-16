@@ -127,6 +127,7 @@ final class PromotionEditPage {
 		$this->handle_post_download_generated_codes_csv( $promotion );
 
 		$this->handle_post_change_status( $promotion );
+		$this->handle_post_duplicate_promotion( $promotion );
 		$this->handle_post_apply_rule_builder( $promotion );
 		$this->handle_post_update( $promotion );
 		$this->handle_post_create_promotion_code( $promotion );
@@ -144,10 +145,9 @@ final class PromotionEditPage {
 		$pid = $promotion->get_id();
 
 		echo '<div class="wrap">';
-		$this->render_notices();
+		$this->render_edit_page_notices();
 		$this->render_code_batch_generation_outcome();
-		echo '<h1>' . esc_html__( 'Edit promotion', 'mp-commerce-promotions' ) . '</h1>';
-		echo '<p>';
+		echo '<p class="mp-cp-edit-back-links">';
 		echo '<a href="' . esc_url( $this->list_url() ) . '">' . esc_html__( '← Back to promotions', 'mp-commerce-promotions' ) . '</a>';
 		if ( $this->batch_detail instanceof PromotionCodeBatch && $pid !== null && $pid > 0 ) {
 			echo ' | <a href="' . esc_url( $this->edit_url( (string) $pid ) ) . '">' . esc_html__( '← Back to promotion', 'mp-commerce-promotions' ) . '</a>';
@@ -158,10 +158,11 @@ final class PromotionEditPage {
 			$this->render_batch_detail_section( $this->batch_detail );
 		}
 
+		$this->render_edit_header_summary( $promotion );
 		$this->render_status_section( $promotion );
+		$this->render_form( $promotion );
 		$this->render_rule_validation_section( $promotion );
 		$this->render_cart_preview_section( $promotion );
-		$this->render_form( $promotion );
 		$this->render_promotion_codes_section( $promotion );
 		$this->render_usage_redemptions_section( $promotion );
 		$this->render_audit_log_section( $promotion );
@@ -676,6 +677,63 @@ final class PromotionEditPage {
 		$this->redirect_to_edit( $pid, array( 'mp_cp_status_saved' => '1' ) );
 	}
 
+	private function handle_post_duplicate_promotion( Promotion $promotion ): void {
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		$action = isset( $_POST['mp_cp_action'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_action'] ) ) : '';
+		if ( $action !== 'duplicate_promotion' ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mp-commerce-promotions' ) );
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$nonce_action = 'mp_cp_duplicate_promotion_' . $pid;
+		if ( ! isset( $_POST['mp_cp_duplicate_promotion_nonce'] ) ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_duplicate_error' => 'missing_nonce' ) );
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_duplicate_promotion_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_duplicate_error' => 'invalid_nonce' ) );
+		}
+
+		$post_promo_id = isset( $_POST['promotion_id'] ) ? (int) $_POST['promotion_id'] : 0;
+		if ( $post_promo_id !== $pid ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_duplicate_error' => 'id_mismatch' ) );
+		}
+
+		try {
+			$copy = $this->promotion_service->duplicate_as_draft( $promotion, (int) get_current_user_id() );
+		} catch ( RuntimeException $e ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_duplicate_error' => 'duplicate_failed' ) );
+		}
+
+		$new_id = $copy->get_id();
+		if ( $new_id === null || $new_id <= 0 ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_duplicate_error' => 'duplicate_failed' ) );
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'promotion'        => (string) $new_id,
+					'mp_cp_duplicated' => '1',
+				),
+				$this->edit_url( (string) $new_id )
+			)
+		);
+		exit;
+	}
+
 	private function handle_post_apply_rule_builder( Promotion $promotion ): void {
 		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
 			return;
@@ -866,95 +924,123 @@ final class PromotionEditPage {
 		return $decoded;
 	}
 
-	private function render_notices(): void {
-		if ( isset( $_GET['mp_cp_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_saved'] ) ) === '1' ) {
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Promotion saved.', 'mp-commerce-promotions' ) . '</p></div>';
-		}
-
-		if ( isset( $_GET['mp_cp_status_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_status_saved'] ) ) === '1' ) {
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Promotion status updated.', 'mp-commerce-promotions' ) . '</p></div>';
-		}
-
-		if ( isset( $_GET['mp_cp_status_error'] ) ) {
-			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_status_error'] ) );
-			$msg  = $this->status_error_message_for_code( $code );
-			if ( $msg !== '' ) {
-				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
-			}
-		}
-
-		if ( isset( $_GET['mp_cp_error'] ) ) {
-			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_error'] ) );
-			$msg  = $this->error_message_for_code( $code );
-			if ( $msg !== '' ) {
-				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
-			}
-		}
-
-		if ( isset( $_GET['mp_cp_code_created'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_code_created'] ) ) === '1' ) {
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Promotion code created.', 'mp-commerce-promotions' ) . '</p></div>';
-		}
-
-		if ( isset( $_GET['mp_cp_code_error'] ) ) {
-			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_code_error'] ) );
-			$msg  = $this->code_error_message_for_code( $code );
-			if ( $msg !== '' ) {
-				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
-			}
+	private function render_edit_page_notices(): void {
+		foreach ( $this->collect_edit_page_notices() as $notice ) {
+			$this->render_admin_notice( $notice['type'], $notice['message'] );
 		}
 
 		if ( $this->batch_detail_error !== null && $this->batch_detail_error !== '' ) {
-			echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $this->batch_detail_error ) . '</p></div>';
+			$this->render_admin_notice( 'error', $this->batch_detail_error );
+		}
+	}
+
+	/**
+	 * @return list<array{type: string, message: string}>
+	 */
+	private function collect_edit_page_notices(): array {
+		$notices = array();
+		$seen    = array();
+
+		$add = static function ( string $type, string $message ) use ( &$notices, &$seen ): void {
+			if ( $message === '' || isset( $seen[ $message ] ) ) {
+				return;
+			}
+			$seen[ $message ] = true;
+			$notices[]        = array(
+				'type'    => $type,
+				'message' => $message,
+			);
+		};
+
+		if ( isset( $_GET['mp_cp_duplicated'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_duplicated'] ) ) === '1' ) {
+			$add(
+				'success',
+				__( 'Promotion duplicated successfully. You are editing the new draft copy.', 'mp-commerce-promotions' )
+			);
+		}
+
+		if ( isset( $_GET['mp_cp_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_saved'] ) ) === '1' ) {
+			$add( 'success', __( 'Promotion saved successfully.', 'mp-commerce-promotions' ) );
+		}
+
+		if ( isset( $_GET['mp_cp_status_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_status_saved'] ) ) === '1' ) {
+			$add( 'success', __( 'Promotion status updated successfully.', 'mp-commerce-promotions' ) );
+		}
+
+		if ( isset( $_GET['mp_cp_rule_builder_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_rule_builder_saved'] ) ) === '1' ) {
+			$add( 'success', __( 'Rules updated from the simple rule builder.', 'mp-commerce-promotions' ) );
+		}
+
+		if ( isset( $_GET['mp_cp_code_created'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_code_created'] ) ) === '1' ) {
+			$add( 'success', __( 'Promotion code created successfully.', 'mp-commerce-promotions' ) );
 		}
 
 		if ( isset( $_GET['mp_cp_code_status_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_code_status_saved'] ) ) === '1' ) {
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Promotion code status updated.', 'mp-commerce-promotions' ) . '</p></div>';
-		}
-
-		if ( isset( $_GET['mp_cp_code_status_error'] ) ) {
-			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_code_status_error'] ) );
-			$msg  = $this->code_status_error_message_for_code( $code );
-			if ( $msg !== '' ) {
-				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
-			}
+			$add( 'success', __( 'Promotion code status updated successfully.', 'mp-commerce-promotions' ) );
 		}
 
 		if ( isset( $_GET['mp_cp_batch_code_status_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_batch_code_status_saved'] ) ) === '1' ) {
 			$affected = isset( $_GET['mp_cp_batch_affected'] ) ? (int) $_GET['mp_cp_batch_affected'] : 0;
-			echo '<div class="notice notice-success is-dismissible"><p>';
-			echo esc_html(
+			$add(
+				'success',
 				sprintf(
 					/* translators: %d: number of promotion codes updated */
 					_n(
-						'%d promotion code in this batch was updated.',
-						'%d promotion codes in this batch were updated.',
+						'%d promotion code in this batch was updated successfully.',
+						'%d promotion codes in this batch were updated successfully.',
 						$affected,
 						'mp-commerce-promotions'
 					),
 					$affected
 				)
 			);
-			echo '</p></div>';
 		}
 
-		if ( isset( $_GET['mp_cp_batch_code_status_error'] ) ) {
-			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_batch_code_status_error'] ) );
-			$msg  = $this->batch_code_status_error_message_for_code( $code );
+		$error_params = array(
+			'mp_cp_duplicate_error'         => array( $this, 'duplicate_error_message_for_code' ),
+			'mp_cp_error'                   => array( $this, 'error_message_for_code' ),
+			'mp_cp_status_error'            => array( $this, 'status_error_message_for_code' ),
+			'mp_cp_code_error'              => array( $this, 'code_error_message_for_code' ),
+			'mp_cp_code_status_error'       => array( $this, 'code_status_error_message_for_code' ),
+			'mp_cp_batch_code_status_error' => array( $this, 'batch_code_status_error_message_for_code' ),
+			'mp_cp_rule_builder_error'      => array( $this, 'rule_builder_error_message_for_code' ),
+		);
+
+		foreach ( $error_params as $param => $resolver ) {
+			if ( ! isset( $_GET[ $param ] ) ) {
+				continue;
+			}
+
+			$code = sanitize_text_field( wp_unslash( (string) $_GET[ $param ] ) );
+			$msg  = $resolver( $code );
 			if ( $msg !== '' ) {
-				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
+				$add( 'error', $msg );
 			}
 		}
 
-		if ( isset( $_GET['mp_cp_rule_builder_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_rule_builder_saved'] ) ) === '1' ) {
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Rules updated from the simple rule builder.', 'mp-commerce-promotions' ) . '</p></div>';
-		}
+		return $notices;
+	}
 
-		if ( isset( $_GET['mp_cp_rule_builder_error'] ) ) {
-			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_rule_builder_error'] ) );
-			$msg  = $this->rule_builder_error_message_for_code( $code );
-			if ( $msg !== '' ) {
-				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
-			}
+	private function render_admin_notice( string $type, string $message ): void {
+		$class = $type === 'success' ? 'notice-success' : 'notice-error';
+		echo '<div class="notice ' . esc_attr( $class ) . ' is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
+	}
+
+	private function security_check_failed_message(): string {
+		return __( 'Security check failed. Please try again.', 'mp-commerce-promotions' );
+	}
+
+	private function duplicate_error_message_for_code( string $code ): string {
+		switch ( $code ) {
+			case 'invalid_nonce':
+			case 'missing_nonce':
+				return $this->security_check_failed_message();
+			case 'id_mismatch':
+				return __( 'Invalid duplicate promotion form submission.', 'mp-commerce-promotions' );
+			case 'duplicate_failed':
+				return __( 'Could not duplicate the promotion. Please try again.', 'mp-commerce-promotions' );
+			default:
+				return '';
 		}
 	}
 
@@ -962,7 +1048,7 @@ final class PromotionEditPage {
 		switch ( $code ) {
 			case 'invalid_nonce':
 			case 'missing_nonce':
-				return __( 'Security check failed while applying the rule builder. Please try again.', 'mp-commerce-promotions' );
+				return $this->security_check_failed_message();
 			case 'id_mismatch':
 				return __( 'Invalid rule builder form submission.', 'mp-commerce-promotions' );
 			case 'invalid_condition_type':
@@ -994,7 +1080,7 @@ final class PromotionEditPage {
 		switch ( $code ) {
 			case 'invalid_nonce':
 			case 'missing_nonce':
-				return __( 'Security check failed while changing batch code statuses. Please try again.', 'mp-commerce-promotions' );
+				return $this->security_check_failed_message();
 			case 'id_mismatch':
 				return __( 'Invalid batch code status form submission.', 'mp-commerce-promotions' );
 			case 'batch_not_found':
@@ -1010,7 +1096,7 @@ final class PromotionEditPage {
 		switch ( $code ) {
 			case 'invalid_nonce':
 			case 'missing_nonce':
-				return __( 'Security check failed while changing promotion code status. Please try again.', 'mp-commerce-promotions' );
+				return $this->security_check_failed_message();
 			case 'id_mismatch':
 				return __( 'Invalid promotion code status form submission.', 'mp-commerce-promotions' );
 			case 'code_not_found':
@@ -1028,7 +1114,7 @@ final class PromotionEditPage {
 		switch ( $code ) {
 			case 'invalid_nonce':
 			case 'missing_nonce':
-				return __( 'Security check failed while creating a promotion code. Please try again.', 'mp-commerce-promotions' );
+				return $this->security_check_failed_message();
 			case 'empty_code':
 				return __( 'Please enter a promotion code.', 'mp-commerce-promotions' );
 			case 'invalid_code':
@@ -1048,7 +1134,7 @@ final class PromotionEditPage {
 		switch ( $code ) {
 			case 'invalid_nonce':
 			case 'missing_nonce':
-				return __( 'Security check failed. Please try again.', 'mp-commerce-promotions' );
+				return $this->security_check_failed_message();
 			case 'id_mismatch':
 				return __( 'Invalid form submission.', 'mp-commerce-promotions' );
 			case 'empty_name':
@@ -1068,7 +1154,7 @@ final class PromotionEditPage {
 		switch ( $code ) {
 			case 'invalid_nonce':
 			case 'missing_nonce':
-				return __( 'Security check failed while changing status. Please try again.', 'mp-commerce-promotions' );
+				return $this->security_check_failed_message();
 			case 'id_mismatch':
 				return __( 'Invalid status form submission.', 'mp-commerce-promotions' );
 			case 'invalid_status':
@@ -1080,6 +1166,46 @@ final class PromotionEditPage {
 		}
 	}
 
+	private function render_edit_header_summary( Promotion $promotion ): void {
+		$id = $promotion->get_id();
+		if ( $id === null || $id <= 0 ) {
+			return;
+		}
+
+		echo '<h1 style="margin-bottom:0.25em;">' . esc_html( $promotion->get_name() ) . '</h1>';
+		$usage_label = (string) $promotion->get_usage_count();
+		$usage_limit = $promotion->get_usage_limit();
+		if ( $usage_limit !== null ) {
+			$usage_label .= ' / ' . (string) $usage_limit;
+		}
+
+		echo '<p class="description" style="margin-top:0;">';
+		echo esc_html(
+			sprintf(
+				/* translators: 1: promotion ID, 2: status, 3: priority, 4: usage count (optional limit) */
+				__( 'Promotion #%1$d · Status: %2$s · Priority: %3$d · Usage: %4$s', 'mp-commerce-promotions' ),
+				$id,
+				$promotion->get_status(),
+				$promotion->get_priority(),
+				$usage_label
+			)
+		);
+		echo '</p>';
+	}
+
+	private function render_duplicate_promotion_form( string $action_url, int $promotion_id ): void {
+		echo '<form method="post" action="' . esc_url( $action_url ) . '" style="margin-top:12px;">';
+		wp_nonce_field( 'mp_cp_duplicate_promotion_' . $promotion_id, 'mp_cp_duplicate_promotion_nonce' );
+		echo '<input type="hidden" name="mp_cp_action" value="duplicate_promotion" />';
+		echo '<input type="hidden" name="promotion_id" value="' . esc_attr( (string) $promotion_id ) . '" />';
+		echo '<button type="submit" class="button">' . esc_html__( 'Duplicate promotion', 'mp-commerce-promotions' ) . '</button>';
+		echo '<p class="description" style="margin:8px 0 0;">' . esc_html__(
+			'Creates a new draft copy with the same rules. Codes, batches, redemptions, and usage counts are not copied.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '</form>';
+	}
+
 	private function render_status_section( Promotion $promotion ): void {
 		$id = $promotion->get_id();
 		if ( $id === null || $id <= 0 ) {
@@ -1087,19 +1213,20 @@ final class PromotionEditPage {
 		}
 
 		$status = $promotion->get_status();
-		echo '<div class="card" style="max-width:720px;padding:12px 16px;margin:16px 0;">';
-		echo '<h2 style="margin-top:0;">' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</h2>';
+		$url    = $this->edit_url( (string) $id );
+
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:16px 0;">';
+		echo '<h2 style="margin-top:0;">' . esc_html__( 'Status actions', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p><strong>' . esc_html__( 'Current:', 'mp-commerce-promotions' ) . '</strong> ' . esc_html( $status ) . '</p>';
 
 		if ( $status === PromotionStatus::ARCHIVED ) {
 			echo '<p class="description">' . esc_html__( 'Archived promotions cannot be reactivated.', 'mp-commerce-promotions' ) . '</p>';
+			$this->render_duplicate_promotion_form( $url, $id );
 			echo '</div>';
 			return;
 		}
 
-		echo '<p>' . esc_html__( 'Change status using the actions below. Status cannot be edited from the main form.', 'mp-commerce-promotions' ) . '</p>';
-
-		$url = $this->edit_url( (string) $id );
+		echo '<p>' . esc_html__( 'Change status using the actions below.', 'mp-commerce-promotions' ) . '</p>';
 
 		if ( $status === PromotionStatus::DRAFT ) {
 			$this->render_status_action_form( $url, $id, PromotionStatus::ACTIVE, __( 'Activate', 'mp-commerce-promotions' ) );
@@ -1111,6 +1238,8 @@ final class PromotionEditPage {
 			$this->render_status_action_form( $url, $id, PromotionStatus::ACTIVE, __( 'Activate', 'mp-commerce-promotions' ) );
 			$this->render_status_action_form( $url, $id, PromotionStatus::ARCHIVED, __( 'Archive', 'mp-commerce-promotions' ) );
 		}
+
+		$this->render_duplicate_promotion_form( $url, $id );
 
 		echo '</div>';
 	}
@@ -1570,6 +1699,8 @@ final class PromotionEditPage {
 		wp_nonce_field( $nonce_action, 'mp_cp_update_nonce' );
 		echo '<input type="hidden" name="mp_cp_promotion_id" value="' . esc_attr( (string) $id ) . '" />';
 
+		echo '<h2 class="mp-cp-edit-section-title" style="margin:1.5em 0 0.5em;">' . esc_html__( 'Promotion details', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:0 0 16px;">';
 		echo '<table class="form-table" role="presentation"><tbody>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_name">' . esc_html__( 'Name', 'mp-commerce-promotions' ) . '</label></th><td>';
@@ -1578,10 +1709,6 @@ final class PromotionEditPage {
 		echo '<tr><th scope="row"><label for="mp_cp_desc">' . esc_html__( 'Description', 'mp-commerce-promotions' ) . '</label></th><td>';
 		$desc = $promotion->get_description() ?? '';
 		echo '<textarea class="large-text" rows="3" id="mp_cp_desc" name="promotion_description">' . esc_textarea( $desc ) . '</textarea></td></tr>';
-
-		echo '<tr><th scope="row">' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</th><td>';
-		echo '<p class="description" style="margin:0;">' . esc_html( $promotion->get_status() ) . '</p>';
-		echo '<p class="description">' . esc_html__( 'Use the status actions above to change draft, active, paused, or archived.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_priority">' . esc_html__( 'Priority', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_priority" name="promotion_priority" min="0" step="1" value="' . esc_attr( (string) $promotion->get_priority() ) . '" /></td></tr>';
@@ -1594,17 +1721,21 @@ final class PromotionEditPage {
 		$ends = $promotion->get_ends_at() ?? '';
 		echo '<input type="text" class="regular-text" id="mp_cp_ends" name="promotion_ends_at" value="' . esc_attr( $ends ) . '" placeholder="' . esc_attr__( 'YYYY-MM-DD HH:MM:SS or leave empty', 'mp-commerce-promotions' ) . '" /></td></tr>';
 
-		echo '<tr><td colspan="2">';
+		echo '</tbody></table></div>';
+
+		echo '<h2 class="mp-cp-edit-section-title" style="margin:1.5em 0 0.5em;">' . esc_html__( 'Rules', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="description">' . esc_html__(
+			'Configure conditions and actions with the simple builder, ID helper, templates, or raw JSON below.',
+			'mp-commerce-promotions'
+		) . '</p>';
+
 		$this->render_simple_rule_builder_section( $promotion );
-		echo '</td></tr>';
-
-		echo '<tr><td colspan="2">';
 		$this->render_product_category_id_helper_section();
-		echo '</td></tr>';
-
-		echo '<tr><td colspan="2">';
 		$this->render_rule_templates_section();
-		echo '</td></tr>';
+
+		echo '<h3 style="margin:1.25em 0 0.5em;">' . esc_html__( 'Raw JSON editor', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:0 0 16px;">';
+		echo '<table class="form-table" role="presentation"><tbody>';
 
 		$cond_json = wp_json_encode( $promotion->get_conditions(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( ! is_string( $cond_json ) ) {
@@ -1629,7 +1760,7 @@ final class PromotionEditPage {
 		echo '<tr><th scope="row"><label for="mp_cp_res">' . esc_html__( 'Restrictions (JSON)', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<textarea class="large-text code" rows="8" id="mp_cp_res" name="promotion_restrictions_json">' . esc_textarea( $res_json ) . '</textarea></td></tr>';
 
-		echo '</tbody></table>';
+		echo '</tbody></table></div>';
 
 		echo '<p class="submit"><button type="submit" name="mp_cp_update_promotion_submit" value="1" class="button button-primary">' . esc_html__( 'Save promotion', 'mp-commerce-promotions' ) . '</button></p>';
 		echo '</form>';

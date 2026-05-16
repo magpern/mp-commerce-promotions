@@ -154,4 +154,48 @@ final class PromotionService {
 
 		return $reloaded;
 	}
+
+	public function duplicate_as_draft( Promotion $source, ?int $actor_user_id = null ): Promotion {
+		$source_id = $source->get_id();
+		if ( $source_id === null || $source_id <= 0 ) {
+			throw new RuntimeException( 'Source promotion id is required for duplication.' );
+		}
+
+		$name = sprintf(
+			/* translators: %s: original promotion name */
+			__( 'Copy of %s', 'mp-commerce-promotions' ),
+			$source->get_name()
+		);
+		if ( function_exists( 'mb_strlen' ) && mb_strlen( $name ) > 191 ) {
+			$name = mb_substr( $name, 0, 191 );
+		} elseif ( strlen( $name ) > 191 ) {
+			$name = substr( $name, 0, 191 );
+		}
+
+		$draft = $this->factory->create_draft_from_source( $source, $name, $actor_user_id );
+
+		$new_id = $this->promotions->insert( $draft );
+		if ( $new_id <= 0 ) {
+			throw new RuntimeException( 'Failed to insert duplicated promotion.' );
+		}
+
+		$saved = $this->promotions->find( $new_id );
+		if ( $saved === null ) {
+			throw new RuntimeException( 'Duplicated promotion was not found after insert.' );
+		}
+
+		$this->audit->log(
+			'promotion.duplicated',
+			$saved->get_id(),
+			array(
+				'source_promotion_id' => $source_id,
+				'new_promotion_id'    => $saved->get_id(),
+				'name'                => $saved->get_name(),
+				'uuid'                => $saved->get_uuid(),
+			),
+			$actor_user_id
+		);
+
+		return $saved;
+	}
 }
