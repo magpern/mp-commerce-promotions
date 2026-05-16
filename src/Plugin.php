@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace MP\CommercePromotions;
 
 use MP\CommercePromotions\Admin\AdminMenu;
+use MP\CommercePromotions\Admin\AdminRouter;
 use MP\CommercePromotions\Admin\DiagnosticsPage;
 use MP\CommercePromotions\Admin\PromotionEditPage;
 use MP\CommercePromotions\Admin\PromotionsPage;
@@ -149,7 +150,8 @@ final class Plugin {
 			$diagnostics_page = new DiagnosticsPage( $usage_diagnostics );
 		}
 
-		$this->admin_menu = new AdminMenu( $this->woo_bridge, $promotions_page, $settings_page, $diagnostics_page );
+		$admin_router = new AdminRouter( $promotions_page, $settings_page, $diagnostics_page );
+		$this->admin_menu = new AdminMenu( $this->woo_bridge, $admin_router );
 
 		if ( is_admin() && $this->admin_menu !== null ) {
 			$this->admin_menu->register();

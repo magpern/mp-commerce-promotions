@@ -11,36 +11,91 @@ namespace MP\CommercePromotions\Admin;
 
 final class AdminNavigation {
 
-	public const TAB_ALL_PROMOTIONS = 'mp-commerce-promotions';
+	public const PAGE_SLUG = 'mp-commerce-promotions';
 
-	public const TAB_SETTINGS = 'mp-commerce-promotions-settings';
+	public const TAB_ALL = 'all';
 
-	public const TAB_DIAGNOSTICS = 'mp-commerce-promotions-diagnostics';
+	public const TAB_SETTINGS = 'settings';
+
+	public const TAB_DIAGNOSTICS = 'diagnostics';
+
+	/** @deprecated Legacy submenu slug; use tab=settings. */
+	public const LEGACY_PAGE_SETTINGS = 'mp-commerce-promotions-settings';
+
+	/** @deprecated Legacy submenu slug; use tab=diagnostics. */
+	public const LEGACY_PAGE_DIAGNOSTICS = 'mp-commerce-promotions-diagnostics';
 
 	/**
-	 * @param self::TAB_* $active_slug
+	 * @return list<string>
 	 */
-	public static function render_tabs( string $active_slug ): void {
+	public static function allowed_tabs(): array {
+		return array(
+			self::TAB_ALL,
+			self::TAB_SETTINGS,
+			self::TAB_DIAGNOSTICS,
+		);
+	}
+
+	public static function sanitize_tab( ?string $tab ): string {
+		if ( $tab === null || $tab === '' ) {
+			return self::TAB_ALL;
+		}
+
+		$tab = sanitize_key( $tab );
+		if ( in_array( $tab, self::allowed_tabs(), true ) ) {
+			return $tab;
+		}
+
+		return self::TAB_ALL;
+	}
+
+	public static function get_current_tab(): string {
+		if ( isset( $_GET['tab'] ) ) {
+			$raw = wp_unslash( (string) $_GET['tab'] );
+			return self::sanitize_tab( $raw );
+		}
+
+		return self::TAB_ALL;
+	}
+
+	public static function tab_url( string $tab ): string {
+		$tab = self::sanitize_tab( $tab );
+
+		return add_query_arg(
+			array(
+				'page' => self::PAGE_SLUG,
+				'tab'  => $tab,
+			),
+			admin_url( 'admin.php' )
+		);
+	}
+
+	/**
+	 * @param self::TAB_*|null $active_tab
+	 */
+	public static function render_tabs( ?string $active_tab = null ): void {
+		$active = $active_tab ?? self::get_current_tab();
+
 		$tabs = array(
-			self::TAB_ALL_PROMOTIONS => array(
+			self::TAB_ALL         => array(
 				'label' => __( 'All Promotions', 'mp-commerce-promotions' ),
-				'url'   => admin_url( 'admin.php?page=' . self::TAB_ALL_PROMOTIONS ),
+				'url'   => self::tab_url( self::TAB_ALL ),
 			),
-			self::TAB_SETTINGS       => array(
+			self::TAB_SETTINGS    => array(
 				'label' => __( 'Settings', 'mp-commerce-promotions' ),
-				'url'   => admin_url( 'admin.php?page=' . self::TAB_SETTINGS ),
+				'url'   => self::tab_url( self::TAB_SETTINGS ),
 			),
-			self::TAB_DIAGNOSTICS    => array(
+			self::TAB_DIAGNOSTICS => array(
 				'label' => __( 'Diagnostics', 'mp-commerce-promotions' ),
-				'url'   => admin_url( 'admin.php?page=' . self::TAB_DIAGNOSTICS ),
+				'url'   => self::tab_url( self::TAB_DIAGNOSTICS ),
 			),
 		);
 
 		echo '<nav class="nav-tab-wrapper wp-clearfix" aria-label="' . esc_attr__( 'Promotions navigation', 'mp-commerce-promotions' ) . '">';
 
-		foreach ( $tabs as $slug => $tab ) {
+		foreach ( $tabs as $tab_key => $tab ) {
 			$class = 'nav-tab';
-			if ( $slug === $active_slug ) {
+			if ( $tab_key === $active ) {
 				$class .= ' nav-tab-active';
 			}
 

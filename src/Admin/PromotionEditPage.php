@@ -908,16 +908,13 @@ final class PromotionEditPage {
 	}
 
 	private function list_url(): string {
-		return admin_url( 'admin.php?page=mp-commerce-promotions' );
+		return AdminNavigation::tab_url( AdminNavigation::TAB_ALL );
 	}
 
 	private function edit_url( string $promotion_identifier ): string {
 		return add_query_arg(
-			array(
-				'page'       => 'mp-commerce-promotions',
-				'promotion'  => $promotion_identifier,
-			),
-			admin_url( 'admin.php' )
+			array( 'promotion' => $promotion_identifier ),
+			AdminNavigation::tab_url( AdminNavigation::TAB_ALL )
 		);
 	}
 
@@ -925,14 +922,9 @@ final class PromotionEditPage {
 	 * @param array<string, string> $extra_query
 	 */
 	private function redirect_to_edit( int $promotion_id, array $extra_query = array() ): void {
-		$args = array_merge(
-			array(
-				'page'      => 'mp-commerce-promotions',
-				'promotion' => (string) $promotion_id,
-			),
-			$extra_query
+		wp_safe_redirect(
+			add_query_arg( $extra_query, $this->edit_url( (string) $promotion_id ) )
 		);
-		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
 		exit;
 	}
 }

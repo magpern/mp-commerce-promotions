@@ -13,8 +13,6 @@ use MP\CommercePromotions\Service\UsageDiagnostics;
 
 final class DiagnosticsPage {
 
-	public const PAGE_SLUG = 'mp-commerce-promotions-diagnostics';
-
 	private const NONCE_ACTION = 'mp_cp_repair_usage_counters';
 
 	private const NONCE_FIELD = 'mp_cp_repair_usage_nonce';
@@ -173,7 +171,6 @@ final class DiagnosticsPage {
 	 */
 	private function redirect_with_notice( string $type, string $code, array $counts = array() ): void {
 		$args = array(
-			'page'              => self::PAGE_SLUG,
 			'mp_cp_diag_notice' => $type,
 			'mp_cp_diag_code'   => $code,
 		);
@@ -185,7 +182,7 @@ final class DiagnosticsPage {
 			$args['mp_cp_diag_codes'] = (int) $counts['codes'];
 		}
 
-		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
+		wp_safe_redirect( add_query_arg( $args, AdminNavigation::tab_url( AdminNavigation::TAB_DIAGNOSTICS ) ) );
 		exit;
 	}
 

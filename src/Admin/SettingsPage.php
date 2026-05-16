@@ -13,8 +13,6 @@ use MP\CommercePromotions\Service\Settings;
 
 final class SettingsPage {
 
-	public const PAGE_SLUG = 'mp-commerce-promotions-settings';
-
 	private const NONCE_ACTION = 'mp_cp_save_settings';
 
 	private const NONCE_FIELD = 'mp_cp_settings_nonce';
@@ -130,11 +128,10 @@ final class SettingsPage {
 	private function redirect_with_notice( string $type, string $code ): void {
 		$url = add_query_arg(
 			array(
-				'page'                  => self::PAGE_SLUG,
 				'mp_cp_settings_notice' => $type,
 				'mp_cp_settings_code'   => $code,
 			),
-			admin_url( 'admin.php' )
+			AdminNavigation::tab_url( AdminNavigation::TAB_SETTINGS )
 		);
 		wp_safe_redirect( $url );
 		exit;

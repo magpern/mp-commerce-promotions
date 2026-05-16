@@ -54,7 +54,7 @@ final class PromotionsPage {
 		echo '<div class="wrap">';
 		$this->render_notices();
 		echo '<h1>' . esc_html__( 'Commerce Promotions', 'mp-commerce-promotions' ) . '</h1>';
-		AdminNavigation::render_tabs( AdminNavigation::TAB_ALL_PROMOTIONS );
+		AdminNavigation::render_tabs( AdminNavigation::TAB_ALL );
 		echo '<p>' . esc_html__( 'Create draft promotions, then use Edit to change details, raw JSON rules, and status (via action buttons on the edit screen). Hard delete and visual rule builder are not implemented yet.', 'mp-commerce-promotions' ) . '</p>';
 
 		$this->render_create_form();
@@ -91,10 +91,9 @@ final class PromotionsPage {
 			if ( $pid !== null && $pid > 0 ) {
 				$edit_url = add_query_arg(
 					array(
-						'page'      => 'mp-commerce-promotions',
 						'promotion' => (string) $pid,
 					),
-					admin_url( 'admin.php' )
+					AdminNavigation::tab_url( AdminNavigation::TAB_ALL )
 				);
 				$edit = ' <a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'mp-commerce-promotions' ) . '</a>';
 			}
@@ -158,7 +157,7 @@ final class PromotionsPage {
 	}
 
 	private function promotions_admin_url(): string {
-		return admin_url( 'admin.php?page=mp-commerce-promotions' );
+		return AdminNavigation::tab_url( AdminNavigation::TAB_ALL );
 	}
 
 	private function render_notices(): void {
