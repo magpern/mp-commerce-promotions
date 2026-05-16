@@ -10,3 +10,10 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Composer (dev tooling; lockfile not pinned in this phase)
+composer.lock
+
+# PHPCS / PHPUnit caches
+.phpcs-cache
+.phpunit.result.cache

@@ -1,0 +1,30 @@
+{
+	"name": "magpern/mp-commerce-promotions",
+	"description": "Generic WooCommerce promotion engine for discounts, promotion codes, and voucher workflows.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"php": ">=7.4"
+	},
+	"require-dev": {
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"wp-coding-standards/wpcs": "^3.0"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"sort-packages": true
+	},
+	"scripts": {
+		"lint:php": [
+			"bash -c 'find . \\( -path ./vendor -o -path ./node_modules \\) -prune -o -name \"*.php\" -print0 | xargs -0 -n1 php -l'"
+		],
+		"lint:phpcs": "phpcs",
+		"lint": [
+			"@lint:php",
+			"@lint:phpcs"
+		]
+	}
+}
