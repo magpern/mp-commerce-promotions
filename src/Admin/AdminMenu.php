@@ -1,6 +1,6 @@
 <?php
 /**
- * WooCommerce admin menu: Promotions module (list, settings, future children).
+ * WooCommerce admin submenu: Promotions list and Promotion Settings.
  *
  * @package MP\CommercePromotions
  */
@@ -12,11 +12,6 @@ namespace MP\CommercePromotions\Admin;
 use MP\CommercePromotions\Woo\WooCommerceBridge;
 
 final class AdminMenu {
-
-	/**
-	 * Parent slug under WooCommerce (module root). Matches list page slug by design.
-	 */
-	public const PARENT_SLUG = 'mp-commerce-promotions';
 
 	/**
 	 * List / edit promotions screen (`admin.php?page=mp-commerce-promotions`).
@@ -52,87 +47,42 @@ final class AdminMenu {
 			return;
 		}
 
-		if ( $this->promotions_page === null && $this->settings_page === null ) {
-			return;
-		}
-
-		$this->register_promotions_parent_under_woocommerce();
-
 		if ( $this->promotions_page !== null ) {
-			$this->register_all_promotions_submenu();
+			$this->register_promotions_submenu();
 		}
 
 		if ( $this->settings_page !== null ) {
-			$this->register_settings_submenu();
+			$this->register_promotion_settings_submenu();
 		}
 	}
 
-	/**
-	 * Top-level WooCommerce item: Promotions (module root).
-	 */
-	private function register_promotions_parent_under_woocommerce(): void {
-		$callback = $this->resolve_parent_menu_callback();
+	private function register_promotions_submenu(): void {
+		if ( $this->promotions_page === null ) {
+			return;
+		}
 
 		add_submenu_page(
 			'woocommerce',
 			__( 'Promotions', 'mp-commerce-promotions' ),
 			__( 'Promotions', 'mp-commerce-promotions' ),
 			self::CAPABILITY,
-			self::PARENT_SLUG,
-			$callback
-		);
-	}
-
-	/**
-	 * Child: All Promotions (same slug as parent list screen; standard WP submenu pattern).
-	 */
-	private function register_all_promotions_submenu(): void {
-		if ( $this->promotions_page === null ) {
-			return;
-		}
-
-		add_submenu_page(
-			self::PARENT_SLUG,
-			__( 'All Promotions', 'mp-commerce-promotions' ),
-			__( 'All Promotions', 'mp-commerce-promotions' ),
-			self::CAPABILITY,
 			self::LIST_PAGE_SLUG,
 			array( $this->promotions_page, 'render' )
 		);
 	}
 
-	/**
-	 * Child: Settings (`mp-commerce-promotions-settings`).
-	 */
-	private function register_settings_submenu(): void {
+	private function register_promotion_settings_submenu(): void {
 		if ( $this->settings_page === null ) {
 			return;
 		}
 
 		add_submenu_page(
-			self::PARENT_SLUG,
-			__( 'Settings', 'mp-commerce-promotions' ),
-			__( 'Settings', 'mp-commerce-promotions' ),
+			'woocommerce',
+			__( 'Promotion Settings', 'mp-commerce-promotions' ),
+			__( 'Promotion Settings', 'mp-commerce-promotions' ),
 			self::CAPABILITY,
 			SettingsPage::PAGE_SLUG,
 			array( $this->settings_page, 'render' )
 		);
-	}
-
-	/**
-	 * Parent menu click targets the list when available; otherwise settings.
-	 *
-	 * @return callable-string|array{0: object, 1: string}
-	 */
-	private function resolve_parent_menu_callback() {
-		if ( $this->promotions_page !== null ) {
-			return array( $this->promotions_page, 'render' );
-		}
-
-		if ( $this->settings_page !== null ) {
-			return array( $this->settings_page, 'render' );
-		}
-
-		return '__return_null';
 	}
 }
