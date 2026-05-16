@@ -17,3 +17,4 @@ composer.lock
 # PHPCS / PHPUnit caches
 .phpcs-cache
 .phpunit.result.cache
+composer.phar
