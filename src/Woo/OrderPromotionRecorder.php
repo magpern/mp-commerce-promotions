@@ -252,14 +252,28 @@ final class OrderPromotionRecorder {
 				$this->promotions->update( $promotion->with_usage_count( $new_usage ) );
 			}
 
+			$promotion_code_id = (int) $order->get_meta( self::META_PROMOTION_CODE_ID, true );
+			if ( $promotion_code_id > 0 ) {
+				$promotion_code = $this->promotion_codes->find( $promotion_code_id );
+				if ( $promotion_code !== null ) {
+					$new_code_usage = max( 0, $promotion_code->get_usage_count() - 1 );
+					$this->promotion_codes->update( $promotion_code->with_usage_count( $new_code_usage ) );
+				}
+			}
+
+			$audit_context = array(
+				'promotion_id' => $promotion_id,
+				'order_id'     => $order_id,
+			);
+			if ( $promotion_code_id > 0 ) {
+				$audit_context['promotion_code_id'] = $promotion_code_id;
+			}
+
 			$order->update_meta_data( self::META_REDEMPTION_REVERSED, self::META_VALUE_YES );
 			$this->audit->log(
 				'promotion.redemption_reversed',
 				$promotion_id,
-				array(
-					'promotion_id' => $promotion_id,
-					'order_id'     => $order_id,
-				),
+				$audit_context,
 				null
 			);
 			$order->save();

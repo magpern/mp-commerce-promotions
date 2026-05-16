@@ -67,6 +67,68 @@ final class PromotionCodeRepository {
 		return $new_id > 0 ? $new_id : 0;
 	}
 
+	public function find( int $id ): ?PromotionCode {
+		if ( $id <= 0 ) {
+			return null;
+		}
+
+		$table = Schema::promotion_codes_table( $this->wpdb );
+		$sql   = "SELECT * FROM {$table} WHERE id = %d LIMIT 1";
+
+		$prepared = $this->wpdb->prepare( $sql, $id );
+		if ( ! is_string( $prepared ) ) {
+			return null;
+		}
+
+		$row = $this->wpdb->get_row( $prepared, ARRAY_A );
+		if ( ! is_array( $row ) ) {
+			return null;
+		}
+
+		try {
+			return PromotionCode::from_array( $row );
+		} catch ( \InvalidArgumentException $e ) {
+			return null;
+		}
+	}
+
+	public function update( PromotionCode $code ): bool {
+		$id = $code->get_id();
+		if ( $id === null || $id <= 0 ) {
+			return false;
+		}
+
+		$now = current_time( 'mysql' );
+
+		$data = array(
+			'status'       => $code->get_status(),
+			'usage_limit'  => $code->get_usage_limit(),
+			'usage_count'  => $code->get_usage_count(),
+			'expires_at'   => $code->get_expires_at(),
+			'updated_at'   => $now,
+		);
+
+		$usage_limit_format = $data['usage_limit'] === null ? '%s' : '%d';
+
+		$formats = array(
+			'%s',
+			$usage_limit_format,
+			'%d',
+			'%s',
+			'%s',
+		);
+
+		$updated = $this->wpdb->update(
+			Schema::promotion_codes_table( $this->wpdb ),
+			$data,
+			array( 'id' => $id ),
+			$formats,
+			array( '%d' )
+		);
+
+		return false !== $updated;
+	}
+
 	public function find_by_plain_code( string $plain_code ): ?PromotionCode {
 		$hash = self::hash_plain_code( $plain_code );
 		if ( strlen( $hash ) !== 64 ) {

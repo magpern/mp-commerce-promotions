@@ -168,6 +168,21 @@ final class PromotionCode {
 		return $this->updated_at;
 	}
 
+	public function with_usage_count( int $usage_count ): self {
+		return new self(
+			$this->id,
+			$this->promotion_id,
+			$this->code_hash,
+			$this->code_last4,
+			$this->status,
+			$this->usage_limit,
+			$usage_count,
+			$this->expires_at,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
 	/**
 	 * @param mixed $value
 	 */

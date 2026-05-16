@@ -127,9 +127,10 @@ On the **storefront** (browser, not wp-admin):
 
 - [ ] **Cancel** or **refund** the test order (full order, not partial refund)
 - [ ] Confirm promotion **`usage_count`** decrements by **1** (not below 0)
+- [ ] Confirm **code `usage_count`** decrements by **1** (not below 0)
 - [ ] Confirm redemption **`status`** = `reversed`
-- [ ] Confirm **code `usage_count` is unchanged** (reversal does not decrement code usage yet — documented limitation)
-- [ ] Confirm README states this limitation
+- [ ] Run reversal again on the same order — confirm **neither** promotion nor code **`usage_count`** changes again
+- [ ] Confirm only **one** `promotion.redemption_reversed` audit entry for that order/promotion
 
 ---
 
@@ -146,7 +147,7 @@ On the **storefront** (browser, not wp-admin):
 - Virtual WooCommerce coupon has **0** native Woo discount; the real discount is a **negative cart fee**.
 - Only the **first** matching applied coupon that resolves to an MP promotion code is used.
 - **`code_hash`** is globally unique — the same code string cannot be assigned to two promotions.
-- **Code `usage_count` is not decremented** on order cancellation/refund (promotion `usage_count` is).
+- **Reversal** decrements promotion and code **`usage_count`** once each (idempotent; never below 0).
 - **No** generated code batches, PDF/email, partner logic, or custom storefront code form.
 - **WP-CLI / programmatic cart** often reports **subtotal 0** and does not run fee calculation reliably — use a **browser** for section 4.
 
@@ -211,7 +212,9 @@ Environment: local Docker WooCommerce (`./wp`), plugin commit **572ab80** (live 
 |-------|--------|
 | Order cancelled → redemption **reversed** | Pass |
 | Promotion `usage_count` back to **0** | Pass |
-| Code `usage_count` still **1** (not decremented) | Pass — matches documented limitation |
+| Code `usage_count` decremented to **0** | Pass (commit **9dea8c6**; previously stayed at 1) |
+| Second `reverse_for_order` — no further decrement | Pass |
+| Single `promotion.redemption_reversed` audit row | Pass |
 
 ### Unusable code (WP-CLI)
 
