@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Release packaging** — `CHANGELOG.md`, `docs/RELEASE_CHECKLIST.md`, `scripts/build-zip.sh`; version `0.1.0` aligned across header/constant/readme
 - **Safe sync scripts** — `scripts/sync-to-live.sh`, `scripts/verify-plugin.sh`; workflow in [DEVELOPMENT.md](DEVELOPMENT.md)
 - **Rule registry groundwork** — `RuleTypes`, `RuleRegistry`; validator/builder/evaluator wired to central type IDs
 - **Woo layer hardening** — `CartSessionHelper`, `WooCommerceBridge` hook summary, PHPCS cleanup on `src/Woo/*`, manual test doc updates
