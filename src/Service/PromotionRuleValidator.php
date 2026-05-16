@@ -13,6 +13,7 @@ use InvalidArgumentException;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Domain\PromotionStatus;
+use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\FreeShippingAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
@@ -521,6 +522,21 @@ final class PromotionRuleValidator {
 					sprintf(
 						/* translators: %s: zero-based action index */
 						__( 'free_shipping at index %s is invalid.', 'mp-commerce-promotions' ),
+						(string) $index
+					)
+				);
+			}
+			return;
+		}
+
+		if ( $type === RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT ) {
+			try {
+				CheapestItemDiscountAction::from_config( $raw );
+			} catch ( InvalidArgumentException $e ) {
+				$issues[] = $this->error(
+					sprintf(
+						/* translators: %s: zero-based action index */
+						__( 'cheapest_item_discount at index %s has invalid configuration.', 'mp-commerce-promotions' ),
 						(string) $index
 					)
 				);

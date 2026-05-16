@@ -13,6 +13,7 @@ use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\Action\ActionInterface;
 use MP\CommercePromotions\Engine\Action\ActionTrace;
+use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\FreeShippingAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
@@ -281,6 +282,9 @@ final class PromotionEvaluator {
 		if ( $type === RuleTypes::ACTION_FREE_SHIPPING ) {
 			return 'Invalid free_shipping action configuration.';
 		}
+		if ( $type === RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT ) {
+			return 'Invalid cheapest_item_discount action configuration.';
+		}
 
 		return 'Invalid action configuration.';
 	}
@@ -473,6 +477,17 @@ final class PromotionEvaluator {
 				'action' => new FreeShippingAction(),
 				'error'  => null,
 			);
+		}
+
+		if ( $type === RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT ) {
+			try {
+				return array(
+					'action' => CheapestItemDiscountAction::from_config( $raw ),
+					'error'  => null,
+				);
+			} catch ( \InvalidArgumentException $e ) {
+				return array( 'action' => null, 'error' => 'invalid' );
+			}
 		}
 
 		if ( $type === '' ) {

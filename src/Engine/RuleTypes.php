@@ -35,6 +35,8 @@ final class RuleTypes {
 
 	public const ACTION_FREE_SHIPPING = 'free_shipping';
 
+	public const ACTION_CHEAPEST_ITEM_DISCOUNT = 'cheapest_item_discount';
+
 	private function __construct() {
 	}
 }

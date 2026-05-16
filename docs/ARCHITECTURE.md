@@ -306,9 +306,14 @@ customer_redemption_count
 percentage_discount
 fixed_amount_discount
 free_shipping
+cheapest_item_discount
 ```
 
 `free_shipping` preview returns `{ "free_shipping": true }`. On the storefront, `CartPromotionApplier` adds a **negative cart fee** equal to the current WooCommerce shipping total when it is **> 0** (MVP fee-offset; not native shipping-method manipulation). Fee labels: `Commerce promotion: Free shipping - {name}` or `Commerce promotion code: Free shipping ****{last4}`. When shipping is zero or unavailable, no fee is added. Free shipping does not consume the cart subtotal discount cap allowance.
+
+`cheapest_item_discount` is **BOGO groundwork**: `CartItemSelector` filters cart line items by **category** or **product** scope, expands quantities into unit-price entries, and discounts the cheapest `discounted_quantity` units when eligible unit count ≥ `required_quantity`. Preview payload includes `discount_amount`, `discounted_units`, and `scope` (or `not_applicable` when quantity is insufficient). Storefront applies `discount_amount` as a negative fee (subtotal cap applies). Does **not** add free products, change line prices, or split cart lines. Examples: buy 3 in category get 1 free (`discount_percentage` 100, `required_quantity` 3, `discounted_quantity` 1); 50% off cheapest eligible product unit.
+
+**Cart line items** in `EvaluationContext` include `product_id`, `variation_id`, `quantity`, `line_subtotal`, `categories`, and when available from Woo: `unit_price`, `item_key`, `product_name`.
 
 ### Engine Rules
 
@@ -577,7 +582,7 @@ Current limitations include:
 - Exclusive promotions still allow only one selected promotion in a plan
 - Only first supported action per promotion is applied
 - Stackable multi-fee, exclusions, and max_applications are plan-level (not per-customer usage limits)
-- No BOGO/free product logic yet
+- No free-product cart lines or line-price overrides yet (`cheapest_item_discount` is fee-offset BOGO groundwork only)
 - `free_shipping` is fee-offset only (verify in browser checkout; block checkout not declared)
 - No partial refund proportional reversal
 - No advanced customer segmentation beyond role/country/email/redemption count

@@ -280,6 +280,53 @@ final class PromotionRuleValidatorTest extends TestCase {
 		$this->assertTrue( $this->has_error_containing( $this->messages( $this->validator->validate( $invalid ) ), 'billing_country' ) );
 	}
 
+	public function test_cheapest_item_discount_validates_and_rejects_invalid(): void {
+		$valid = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 1.0,
+				),
+			),
+			array(
+				array(
+					'type'                => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+					'scope'               => 'category',
+					'category_ids'        => array( 10 ),
+					'discount_percentage' => 100,
+					'required_quantity'   => 3,
+					'discounted_quantity' => 1,
+				),
+			)
+		);
+		$this->assertSame( array(), $this->validator->validate( $valid ) );
+
+		$invalid = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 1.0,
+				),
+			),
+			array(
+				array(
+					'type'                => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+					'scope'               => 'category',
+					'category_ids'        => array( 10 ),
+					'discount_percentage' => 100,
+					'required_quantity'   => 2,
+					'discounted_quantity' => 5,
+				),
+			)
+		);
+		$this->assertTrue(
+			$this->has_error_containing(
+				$this->messages( $this->validator->validate( $invalid ) ),
+				'cheapest_item_discount'
+			)
+		);
+	}
+
 	public function test_free_shipping_action_validates_without_extra_fields(): void {
 		$promotion = PromotionTestFixtures::active_promotion(
 			array(

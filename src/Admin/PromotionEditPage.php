@@ -2060,9 +2060,17 @@ final class PromotionEditPage {
 					__( 'Free shipping', 'mp-commerce-promotions' ),
 					"[\n  {\"type\":\"free_shipping\"}\n]"
 				);
+				$this->render_rule_template_readonly(
+					__( 'Cheapest item discount (category)', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"cheapest_item_discount\",\"scope\":\"category\",\"category_ids\":[123],\"discount_percentage\":100,\"required_quantity\":3,\"discounted_quantity\":1}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'Cheapest item discount (products)', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"cheapest_item_discount\",\"scope\":\"products\",\"product_ids\":[100,101],\"discount_percentage\":50,\"required_quantity\":2,\"discounted_quantity\":1}\n]"
+				);
 			},
 			__(
-				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action per promotion is applied on the storefront. Product and category IDs must be numeric WordPress IDs. Woo cart context enriches has_previous_orders, customer_roles, billing_country, customer_email, and customer_redemption_count (logged-in only) when available. billing_country uses ISO codes (uppercase). customer_email_domain matches the part after @ (case-insensitive). free_shipping is an MVP fee offset equal to the current shipping total (verify in browser checkout when shipping is configured). Simple Rule Builder supports customer/location conditions and free shipping without extra JSON editing.',
+				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action per promotion is applied on the storefront. Product and category IDs must be numeric WordPress IDs. Woo cart context enriches line items with unit_price, item_key, and product_name when available. cheapest_item_discount is BOGO groundwork: it discounts the cheapest eligible units as a negative cart fee (does not add free products or change line prices). Examples: buy 3 in category get cheapest free (100%, required_quantity 3, discounted_quantity 1); 50% off cheapest eligible product unit. free_shipping is an MVP fee offset equal to the current shipping total. Simple Rule Builder does not include cheapest_item_discount yet.',
 				'mp-commerce-promotions'
 			),
 			array(

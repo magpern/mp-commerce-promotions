@@ -29,6 +29,8 @@ final class CartPromotionApplier {
 
 	public const ACTION_FREE_SHIPPING = 'free_shipping';
 
+	public const ACTION_CHEAPEST_ITEM_DISCOUNT = 'cheapest_item_discount';
+
 	private PromotionRepository $promotions;
 
 	private PromotionCodeRepository $promotion_codes;
@@ -361,6 +363,20 @@ final class CartPromotionApplier {
 				if ( is_array( $applied ) ) {
 					return $applied;
 				}
+				continue;
+			}
+
+			if ( $type === self::ACTION_CHEAPEST_ITEM_DISCOUNT ) {
+				$applied = $this->apply_cheapest_item_discount_fee(
+					$promotion,
+					$payload,
+					$remaining_allowance,
+					$cart,
+					$promotion_code
+				);
+				if ( is_array( $applied ) ) {
+					return $applied;
+				}
 			}
 		}
 
@@ -395,7 +411,7 @@ final class CartPromotionApplier {
 			return false;
 		}
 
-		$this->add_promotion_fee( $cart, $promotion, $discount, $promotion_code );
+		$this->add_promotion_fee( $cart, $promotion, $discount, $promotion_code, 'default' );
 
 		return array(
 			'promotion'   => $promotion,
@@ -431,7 +447,7 @@ final class CartPromotionApplier {
 			return false;
 		}
 
-		$this->add_promotion_fee( $cart, $promotion, $discount, $promotion_code );
+		$this->add_promotion_fee( $cart, $promotion, $discount, $promotion_code, 'default' );
 
 		return array(
 			'promotion'    => $promotion,
@@ -460,13 +476,58 @@ final class CartPromotionApplier {
 			$promotion,
 			$shipping_total,
 			$promotion_code,
-			true
+			'free_shipping'
 		);
 
 		return array(
 			'promotion'   => $promotion,
 			'discount'    => $shipping_total,
 			'action_type' => self::ACTION_FREE_SHIPPING,
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $payload
+	 * @param object               $cart
+	 * @return array<string, mixed>|false
+	 */
+	private function apply_cheapest_item_discount_fee(
+		Promotion $promotion,
+		array $payload,
+		float $remaining_allowance,
+		$cart,
+		?PromotionCode $promotion_code
+	) {
+		if ( ! isset( $payload['discount_amount'] ) || ! is_numeric( $payload['discount_amount'] ) ) {
+			return false;
+		}
+
+		if ( ! empty( $payload['not_applicable'] ) ) {
+			return false;
+		}
+
+		$configured = (float) $payload['discount_amount'];
+		if ( $configured <= 0 ) {
+			return false;
+		}
+
+		$discount = DiscountCapAllocator::clamp_to_remaining( $configured, $remaining_allowance );
+		if ( $discount <= 0 ) {
+			return false;
+		}
+
+		$this->add_promotion_fee(
+			$cart,
+			$promotion,
+			$discount,
+			$promotion_code,
+			'cheapest_item_discount'
+		);
+
+		return array(
+			'promotion'   => $promotion,
+			'discount'    => $discount,
+			'action_type' => self::ACTION_CHEAPEST_ITEM_DISCOUNT,
 		);
 	}
 
@@ -499,14 +560,20 @@ final class CartPromotionApplier {
 		Promotion $promotion,
 		float $discount,
 		?PromotionCode $promotion_code,
-		bool $free_shipping = false
+		string $label_kind = 'default'
 	): void {
 		if ( $promotion_code !== null ) {
 			$last4 = sanitize_text_field( $promotion_code->get_code_last4() );
-			if ( $free_shipping ) {
+			if ( $label_kind === 'free_shipping' ) {
 				$label = sprintf(
 					/* translators: %s: last four characters of the promotion code */
 					__( 'Commerce promotion code: Free shipping ****%s', 'mp-commerce-promotions' ),
+					$last4
+				);
+			} elseif ( $label_kind === 'cheapest_item_discount' ) {
+				$label = sprintf(
+					/* translators: %s: last four characters of the promotion code */
+					__( 'Commerce promotion code: Cheapest item discount ****%s', 'mp-commerce-promotions' ),
 					$last4
 				);
 			} else {
@@ -522,10 +589,16 @@ final class CartPromotionApplier {
 				$name = __( 'Promotion', 'mp-commerce-promotions' );
 			}
 
-			if ( $free_shipping ) {
+			if ( $label_kind === 'free_shipping' ) {
 				$label = sprintf(
 					/* translators: %s: sanitized promotion name */
 					__( 'Commerce promotion: Free shipping - %s', 'mp-commerce-promotions' ),
+					$name
+				);
+			} elseif ( $label_kind === 'cheapest_item_discount' ) {
+				$label = sprintf(
+					/* translators: %s: sanitized promotion name */
+					__( 'Commerce promotion: Cheapest item discount - %s', 'mp-commerce-promotions' ),
 					$name
 				);
 			} else {

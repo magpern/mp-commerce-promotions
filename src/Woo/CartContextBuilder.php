@@ -71,7 +71,7 @@ final class CartContextBuilder {
 		$items    = array();
 		$raw_cart = $cart->get_cart();
 		if ( is_array( $raw_cart ) ) {
-			foreach ( $raw_cart as $cart_item ) {
+			foreach ( $raw_cart as $cart_item_key => $cart_item ) {
 				if ( ! is_array( $cart_item ) ) {
 					continue;
 				}
@@ -87,15 +87,32 @@ final class CartContextBuilder {
 					$line_subtotal = (float) $cart_item['line_subtotal'];
 				}
 
+				$unit_price = 0.0;
+				if ( $quantity > 0 && $line_subtotal >= 0 ) {
+					$unit_price = $line_subtotal / $quantity;
+				}
+
 				$categories = $this->category_term_ids_for_product( $product_id );
 
-				$items[] = array(
+				$row = array(
 					'product_id'    => $product_id,
 					'variation_id'  => $variation,
 					'quantity'      => $quantity,
 					'line_subtotal' => $line_subtotal,
+					'unit_price'    => $unit_price,
 					'categories'    => $categories,
 				);
+
+				if ( is_string( $cart_item_key ) && $cart_item_key !== '' ) {
+					$row['item_key'] = $cart_item_key;
+				}
+
+				$product_name = $this->product_name_for_cart_item( $product_id, $cart_item );
+				if ( $product_name !== null && $product_name !== '' ) {
+					$row['product_name'] = $product_name;
+				}
+
+				$items[] = $row;
 			}
 		}
 
@@ -270,6 +287,34 @@ final class CartContextBuilder {
 
 	private function empty_context(): EvaluationContext {
 		return new EvaluationContext( null, null, null, array(), array() );
+	}
+
+	/**
+	 * @return list<int>
+	 */
+	/**
+	 * @param array<string, mixed> $cart_item
+	 */
+	private function product_name_for_cart_item( int $product_id, array $cart_item ): ?string {
+		if ( isset( $cart_item['data'] ) && is_object( $cart_item['data'] ) && method_exists( $cart_item['data'], 'get_name' ) ) {
+			$name = $cart_item['data']->get_name();
+			if ( is_string( $name ) && $name !== '' ) {
+				return $name;
+			}
+		}
+
+		if ( $product_id <= 0 || ! function_exists( 'wc_get_product' ) ) {
+			return null;
+		}
+
+		$product = wc_get_product( $product_id );
+		if ( ! is_object( $product ) || ! method_exists( $product, 'get_name' ) ) {
+			return null;
+		}
+
+		$name = $product->get_name();
+
+		return is_string( $name ) && $name !== '' ? $name : null;
 	}
 
 	/**

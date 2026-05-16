@@ -561,6 +561,53 @@ final class PromotionEvaluatorTest extends TestCase {
 		$this->assertSame( ConditionTrace::REASON_COUNTRY_NOT_MATCHED, $trace['reason_code'] );
 	}
 
+	public function test_cheapest_item_discount_preview_includes_discount_amount(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 1.0,
+				),
+			),
+			array(
+				array(
+					'type'                => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+					'scope'               => 'category',
+					'category_ids'        => array( 10 ),
+					'discount_percentage' => 100,
+					'required_quantity'   => 3,
+					'discounted_quantity' => 1,
+				),
+			)
+		);
+
+		$context = PromotionTestFixtures::cart_context(
+			null,
+			110.0,
+			array(
+				array(
+					'product_id'    => 100,
+					'quantity'      => 1.0,
+					'line_subtotal' => 50.0,
+					'unit_price'    => 50.0,
+					'categories'    => array( 10 ),
+				),
+				array(
+					'product_id'    => 101,
+					'quantity'      => 2.0,
+					'line_subtotal' => 60.0,
+					'unit_price'    => 30.0,
+					'categories'    => array( 10 ),
+				),
+			)
+		);
+
+		$result = $this->evaluator->evaluate( $promotion, $context );
+
+		$this->assertTrue( $result->is_eligible() );
+		$this->assertSame( 30.0, $result->get_action_results()[0]['payload']['discount_amount'] );
+	}
+
 	public function test_free_shipping_action_preview_eligible(): void {
 		$promotion = PromotionTestFixtures::active_promotion(
 			array(

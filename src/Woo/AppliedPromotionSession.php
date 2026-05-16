@@ -103,6 +103,7 @@ final class AppliedPromotionSession {
 
 		return $action_type === CartPromotionApplier::ACTION_PERCENTAGE_DISCOUNT
 			|| $action_type === CartPromotionApplier::ACTION_FIXED_AMOUNT_DISCOUNT
-			|| $action_type === CartPromotionApplier::ACTION_FREE_SHIPPING;
+			|| $action_type === CartPromotionApplier::ACTION_FREE_SHIPPING
+			|| $action_type === CartPromotionApplier::ACTION_CHEAPEST_ITEM_DISCOUNT;
 	}
 }
