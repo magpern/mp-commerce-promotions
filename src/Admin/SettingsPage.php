@@ -1,6 +1,6 @@
 <?php
 /**
- * WooCommerce admin: Commerce Promotion Settings.
+ * WooCommerce admin: Promotions module settings.
  *
  * @package MP\CommercePromotions
  */
@@ -36,7 +36,7 @@ final class SettingsPage {
 
 		echo '<div class="wrap">';
 		$this->render_notices();
-		echo '<h1>' . esc_html__( 'Commerce Promotion Settings', 'mp-commerce-promotions' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'Settings', 'mp-commerce-promotions' ) . '</h1>';
 
 		echo '<form method="post" action="">';
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
