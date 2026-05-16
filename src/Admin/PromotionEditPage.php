@@ -32,6 +32,7 @@ use MP\CommercePromotions\Engine\PromotionPlanner;
 use MP\CommercePromotions\Engine\RuleRegistry;
 use MP\CommercePromotions\Engine\RuleTypes;
 use MP\CommercePromotions\Service\AuditLogger;
+use MP\CommercePromotions\Woo\CartPromotionApplier;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerationOutcome;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
@@ -1503,6 +1504,36 @@ final class PromotionEditPage {
 		);
 	}
 
+	/**
+	 * @param list<array<string, mixed>> $action_results
+	 */
+	private function render_free_gift_cart_preview_notes( array $action_results, bool $eligible ): void {
+		foreach ( $action_results as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$type = isset( $row['type'] ) ? (string) $row['type'] : '';
+			if ( $type !== CartPromotionApplier::ACTION_FREE_GIFT_PRODUCT ) {
+				continue;
+			}
+
+			$payload    = isset( $row['payload'] ) && is_array( $row['payload'] ) ? $row['payload'] : array();
+			$product_id = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
+			$quantity   = isset( $payload['quantity'] ) ? (int) $payload['quantity'] : 0;
+
+			echo '<p><strong>' . esc_html__( 'Free gift (storefront)', 'mp-commerce-promotions' ) . '</strong></p>';
+			echo '<ul style="list-style:disc;margin-left:1.5em;">';
+			echo '<li>' . esc_html__( 'Product ID', 'mp-commerce-promotions' ) . ': ' . esc_html( (string) $product_id ) . '</li>';
+			echo '<li>' . esc_html__( 'Quantity', 'mp-commerce-promotions' ) . ': ' . esc_html( (string) $quantity ) . '</li>';
+			echo '<li>' . esc_html__( 'Eligible on current cart', 'mp-commerce-promotions' ) . ': ';
+			echo $eligible
+				? esc_html__( 'Yes — gift would be synchronized on checkout totals', 'mp-commerce-promotions' )
+				: esc_html__( 'No', 'mp-commerce-promotions' );
+			echo '</li>';
+			echo '</ul>';
+		}
+	}
+
 	private function render_evaluation_trace_tables( EvaluationResult $result ): void {
 		$condition_traces = $result->get_condition_traces();
 		if ( count( $condition_traces ) > 0 ) {
@@ -1823,6 +1854,8 @@ final class PromotionEditPage {
 					}
 
 					$action_results = $result->get_action_results();
+					$this->render_free_gift_cart_preview_notes( $action_results, $result->is_eligible() );
+
 					echo '<p><strong>' . esc_html__( 'Action previews (JSON)', 'mp-commerce-promotions' ) . '</strong></p>';
 					$json = wp_json_encode( $action_results, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 					if ( ! is_string( $json ) ) {

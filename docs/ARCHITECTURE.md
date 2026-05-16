@@ -359,6 +359,8 @@ WooCommerceBridge
 WooCompatibility
 CartContextBuilder
 CartPromotionApplier
+FreeGiftCartSynchronizer
+OrderPromotionState
 OrderPromotionRecorder
 PromotionCodeCouponBridge
 ```
@@ -371,7 +373,9 @@ PromotionCodeCouponBridge
 
 ### HPOS-safe order metadata
 
-- **`OrderPromotionRecorder`** — reads/writes order meta only through `WC_Order::get_meta()`, `update_meta_data()`, and `save()`; loads orders via `wc_get_order()`. CPT trash/delete hooks remain as legacy fallbacks and still resolve orders through `wc_get_order()`.
+- **`OrderPromotionState`** — single helper for `_mp_cp_applied_promotions` JSON, legacy primary meta, `_mp_cp_redemption_recorded`, and `_mp_cp_redemption_reversed`.
+- **`OrderPromotionRecorder`** — checkout idempotency (unique redemption rows + early exit when all promotions already recorded); reversal once per promotion; restore on `processing`/`completed` after reversal; audit `promotion.recorded_on_order` / `promotion.reversed_on_order` (plus legacy `promotion.redeemed` / `promotion.redemption_reversed`).
+- **`FreeGiftCartSynchronizer`** — on each cart totals pass, removes stale/orphan `mp_cp_free_gift` lines and normalizes quantities; audit `promotion.gift_added_to_cart` / `promotion.gift_removed_from_cart`.
 - **`RedemptionRepository::count_recorded_for_promotion_code()`** — read-only join against `wp_wc_orders_meta` when HPOS is enabled, else `wp_postmeta`; uses `WooCompatibility::is_hpos_enabled()`.
 - **`UsageDiagnostics`** — derives counts from custom redemption tables and the repository above; no direct `wp_posts` order assumptions.
 
@@ -382,7 +386,8 @@ PromotionCodeCouponBridge
 - Virtual WooCommerce coupon data is used for known promotion codes.
 - No native WooCommerce coupon posts are created.
 - Checkout records promotion usage to custom tables and order meta.
-- Reversal hooks handle cancelled, failed, refunded, trashed, and deleted orders where possible.
+- Reversal hooks handle cancelled, failed, refunded, trashed, and deleted orders where possible; paid-status hooks can restore previously reversed rows.
+- Free gift lines sync with planner-selected promotions (manual non-gift lines are untouched).
 
 ### Current Discount Strategy
 

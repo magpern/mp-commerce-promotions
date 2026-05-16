@@ -47,6 +47,8 @@ final class CartPromotionApplier {
 
 	private FreeGiftCartHandler $free_gift_handler;
 
+	private FreeGiftCartSynchronizer $gift_synchronizer;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionCodeRepository $promotion_codes,
@@ -54,7 +56,8 @@ final class CartPromotionApplier {
 		CartContextBuilder $context_builder,
 		Settings $settings,
 		?PromotionPlanner $planner = null,
-		?FreeGiftCartHandler $free_gift_handler = null
+		?FreeGiftCartHandler $free_gift_handler = null,
+		?FreeGiftCartSynchronizer $gift_synchronizer = null
 	) {
 		$this->promotions         = $promotions;
 		$this->promotion_codes    = $promotion_codes;
@@ -63,6 +66,7 @@ final class CartPromotionApplier {
 		$this->context_builder    = $context_builder;
 		$this->settings           = $settings;
 		$this->free_gift_handler  = $free_gift_handler ?? new FreeGiftCartHandler();
+		$this->gift_synchronizer  = $gift_synchronizer ?? new FreeGiftCartSynchronizer( $promotions );
 	}
 
 	/**
@@ -98,6 +102,12 @@ final class CartPromotionApplier {
 		 */
 		if ( ! apply_filters( 'mp_cp_enable_cart_discounts', $this->settings->cart_discounts_enabled() ) ) {
 			$this->clear_applied_promotion_session();
+			if ( function_exists( 'WC' ) ) {
+				$wc_disabled = WC();
+				if ( is_object( $wc_disabled ) && isset( $wc_disabled->cart ) && is_object( $wc_disabled->cart ) ) {
+					$this->gift_synchronizer->sync( $wc_disabled->cart, array() );
+				}
+			}
 			return;
 		}
 
@@ -124,6 +134,7 @@ final class CartPromotionApplier {
 		$subtotal      = $paid_subtotal > 0 ? $paid_subtotal : ( $context->get_cart_subtotal() ?? 0.0 );
 		if ( $subtotal <= 0 ) {
 			$this->clear_applied_promotion_session();
+			$this->gift_synchronizer->sync( $cart, array() );
 			return;
 		}
 
@@ -172,12 +183,18 @@ final class CartPromotionApplier {
 			}
 
 			$plan     = $this->planner->plan( array( $promotion ), $context );
+			$decisions = $plan->get_selected_decisions();
 			$entries  = $this->apply_selected_decisions(
-				$plan->get_selected_decisions(),
+				$decisions,
 				$context,
 				$subtotal,
 				$cart,
 				$promotion_code
+			);
+
+			$this->gift_synchronizer->sync(
+				$cart,
+				$this->collect_desired_gifts_from_decisions( $decisions )
 			);
 
 			if ( $entries !== array() ) {
@@ -196,14 +213,20 @@ final class CartPromotionApplier {
 	 * @param object $cart WooCommerce cart.
 	 */
 	private function apply_automatic_promotions( $cart, EvaluationContext $context, float $subtotal ): void {
-		$active  = $this->promotions->find_active( 50 );
-		$plan    = $this->planner->plan( $active, $context );
-		$entries = $this->apply_selected_decisions(
-			$plan->get_selected_decisions(),
+		$active    = $this->promotions->find_active( 50 );
+		$plan      = $this->planner->plan( $active, $context );
+		$decisions = $plan->get_selected_decisions();
+		$entries   = $this->apply_selected_decisions(
+			$decisions,
 			$context,
 			$subtotal,
 			$cart,
 			null
+		);
+
+		$this->gift_synchronizer->sync(
+			$cart,
+			$this->collect_desired_gifts_from_decisions( $decisions )
 		);
 
 		if ( $entries !== array() ) {
@@ -212,6 +235,74 @@ final class CartPromotionApplier {
 		}
 
 		$this->clear_applied_promotion_session();
+	}
+
+	/**
+	 * @param list<PromotionEvaluationDecision> $decisions
+	 * @return list<array{
+	 *     promotion_id: int,
+	 *     product_id: int,
+	 *     variation_id: int|null,
+	 *     quantity: int,
+	 *     promotion: Promotion
+	 * }>
+	 */
+	private function collect_desired_gifts_from_decisions( array $decisions ): array {
+		$desired = array();
+
+		foreach ( $decisions as $decision ) {
+			if ( ! $decision->is_selected() ) {
+				continue;
+			}
+
+			$result = $decision->get_result();
+			if ( ! $result->is_eligible() ) {
+				continue;
+			}
+
+			$promotion = $decision->get_promotion();
+			$pid       = $promotion->get_id();
+			if ( $pid === null || $pid <= 0 ) {
+				continue;
+			}
+
+			foreach ( $result->get_action_results() as $action_row ) {
+				if ( ! is_array( $action_row ) ) {
+					continue;
+				}
+				$type = isset( $action_row['type'] ) ? (string) $action_row['type'] : '';
+				if ( $type !== self::ACTION_FREE_GIFT_PRODUCT ) {
+					continue;
+				}
+
+				$payload = isset( $action_row['payload'] ) && is_array( $action_row['payload'] )
+					? $action_row['payload']
+					: array();
+
+				$product_id = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
+				$quantity   = isset( $payload['quantity'] ) && is_numeric( $payload['quantity'] )
+					? (int) $payload['quantity']
+					: 0;
+				if ( $product_id <= 0 || $quantity < 1 ) {
+					continue;
+				}
+
+				$variation_id = null;
+				if ( isset( $payload['variation_id'] ) && is_numeric( $payload['variation_id'] ) && (int) $payload['variation_id'] > 0 ) {
+					$variation_id = (int) $payload['variation_id'];
+				}
+
+				$desired[] = array(
+					'promotion_id'  => $pid,
+					'product_id'    => $product_id,
+					'variation_id'  => $variation_id,
+					'quantity'      => $quantity,
+					'promotion'     => $promotion,
+				);
+			}
+		}
+
+		return $desired;
 	}
 
 	/**

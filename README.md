@@ -14,6 +14,7 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 - [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) — version bump, tag, zip, sync, and manual test steps
 - [docs/TASKS.md](docs/TASKS.md) — milestones, backlog, and out-of-scope items
 - [docs/manual-checkout-test.md](docs/manual-checkout-test.md) — storefront checkout and redemption walkthrough
+- [docs/manual-checkout-integrity-test.md](docs/manual-checkout-integrity-test.md) — idempotency, reversal, free gift sync
 - [docs/manual-stacking-test.md](docs/manual-stacking-test.md) — stackable fees, caps, exclusions, and max applications
 - [docs/manual-cheapest-item-test.md](docs/manual-cheapest-item-test.md) — cheapest item / BOGO fee-offset storefront verification
 - [docs/manual-free-gift-test.md](docs/manual-free-gift-test.md) — free gift product cart line storefront verification

@@ -31,6 +31,7 @@ use MP\CommercePromotions\Service\Settings;
 use MP\CommercePromotions\Service\UsageDiagnostics;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use MP\CommercePromotions\Woo\CartPromotionApplier;
+use MP\CommercePromotions\Woo\FreeGiftCartSynchronizer;
 use MP\CommercePromotions\Woo\OrderPromotionRecorder;
 use MP\CommercePromotions\Woo\PromotionCodeCouponBridge;
 use MP\CommercePromotions\Woo\WooCommerceBridge;
@@ -94,12 +95,20 @@ final class Plugin {
 			$coupon_bridge = new PromotionCodeCouponBridge( $this->promotion_code_repository );
 			$this->woo_bridge->set_promotion_code_coupon_bridge( $coupon_bridge );
 
+			$gift_sync = new FreeGiftCartSynchronizer(
+				$this->promotion_repository,
+				$this->audit_logger
+			);
+
 			$cart_applier = new CartPromotionApplier(
 				$this->promotion_repository,
 				$this->promotion_code_repository,
 				$this->promotion_evaluator,
 				$cart_builder,
-				$this->settings
+				$this->settings,
+				null,
+				null,
+				$gift_sync
 			);
 			$this->woo_bridge->set_cart_promotion_applier( $cart_applier );
 

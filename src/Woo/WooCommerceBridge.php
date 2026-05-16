@@ -17,6 +17,7 @@
  * - `woocommerce_order_status_cancelled` → OrderPromotionRecorder::on_order_status_reversal (10, 2)
  * - `woocommerce_order_status_failed` → OrderPromotionRecorder::on_order_status_reversal (10, 2)
  * - `woocommerce_order_status_refunded` → OrderPromotionRecorder::on_order_status_reversal (10, 2)
+ * - `woocommerce_order_status_processing` / `completed` → OrderPromotionRecorder::restore_on_order_paid_status (10, 2)
  * - `woocommerce_before_trash_order` → OrderPromotionRecorder::on_woocommerce_before_trash_order (10, 2)
  * - `woocommerce_before_delete_order` → OrderPromotionRecorder::on_woocommerce_before_delete_order (10, 2)
  * - `before_trash_post` → OrderPromotionRecorder::on_before_trash_post_for_reversal (10, 1)
@@ -50,6 +51,8 @@ final class WooCommerceBridge {
 	private bool $order_checkout_hook_registered = false;
 
 	private bool $order_reversal_hooks_registered = false;
+
+	private bool $order_restore_hooks_registered = false;
 
 	private ?PromotionCodeCouponBridge $promotion_code_coupon_bridge = null;
 
@@ -96,6 +99,7 @@ final class WooCommerceBridge {
 		if ( $this->order_promotion_recorder !== null && $this->available ) {
 			$this->register_order_checkout_hook();
 			$this->register_order_reversal_hooks();
+			$this->register_order_restore_hooks();
 		}
 	}
 
@@ -178,6 +182,22 @@ final class WooCommerceBridge {
 		add_action( 'before_delete_post', array( $recorder, 'on_before_delete_post_for_reversal' ), 10, 2 );
 
 		$this->order_reversal_hooks_registered = true;
+	}
+
+	/**
+	 * Restore reversed redemptions when orders re-enter processing or completed.
+	 */
+	private function register_order_restore_hooks(): void {
+		if ( $this->order_restore_hooks_registered || $this->order_promotion_recorder === null ) {
+			return;
+		}
+
+		$recorder = $this->order_promotion_recorder;
+
+		add_action( 'woocommerce_order_status_processing', array( $recorder, 'restore_on_order_paid_status' ), 10, 2 );
+		add_action( 'woocommerce_order_status_completed', array( $recorder, 'restore_on_order_paid_status' ), 10, 2 );
+
+		$this->order_restore_hooks_registered = true;
 	}
 
 	/**

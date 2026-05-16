@@ -2,6 +2,8 @@
 
 Use this checklist to verify **`free_gift_product`** on a staging or local WooCommerce storefront. This is the **first action that modifies cart contents** (adds a product line). Gift lines are priced at **0** via `woocommerce_before_calculate_totals`; **no negative cart fee** is added for the gift.
 
+**Cart sync:** `FreeGiftCartSynchronizer` removes stale gifts when a promotion drops off, normalizes quantity on totals, and only touches lines with **`mp_cp_free_gift=yes`**. See [manual-checkout-integrity-test.md](manual-checkout-integrity-test.md).
+
 ## Prerequisites
 
 - WooCommerce cart/checkout (classic checkout is fine; block checkout is **not** declared compatible).

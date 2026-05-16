@@ -2,6 +2,11 @@
 /**
  * Persists applied cart promotion(s) to order meta, redemptions table, and audit on checkout.
  *
+ * Supported order transitions (MVP):
+ * - Checkout create order: record redemptions once per (order_id, promotion_id).
+ * - cancelled / failed / refunded / trash / delete: reverse recorded redemptions once per promotion.
+ * - processing / completed after reversal: restore reversed rows (re-enter paid flow).
+ *
  * @package MP\CommercePromotions
  */
 
@@ -18,17 +23,9 @@ use Throwable;
 
 final class OrderPromotionRecorder {
 
-	private const META_REDEMPTION_RECORDED = '_mp_cp_redemption_recorded';
-
-	private const META_REDEMPTION_REVERSED = '_mp_cp_redemption_reversed';
-
-	private const META_APPLIED_PROMOTIONS = '_mp_cp_applied_promotions';
-
 	private const META_PROMOTION_CODE_ID = '_mp_cp_promotion_code_id';
 
 	private const META_PROMOTION_CODE_LAST4 = '_mp_cp_promotion_code_last4';
-
-	private const META_VALUE_YES = 'yes';
 
 	private RedemptionRepository $redemptions;
 
@@ -78,6 +75,23 @@ final class OrderPromotionRecorder {
 				return;
 			}
 
+			if ( OrderPromotionState::has_recorded_promotions( $order ) ) {
+				$all_exist = true;
+				foreach ( $entries as $entry ) {
+					if ( ! AppliedPromotionSession::is_valid_entry( $entry ) ) {
+						continue;
+					}
+					$pid = (int) $entry['promotion_id'];
+					if ( ! $this->redemptions->exists_for_order_and_promotion( $order_id, $pid ) ) {
+						$all_exist = false;
+						break;
+					}
+				}
+				if ( $all_exist ) {
+					return;
+				}
+			}
+
 			$cid         = (int) $order->get_customer_id();
 			$customer_id = $cid > 0 ? $cid : null;
 			$currency    = $order->get_currency();
@@ -104,15 +118,12 @@ final class OrderPromotionRecorder {
 				return;
 			}
 
-			$json = wp_json_encode( $recorded_meta, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-			if ( is_string( $json ) ) {
-				$order->update_meta_data( self::META_APPLIED_PROMOTIONS, $json );
-			}
+			OrderPromotionState::save_applied_promotions( $order, $recorded_meta );
 
 			$first = $entries[0];
 			$this->apply_legacy_primary_meta_from_entry( $order, $first );
 
-			$order->update_meta_data( self::META_REDEMPTION_RECORDED, self::META_VALUE_YES );
+			OrderPromotionState::mark_recorded( $order );
 			$order->save();
 			$this->clear_applied_promotion_session();
 		} catch ( Throwable $e ) {
@@ -121,6 +132,62 @@ final class OrderPromotionRecorder {
 				error_log(
 					sprintf(
 						'[mp-commerce-promotions] OrderPromotionRecorder: %s',
+						$e->getMessage()
+					)
+				);
+			}
+		}
+	}
+
+	/**
+	 * Restore reversed redemptions when an order re-enters a paid/completed flow.
+	 *
+	 * @param int|\WC_Order $order_id Order ID or order object.
+	 * @param mixed         $order    Optional WC_Order.
+	 */
+	public function restore_on_order_paid_status( $order_id, $order = null ): void {
+		try {
+			$id = $this->resolve_order_id_from_hook_args( $order_id, $order );
+			if ( $id <= 0 || ! function_exists( 'wc_get_order' ) ) {
+				return;
+			}
+
+			$order = wc_get_order( $id );
+			if ( ! is_object( $order ) || ! is_a( $order, 'WC_Order', false ) ) {
+				return;
+			}
+
+			if ( ! OrderPromotionState::has_recorded_promotions( $order ) ) {
+				return;
+			}
+
+			if ( ! OrderPromotionState::is_reversed( $order ) ) {
+				return;
+			}
+
+			$promotion_ids = OrderPromotionState::promotion_ids_from_order( $order );
+			if ( $promotion_ids === array() ) {
+				return;
+			}
+
+			$restored_any = false;
+
+			foreach ( $promotion_ids as $promotion_id ) {
+				if ( $this->restore_single_promotion( $order, $id, $promotion_id ) ) {
+					$restored_any = true;
+				}
+			}
+
+			if ( $restored_any ) {
+				OrderPromotionState::mark_recorded( $order );
+				$order->save();
+			}
+		} catch ( Throwable $e ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log(
+					sprintf(
+						'[mp-commerce-promotions] OrderPromotionRecorder::restore_on_order_paid_status: %s',
 						$e->getMessage()
 					)
 				);
@@ -144,15 +211,15 @@ final class OrderPromotionRecorder {
 				return;
 			}
 
-			if ( $order->get_meta( self::META_REDEMPTION_REVERSED, true ) === self::META_VALUE_YES ) {
+			if ( OrderPromotionState::is_reversed( $order ) ) {
 				return;
 			}
 
-			if ( $order->get_meta( self::META_REDEMPTION_RECORDED, true ) !== self::META_VALUE_YES ) {
+			if ( ! OrderPromotionState::has_recorded_promotions( $order ) ) {
 				return;
 			}
 
-			$promotion_ids = $this->resolve_promotion_ids_for_reversal( $order );
+			$promotion_ids = OrderPromotionState::promotion_ids_from_order( $order );
 			if ( $promotion_ids === array() ) {
 				return;
 			}
@@ -166,7 +233,7 @@ final class OrderPromotionRecorder {
 			}
 
 			if ( $reversed_any ) {
-				$order->update_meta_data( self::META_REDEMPTION_REVERSED, self::META_VALUE_YES );
+				OrderPromotionState::mark_reversed( $order );
 				$order->save();
 			}
 		} catch ( Throwable $e ) {
@@ -185,7 +252,7 @@ final class OrderPromotionRecorder {
 	/**
 	 * @param \WC_Order              $order
 	 * @param array<string, mixed>   $entry
-	 * @return array<string, mixed>|null Summary for _mp_cp_applied_promotions meta.
+	 * @return array<string, mixed>|null Summary for applied promotions meta.
 	 */
 	private function record_single_entry(
 		$order,
@@ -292,6 +359,18 @@ final class OrderPromotionRecorder {
 				null
 			);
 
+			$this->audit->log(
+				'promotion.recorded_on_order',
+				$promotion_id,
+				array(
+					'promotion_id'    => $promotion_id,
+					'order_id'        => $order_id,
+					'discount_amount' => $discount,
+					'action_type'     => $action_type,
+				),
+				null
+			);
+
 			$newly = true;
 		}
 
@@ -321,36 +400,41 @@ final class OrderPromotionRecorder {
 		return $summary;
 	}
 
-	/**
-	 * @param \WC_Order $order
-	 * @return list<int>
-	 */
-	private function resolve_promotion_ids_for_reversal( $order ): array {
-		$raw = $order->get_meta( self::META_APPLIED_PROMOTIONS, true );
-		if ( is_string( $raw ) && $raw !== '' ) {
-			$decoded = json_decode( $raw, true );
-			if ( is_array( $decoded ) ) {
-				$ids = array();
-				foreach ( $decoded as $row ) {
-					if ( is_array( $row ) && isset( $row['promotion_id'] ) ) {
-						$id = (int) $row['promotion_id'];
-						if ( $id > 0 ) {
-							$ids[] = $id;
-						}
-					}
-				}
-				if ( $ids !== array() ) {
-					return array_values( array_unique( $ids ) );
-				}
-			}
+	private function restore_single_promotion( $order, int $order_id, int $promotion_id ): bool {
+		$redemption = $this->redemptions->find_reversed_for_order_and_promotion( $order_id, $promotion_id );
+		if ( $redemption === null ) {
+			return false;
 		}
 
-		$legacy_id = (int) $order->get_meta( '_mp_cp_promotion_id', true );
-		if ( $legacy_id > 0 ) {
-			return array( $legacy_id );
+		$recorded = $redemption->with_status( Redemption::STATUS_RECORDED );
+		if ( ! $this->redemptions->update( $recorded ) ) {
+			return false;
 		}
 
-		return array();
+		$promotion = $this->promotions->find( $promotion_id );
+		if ( $promotion !== null ) {
+			$this->promotions->update(
+				$promotion->with_usage_count( $promotion->get_usage_count() + 1 )
+			);
+		}
+
+		$code_id = $this->code_id_for_promotion_from_applied_meta( $order, $promotion_id );
+		if ( $code_id > 0 ) {
+			$this->promotion_codes->increment_usage( $code_id );
+		}
+
+		$this->audit->log(
+			'promotion.recorded_on_order',
+			$promotion_id,
+			array(
+				'promotion_id' => $promotion_id,
+				'order_id'     => $order_id,
+				'restored'     => true,
+			),
+			null
+		);
+
+		return true;
 	}
 
 	private function reverse_single_promotion( $order, int $order_id, int $promotion_id ): bool {
@@ -398,6 +482,16 @@ final class OrderPromotionRecorder {
 			null
 		);
 
+		$this->audit->log(
+			'promotion.reversed_on_order',
+			$promotion_id,
+			array(
+				'promotion_id' => $promotion_id,
+				'order_id'     => $order_id,
+			),
+			null
+		);
+
 		return true;
 	}
 
@@ -405,20 +499,7 @@ final class OrderPromotionRecorder {
 	 * @param \WC_Order $order
 	 */
 	private function code_id_for_promotion_from_applied_meta( $order, int $promotion_id ): int {
-		$raw = $order->get_meta( self::META_APPLIED_PROMOTIONS, true );
-		if ( ! is_string( $raw ) || $raw === '' ) {
-			return 0;
-		}
-
-		$decoded = json_decode( $raw, true );
-		if ( ! is_array( $decoded ) ) {
-			return 0;
-		}
-
-		foreach ( $decoded as $row ) {
-			if ( ! is_array( $row ) ) {
-				continue;
-			}
+		foreach ( OrderPromotionState::get_applied_promotions( $order ) as $row ) {
 			if ( (int) ( $row['promotion_id'] ?? 0 ) !== $promotion_id ) {
 				continue;
 			}

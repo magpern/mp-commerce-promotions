@@ -41,10 +41,22 @@ final class DiagnosticsPage {
 		echo '<p>' . esc_html__( 'Compare stored usage_count values against redemption and order-meta records. Use the repair action to recalculate mismatched counters from recorded redemptions.', 'mp-commerce-promotions' ) . '</p>';
 
 		$this->render_repair_form();
+		$this->render_integrity_notes();
 		$this->render_promotions_table( $report['promotions'] );
 		$this->render_codes_table( $report['codes'] );
 
 		echo '</div>';
+	}
+
+	private function render_integrity_notes(): void {
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Promotion integrity notes', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<ul style="list-style:disc;margin-left:1.5em;max-width:720px;">';
+		echo '<li>' . esc_html__( 'Checkout recording is idempotent per order and promotion (unique redemption rows; duplicate checkout hooks do not double usage).', 'mp-commerce-promotions' ) . '</li>';
+		echo '<li>' . esc_html__( 'Order cancellation, failure, refund, and trash/delete reverse recorded redemptions once per promotion; repeated reversal hooks are ignored.', 'mp-commerce-promotions' ) . '</li>';
+		echo '<li>' . esc_html__( 'Orders that return to processing or completed after reversal restore reversed redemption rows when applicable.', 'mp-commerce-promotions' ) . '</li>';
+		echo '<li>' . esc_html__( 'Free gift cart lines marked mp_cp_free_gift=yes are synchronized on each totals pass (stale gifts removed, quantities normalized).', 'mp-commerce-promotions' ) . '</li>';
+		echo '<li>' . esc_html__( 'Stacked promotions record separate redemption rows and applied-promotion meta entries.', 'mp-commerce-promotions' ) . '</li>';
+		echo '</ul>';
 	}
 
 	private function render_repair_form(): void {

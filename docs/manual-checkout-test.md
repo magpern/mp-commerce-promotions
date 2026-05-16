@@ -8,6 +8,8 @@ Use this checklist to verify the end-to-end promotion flow on a real WooCommerce
 
 **Reversal:** cancelling, failing, refunding, trashing, or deleting an order runs reversal logic — redemption status becomes **`reversed`**, promotion **`usage_count`** decrements by at most **1** (never below 0), and **`promotion.redemption_reversed`** is logged once per order.
 
+**Integrity (idempotency, gift sync, restore):** see [manual-checkout-integrity-test.md](manual-checkout-integrity-test.md) and `scripts/checkout-integrity-smoke.php`.
+
 **WP-CLI quick checks (optional):**
 
 ```bash

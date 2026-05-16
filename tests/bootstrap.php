@@ -44,6 +44,48 @@ if ( ! function_exists( 'sanitize_text_field' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	/**
+	 * @param mixed $data
+	 */
+	function wp_json_encode( $data, $options = 0, $depth = 512 ) {
+		return json_encode( $data, $options, $depth );
+	}
+}
+
+if ( ! function_exists( 'current_time' ) ) {
+	/**
+	 * @param string $type
+	 */
+	function current_time( $type ) {
+		if ( $type === 'timestamp' ) {
+			return time();
+		}
+
+		return gmdate( 'Y-m-d H:i:s' );
+	}
+}
+
+if ( ! class_exists( 'WC_Order', false ) ) {
+	class WC_Order {
+	}
+}
+
+if ( ! function_exists( 'wc_get_order' ) ) {
+	/**
+	 * @param int $order_id
+	 * @return object|null
+	 */
+	function wc_get_order( $order_id ) {
+		global $mp_cp_test_orders;
+		if ( ! is_array( $mp_cp_test_orders ) ) {
+			return null;
+		}
+
+		return $mp_cp_test_orders[ (int) $order_id ] ?? null;
+	}
+}
+
 if ( ! function_exists( 'wp_strip_all_tags' ) ) {
 	/**
 	 * @param string $text

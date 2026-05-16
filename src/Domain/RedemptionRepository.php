@@ -112,6 +112,24 @@ final class RedemptionRepository {
 	}
 
 	/**
+	 * Find a reversed redemption for order + promotion.
+	 */
+	public function find_reversed_for_order_and_promotion( int $order_id, int $promotion_id ): ?Redemption {
+		if ( $order_id <= 0 || $promotion_id <= 0 ) {
+			return null;
+		}
+
+		$table = $this->redemptions_table();
+		$row   = DbQuery::get_row(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE order_id = %d AND promotion_id = %d AND status = %s LIMIT 1",
+			array( $order_id, $promotion_id, Redemption::STATUS_REVERSED )
+		);
+
+		return $this->row_to_redemption( $row );
+	}
+
+	/**
 	 * Whether any redemption exists for order + promotion (any status).
 	 */
 	public function exists_for_order_and_promotion( int $order_id, int $promotion_id ): bool {
