@@ -25,4 +25,15 @@ final class DiscountCapAllocatorTest extends TestCase {
 		$this->assertSame( 20.0, DiscountCapAllocator::clamp_to_remaining( 50.0, 20.0 ) );
 		$this->assertSame( 0.0, DiscountCapAllocator::clamp_to_remaining( 10.0, 0.0 ) );
 	}
+
+	public function test_sum_capped_discounts_at_subtotal_46_with_80_and_50(): void {
+		$subtotal = 46.0;
+		$total    = DiscountCapAllocator::sum_capped_discounts(
+			$subtotal,
+			array( 80.0, 50.0 )
+		);
+
+		$this->assertSame( $subtotal, $total );
+		$this->assertNotSame( 130.0, $total );
+	}
 }

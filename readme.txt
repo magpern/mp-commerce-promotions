@@ -47,7 +47,7 @@ For architecture, limitations, and development workflow, see the plugin reposito
 == Current MVP limitations ==
 
 * **Not marketplace-ready** — missing automated tests, formal uninstall data policy UI, Composer/CI packaging, and broader compatibility certification
-* **One promotion per cart** — first eligible active promotion or code-linked promotion only; no stacking
+* **Stacking rules** — exclusive (default) stops after one selection; stackable promotions can apply multiple fees (one action each; total discount capped at subtotal); code-linked promotions do not stack with automatic promotions
 * **Cart fees only** — not line-item or native coupon discount strategies; may affect reporting/tax expectations
 * **Limited condition/action types** — no BOGO, free shipping, customer segmentation, or country rules yet
 * **Simple Rule Builder** — one condition and one action only; advanced rules need JSON

@@ -197,7 +197,7 @@ final class PromotionEvaluator {
 			$action_traces[]     = new ActionTrace(
 				$action->get_type(),
 				$selected,
-				$selected ? null : 'Only the first supported action is applied in this MVP.',
+				$selected ? null : 'Only the first supported action per promotion is applied on the storefront.',
 				$selected ? ActionTrace::REASON_SELECTED : ActionTrace::REASON_NOT_REACHED,
 				$config,
 				$preview_array

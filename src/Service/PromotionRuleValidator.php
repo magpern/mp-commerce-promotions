@@ -470,7 +470,7 @@ final class PromotionRuleValidator {
 		if ( $supported_count > 1 ) {
 			$issues[] = array(
 				'level'   => 'warning',
-				'message' => __( 'Only the first supported action is applied in v1.', 'mp-commerce-promotions' ),
+				'message' => __( 'Only the first supported action per promotion is applied on the storefront.', 'mp-commerce-promotions' ),
 			);
 		}
 	}

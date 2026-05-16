@@ -1,6 +1,6 @@
 # MP Commerce Promotions — Tasks
 
-Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.md) for system design and [README.md](../README.md) for current MVP behavior.
+Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.md) for system design, [README.md](../README.md) for current MVP behavior, and [manual-stacking-test.md](manual-stacking-test.md) for stacking verification.
 
 ## Current milestone
 
@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Stacking behavior docs and smoke** — manual-stacking-test.md, stale copy cleanup, cap smoke at natural subtotal
 - **Max applications enforcement** — planner plan cap, `max_applications_reached`, admin promotion plan preview
 - **Promotion exclusion rules** — `excluded_promotion_ids` (schema 1.6.0), planner `excluded_by_selected_promotion`, admin field, list summary
 - **Stackable cart fees** — multiple planner-selected promotions apply separate fees (subtotal cap); multi-redemption recording
@@ -54,7 +55,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 - Additional conditions (first order, customer role, country)
 - Additional actions (free shipping, line-item targeting)
-- Stackability and conflict resolution beyond “first eligible wins”
+- Additional promotion action types (BOGO, free product, line-item discounts)
 
 ### Storefront / WooCommerce
 

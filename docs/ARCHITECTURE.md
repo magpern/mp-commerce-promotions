@@ -255,7 +255,7 @@ Each promotion evaluation can return structured traces on `EvaluationResult`:
 
 Reason codes are **internal, stable strings** (for example `cart_value_too_low`, `condition_unknown`, `action_selected`, `action_not_reached`). They are intended for admin debugging and future tooling — not storefront output.
 
-When conditions fail, actions receive `action_not_reached` traces without preview evaluation. When eligible, only the **first** action trace is marked `action_selected` (matching MVP cart application), while additional configured actions may still appear in `action_results` previews.
+When conditions fail, actions receive `action_not_reached` traces without preview evaluation. When eligible, only the **first** action trace is marked `action_selected` (matching storefront application: one action per promotion), while additional configured actions may still appear in `action_results` previews.
 
 The admin **Cart preview** on the promotion edit screen renders trace tables (escaped; observed/preview as JSON). No REST/AJAX or customer-facing explainability in this phase.
 
@@ -309,15 +309,15 @@ fixed_amount_discount
 - Conditions return pass/fail results.
 - All conditions must currently pass.
 - Actions return previews before WooCommerce application.
-- Only the first supported action is currently applied in the MVP.
+- Only the first supported action per promotion is applied on the storefront.
 - Unknown condition/action types should fail safely.
 - Evaluation should not mutate cart/order/database state.
 
-### Application planning (stacking groundwork)
+### Application planning (stacking)
 
 Each promotion row stores application strategy fields:
 
-- **`application_mode`** — `exclusive` (default) or `stackable` (groundwork for future multi-apply).
+- **`application_mode`** — `exclusive` (default) or `stackable` (multiple selections when stop processing is off).
 - **`stop_processing`** — when true (default), no further promotions are selected in a plan after this one is selected.
 - **`max_applications`** — optional plan-level cap on how many promotions may be selected in one evaluation (not per-customer usage). When set on any selected promotion, the active cap is the **minimum** among those values; further eligible promotions are skipped with `max_applications_reached`.
 - **`excluded_promotion_ids`** — JSON array of promotion IDs to skip when this promotion is selected (evaluated later in the plan only).
@@ -568,9 +568,9 @@ Planned marketplace-readiness work includes:
 Current limitations include:
 
 - Negative-fee discount strategy
-- Only first eligible promotion applies
-- Only first supported action is applied
-- No stackability/conflict engine yet
+- Exclusive promotions still allow only one selected promotion in a plan
+- Only first supported action per promotion is applied
+- Stackable multi-fee, exclusions, and max_applications are plan-level (not per-customer usage limits)
 - No BOGO/free product logic yet
 - No free shipping action yet
 - No partial refund proportional reversal

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Stacking documentation and smoke** — clarified multi-fee vs exclusive behavior; `docs/manual-stacking-test.md`; cap smoke at natural subtotal (~46).
 - **Max applications enforcement** — `PromotionPlanner` enforces plan-level cap (minimum `max_applications` among selected promotions); skipped reason `max_applications_reached`; admin promotion plan table in cart preview.
 - **Promotion exclusion rules** — `excluded_promotion_ids` on promotions (schema 1.6.0); planner skips later eligible promotions with `excluded_by_selected_promotion`; admin comma-separated ID field; list column shows exclusion count.
 - **Stackable cart fees** — `CartPromotionApplier` applies one negative fee per planner-selected promotion; cumulative discount capped at cart subtotal; session `applied_promotions` array; order meta `_mp_cp_applied_promotions`; multi-promotion redemption recording and reversal.

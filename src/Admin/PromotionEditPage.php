@@ -2019,7 +2019,7 @@ final class PromotionEditPage {
 				);
 			},
 			__(
-				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action is applied in this MVP. Product and category IDs must be numeric WordPress IDs. Woo cart context may enrich has_previous_orders, customer_roles, billing_country, and customer_email when session data is available (logged-in or guest checkout). billing_country uses ISO codes (uppercase). customer_email_domain matches the part after @ (case-insensitive). Customer/location conditions are raw JSON only (not in Simple Rule Builder v0).',
+				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action per promotion is applied on the storefront. Product and category IDs must be numeric WordPress IDs. Woo cart context may enrich has_previous_orders, customer_roles, billing_country, and customer_email when session data is available (logged-in or guest checkout). billing_country uses ISO codes (uppercase). customer_email_domain matches the part after @ (case-insensitive). Customer/location conditions are raw JSON only (not in Simple Rule Builder v0).',
 				'mp-commerce-promotions'
 			),
 			array(
@@ -2085,7 +2085,7 @@ final class PromotionEditPage {
 		echo '<tr><th scope="row"><label for="mp_cp_application_mode">' . esc_html__( 'Application mode', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<select id="mp_cp_application_mode" name="promotion_application_mode">';
 		echo '<option value="' . esc_attr( PromotionApplicationMode::EXCLUSIVE ) . '"' . selected( $mode, PromotionApplicationMode::EXCLUSIVE, false ) . '>' . esc_html__( 'Exclusive', 'mp-commerce-promotions' ) . '</option>';
-		echo '<option value="' . esc_attr( PromotionApplicationMode::STACKABLE ) . '"' . selected( $mode, PromotionApplicationMode::STACKABLE, false ) . '>' . esc_html__( 'Stackable (groundwork)', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="' . esc_attr( PromotionApplicationMode::STACKABLE ) . '"' . selected( $mode, PromotionApplicationMode::STACKABLE, false ) . '>' . esc_html__( 'Stackable', 'mp-commerce-promotions' ) . '</option>';
 		echo '</select></td></tr>';
 
 		echo '<tr><th scope="row">' . esc_html__( 'Stop processing', 'mp-commerce-promotions' ) . '</th><td>';
@@ -2139,7 +2139,7 @@ final class PromotionEditPage {
 		}
 		echo '<tr><th scope="row"><label for="mp_cp_act">' . esc_html__( 'Actions (JSON)', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<textarea class="large-text code" rows="8" id="mp_cp_act" name="promotion_actions_json">' . esc_textarea( $act_json ) . '</textarea>';
-		echo '<p class="description">' . esc_html__( 'Copy a template above or enter a valid JSON array. Only the first supported action applies in this MVP.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+		echo '<p class="description">' . esc_html__( 'Copy a template above or enter a valid JSON array. Only the first supported action per promotion is applied on the storefront.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		$res_json = wp_json_encode( $promotion->get_restrictions(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( ! is_string( $res_json ) ) {

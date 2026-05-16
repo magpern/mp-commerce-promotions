@@ -1,6 +1,6 @@
 # Development guide
 
-Local tooling and verification for **Commerce Promotions for WooCommerce**. See [ARCHITECTURE.md](ARCHITECTURE.md) for system design and [TASKS.md](TASKS.md) for priorities.
+Local tooling and verification for **Commerce Promotions for WooCommerce**. See [ARCHITECTURE.md](ARCHITECTURE.md) for system design, [TASKS.md](TASKS.md) for priorities, and [manual-stacking-test.md](manual-stacking-test.md) for stacking verification.
 
 ## Repository layout
 
@@ -208,7 +208,7 @@ composer run test
 
 **WooCommerce compatibility:** `WooCompatibility::register()` runs from `mp-commerce-promotions.php` immediately after autoload so `before_woocommerce_init` can declare HPOS (`custom_order_tables`) compatibility. Do not declare `cart_checkout_blocks` without block checkout QA. Order meta must use `WC_Order` CRUD, not raw postmeta writes.
 
-**Stacking groundwork:** Use `PromotionPlanner::plan()` in tests to assert selection/skip reasons. `CartPromotionApplier` still applies one fee — do not add multi-fee application without an explicit task.
+**Stacking:** Use `PromotionPlanner::plan()` in tests to assert selection/skip reasons. `CartPromotionApplier` applies one fee per selected promotion (subtotal cap). Manual checklist: [manual-stacking-test.md](manual-stacking-test.md). Smoke: `scripts/stacking-smoke.php`, `scripts/stacking-limits-smoke.php`.
 
 **Future work:** WordPress/WooCommerce integration tests (bootstrap WP test suite, repositories against test DB, checkout flows) are **not** implemented yet.
 

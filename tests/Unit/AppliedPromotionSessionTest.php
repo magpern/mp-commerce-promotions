@@ -42,6 +42,39 @@ final class AppliedPromotionSessionTest extends TestCase {
 		$this->assertCount( 2, $roundtrip );
 	}
 
+	public function test_total_discount_amount_sums_three_entries(): void {
+		$entries = array(
+			array(
+				'promotion_id'    => 1,
+				'promotion_uuid'  => '11111111-1111-4111-8111-111111111111',
+				'promotion_name'  => 'A',
+				'discount_amount' => 80.0,
+				'action_type'     => CartPromotionApplier::ACTION_FIXED_AMOUNT_DISCOUNT,
+				'fixed_amount'    => 80.0,
+			),
+			array(
+				'promotion_id'    => 2,
+				'promotion_uuid'  => '22222222-2222-4222-8222-222222222222',
+				'promotion_name'  => 'B',
+				'discount_amount' => 30.0,
+				'action_type'     => CartPromotionApplier::ACTION_FIXED_AMOUNT_DISCOUNT,
+				'fixed_amount'    => 50.0,
+			),
+			array(
+				'promotion_id'    => 3,
+				'promotion_uuid'  => '33333333-3333-4333-8333-333333333333',
+				'promotion_name'  => 'C',
+				'discount_amount' => 16.0,
+				'action_type'     => CartPromotionApplier::ACTION_FIXED_AMOUNT_DISCOUNT,
+				'fixed_amount'    => 16.0,
+			),
+		);
+
+		$payload = AppliedPromotionSession::build_session_payload( $entries );
+		$this->assertSame( 126.0, $payload['total_discount_amount'] );
+		$this->assertCount( 3, $payload['applied_promotions'] );
+	}
+
 	public function test_legacy_single_payload_still_readable(): void {
 		$legacy = array(
 			'promotion_id'    => 5,

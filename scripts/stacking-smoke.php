@@ -134,6 +134,32 @@ function smoke_setup_cart_subtotal( float $target ): float {
 	return (float) $cart->get_subtotal();
 }
 
+/**
+ * Single unit of a known purchasable product (natural subtotal, e.g. ~46).
+ */
+function smoke_setup_cart_natural_subtotal(): float {
+	if ( ! function_exists( 'WC' ) || ! function_exists( 'wc_load_cart' ) ) {
+		throw new RuntimeException( 'WooCommerce not loaded.' );
+	}
+
+	wc_load_cart();
+	WC()->initialize_session();
+	if ( WC()->session ) {
+		WC()->session->set_customer_session_cookie( true );
+	}
+
+	$cart = WC()->cart;
+	$cart->empty_cart( true );
+
+	$key = $cart->add_to_cart( 3703, 1 );
+	if ( ! $key ) {
+		throw new RuntimeException( 'add_to_cart(3703,1) failed for natural subtotal smoke.' );
+	}
+	$cart->calculate_totals();
+
+	return (float) $cart->get_subtotal();
+}
+
 function smoke_run_cart_applier(): void {
 	$applier = null;
 	if ( class_exists( \MP\CommercePromotions\Plugin::class ) ) {
@@ -234,10 +260,46 @@ try {
 	smoke_assert( abs( $total - $expected_cap ) < 0.05, 'cap: total_discount = min(130, subtotal) (total=' . $total . ', subtotal=' . $subtotal . ')' );
 	smoke_assert( $total <= $subtotal + 0.05, 'cap: total does not exceed subtotal' );
 
-	WP_CLI::line( '=== Order recording / idempotency / reversal ===' );
+	WP_CLI::line( '=== Discount cap at natural subtotal (80 + 50, qty 1) ===' );
 
 	smoke_archive_promotion( $service, $repo, $id_c );
 	smoke_archive_promotion( $service, $repo, $id_d );
+
+	$id_g = smoke_make_promotion( $service, $repo, 'Smoke Cap G 80', 80.0, 1 );
+	$id_h = smoke_make_promotion( $service, $repo, 'Smoke Cap H 50', 50.0, 2 );
+	$created_ids[] = $id_g;
+	$created_ids[] = $id_h;
+
+	WC()->cart->empty_cart( true );
+	$natural_subtotal = smoke_setup_cart_natural_subtotal();
+	smoke_run_cart_applier();
+
+	$session = CartSessionHelper::get_applied_promotion();
+	$entries = AppliedPromotionSession::entries_from_session( is_array( $session ) ? $session : null );
+	$total   = isset( $session['total_discount_amount'] ) ? (float) $session['total_discount_amount'] : 0.0;
+
+	smoke_assert( count( $entries ) >= 1, 'natural cap: at least one applied promotion in session' );
+	smoke_assert(
+		abs( $total - $natural_subtotal ) < 0.05,
+		sprintf(
+			'natural cap: total_discount=%.2f equals subtotal=%.2f (not 130)',
+			$total,
+			$natural_subtotal
+		)
+	);
+	smoke_assert( $total < 130.0, 'natural cap: total is not uncapped 130' );
+	WP_CLI::line(
+		sprintf(
+			'Report: subtotal=%.2f, total_discount=%.2f, raw_sum_would_be=130.00',
+			$natural_subtotal,
+			$total
+		)
+	);
+
+	WP_CLI::line( '=== Order recording / idempotency / reversal ===' );
+
+	smoke_archive_promotion( $service, $repo, $id_g );
+	smoke_archive_promotion( $service, $repo, $id_h );
 
 	$id_e = smoke_make_promotion( $service, $repo, 'Smoke Record E 10', 10.0, 1 );
 	$id_f = smoke_make_promotion( $service, $repo, 'Smoke Record F 15', 15.0, 2 );
