@@ -49,7 +49,7 @@ final class PromotionsPage {
 		?RedemptionRepository $redemptions = null,
 		?PromotionRuleValidator $rule_validator = null
 	) {
-		$this->promotions         = $promotions;
+		$this->promotions        = $promotions;
 		$this->promotion_service = $promotion_service;
 		$this->edit_page         = $edit_page;
 		$this->promotion_codes   = $promotion_codes;
@@ -163,7 +163,7 @@ final class PromotionsPage {
 
 		echo '<ul class="subsubsub" style="margin:0 0 12px;">';
 		$filters = array(
-			null => __( 'All', 'mp-commerce-promotions' ),
+			null                      => __( 'All', 'mp-commerce-promotions' ),
 			PromotionStatus::DRAFT    => __( 'Draft', 'mp-commerce-promotions' ),
 			PromotionStatus::ACTIVE   => __( 'Active', 'mp-commerce-promotions' ),
 			PromotionStatus::PAUSED   => __( 'Paused', 'mp-commerce-promotions' ),
@@ -179,8 +179,8 @@ final class PromotionsPage {
 			if ( $list_query['search'] !== null && $list_query['search'] !== '' ) {
 				$query['s'] = $list_query['search'];
 			}
-			$url = $this->list_url( $query );
-			$class = ( $current_status === $status_key ) || ( $status_key === null && $current_status === null )
+			$url          = $this->list_url( $query );
+			$class        = ( $current_status === $status_key ) || ( $status_key === null && $current_status === null )
 				? 'current'
 				: '';
 			$link_parts[] = '<a href="' . esc_url( $url ) . '" class="' . esc_attr( $class ) . '">' . esc_html( $label ) . '</a>';
@@ -232,7 +232,7 @@ final class PromotionsPage {
 	}
 
 	/**
-	 * @param list<Promotion> $list
+	 * @param list<Promotion>                                                          $list
 	 * @param array{status: string|null, search: string|null, paged: int, offset: int} $list_query
 	 */
 	private function render_promotions_table( array $list, array $list_query ): void {
@@ -266,8 +266,8 @@ final class PromotionsPage {
 			if ( ! $promo instanceof Promotion ) {
 				continue;
 			}
-			$pid = $promo->get_id();
-			$edit  = '';
+			$pid  = $promo->get_id();
+			$edit = '';
 			if ( $pid !== null && $pid > 0 ) {
 				$edit_url = add_query_arg(
 					array(
@@ -275,7 +275,7 @@ final class PromotionsPage {
 					),
 					AdminNavigation::tab_url( AdminNavigation::TAB_ALL )
 				);
-				$edit = ' <a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'mp-commerce-promotions' ) . '</a>';
+				$edit     = ' <a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'mp-commerce-promotions' ) . '</a>';
 			}
 			echo '<tr>';
 			echo '<td>' . esc_html( (string) ( $pid ?? '' ) ) . '</td>';
@@ -305,13 +305,13 @@ final class PromotionsPage {
 		echo '<div class="tablenav"><div class="tablenav-pages" style="margin:12px 0;">';
 
 		if ( $paged > 1 ) {
-			$prev_args = $this->list_query_to_url_args( $list_query );
+			$prev_args          = $this->list_query_to_url_args( $list_query );
 			$prev_args['paged'] = (string) ( $paged - 1 );
 			echo '<a class="button" href="' . esc_url( $this->list_url( $prev_args ) ) . '">' . esc_html__( '← Previous', 'mp-commerce-promotions' ) . '</a> ';
 		}
 
 		if ( $paged < $total_pages ) {
-			$next_args = $this->list_query_to_url_args( $list_query );
+			$next_args          = $this->list_query_to_url_args( $list_query );
 			$next_args['paged'] = (string) ( $paged + 1 );
 			echo '<a class="button" href="' . esc_url( $this->list_url( $next_args ) ) . '">' . esc_html__( 'Next →', 'mp-commerce-promotions' ) . '</a>';
 		}
@@ -341,12 +341,7 @@ final class PromotionsPage {
 	 * @param array<string, string> $extra_query
 	 */
 	private function list_url( array $extra_query = array() ): string {
-		$base = array(
-			'page' => AdminNavigation::PAGE_SLUG,
-			'tab'  => AdminNavigation::TAB_ALL,
-		);
-
-		return add_query_arg( array_merge( $base, $extra_query ), admin_url( 'admin.php' ) );
+		return AdminUrl::list_promotions( $extra_query );
 	}
 
 	private function handle_post_create(): void {
@@ -398,14 +393,14 @@ final class PromotionsPage {
 
 	private function render_notices(): void {
 		if ( isset( $_GET['mp_cp_created'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_created'] ) ) === '1' ) {
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Draft promotion created.', 'mp-commerce-promotions' ) . '</p></div>';
+			AdminNotice::success( __( 'Draft promotion created.', 'mp-commerce-promotions' ) );
 		}
 
 		if ( isset( $_GET['mp_cp_error'] ) ) {
 			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_error'] ) );
 			$msg  = $this->error_message_for_code( $code );
 			if ( $msg !== '' ) {
-				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
+				AdminNotice::error( $msg );
 			}
 		}
 	}

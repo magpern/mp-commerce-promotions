@@ -90,18 +90,18 @@ final class PromotionEditPage {
 		?PromotionCodeBatchGenerator $batch_generator = null,
 		?AuditLogger $audit_logger = null
 	) {
-		$this->promotions               = $promotions;
-		$this->promotion_service        = $promotion_service;
-		$this->cart_context_builder     = $cart_context_builder;
-		$this->promotion_evaluator      = $promotion_evaluator ?? new PromotionEvaluator();
-		$this->redemptions              = $redemptions;
-		$this->audit_logs               = $audit_logs;
-		$this->rule_validator           = $rule_validator ?? new PromotionRuleValidator();
-		$this->promotion_codes          = $promotion_codes;
-		$this->promotion_code_factory   = $promotion_code_factory;
-		$this->code_batches             = $code_batches;
-		$this->batch_generator          = $batch_generator;
-		$this->audit_logger             = $audit_logger;
+		$this->promotions             = $promotions;
+		$this->promotion_service      = $promotion_service;
+		$this->cart_context_builder   = $cart_context_builder;
+		$this->promotion_evaluator    = $promotion_evaluator ?? new PromotionEvaluator();
+		$this->redemptions            = $redemptions;
+		$this->audit_logs             = $audit_logs;
+		$this->rule_validator         = $rule_validator ?? new PromotionRuleValidator();
+		$this->promotion_codes        = $promotion_codes;
+		$this->promotion_code_factory = $promotion_code_factory;
+		$this->code_batches           = $code_batches;
+		$this->batch_generator        = $batch_generator;
+		$this->audit_logger           = $audit_logger;
 	}
 
 	public function render( string $identifier ): void {
@@ -115,12 +115,12 @@ final class PromotionEditPage {
 			exit;
 		}
 
-		$this->cart_preview_result        = null;
-		$this->cart_preview_error         = null;
-		$this->batch_generation_outcome     = null;
-		$this->batch_generation_error       = null;
-		$this->batch_detail                 = null;
-		$this->batch_detail_error           = null;
+		$this->cart_preview_result      = null;
+		$this->cart_preview_error       = null;
+		$this->batch_generation_outcome = null;
+		$this->batch_generation_error   = null;
+		$this->batch_detail             = null;
+		$this->batch_detail_error       = null;
 
 		$this->resolve_batch_detail_view( $promotion );
 
@@ -407,11 +407,11 @@ final class PromotionEditPage {
 				'promotion_code.batch_status_changed',
 				$pid,
 				array(
-					'promotion_id'    => $pid,
-					'batch_id'        => $batch_id,
-					'from_status'     => $from_status,
-					'to_status'       => $to_status,
-					'affected_count'  => $affected,
+					'promotion_id'   => $pid,
+					'batch_id'       => $batch_id,
+					'from_status'    => $from_status,
+					'to_status'      => $to_status,
+					'affected_count' => $affected,
 				),
 				(int) get_current_user_id()
 			);
@@ -623,7 +623,7 @@ final class PromotionEditPage {
 		}
 
 		try {
-			$context = $this->cart_context_builder->build_from_cart();
+			$context                   = $this->cart_context_builder->build_from_cart();
 			$this->cart_preview_result = $this->promotion_evaluator->evaluate( $promotion, $context );
 		} catch ( Throwable $e ) {
 			$this->cart_preview_error = __( 'Preview failed.', 'mp-commerce-promotions' );
@@ -834,25 +834,57 @@ final class PromotionEditPage {
 
 		$nonce_action = 'mp_cp_update_promotion_' . $pid;
 		if ( ! isset( $_POST['mp_cp_update_nonce'] ) ) {
-			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'missing_nonce' ), $this->edit_url( (string) $pid ) ) );
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'missing_nonce',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
 			exit;
 		}
 
 		$nonce = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_update_nonce'] ) );
 		if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
-			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'invalid_nonce' ), $this->edit_url( (string) $pid ) ) );
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_nonce',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
 			exit;
 		}
 
 		$post_id = isset( $_POST['mp_cp_promotion_id'] ) ? (int) $_POST['mp_cp_promotion_id'] : 0;
 		if ( $post_id !== $pid ) {
-			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'id_mismatch' ), $this->edit_url( (string) $pid ) ) );
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'id_mismatch',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
 			exit;
 		}
 
 		$name = isset( $_POST['promotion_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['promotion_name'] ) ) : '';
 		if ( $name === '' ) {
-			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'empty_name' ), $this->edit_url( (string) $pid ) ) );
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'empty_name',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
 			exit;
 		}
 
@@ -863,7 +895,15 @@ final class PromotionEditPage {
 
 		$priority = isset( $_POST['promotion_priority'] ) ? (int) $_POST['promotion_priority'] : 0;
 		if ( $priority < 0 ) {
-			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'invalid_priority' ), $this->edit_url( (string) $pid ) ) );
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_priority',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
 			exit;
 		}
 
@@ -872,16 +912,24 @@ final class PromotionEditPage {
 		$starts_at  = $starts_raw === '' ? null : $starts_raw;
 		$ends_at    = $ends_raw === '' ? null : $ends_raw;
 
-		$conditions_raw    = isset( $_POST['promotion_conditions_json'] ) ? wp_unslash( (string) $_POST['promotion_conditions_json'] ) : '';
-		$actions_raw       = isset( $_POST['promotion_actions_json'] ) ? wp_unslash( (string) $_POST['promotion_actions_json'] ) : '';
-		$restrictions_raw  = isset( $_POST['promotion_restrictions_json'] ) ? wp_unslash( (string) $_POST['promotion_restrictions_json'] ) : '';
+		$conditions_raw   = isset( $_POST['promotion_conditions_json'] ) ? wp_unslash( (string) $_POST['promotion_conditions_json'] ) : '';
+		$actions_raw      = isset( $_POST['promotion_actions_json'] ) ? wp_unslash( (string) $_POST['promotion_actions_json'] ) : '';
+		$restrictions_raw = isset( $_POST['promotion_restrictions_json'] ) ? wp_unslash( (string) $_POST['promotion_restrictions_json'] ) : '';
 
-		$conditions = $this->decode_json_array_field( $conditions_raw );
+		$conditions   = $this->decode_json_array_field( $conditions_raw );
 		$actions      = $this->decode_json_array_field( $actions_raw );
 		$restrictions = $this->decode_json_array_field( $restrictions_raw );
 
 		if ( $conditions === null || $actions === null || $restrictions === null ) {
-			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'invalid_json' ), $this->edit_url( (string) $pid ) ) );
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_json',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
 			exit;
 		}
 
@@ -896,11 +944,27 @@ final class PromotionEditPage {
 
 			$this->promotion_service->update_promotion( $updated, (int) get_current_user_id() );
 		} catch ( RuntimeException $e ) {
-			wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_error' => 'update_failed' ), $this->edit_url( (string) $pid ) ) );
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'update_failed',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
 			exit;
 		}
 
-		wp_safe_redirect( add_query_arg( array( 'promotion' => (string) $pid, 'mp_cp_saved' => '1' ), $this->edit_url( (string) $pid ) ) );
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'promotion'   => (string) $pid,
+					'mp_cp_saved' => '1',
+				),
+				$this->edit_url( (string) $pid )
+			)
+		);
 		exit;
 	}
 
@@ -926,11 +990,11 @@ final class PromotionEditPage {
 
 	private function render_edit_page_notices(): void {
 		foreach ( $this->collect_edit_page_notices() as $notice ) {
-			$this->render_admin_notice( $notice['type'], $notice['message'] );
+			AdminNotice::render( $notice['type'], $notice['message'] );
 		}
 
 		if ( $this->batch_detail_error !== null && $this->batch_detail_error !== '' ) {
-			$this->render_admin_notice( 'error', $this->batch_detail_error );
+			AdminNotice::error( $this->batch_detail_error );
 		}
 	}
 
@@ -1019,11 +1083,6 @@ final class PromotionEditPage {
 		}
 
 		return $notices;
-	}
-
-	private function render_admin_notice( string $type, string $message ): void {
-		$class = $type === 'success' ? 'notice-success' : 'notice-error';
-		echo '<div class="notice ' . esc_attr( $class ) . ' is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
 	}
 
 	private function security_check_failed_message(): string {
@@ -1258,31 +1317,35 @@ final class PromotionEditPage {
 	private function render_rule_validation_section( Promotion $promotion ): void {
 		$issues = $this->rule_validator->validate( $promotion );
 
-		echo '<div class="card" style="max-width:720px;padding:12px 16px;margin:16px 0;">';
-		echo '<h2 style="margin-top:0;">' . esc_html__( 'Rule Validation', 'mp-commerce-promotions' ) . '</h2>';
-		echo '<p class="description">' . esc_html__( 'Read-only checks against supported condition and action types. Passing validation does not guarantee the promotion will apply to a specific cart.', 'mp-commerce-promotions' ) . '</p>';
+		AdminSection::render(
+			__( 'Rule Validation', 'mp-commerce-promotions' ),
+			function () use ( $issues ): void {
+				if ( count( $issues ) === 0 ) {
+					echo '<p>' . esc_html__( 'No validation issues found.', 'mp-commerce-promotions' ) . '</p>';
+					return;
+				}
 
-		if ( count( $issues ) === 0 ) {
-			echo '<p>' . esc_html__( 'No validation issues found.', 'mp-commerce-promotions' ) . '</p>';
-			echo '</div>';
-			return;
-		}
+				echo '<ul style="list-style:disc;margin-left:1.5em;">';
+				foreach ( $issues as $issue ) {
+					$level   = isset( $issue['level'] ) ? (string) $issue['level'] : 'info';
+					$message = isset( $issue['message'] ) ? (string) $issue['message'] : '';
 
-		echo '<ul style="list-style:disc;margin-left:1.5em;">';
-		foreach ( $issues as $issue ) {
-			$level   = isset( $issue['level'] ) ? (string) $issue['level'] : 'info';
-			$message = isset( $issue['message'] ) ? (string) $issue['message'] : '';
+					$label = match ( $level ) {
+						'error' => __( 'Error', 'mp-commerce-promotions' ),
+						'warning' => __( 'Warning', 'mp-commerce-promotions' ),
+						default => __( 'Info', 'mp-commerce-promotions' ),
+					};
 
-			$label = match ( $level ) {
-				'error' => __( 'Error', 'mp-commerce-promotions' ),
-				'warning' => __( 'Warning', 'mp-commerce-promotions' ),
-				default => __( 'Info', 'mp-commerce-promotions' ),
-			};
-
-			echo '<li><strong>' . esc_html( $label ) . ':</strong> ' . esc_html( $message ) . '</li>';
-		}
-		echo '</ul>';
-		echo '</div>';
+					echo '<li><strong>' . esc_html( $label ) . ':</strong> ' . esc_html( $message ) . '</li>';
+				}
+				echo '</ul>';
+			},
+			__( 'Read-only checks against supported condition and action types. Passing validation does not guarantee the promotion will apply to a specific cart.', 'mp-commerce-promotions' ),
+			array(
+				'heading' => 'h2',
+				'width'   => 'narrow',
+			)
+		);
 	}
 
 	private function render_cart_preview_section( Promotion $promotion ): void {
@@ -1291,59 +1354,69 @@ final class PromotionEditPage {
 			return;
 		}
 
-		echo '<div class="card" style="max-width:720px;padding:12px 16px;margin:16px 0;">';
-		echo '<h2 style="margin-top:0;">' . esc_html__( 'Cart preview', 'mp-commerce-promotions' ) . '</h2>';
-
-		if ( $this->cart_context_builder === null ) {
-			echo '<p class="description">' . esc_html__( 'WooCommerce is unavailable or the cart context builder is not loaded, so preview against the current cart is disabled.', 'mp-commerce-promotions' ) . '</p>';
-			echo '</div>';
-			return;
-		}
-
-		$url = $this->edit_url( (string) $id );
-		echo '<form method="post" action="' . esc_url( $url ) . '">';
-		wp_nonce_field( 'mp_cp_preview_cart_' . $id, 'mp_cp_preview_cart_nonce' );
-		echo '<input type="hidden" name="mp_cp_action" value="preview_cart" />';
-		echo '<input type="hidden" name="promotion_id" value="' . esc_attr( (string) $id ) . '" />';
-		echo '<p class="submit" style="margin:0;">';
-		echo '<button type="submit" name="mp_cp_preview_cart_submit" value="1" class="button">' . esc_html__( 'Preview against current cart', 'mp-commerce-promotions' ) . '</button>';
-		echo '</p>';
-		echo '<p class="description">' . esc_html__( 'Evaluates this promotion against the cart for the current session. Nothing is saved to the database; discounts are not applied.', 'mp-commerce-promotions' ) . '</p>';
-		echo '</form>';
-
-		if ( $this->cart_preview_error !== null && $this->cart_preview_error !== '' ) {
-			echo '<div class="notice notice-error inline" style="margin-top:12px;"><p>' . esc_html( $this->cart_preview_error ) . '</p></div>';
-		}
-
-		if ( $this->cart_preview_result instanceof EvaluationResult ) {
-			$result = $this->cart_preview_result;
-			echo '<hr style="margin:16px 0;" />';
-			echo '<p><strong>' . esc_html__( 'Eligible', 'mp-commerce-promotions' ) . ':</strong> ';
-			echo $result->is_eligible()
-				? esc_html__( 'Yes', 'mp-commerce-promotions' )
-				: esc_html__( 'No', 'mp-commerce-promotions' );
-			echo '</p>';
-
-			$messages = $result->get_messages();
-			if ( count( $messages ) > 0 ) {
-				echo '<p><strong>' . esc_html__( 'Messages', 'mp-commerce-promotions' ) . '</strong></p>';
-				echo '<ul style="list-style:disc;margin-left:1.5em;">';
-				foreach ( $messages as $message ) {
-					echo '<li>' . esc_html( (string) $message ) . '</li>';
+		AdminSection::render(
+			__( 'Cart preview', 'mp-commerce-promotions' ),
+			function () use ( $id ): void {
+				if ( $this->cart_context_builder === null ) {
+					echo '<p class="description">' . esc_html__( 'WooCommerce is unavailable or the cart context builder is not loaded, so preview against the current cart is disabled.', 'mp-commerce-promotions' ) . '</p>';
+					return;
 				}
-				echo '</ul>';
-			}
 
-			$action_results = $result->get_action_results();
-			echo '<p><strong>' . esc_html__( 'Action previews (JSON)', 'mp-commerce-promotions' ) . '</strong></p>';
-			$json = wp_json_encode( $action_results, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-			if ( ! is_string( $json ) ) {
-				$json = '[]';
-			}
-			echo '<pre class="code" style="max-height:240px;overflow:auto;background:#f6f7f7;padding:12px;">' . esc_html( $json ) . '</pre>';
-		}
+				$url = $this->edit_url( (string) $id );
+				echo '<form method="post" action="' . esc_url( $url ) . '">';
+				wp_nonce_field( 'mp_cp_preview_cart_' . $id, 'mp_cp_preview_cart_nonce' );
+				echo '<input type="hidden" name="mp_cp_action" value="preview_cart" />';
+				echo '<input type="hidden" name="promotion_id" value="' . esc_attr( (string) $id ) . '" />';
+				echo '<p class="submit" style="margin:0;">';
+				echo '<button type="submit" name="mp_cp_preview_cart_submit" value="1" class="button">' . esc_html__( 'Preview against current cart', 'mp-commerce-promotions' ) . '</button>';
+				echo '</p>';
+				echo '<p class="description">' . esc_html__( 'Evaluates this promotion against the cart for the current session. Nothing is saved to the database; discounts are not applied.', 'mp-commerce-promotions' ) . '</p>';
+				echo '</form>';
 
-		echo '</div>';
+				if ( $this->cart_preview_error !== null && $this->cart_preview_error !== '' ) {
+					AdminNotice::error(
+						$this->cart_preview_error,
+						array(
+							'inline'      => true,
+							'dismissible' => false,
+						)
+					);
+				}
+
+				if ( $this->cart_preview_result instanceof EvaluationResult ) {
+					$result = $this->cart_preview_result;
+					echo '<hr style="margin:16px 0;" />';
+					echo '<p><strong>' . esc_html__( 'Eligible', 'mp-commerce-promotions' ) . ':</strong> ';
+					echo $result->is_eligible()
+						? esc_html__( 'Yes', 'mp-commerce-promotions' )
+						: esc_html__( 'No', 'mp-commerce-promotions' );
+					echo '</p>';
+
+					$messages = $result->get_messages();
+					if ( count( $messages ) > 0 ) {
+						echo '<p><strong>' . esc_html__( 'Messages', 'mp-commerce-promotions' ) . '</strong></p>';
+						echo '<ul style="list-style:disc;margin-left:1.5em;">';
+						foreach ( $messages as $message ) {
+							echo '<li>' . esc_html( (string) $message ) . '</li>';
+						}
+						echo '</ul>';
+					}
+
+					$action_results = $result->get_action_results();
+					echo '<p><strong>' . esc_html__( 'Action previews (JSON)', 'mp-commerce-promotions' ) . '</strong></p>';
+					$json = wp_json_encode( $action_results, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+					if ( ! is_string( $json ) ) {
+						$json = '[]';
+					}
+					echo '<pre class="code" style="max-height:240px;overflow:auto;background:#f6f7f7;padding:12px;">' . esc_html( $json ) . '</pre>';
+				}
+			},
+			null,
+			array(
+				'heading' => 'h2',
+				'width'   => 'narrow',
+			)
+		);
 	}
 
 	private function render_simple_rule_builder_section( Promotion $promotion ): void {
@@ -1411,21 +1484,26 @@ final class PromotionEditPage {
 	}
 
 	private function render_product_category_id_helper_section(): void {
-		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:8px 0 16px;">';
-		echo '<h3 style="margin-top:0;">' . esc_html__( 'Product and category IDs', 'mp-commerce-promotions' ) . '</h3>';
-		echo '<p class="description">' . esc_html__(
-			'The product_quantity condition uses WooCommerce product post IDs. The category_quantity condition uses product category term IDs (taxonomy product_cat).',
-			'mp-commerce-promotions'
-		) . '</p>';
-		echo '<p>';
-		echo '<a class="button" href="' . esc_url( admin_url( 'edit.php?post_type=product' ) ) . '">' . esc_html__( 'Products list', 'mp-commerce-promotions' ) . '</a> ';
-		echo '<a class="button" href="' . esc_url( admin_url( 'edit-tags.php?taxonomy=product_cat&post_type=product' ) ) . '">' . esc_html__( 'Product categories list', 'mp-commerce-promotions' ) . '</a>';
-		echo '</p>';
+		AdminSection::render(
+			__( 'Product and category IDs', 'mp-commerce-promotions' ),
+			function (): void {
+				echo '<p>';
+				echo '<a class="button" href="' . esc_url( admin_url( 'edit.php?post_type=product' ) ) . '">' . esc_html__( 'Products list', 'mp-commerce-promotions' ) . '</a> ';
+				echo '<a class="button" href="' . esc_url( admin_url( 'edit-tags.php?taxonomy=product_cat&post_type=product' ) ) . '">' . esc_html__( 'Product categories list', 'mp-commerce-promotions' ) . '</a>';
+				echo '</p>';
 
-		$this->render_recent_products_id_helper_table();
-		$this->render_recent_categories_id_helper_table();
-
-		echo '</div>';
+				$this->render_recent_products_id_helper_table();
+				$this->render_recent_categories_id_helper_table();
+			},
+			__(
+				'The product_quantity condition uses WooCommerce product post IDs. The category_quantity condition uses product category term IDs (taxonomy product_cat).',
+				'mp-commerce-promotions'
+			),
+			array(
+				'heading' => 'h3',
+				'width'   => 'wide',
+			)
+		);
 	}
 
 	private function render_recent_products_id_helper_table(): void {
@@ -1643,40 +1721,44 @@ final class PromotionEditPage {
 	}
 
 	private function render_rule_templates_section(): void {
-		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:8px 0 16px;">';
-		echo '<h3 style="margin-top:0;">' . esc_html__( 'Rule templates', 'mp-commerce-promotions' ) . '</h3>';
-		echo '<p class="description">' . esc_html__(
-			'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action is applied in this MVP. Product and category IDs must be numeric WordPress IDs.',
-			'mp-commerce-promotions'
-		) . '</p>';
+		AdminSection::render(
+			__( 'Rule templates', 'mp-commerce-promotions' ),
+			function (): void {
+				echo '<h4>' . esc_html__( 'Conditions examples', 'mp-commerce-promotions' ) . '</h4>';
 
-		echo '<h4>' . esc_html__( 'Conditions examples', 'mp-commerce-promotions' ) . '</h4>';
+				$this->render_rule_template_readonly(
+					__( 'Minimum subtotal', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"minimum_subtotal\",\"amount\":100}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'Product quantity', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"product_quantity\",\"product_id\":123,\"operator\":\">=\",\"quantity\":2}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'Category quantity', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"category_quantity\",\"category_id\":123,\"operator\":\">=\",\"quantity\":2}\n]"
+				);
 
-		$this->render_rule_template_readonly(
-			__( 'Minimum subtotal', 'mp-commerce-promotions' ),
-			"[\n  {\"type\":\"minimum_subtotal\",\"amount\":100}\n]"
-		);
-		$this->render_rule_template_readonly(
-			__( 'Product quantity', 'mp-commerce-promotions' ),
-			"[\n  {\"type\":\"product_quantity\",\"product_id\":123,\"operator\":\">=\",\"quantity\":2}\n]"
-		);
-		$this->render_rule_template_readonly(
-			__( 'Category quantity', 'mp-commerce-promotions' ),
-			"[\n  {\"type\":\"category_quantity\",\"category_id\":123,\"operator\":\">=\",\"quantity\":2}\n]"
-		);
+				echo '<h4 style="margin-top:1.5em;">' . esc_html__( 'Actions examples', 'mp-commerce-promotions' ) . '</h4>';
 
-		echo '<h4 style="margin-top:1.5em;">' . esc_html__( 'Actions examples', 'mp-commerce-promotions' ) . '</h4>';
-
-		$this->render_rule_template_readonly(
-			__( 'Percentage discount', 'mp-commerce-promotions' ),
-			"[\n  {\"type\":\"percentage_discount\",\"percentage\":10}\n]"
+				$this->render_rule_template_readonly(
+					__( 'Percentage discount', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"percentage_discount\",\"percentage\":10}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'Fixed amount discount', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"fixed_amount_discount\",\"amount\":25}\n]"
+				);
+			},
+			__(
+				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action is applied in this MVP. Product and category IDs must be numeric WordPress IDs.',
+				'mp-commerce-promotions'
+			),
+			array(
+				'heading' => 'h3',
+				'width'   => 'wide',
+			)
 		);
-		$this->render_rule_template_readonly(
-			__( 'Fixed amount discount', 'mp-commerce-promotions' ),
-			"[\n  {\"type\":\"fixed_amount_discount\",\"amount\":25}\n]"
-		);
-
-		echo '</div>';
 	}
 
 	private function render_rule_template_readonly( string $label, string $json ): void {
@@ -1852,7 +1934,7 @@ final class PromotionEditPage {
 		}
 
 		if ( $this->batch_generation_error !== null && $this->batch_generation_error !== '' ) {
-			echo '<div class="notice notice-error" style="margin:12px 0;"><p>' . esc_html( $this->batch_generation_error ) . '</p></div>';
+			AdminNotice::error( $this->batch_generation_error, array( 'dismissible' => false ) );
 		}
 
 		$batches = $this->code_batches->find_for_promotion( $pid, 50 );
@@ -1907,8 +1989,8 @@ final class PromotionEditPage {
 			if ( ! $batch instanceof PromotionCodeBatch ) {
 				continue;
 			}
-			$prefix = $batch->get_code_prefix();
-			$limit  = $batch->get_usage_limit();
+			$prefix       = $batch->get_code_prefix();
+			$limit        = $batch->get_usage_limit();
 			$batch_row_id = $batch->get_id();
 			$code_count   = '—';
 			if ( $batch_row_id !== null && $batch_row_id > 0 && $this->promotion_codes !== null ) {
@@ -1957,7 +2039,13 @@ final class PromotionEditPage {
 
 		$warning = $outcome->get_warning();
 		if ( $warning !== null && $warning !== '' ) {
-			echo '<div class="notice notice-warning inline" style="margin:12px 0;"><p>' . esc_html( $warning ) . '</p></div>';
+			AdminNotice::warning(
+				$warning,
+				array(
+					'inline'      => true,
+					'dismissible' => false,
+				)
+			);
 		}
 
 		echo '<p class="description" style="font-weight:600;">' . esc_html__(
@@ -1968,9 +2056,9 @@ final class PromotionEditPage {
 		echo esc_textarea( $lines );
 		echo '</textarea>';
 
-		$batch_id      = $batch->get_id();
-		$promotion_id  = $batch->get_promotion_id();
-		$generated_at  = $outcome->get_generated_at();
+		$batch_id       = $batch->get_id();
+		$promotion_id   = $batch->get_promotion_id();
+		$generated_at   = $outcome->get_generated_at();
 		$download_nonce = 'mp_cp_download_generated_codes_' . $promotion_id;
 		$form_action    = $this->edit_url( (string) $promotion_id );
 		$payload        = PromotionCodeBatchGenerationOutcome::encode_download_payload(
@@ -2391,7 +2479,7 @@ final class PromotionEditPage {
 			return;
 		}
 
-		$status = $code->get_status();
+		$status  = $code->get_status();
 		$buttons = array();
 
 		if ( $status === PromotionCode::STATUS_ACTIVE ) {
@@ -2463,24 +2551,15 @@ final class PromotionEditPage {
 	}
 
 	private function list_url(): string {
-		return AdminNavigation::tab_url( AdminNavigation::TAB_ALL );
+		return AdminUrl::list_promotions();
 	}
 
 	private function edit_url( string $promotion_identifier ): string {
-		return add_query_arg(
-			array( 'promotion' => $promotion_identifier ),
-			AdminNavigation::tab_url( AdminNavigation::TAB_ALL )
-		);
+		return AdminUrl::edit_promotion( $promotion_identifier );
 	}
 
 	private function batch_detail_url( int $promotion_id, int $batch_id ): string {
-		return add_query_arg(
-			array(
-				'promotion' => (string) $promotion_id,
-				'batch'     => (string) $batch_id,
-			),
-			AdminNavigation::tab_url( AdminNavigation::TAB_ALL )
-		);
+		return AdminUrl::batch_detail( $promotion_id, $batch_id );
 	}
 
 	/**

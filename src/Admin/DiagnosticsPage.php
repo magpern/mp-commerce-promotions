@@ -127,7 +127,7 @@ final class DiagnosticsPage {
 		$promotions = isset( $_GET['mp_cp_diag_promotions'] )
 			? (int) $_GET['mp_cp_diag_promotions']
 			: 0;
-		$codes = isset( $_GET['mp_cp_diag_codes'] )
+		$codes      = isset( $_GET['mp_cp_diag_codes'] )
 			? (int) $_GET['mp_cp_diag_codes']
 			: 0;
 
@@ -136,8 +136,12 @@ final class DiagnosticsPage {
 			return;
 		}
 
-		$class = $type === 'success' ? 'notice-success' : 'notice-error';
-		echo '<div class="notice ' . esc_attr( $class ) . ' is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
+		if ( $type === 'success' ) {
+			AdminNotice::success( $message );
+			return;
+		}
+
+		AdminNotice::error( $message );
 	}
 
 	private function notice_message_for_code( string $code, int $promotions, int $codes ): string {
@@ -182,7 +186,7 @@ final class DiagnosticsPage {
 			$args['mp_cp_diag_codes'] = (int) $counts['codes'];
 		}
 
-		wp_safe_redirect( add_query_arg( $args, AdminNavigation::tab_url( AdminNavigation::TAB_DIAGNOSTICS ) ) );
+		wp_safe_redirect( AdminUrl::diagnostics( $args ) );
 		exit;
 	}
 

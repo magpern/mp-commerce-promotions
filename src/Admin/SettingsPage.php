@@ -109,8 +109,12 @@ final class SettingsPage {
 			return;
 		}
 
-		$class = $type === 'success' ? 'notice-success' : 'notice-error';
-		echo '<div class="notice ' . esc_attr( $class ) . ' is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
+		if ( $type === 'success' ) {
+			AdminNotice::success( $message );
+			return;
+		}
+
+		AdminNotice::error( $message );
 	}
 
 	private function notice_message_for_code( string $code ): string {
@@ -126,14 +130,14 @@ final class SettingsPage {
 	}
 
 	private function redirect_with_notice( string $type, string $code ): void {
-		$url = add_query_arg(
-			array(
-				'mp_cp_settings_notice' => $type,
-				'mp_cp_settings_code'   => $code,
-			),
-			AdminNavigation::tab_url( AdminNavigation::TAB_SETTINGS )
+		wp_safe_redirect(
+			AdminUrl::settings(
+				array(
+					'mp_cp_settings_notice' => $type,
+					'mp_cp_settings_code'   => $code,
+				)
+			)
 		);
-		wp_safe_redirect( $url );
 		exit;
 	}
 }

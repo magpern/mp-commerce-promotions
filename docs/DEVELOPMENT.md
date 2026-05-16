@@ -48,15 +48,52 @@ Direct PHPCS (after `composer install`):
 vendor/bin/phpcs
 ```
 
-## PHPCS baseline (expected failures)
+## PHPCS baseline and cleanup strategy
 
-As of the tooling introduction commit, **PHPCS is expected to report many violations** on the existing MVP codebase (naming, namespaces, `$wpdb->prepare` patterns, missing docblocks, etc.). First run baseline (52 files scanned): **365 errors, 262 warnings**; PHPCBF can auto-fix ~221 sniff issues. This task adds configuration only — **not** a full style fix pass.
+### Initial baseline (tooling commit `5402dd4`)
+
+First run on the MVP codebase (52 files): **365 errors, 262 warnings**. PHPCBF could auto-fix ~221 sniff issues.
+
+### Incremental batches (recommended)
+
+Clean up PHPCS in **small, reviewable commits** grouped by concern:
+
+1. **Admin / infrastructure** — shared helpers, alignment, escaping (this milestone)
+2. **Repositories** — `$wpdb->prepare` patterns and SQL docblocks (verify behavior; no logic changes)
+3. **Domain / engine docblocks** — only where low risk
+4. **WooCommerce integration** — last; highest regression risk
+
+After each batch:
+
+```bash
+composer run lint:php
+composer run lint:phpcs
+```
+
+Record the summary line (`A TOTAL OF X ERRORS AND Y WARNINGS`) in the commit message or PR notes when helpful.
+
+### Intentionally deferred (do not mass-fix yet)
+
+| Category | Reason |
+|----------|--------|
+| PSR-4 namespace prefix (`MP\CommercePromotions\…`) | Architecture uses namespaces; WPCS expects a slug-style prefix on every namespace |
+| `WordPress.DB.PreparedSQL.*` in dynamic repository SQL | Needs case-by-case review; wrong `prepare()` can break queries |
+| Missing class/function docblocks across domain/engine | Noisy; excluded partially in `phpcs.xml.dist` |
+| Yoda conditions | Excluded in ruleset; do not convert wholesale |
+| Array alignment-only diffs | Large diffs with little runtime value |
+
+### Guidance for contributors and AI sessions
+
+- Prefer **targeted fixes** (one sniff, one directory) over formatting the entire tree.
+- Avoid **formatting-only commits** that touch dozens of files without functional or standards benefit.
+- Do not change promotion evaluation, checkout, or schema in PHPCS-only work.
+- Run `./wp plugin deactivate` / `activate` and a quick admin smoke test after admin refactors.
 
 Workflow:
 
 1. Run `composer run lint:php` — should pass (syntax only).
-2. Run `composer run lint:phpcs` — review the summary; fix violations incrementally in follow-up commits.
-3. Do not block releases on a clean PHPCS run until a baseline cleanup milestone is scheduled (see [TASKS.md](TASKS.md)).
+2. Run `composer run lint:phpcs` — review the summary; fix violations incrementally.
+3. Do not block releases on a clean PHPCS run until baseline cleanup and CI are scheduled (see [TASKS.md](TASKS.md)).
 
 Configured standards:
 
@@ -64,6 +101,14 @@ Configured standards:
 - PHPCompatibilityWP (PHP 7.4+)
 - Text domain: `mp-commerce-promotions`
 - Global prefixes: `mp_cp`, `mp_commerce_promotions`, `MP`
+
+## Reusable admin helpers
+
+| Class | Role |
+|-------|------|
+| `AdminNotice` | Escaped admin notices (success, warning, error, info) |
+| `AdminSection` | Titled `.card` sections on the promotion edit screen |
+| `AdminUrl` | List, edit, tab, settings, and diagnostics URLs |
 
 ## Docker / WP-CLI verification
 

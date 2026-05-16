@@ -9,7 +9,7 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 ## Documentation
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — system design, layers, security, and roadmap
-- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — Composer lint tooling, PHPCS baseline, Docker/WP-CLI verification
+- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — Composer lint tooling, PHPCS incremental cleanup, admin helpers, Docker/WP-CLI verification
 - [docs/TASKS.md](docs/TASKS.md) — milestones, backlog, and out-of-scope items
 - [docs/manual-checkout-test.md](docs/manual-checkout-test.md) — storefront checkout and redemption walkthrough
 - [docs/manual-promotion-code-test.md](docs/manual-promotion-code-test.md) — promotion codes and coupon-field behavior

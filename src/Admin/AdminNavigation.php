@@ -59,15 +59,7 @@ final class AdminNavigation {
 	}
 
 	public static function tab_url( string $tab ): string {
-		$tab = self::sanitize_tab( $tab );
-
-		return add_query_arg(
-			array(
-				'page' => self::PAGE_SLUG,
-				'tab'  => $tab,
-			),
-			admin_url( 'admin.php' )
-		);
+		return AdminUrl::tab( $tab );
 	}
 
 	/**

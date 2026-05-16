@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Infrastructure;
 
 use MP\CommercePromotions\Infrastructure\Database\MigrationRunner;
-use wpdb;
 
 final class Activator {
 
@@ -23,7 +22,7 @@ final class Activator {
 		}
 
 		global $wpdb;
-		if ( ! $wpdb instanceof wpdb ) {
+		if ( ! $wpdb instanceof \wpdb ) {
 			return;
 		}
 

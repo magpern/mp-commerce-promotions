@@ -4,11 +4,13 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Current milestone
 
-**Marketplace / readiness foundation** — distribution scaffolding (`readme.txt`, `LICENSE`, `uninstall.php`, plugin headers, i18n bootstrap, task tracking) without changing promotion runtime behavior.
+**Admin infrastructure and PHPCS stabilization** — reusable admin helpers (`AdminNotice`, `AdminSection`, `AdminUrl`) and incremental PHPCS cleanup without changing promotion runtime behavior.
 
 ## Recently completed
 
-- **Code quality tooling** — `composer.json`, `phpcs.xml.dist`, `docs/DEVELOPMENT.md` (PHPCS baseline cleanup still in progress)
+- **Reusable admin infrastructure** — `AdminNotice`, `AdminSection`, `AdminUrl`; edit/list/settings/diagnostics refactors
+- **PHPCS cleanup batch #1** — admin alignment/escaping; warnings reduced (see [DEVELOPMENT.md](DEVELOPMENT.md))
+- **Code quality tooling** — `composer.json`, `phpcs.xml.dist`, `docs/DEVELOPMENT.md`
 - Admin UX bundle: duplicate promotion, edit screen layout, standardized notices
 - Simple Rule Builder v0 and product/category ID helper
 - Rule templates, validation panel, list search/filters/pagination
@@ -18,7 +20,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Next planned
 
-1. **PHPCS / WPCS baseline** — incremental fixes on existing codebase (config in `phpcs.xml.dist`; see [DEVELOPMENT.md](DEVELOPMENT.md))
+1. **PHPCS / WPCS baseline** — batch #2+ (repositories, domain docblocks; see [DEVELOPMENT.md](DEVELOPMENT.md))
 2. **PHPUnit smoke tests** — evaluator, repositories, duplication service
 3. **CI workflow** — lint + test on push
 4. **Composer autoloading** — optional PSR-4 via Composer for releases
@@ -28,7 +30,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ### Admin UX
 
-- Reusable admin table/notice components
+- Reusable admin table component (`WP_List_Table` migration)
 - `WP_List_Table` migration for promotions list
 - Product/category search in rule builder (no AJAX scope creep without design)
 - Usage limit field on promotion edit form
