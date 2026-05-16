@@ -22,6 +22,8 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
 			RuleTypes::CONDITION_PRODUCT_QUANTITY,
 			RuleTypes::CONDITION_CATEGORY_QUANTITY,
+			RuleTypes::CONDITION_LOGGED_IN,
+			RuleTypes::CONDITION_FIRST_ORDER,
 		);
 	}
 

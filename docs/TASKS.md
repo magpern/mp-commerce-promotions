@@ -4,10 +4,11 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Current milestone
 
-**Quality & ops** — expand unit coverage (evaluator, repositories), remaining PHPCS batches, PHPCS gating in CI.
+**Quality & ops** — repository unit tests, remaining PHPCS batches, PHPCS gating in CI, Woo metadata for `first_order`.
 
 ## Recently completed
 
+- **Customer/order conditions + engine tests** — `logged_in`, `first_order` (metadata); expanded PHPUnit for evaluator, validator, builder, domain
 - **PHPUnit unit scaffold** — `phpunit.xml.dist`, `tests/Unit/*`, `composer run test` in CI; no WordPress bootstrap yet
 - **CI baseline** — `.github/workflows/ci.yml` (PHP 7.4/8.1/8.2 syntax lint + build zip); PHPCS enforcement deferred
 - **Release packaging** — `CHANGELOG.md`, `docs/RELEASE_CHECKLIST.md`, `scripts/build-zip.sh`; version `0.1.0` aligned across header/constant/readme
@@ -27,7 +28,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Next planned
 
-1. **PHPUnit expansion** — evaluator, repositories, duplication service (still no WP integration suite)
+1. **PHPUnit expansion** — repositories, duplication service; Woo `has_previous_orders` enrichment (still no WP integration suite)
 2. **PHPCS / WPCS baseline** — remaining packages; then enable `lint:phpcs` as CI gate
 3. **Composer autoloading** — optional PSR-4 via Composer for releases
 5. **Promotion mechanics (Phase C)** — free shipping, BOGO, stackability (see architecture roadmap)

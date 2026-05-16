@@ -263,7 +263,13 @@ ActionInterface
 minimum_subtotal
 product_quantity
 category_quantity
+logged_in
+first_order
 ```
+
+`logged_in` passes when `EvaluationContext::get_customer_id()` is a positive integer.
+
+`first_order` passes when context metadata `has_previous_orders` is explicitly `false`. The key is **not** set by `CartContextBuilder` yet; WooCommerce order-history enrichment is future work. Until then, use raw JSON rules and supply metadata in integrations/tests.
 
 ### Current Actions
 

@@ -19,6 +19,8 @@ final class RuleRegistryTest extends TestCase {
 		$this->assertContains( RuleTypes::CONDITION_MINIMUM_SUBTOTAL, $conditions );
 		$this->assertContains( RuleTypes::CONDITION_PRODUCT_QUANTITY, $conditions );
 		$this->assertContains( RuleTypes::CONDITION_CATEGORY_QUANTITY, $conditions );
+		$this->assertContains( RuleTypes::CONDITION_LOGGED_IN, $conditions );
+		$this->assertContains( RuleTypes::CONDITION_FIRST_ORDER, $conditions );
 	}
 
 	public function test_supported_actions_includes_mvp_types(): void {

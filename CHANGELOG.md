@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Conditions **`logged_in`** and **`first_order`** (metadata `has_previous_orders`; Woo cart enrichment deferred).
+- Expanded PHPUnit coverage: `PromotionEvaluator`, `PromotionRuleValidator`, `SimpleRuleBuilder`, `Promotion`, new condition tests.
+
+### Changed
+
 - Release packaging workflow (`scripts/build-zip.sh`, `docs/RELEASE_CHECKLIST.md`, this changelog).
 
 ## [0.1.0] - 2026-05-16

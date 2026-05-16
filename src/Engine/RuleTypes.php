@@ -17,6 +17,10 @@ final class RuleTypes {
 
 	public const CONDITION_CATEGORY_QUANTITY = 'category_quantity';
 
+	public const CONDITION_LOGGED_IN = 'logged_in';
+
+	public const CONDITION_FIRST_ORDER = 'first_order';
+
 	public const ACTION_PERCENTAGE_DISCOUNT = 'percentage_discount';
 
 	public const ACTION_FIXED_AMOUNT_DISCOUNT = 'fixed_amount_discount';

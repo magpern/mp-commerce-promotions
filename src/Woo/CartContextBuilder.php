@@ -83,6 +83,7 @@ final class CartContextBuilder {
 
 		$metadata = array(
 			'source' => 'woocommerce_cart',
+			// first_order condition reads has_previous_orders; Woo order-history lookup is future work.
 		);
 
 		return new EvaluationContext( $customer_id, $subtotal, $currency, $items, $metadata );

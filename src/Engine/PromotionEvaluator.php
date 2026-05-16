@@ -16,6 +16,8 @@ use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
 use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\ConditionInterface;
+use MP\CommercePromotions\Engine\Condition\FirstOrderCondition;
+use MP\CommercePromotions\Engine\Condition\LoggedInCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
@@ -146,6 +148,14 @@ final class PromotionEvaluator {
 					);
 				}
 			);
+		}
+
+		if ( $type === RuleTypes::CONDITION_LOGGED_IN ) {
+			return new LoggedInCondition();
+		}
+
+		if ( $type === RuleTypes::CONDITION_FIRST_ORDER ) {
+			return new FirstOrderCondition();
 		}
 
 		if ( $type === '' ) {

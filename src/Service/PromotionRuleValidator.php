@@ -125,7 +125,22 @@ final class PromotionRuleValidator {
 			return;
 		}
 
-		$this->validate_quantity_condition( $index, $raw, RuleTypes::CONDITION_CATEGORY_QUANTITY, 'category_id', $issues );
+		if ( $type === RuleTypes::CONDITION_CATEGORY_QUANTITY ) {
+			$this->validate_quantity_condition( $index, $raw, RuleTypes::CONDITION_CATEGORY_QUANTITY, 'category_id', $issues );
+			return;
+		}
+
+		if ( $type === RuleTypes::CONDITION_LOGGED_IN || $type === RuleTypes::CONDITION_FIRST_ORDER ) {
+			return;
+		}
+
+		$issues[] = $this->error(
+			sprintf(
+				/* translators: %s: condition type string */
+				__( 'Unknown condition type: %s', 'mp-commerce-promotions' ),
+				$type
+			)
+		);
 	}
 
 	/**

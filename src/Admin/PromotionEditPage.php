@@ -1744,6 +1744,14 @@ final class PromotionEditPage {
 					__( 'Category quantity', 'mp-commerce-promotions' ),
 					"[\n  {\"type\":\"category_quantity\",\"category_id\":123,\"operator\":\">=\",\"quantity\":2}\n]"
 				);
+				$this->render_rule_template_readonly(
+					__( 'Logged in', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"logged_in\"}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'First order', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"first_order\"}\n]"
+				);
 
 				echo '<h4 style="margin-top:1.5em;">' . esc_html__( 'Actions examples', 'mp-commerce-promotions' ) . '</h4>';
 
@@ -1757,7 +1765,7 @@ final class PromotionEditPage {
 				);
 			},
 			__(
-				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action is applied in this MVP. Product and category IDs must be numeric WordPress IDs.',
+				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action is applied in this MVP. Product and category IDs must be numeric WordPress IDs. first_order requires evaluation metadata has_previous_orders (not set from the cart yet — use raw JSON and future Woo enrichment). logged_in and first_order are not in the Simple Rule Builder v0 dropdown.',
 				'mp-commerce-promotions'
 			),
 			array(
