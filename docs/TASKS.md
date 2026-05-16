@@ -4,10 +4,11 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Current milestone
 
-**Quality & ops** — PHPUnit smoke tests, CI, remaining PHPCS batches.
+**Quality & ops** — PHPUnit smoke tests, remaining PHPCS batches, PHPCS gating in CI.
 
 ## Recently completed
 
+- **CI baseline** — `.github/workflows/ci.yml` (PHP 7.4/8.1/8.2 syntax lint + build zip); PHPCS enforcement deferred
 - **Release packaging** — `CHANGELOG.md`, `docs/RELEASE_CHECKLIST.md`, `scripts/build-zip.sh`; version `0.1.0` aligned across header/constant/readme
 - **Safe sync scripts** — `scripts/sync-to-live.sh`, `scripts/verify-plugin.sh`; workflow in [DEVELOPMENT.md](DEVELOPMENT.md)
 - **Rule registry groundwork** — `RuleTypes`, `RuleRegistry`; validator/builder/evaluator wired to central type IDs
@@ -26,9 +27,8 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 ## Next planned
 
 1. **PHPUnit smoke tests** — evaluator, repositories, duplication service
-2. **PHPCS / WPCS baseline** — remaining packages (admin follow-ups, namespace prefixes deferred)
-3. **CI workflow** — lint + test on push
-4. **Composer autoloading** — optional PSR-4 via Composer for releases
+2. **PHPCS / WPCS baseline** — remaining packages; then enable `lint:phpcs` as CI gate
+3. **Composer autoloading** — optional PSR-4 via Composer for releases
 5. **Promotion mechanics (Phase C)** — free shipping, BOGO, stackability (see architecture roadmap)
 
 ## Backlog

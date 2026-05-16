@@ -177,7 +177,28 @@ docker exec woocommerce-wordpress-1 sh -c \
 
 ## Continuous integration
 
-GitHub Actions workflow for lint is **deferred** until PHPCS has a manageable baseline or CI is configured to run syntax-only checks first. See [TASKS.md](TASKS.md) — “CI workflow” is next after incremental PHPCS cleanup.
+Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) on `push` / `pull_request` to `main`.
+
+| Step | Enforced |
+|------|----------|
+| `composer validate --strict` | Yes |
+| `composer install` | Yes |
+| `composer run lint:php` | Yes (`php -l` on all plugin `.php` files) |
+| `bash scripts/build-zip.sh` | Yes (artifact path verified) |
+| `composer run lint:phpcs` | **No** — not run in CI yet |
+
+**PHP matrix:** 7.4, 8.1, 8.2 (matches `composer.json` `require.php`).
+
+PHPCS is installed via Composer for local incremental cleanup; the baseline is **not clean** (see PHPCS section above). PHPCS will become a **gating** CI step after the remaining batches land and the team agrees on an acceptable error budget (or a committed baseline file).
+
+Run the same checks locally before pushing:
+
+```bash
+composer validate --strict
+composer install
+composer run lint:php
+bash scripts/build-zip.sh
+```
 
 ## What not to change in tooling-only commits
 

@@ -8,6 +8,7 @@ See [CHANGELOG.md](../CHANGELOG.md) for user-facing release notes and [DEVELOPME
 
 - [ ] Git working tree clean (`git status` shows no uncommitted changes you intend to ship).
 - [ ] On intended branch (usually `main`).
+- [ ] **GitHub Actions CI** passes on `main` for the commit you will tag (workflow: `.github/workflows/ci.yml` — syntax lint + build zip; PHPCS not gating yet).
 - [ ] `composer install` (dev dependencies for lint only).
 - [ ] `composer run lint:php` — must pass (syntax).
 - [ ] `composer run lint:phpcs` — **optional for now**; full plugin baseline is **not clean** (see [DEVELOPMENT.md](DEVELOPMENT.md)). Do not block a release solely on a zero-violation PHPCS run until CI policy says so.

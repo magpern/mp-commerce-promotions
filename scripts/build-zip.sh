@@ -5,9 +5,30 @@
 #
 set -euo pipefail
 
-readonly SOURCE="/home/magpern/mp-commerce-promotions-staging/mp-commerce-promotions"
-readonly BUILD_ROOT="/home/magpern/mp-commerce-promotions-staging/build"
 readonly PLUGIN_SLUG="mp-commerce-promotions"
+readonly VPS_SOURCE="/home/magpern/mp-commerce-promotions-staging/mp-commerce-promotions"
+readonly VPS_BUILD_ROOT="/home/magpern/mp-commerce-promotions-staging/build"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+if [[ -n "${MP_CP_SOURCE:-}" ]]; then
+	SOURCE="${MP_CP_SOURCE}"
+elif [[ -f "${VPS_SOURCE}/${PLUGIN_SLUG}.php" ]]; then
+	SOURCE="${VPS_SOURCE}"
+else
+	SOURCE="${REPO_ROOT}"
+fi
+
+if [[ -n "${MP_CP_BUILD_ROOT:-}" ]]; then
+	BUILD_ROOT="${MP_CP_BUILD_ROOT}"
+elif [[ "${SOURCE}" == "${VPS_SOURCE}" ]]; then
+	BUILD_ROOT="${VPS_BUILD_ROOT}"
+else
+	BUILD_ROOT="$(cd "${SOURCE}/.." && pwd)/build"
+fi
+
+readonly SOURCE BUILD_ROOT
 readonly MAIN_FILE="${SOURCE}/${PLUGIN_SLUG}.php"
 
 echo "==> MP Commerce Promotions: build release zip"
