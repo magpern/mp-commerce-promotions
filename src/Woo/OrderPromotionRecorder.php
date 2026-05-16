@@ -75,12 +75,24 @@ final class OrderPromotionRecorder {
 			}
 
 			$action_type = isset( $raw['action_type'] ) ? (string) $raw['action_type'] : '';
-			if ( $action_type !== 'percentage_discount' ) {
-				return;
-			}
+			$percentage  = null;
+			$fixed_amount = null;
 
-			$percentage = isset( $raw['percentage'] ) && is_numeric( $raw['percentage'] ) ? (float) $raw['percentage'] : null;
-			if ( $percentage === null || $percentage <= 0 ) {
+			if ( $action_type === CartPromotionApplier::ACTION_PERCENTAGE_DISCOUNT ) {
+				$percentage = isset( $raw['percentage'] ) && is_numeric( $raw['percentage'] )
+					? (float) $raw['percentage']
+					: null;
+				if ( $percentage === null || $percentage <= 0 ) {
+					return;
+				}
+			} elseif ( $action_type === CartPromotionApplier::ACTION_FIXED_AMOUNT_DISCOUNT ) {
+				$fixed_amount = isset( $raw['fixed_amount'] ) && is_numeric( $raw['fixed_amount'] )
+					? (float) $raw['fixed_amount']
+					: null;
+				if ( $fixed_amount === null || $fixed_amount <= 0 ) {
+					return;
+				}
+			} else {
 				return;
 			}
 
@@ -103,7 +115,8 @@ final class OrderPromotionRecorder {
 					$name,
 					$discount,
 					$action_type,
-					$percentage
+					$percentage,
+					$fixed_amount
 				);
 				$order->update_meta_data( self::META_REDEMPTION_RECORDED, self::META_VALUE_YES );
 				$order->save();
@@ -136,7 +149,8 @@ final class OrderPromotionRecorder {
 				$name,
 				$discount,
 				$action_type,
-				$percentage
+				$percentage,
+				$fixed_amount
 			);
 			$order->update_meta_data( self::META_REDEMPTION_RECORDED, self::META_VALUE_YES );
 
@@ -367,7 +381,8 @@ final class OrderPromotionRecorder {
 		string $name,
 		float $discount,
 		string $action_type,
-		float $percentage
+		?float $percentage = null,
+		?float $fixed_amount = null
 	): void {
 		$order->update_meta_data( '_mp_cp_promotion_id', (string) $promotion_id );
 		$order->update_meta_data( '_mp_cp_promotion_uuid', sanitize_text_field( $uuid ) );
@@ -377,10 +392,20 @@ final class OrderPromotionRecorder {
 			: (string) $discount;
 		$order->update_meta_data( '_mp_cp_discount_amount', $discount_meta );
 		$order->update_meta_data( '_mp_cp_action_type', sanitize_text_field( $action_type ) );
-		$order->update_meta_data(
-			'_mp_cp_percentage',
-			function_exists( 'wc_format_decimal' ) ? wc_format_decimal( $percentage ) : (string) $percentage
-		);
+
+		if ( $percentage !== null && $percentage > 0 ) {
+			$order->update_meta_data(
+				'_mp_cp_percentage',
+				function_exists( 'wc_format_decimal' ) ? wc_format_decimal( $percentage ) : (string) $percentage
+			);
+		}
+
+		if ( $fixed_amount !== null && $fixed_amount > 0 ) {
+			$order->update_meta_data(
+				'_mp_cp_fixed_amount',
+				function_exists( 'wc_format_decimal' ) ? wc_format_decimal( $fixed_amount ) : (string) $fixed_amount
+			);
+		}
 	}
 
 	private function clear_applied_promotion_session(): void {

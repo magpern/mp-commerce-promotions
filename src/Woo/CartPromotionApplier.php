@@ -1,6 +1,6 @@
 <?php
 /**
- * v1: applies the first eligible active promotion as a negative cart fee (percentage only).
+ * v1: applies the first eligible active promotion as a negative cart fee.
  *
  * @package MP\CommercePromotions
  */
@@ -18,6 +18,10 @@ use MP\CommercePromotions\Service\Settings;
 final class CartPromotionApplier {
 
 	public const SESSION_KEY = 'mp_cp_applied_promotion';
+
+	public const ACTION_PERCENTAGE_DISCOUNT = 'percentage_discount';
+
+	public const ACTION_FIXED_AMOUNT_DISCOUNT = 'fixed_amount_discount';
 
 	private PromotionRepository $promotions;
 
@@ -79,12 +83,14 @@ final class CartPromotionApplier {
 
 		$active = $this->promotions->find_active( 50 );
 		foreach ( $active as $promotion ) {
-			$applied = $this->apply_first_percentage_fee_for_promotion( $promotion, $context, $subtotal, $cart );
+			$applied = $this->apply_first_discount_fee_for_promotion( $promotion, $context, $subtotal, $cart );
 			if ( is_array( $applied ) ) {
 				$this->store_applied_promotion_session(
 					$applied['promotion'],
 					$applied['discount'],
-					$applied['percentage']
+					$applied['action_type'],
+					isset( $applied['percentage'] ) ? (float) $applied['percentage'] : null,
+					isset( $applied['fixed_amount'] ) ? (float) $applied['fixed_amount'] : null
 				);
 				return;
 			}
@@ -93,7 +99,17 @@ final class CartPromotionApplier {
 		$this->clear_applied_promotion_session();
 	}
 
-	private function store_applied_promotion_session( Promotion $promotion, float $discount, float $percentage ): void {
+	/**
+	 * @param float|null $percentage     Configured percentage when action is percentage_discount.
+	 * @param float|null $fixed_amount   Configured fixed amount when action is fixed_amount_discount.
+	 */
+	private function store_applied_promotion_session(
+		Promotion $promotion,
+		float $discount,
+		string $action_type,
+		?float $percentage = null,
+		?float $fixed_amount = null
+	): void {
 		if ( ! function_exists( 'WC' ) ) {
 			return;
 		}
@@ -108,17 +124,22 @@ final class CartPromotionApplier {
 			return;
 		}
 
-		$wc->session->set(
-			self::SESSION_KEY,
-			array(
-				'promotion_id'     => $pid,
-				'promotion_uuid'   => $promotion->get_uuid(),
-				'promotion_name'   => $promotion->get_name(),
-				'discount_amount'  => $discount,
-				'action_type'      => 'percentage_discount',
-				'percentage'       => $percentage,
-			)
+		$payload = array(
+			'promotion_id'    => $pid,
+			'promotion_uuid'  => $promotion->get_uuid(),
+			'promotion_name'  => $promotion->get_name(),
+			'discount_amount' => $discount,
+			'action_type'     => $action_type,
 		);
+
+		if ( $percentage !== null ) {
+			$payload['percentage'] = $percentage;
+		}
+		if ( $fixed_amount !== null ) {
+			$payload['fixed_amount'] = $fixed_amount;
+		}
+
+		$wc->session->set( self::SESSION_KEY, $payload );
 	}
 
 	private function clear_applied_promotion_session(): void {
@@ -144,7 +165,7 @@ final class CartPromotionApplier {
 	 * @param object $cart WooCommerce cart (WC_Cart).
 	 * @return array<string, mixed>|false
 	 */
-	private function apply_first_percentage_fee_for_promotion(
+	private function apply_first_discount_fee_for_promotion(
 		Promotion $promotion,
 		EvaluationContext $context,
 		float $subtotal,
@@ -161,51 +182,116 @@ final class CartPromotionApplier {
 			}
 
 			$type = isset( $action_row['type'] ) ? (string) $action_row['type'] : '';
-			if ( $type !== 'percentage_discount' ) {
-				continue;
-			}
-
 			$payload = isset( $action_row['payload'] ) && is_array( $action_row['payload'] )
 				? $action_row['payload']
 				: array();
 
-			if ( ! isset( $payload['percentage'] ) || ! is_numeric( $payload['percentage'] ) ) {
+			if ( $type === self::ACTION_PERCENTAGE_DISCOUNT ) {
+				$applied = $this->apply_percentage_discount_fee( $promotion, $payload, $subtotal, $cart );
+				if ( is_array( $applied ) ) {
+					return $applied;
+				}
 				continue;
 			}
 
-			$pct = (float) $payload['percentage'];
-			if ( $pct <= 0 || $pct > 100 ) {
-				continue;
+			if ( $type === self::ACTION_FIXED_AMOUNT_DISCOUNT ) {
+				$applied = $this->apply_fixed_amount_discount_fee( $promotion, $payload, $subtotal, $cart );
+				if ( is_array( $applied ) ) {
+					return $applied;
+				}
 			}
-
-			$discount = $subtotal * $pct / 100.0;
-			if ( $discount <= 0 ) {
-				continue;
-			}
-
-			if ( $discount > $subtotal ) {
-				$discount = $subtotal;
-			}
-
-			$name = sanitize_text_field( $promotion->get_name() );
-			if ( $name === '' ) {
-				$name = __( 'Promotion', 'mp-commerce-promotions' );
-			}
-
-			$label = sprintf(
-				/* translators: %s: sanitized promotion name */
-				__( 'Commerce promotion: %s', 'mp-commerce-promotions' ),
-				$name
-			);
-
-			$cart->add_fee( $label, -$discount, false );
-			return array(
-				'promotion'  => $promotion,
-				'discount'   => $discount,
-				'percentage' => $pct,
-			);
 		}
 
 		return false;
+	}
+
+	/**
+	 * @param array<string, mixed> $payload
+	 * @param object               $cart
+	 * @return array<string, mixed>|false
+	 */
+	private function apply_percentage_discount_fee( Promotion $promotion, array $payload, float $subtotal, $cart ) {
+		if ( ! isset( $payload['percentage'] ) || ! is_numeric( $payload['percentage'] ) ) {
+			return false;
+		}
+
+		$pct = (float) $payload['percentage'];
+		if ( $pct <= 0 || $pct > 100 ) {
+			return false;
+		}
+
+		$discount = $subtotal * $pct / 100.0;
+		$discount = $this->clamp_discount_to_subtotal( $discount, $subtotal );
+		if ( $discount <= 0 ) {
+			return false;
+		}
+
+		$this->add_promotion_fee( $cart, $promotion, $discount );
+
+		return array(
+			'promotion'    => $promotion,
+			'discount'     => $discount,
+			'action_type'  => self::ACTION_PERCENTAGE_DISCOUNT,
+			'percentage'   => $pct,
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $payload
+	 * @param object               $cart
+	 * @return array<string, mixed>|false
+	 */
+	private function apply_fixed_amount_discount_fee( Promotion $promotion, array $payload, float $subtotal, $cart ) {
+		if ( ! isset( $payload['amount'] ) || ! is_numeric( $payload['amount'] ) ) {
+			return false;
+		}
+
+		$configured = (float) $payload['amount'];
+		if ( $configured <= 0 ) {
+			return false;
+		}
+
+		$discount = $this->clamp_discount_to_subtotal( $configured, $subtotal );
+		if ( $discount <= 0 ) {
+			return false;
+		}
+
+		$this->add_promotion_fee( $cart, $promotion, $discount );
+
+		return array(
+			'promotion'    => $promotion,
+			'discount'     => $discount,
+			'action_type'  => self::ACTION_FIXED_AMOUNT_DISCOUNT,
+			'fixed_amount' => $configured,
+		);
+	}
+
+	private function clamp_discount_to_subtotal( float $discount, float $subtotal ): float {
+		if ( $discount <= 0 ) {
+			return 0.0;
+		}
+		if ( $discount > $subtotal ) {
+			return $subtotal;
+		}
+
+		return $discount;
+	}
+
+	/**
+	 * @param object $cart WooCommerce cart (WC_Cart).
+	 */
+	private function add_promotion_fee( $cart, Promotion $promotion, float $discount ): void {
+		$name = sanitize_text_field( $promotion->get_name() );
+		if ( $name === '' ) {
+			$name = __( 'Promotion', 'mp-commerce-promotions' );
+		}
+
+		$label = sprintf(
+			/* translators: %s: sanitized promotion name */
+			__( 'Commerce promotion: %s', 'mp-commerce-promotions' ),
+			$name
+		);
+
+		$cart->add_fee( $label, -$discount, false );
 	}
 }

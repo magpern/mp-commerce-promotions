@@ -518,7 +518,13 @@ final class PromotionEditPage {
 			$act_json = '[]';
 		}
 		echo '<tr><th scope="row"><label for="mp_cp_act">' . esc_html__( 'Actions (JSON)', 'mp-commerce-promotions' ) . '</label></th><td>';
-		echo '<textarea class="large-text code" rows="8" id="mp_cp_act" name="promotion_actions_json">' . esc_textarea( $act_json ) . '</textarea></td></tr>';
+		echo '<textarea class="large-text code" rows="8" id="mp_cp_act" name="promotion_actions_json">' . esc_textarea( $act_json ) . '</textarea>';
+		echo '<p class="description">' . esc_html__( 'Supported action types (first eligible action on the first eligible promotion applies):', 'mp-commerce-promotions' ) . '</p>';
+		echo '<pre class="code" style="max-height:160px;overflow:auto;background:#f6f7f7;padding:8px;">'
+			. esc_html(
+				"[\n  {\"type\":\"percentage_discount\",\"percentage\":10}\n]\n\n[\n  {\"type\":\"fixed_amount_discount\",\"amount\":25}\n]"
+			)
+			. '</pre></td></tr>';
 
 		$res_json = wp_json_encode( $promotion->get_restrictions(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( ! is_string( $res_json ) ) {

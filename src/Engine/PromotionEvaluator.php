@@ -12,6 +12,7 @@ namespace MP\CommercePromotions\Engine;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\Action\ActionInterface;
+use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
 use MP\CommercePromotions\Engine\Condition\ConditionInterface;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
@@ -134,6 +135,21 @@ final class PromotionEvaluator {
 			} catch ( \InvalidArgumentException $e ) {
 				return EvaluationResult::ineligible(
 					array( 'Invalid percentage_discount action configuration.' )
+				);
+			}
+		}
+
+		if ( $type === 'fixed_amount_discount' ) {
+			if ( ! isset( $raw['amount'] ) || ! is_numeric( $raw['amount'] ) ) {
+				return EvaluationResult::ineligible(
+					array( 'Invalid fixed_amount_discount action configuration.' )
+				);
+			}
+			try {
+				return new FixedAmountDiscountAction( (float) $raw['amount'] );
+			} catch ( \InvalidArgumentException $e ) {
+				return EvaluationResult::ineligible(
+					array( 'Invalid fixed_amount_discount action configuration.' )
 				);
 			}
 		}
