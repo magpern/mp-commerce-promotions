@@ -32,6 +32,8 @@ final class PromotionCode {
 
 	private int $promotion_id;
 
+	private ?int $batch_id;
+
 	private string $code_hash;
 
 	private string $code_last4;
@@ -57,11 +59,16 @@ final class PromotionCode {
 		?int $usage_limit,
 		int $usage_count,
 		?string $expires_at,
-		?string $created_at,
-		?string $updated_at
+		?int $batch_id = null,
+		?string $created_at = null,
+		?string $updated_at = null
 	) {
 		if ( $promotion_id <= 0 ) {
 			throw new InvalidArgumentException( 'PromotionCode promotion_id must be > 0.' );
+		}
+
+		if ( $batch_id !== null && $batch_id <= 0 ) {
+			throw new InvalidArgumentException( 'PromotionCode batch_id must be null or > 0.' );
 		}
 
 		$code_hash = trim( $code_hash );
@@ -89,6 +96,7 @@ final class PromotionCode {
 
 		$this->id           = $id;
 		$this->promotion_id = $promotion_id;
+		$this->batch_id     = $batch_id;
 		$this->code_hash    = $code_hash;
 		$this->code_last4   = $code_last4;
 		$this->status       = $status;
@@ -114,6 +122,13 @@ final class PromotionCode {
 			? (int) $data['usage_limit']
 			: null;
 
+		$batch_id = isset( $data['batch_id'] ) && $data['batch_id'] !== null && $data['batch_id'] !== ''
+			? (int) $data['batch_id']
+			: null;
+		if ( $batch_id !== null && $batch_id <= 0 ) {
+			$batch_id = null;
+		}
+
 		return new self(
 			$id,
 			(int) ( $data['promotion_id'] ?? 0 ),
@@ -123,8 +138,28 @@ final class PromotionCode {
 			$usage_limit,
 			(int) ( $data['usage_count'] ?? 0 ),
 			self::optional_string( $data['expires_at'] ?? null ),
+			$batch_id,
 			self::optional_string( $data['created_at'] ?? null ),
 			self::optional_string( $data['updated_at'] ?? null )
+		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function to_array(): array {
+		return array(
+			'id'           => $this->id,
+			'promotion_id' => $this->promotion_id,
+			'batch_id'     => $this->batch_id,
+			'code_hash'    => $this->code_hash,
+			'code_last4'   => $this->code_last4,
+			'status'       => $this->status,
+			'usage_limit'  => $this->usage_limit,
+			'usage_count'  => $this->usage_count,
+			'expires_at'   => $this->expires_at,
+			'created_at'   => $this->created_at,
+			'updated_at'   => $this->updated_at,
 		);
 	}
 
@@ -134,6 +169,10 @@ final class PromotionCode {
 
 	public function get_promotion_id(): int {
 		return $this->promotion_id;
+	}
+
+	public function get_batch_id(): ?int {
+		return $this->batch_id;
 	}
 
 	public function get_code_hash(): string {
@@ -178,6 +217,7 @@ final class PromotionCode {
 			$this->usage_limit,
 			$usage_count,
 			$this->expires_at,
+			$this->batch_id,
 			$this->created_at,
 			$this->updated_at
 		);

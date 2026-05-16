@@ -125,7 +125,8 @@ final class PromotionCodeBatchGenerator {
 						$promotion_id,
 						$plain,
 						$usage_limit,
-						$expires_at
+						$expires_at,
+						$batch_id
 					);
 				} catch ( InvalidArgumentException $e ) {
 					continue;

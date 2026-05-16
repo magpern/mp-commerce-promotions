@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.3.0';
+	public const SCHEMA_VERSION = '1.4.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -123,6 +123,7 @@ KEY created_at (created_at)
 		return "CREATE TABLE {$table} (
 id bigint(20) unsigned NOT NULL auto_increment,
 promotion_id bigint(20) unsigned NOT NULL,
+batch_id bigint(20) unsigned NULL,
 code_hash char(64) NOT NULL,
 code_last4 varchar(8) NOT NULL,
 status varchar(32) NOT NULL default 'active',
@@ -134,6 +135,7 @@ updated_at datetime NOT NULL default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTA
 PRIMARY KEY  (id),
 UNIQUE KEY code_hash (code_hash),
 KEY promotion_id (promotion_id),
+KEY batch_id (batch_id),
 KEY status (status),
 KEY expires_at (expires_at)
 ) {$collate};";

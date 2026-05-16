@@ -173,10 +173,27 @@ final class MigrationRunner {
 		}
 
 		if ( version_compare( Schema::SCHEMA_VERSION, '1.3.0', '>=' ) ) {
-			return $this->code_batches_table_exists();
+			if ( ! $this->code_batches_table_exists() ) {
+				return false;
+			}
+		}
+
+		if ( version_compare( Schema::SCHEMA_VERSION, '1.4.0', '>=' ) ) {
+			return $this->promotion_codes_batch_id_index_exists();
 		}
 
 		return true;
+	}
+
+	private function promotion_codes_batch_id_index_exists(): bool {
+		$table = Schema::promotion_codes_table( $this->wpdb );
+		if ( ! is_string( $table ) || $table === '' || ! preg_match( '/^[a-zA-Z0-9_]+$/', $table ) ) {
+			return false;
+		}
+
+		$sql  = "SHOW INDEX FROM `{$table}` WHERE Key_name = 'batch_id'";
+		$rows = $this->wpdb->get_results( $sql, ARRAY_A );
+		return is_array( $rows ) && count( $rows ) > 0;
 	}
 
 	private function code_batches_table_exists(): bool {

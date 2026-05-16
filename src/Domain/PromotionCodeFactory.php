@@ -20,7 +20,8 @@ final class PromotionCodeFactory {
 		int $promotion_id,
 		string $plain_code,
 		?int $usage_limit = null,
-		?string $expires_at = null
+		?string $expires_at = null,
+		?int $batch_id = null
 	): PromotionCode {
 		if ( $promotion_id <= 0 ) {
 			throw new InvalidArgumentException( 'promotion_id must be > 0.' );
@@ -31,6 +32,10 @@ final class PromotionCodeFactory {
 
 		if ( $usage_limit !== null && $usage_limit < 0 ) {
 			throw new InvalidArgumentException( 'usage_limit must be null or >= 0.' );
+		}
+
+		if ( $batch_id !== null && $batch_id <= 0 ) {
+			throw new InvalidArgumentException( 'batch_id must be null or > 0.' );
 		}
 
 		$expires_at = self::normalize_expires_at( $expires_at );
@@ -44,6 +49,7 @@ final class PromotionCodeFactory {
 			$usage_limit,
 			0,
 			$expires_at,
+			$batch_id,
 			null,
 			null
 		);

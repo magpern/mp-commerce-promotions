@@ -896,6 +896,7 @@ final class PromotionEditPage {
 			echo '<table class="widefat striped" style="max-width:100%;">';
 			echo '<thead><tr>';
 			echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Batch ID', 'mp-commerce-promotions' ) . '</th>';
 			echo '<th scope="col">' . esc_html__( 'Last 4', 'mp-commerce-promotions' ) . '</th>';
 			echo '<th scope="col">' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</th>';
 			echo '<th scope="col">' . esc_html__( 'Usage', 'mp-commerce-promotions' ) . '</th>';
@@ -909,6 +910,8 @@ final class PromotionEditPage {
 				}
 				echo '<tr>';
 				echo '<td>' . esc_html( (string) ( $code->get_id() ?? '' ) ) . '</td>';
+				$batch_id = $code->get_batch_id();
+				echo '<td>' . esc_html( $batch_id !== null && $batch_id > 0 ? (string) $batch_id : '—' ) . '</td>';
 				echo '<td>****' . esc_html( $code->get_code_last4() ) . '</td>';
 				echo '<td>' . esc_html( $code->get_status() ) . '</td>';
 				echo '<td>' . esc_html( $this->format_code_usage( $code ) ) . '</td>';
@@ -995,6 +998,7 @@ final class PromotionEditPage {
 		echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Name', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Quantity', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Code count', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Prefix', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Usage limit', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Expires', 'mp-commerce-promotions' ) . '</th>';
@@ -1007,10 +1011,16 @@ final class PromotionEditPage {
 			}
 			$prefix = $batch->get_code_prefix();
 			$limit  = $batch->get_usage_limit();
+			$batch_row_id = $batch->get_id();
+			$code_count   = '—';
+			if ( $batch_row_id !== null && $batch_row_id > 0 && $this->promotion_codes !== null ) {
+				$code_count = (string) $this->promotion_codes->count_for_batch( $batch_row_id );
+			}
 			echo '<tr>';
-			echo '<td>' . esc_html( (string) ( $batch->get_id() ?? '' ) ) . '</td>';
+			echo '<td>' . esc_html( (string) ( $batch_row_id ?? '' ) ) . '</td>';
 			echo '<td>' . esc_html( $batch->get_name() ) . '</td>';
 			echo '<td>' . esc_html( (string) $batch->get_quantity() ) . '</td>';
+			echo '<td>' . esc_html( $code_count ) . '</td>';
 			echo '<td>' . esc_html( $prefix !== null && $prefix !== '' ? $prefix : '—' ) . '</td>';
 			echo '<td>' . esc_html( $limit !== null ? (string) $limit : '—' ) . '</td>';
 			echo '<td>' . esc_html( $batch->get_expires_at() ?? '—' ) . '</td>';

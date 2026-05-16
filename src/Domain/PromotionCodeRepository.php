@@ -29,6 +29,7 @@ final class PromotionCodeRepository {
 
 		$data = array(
 			'promotion_id' => $code->get_promotion_id(),
+			'batch_id'     => $code->get_batch_id(),
 			'code_hash'    => $code->get_code_hash(),
 			'code_last4'   => $code->get_code_last4(),
 			'status'       => $code->get_status(),
@@ -39,10 +40,12 @@ final class PromotionCodeRepository {
 			'updated_at'   => $code->get_updated_at() ?? $now,
 		);
 
-		$usage_limit_format = $data['usage_limit'] === null ? '%s' : '%d';
+		$batch_id_format      = $data['batch_id'] === null ? '%s' : '%d';
+		$usage_limit_format   = $data['usage_limit'] === null ? '%s' : '%d';
 
 		$formats = array(
 			'%d',
+			$batch_id_format,
 			'%s',
 			'%s',
 			'%s',
@@ -222,6 +225,65 @@ final class PromotionCodeRepository {
 		}
 
 		return $codes;
+	}
+
+	/**
+	 * @return list<PromotionCode>
+	 */
+	public function find_for_batch( int $batch_id, int $limit = 100 ): array {
+		if ( $batch_id <= 0 ) {
+			return array();
+		}
+
+		$limit = max( 1, min( 100, $limit ) );
+
+		$table = Schema::promotion_codes_table( $this->wpdb );
+		$sql   = "SELECT * FROM {$table} WHERE batch_id = %d ORDER BY id ASC LIMIT %d";
+
+		$prepared = $this->wpdb->prepare( $sql, $batch_id, $limit );
+		if ( ! is_string( $prepared ) ) {
+			return array();
+		}
+
+		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		$codes = array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			try {
+				$codes[] = PromotionCode::from_array( $row );
+			} catch ( \InvalidArgumentException $e ) {
+				continue;
+			}
+		}
+
+		return $codes;
+	}
+
+	public function count_for_batch( int $batch_id ): int {
+		if ( $batch_id <= 0 ) {
+			return 0;
+		}
+
+		$table = Schema::promotion_codes_table( $this->wpdb );
+		$sql   = "SELECT COUNT(*) FROM {$table} WHERE batch_id = %d";
+
+		$prepared = $this->wpdb->prepare( $sql, $batch_id );
+		if ( ! is_string( $prepared ) ) {
+			return 0;
+		}
+
+		$count = $this->wpdb->get_var( $prepared );
+		if ( ! is_numeric( $count ) ) {
+			return 0;
+		}
+
+		return (int) $count;
 	}
 
 	public function is_code_usable( PromotionCode $code ): bool {
