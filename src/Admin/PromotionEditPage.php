@@ -1087,6 +1087,50 @@ final class PromotionEditPage {
 		echo '</div>';
 	}
 
+	private function render_rule_templates_section(): void {
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:8px 0 16px;">';
+		echo '<h3 style="margin-top:0;">' . esc_html__( 'Rule templates', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<p class="description">' . esc_html__(
+			'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action is applied in this MVP. Product and category IDs must be numeric WordPress IDs.',
+			'mp-commerce-promotions'
+		) . '</p>';
+
+		echo '<h4>' . esc_html__( 'Conditions examples', 'mp-commerce-promotions' ) . '</h4>';
+
+		$this->render_rule_template_readonly(
+			__( 'Minimum subtotal', 'mp-commerce-promotions' ),
+			"[\n  {\"type\":\"minimum_subtotal\",\"amount\":100}\n]"
+		);
+		$this->render_rule_template_readonly(
+			__( 'Product quantity', 'mp-commerce-promotions' ),
+			"[\n  {\"type\":\"product_quantity\",\"product_id\":123,\"operator\":\">=\",\"quantity\":2}\n]"
+		);
+		$this->render_rule_template_readonly(
+			__( 'Category quantity', 'mp-commerce-promotions' ),
+			"[\n  {\"type\":\"category_quantity\",\"category_id\":123,\"operator\":\">=\",\"quantity\":2}\n]"
+		);
+
+		echo '<h4 style="margin-top:1.5em;">' . esc_html__( 'Actions examples', 'mp-commerce-promotions' ) . '</h4>';
+
+		$this->render_rule_template_readonly(
+			__( 'Percentage discount', 'mp-commerce-promotions' ),
+			"[\n  {\"type\":\"percentage_discount\",\"percentage\":10}\n]"
+		);
+		$this->render_rule_template_readonly(
+			__( 'Fixed amount discount', 'mp-commerce-promotions' ),
+			"[\n  {\"type\":\"fixed_amount_discount\",\"amount\":25}\n]"
+		);
+
+		echo '</div>';
+	}
+
+	private function render_rule_template_readonly( string $label, string $json ): void {
+		echo '<p style="margin:12px 0 4px;"><strong>' . esc_html( $label ) . '</strong></p>';
+		echo '<textarea class="large-text code" rows="4" readonly style="font-family:monospace;background:#f6f7f7;">';
+		echo esc_textarea( $json );
+		echo '</textarea>';
+	}
+
 	private function render_form( Promotion $promotion ): void {
 		$id = $promotion->get_id();
 		if ( $id === null || $id <= 0 ) {
@@ -1124,18 +1168,17 @@ final class PromotionEditPage {
 		$ends = $promotion->get_ends_at() ?? '';
 		echo '<input type="text" class="regular-text" id="mp_cp_ends" name="promotion_ends_at" value="' . esc_attr( $ends ) . '" placeholder="' . esc_attr__( 'YYYY-MM-DD HH:MM:SS or leave empty', 'mp-commerce-promotions' ) . '" /></td></tr>';
 
+		echo '<tr><td colspan="2">';
+		$this->render_rule_templates_section();
+		echo '</td></tr>';
+
 		$cond_json = wp_json_encode( $promotion->get_conditions(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( ! is_string( $cond_json ) ) {
 			$cond_json = '[]';
 		}
 		echo '<tr><th scope="row"><label for="mp_cp_cond">' . esc_html__( 'Conditions (JSON)', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<textarea class="large-text code" rows="8" id="mp_cp_cond" name="promotion_conditions_json">' . esc_textarea( $cond_json ) . '</textarea>';
-		echo '<p class="description">' . esc_html__( 'Supported condition types (all must pass):', 'mp-commerce-promotions' ) . '</p>';
-		echo '<pre class="code" style="max-height:200px;overflow:auto;background:#f6f7f7;padding:8px;">'
-			. esc_html(
-				"[\n  {\"type\":\"minimum_subtotal\",\"amount\":1}\n]\n\n[\n  {\"type\":\"product_quantity\",\"product_id\":3702,\"operator\":\">=\",\"quantity\":2}\n]\n\n[\n  {\"type\":\"category_quantity\",\"category_id\":123,\"operator\":\">=\",\"quantity\":2}\n]"
-			)
-			. '</pre></td></tr>';
+		echo '<p class="description">' . esc_html__( 'Copy a template above or enter a valid JSON array. All conditions must pass.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		$act_json = wp_json_encode( $promotion->get_actions(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( ! is_string( $act_json ) ) {
@@ -1143,12 +1186,7 @@ final class PromotionEditPage {
 		}
 		echo '<tr><th scope="row"><label for="mp_cp_act">' . esc_html__( 'Actions (JSON)', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<textarea class="large-text code" rows="8" id="mp_cp_act" name="promotion_actions_json">' . esc_textarea( $act_json ) . '</textarea>';
-		echo '<p class="description">' . esc_html__( 'Supported action types (first eligible action on the first eligible promotion applies):', 'mp-commerce-promotions' ) . '</p>';
-		echo '<pre class="code" style="max-height:160px;overflow:auto;background:#f6f7f7;padding:8px;">'
-			. esc_html(
-				"[\n  {\"type\":\"percentage_discount\",\"percentage\":10}\n]\n\n[\n  {\"type\":\"fixed_amount_discount\",\"amount\":25}\n]"
-			)
-			. '</pre></td></tr>';
+		echo '<p class="description">' . esc_html__( 'Copy a template above or enter a valid JSON array. Only the first supported action applies in this MVP.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		$res_json = wp_json_encode( $promotion->get_restrictions(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( ! is_string( $res_json ) ) {
