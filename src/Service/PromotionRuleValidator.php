@@ -57,21 +57,30 @@ final class PromotionRuleValidator {
 			return;
 		}
 
-		if ( $mode === PromotionApplicationMode::STACKABLE ) {
-			$issues[] = array(
-				'level'   => 'info',
-				'message' => __(
-					'Stackable mode is groundwork; the storefront still applies one selected promotion fee in this MVP.',
-					'mp-commerce-promotions'
-				),
-			);
-		}
-
 		$max = $promotion->get_max_applications();
 		if ( $max !== null && $max < 1 ) {
 			$issues[] = array(
 				'level'   => 'error',
 				'message' => __( 'max_applications must be null or at least 1.', 'mp-commerce-promotions' ),
+			);
+		}
+
+		$excluded = $promotion->get_excluded_promotion_ids();
+		$own_id   = $promotion->get_id();
+		if ( $own_id !== null && $own_id > 0 && in_array( $own_id, $excluded, true ) ) {
+			$issues[] = array(
+				'level'   => 'error',
+				'message' => __( 'A promotion cannot exclude itself.', 'mp-commerce-promotions' ),
+			);
+		}
+
+		if ( count( $excluded ) > 0 ) {
+			$issues[] = array(
+				'level'   => 'info',
+				'message' => __(
+					'When this promotion is selected, listed promotion IDs are skipped in the plan even if eligible. Exclusions apply only to promotions evaluated later (priority/order).',
+					'mp-commerce-promotions'
+				),
 			);
 		}
 	}

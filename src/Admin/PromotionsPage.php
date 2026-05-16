@@ -479,10 +479,14 @@ final class PromotionsPage {
 			? __( 'stop', 'mp-commerce-promotions' )
 			: __( 'continue', 'mp-commerce-promotions' );
 
+		$exclude_count = count( $promotion->get_excluded_promotion_ids() );
+
 		return sprintf(
-			'%s / %s',
+			/* translators: 1: application mode, 2: stop or continue, 3: number of excluded promotion IDs */
+			__( '%1$s / %2$s / Excludes: %3$d', 'mp-commerce-promotions' ),
 			$mode,
-			$stop
+			$stop,
+			$exclude_count
 		);
 	}
 

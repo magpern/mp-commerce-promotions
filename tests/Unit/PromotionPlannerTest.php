@@ -196,4 +196,105 @@ final class PromotionPlannerTest extends TestCase {
 			$plan->get_decisions()[1]->get_skipped_reason()
 		);
 	}
+
+	public function test_selected_promotion_excludes_later_eligible_promotion(): void {
+		$cond = array(
+			array(
+				'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'amount' => 1.0,
+			),
+		);
+		$act  = array(
+			array(
+				'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'percentage' => 10.0,
+			),
+		);
+
+		$a = PromotionTestFixtures::active_promotion_with_id( 1, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null )
+			->with_excluded_promotion_ids( array( 2 ) );
+		$b = PromotionTestFixtures::active_promotion_with_id( 2, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+		$c = PromotionTestFixtures::active_promotion_with_id( 3, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+
+		$plan = $this->planner->plan(
+			array( $a, $b, $c ),
+			PromotionTestFixtures::cart_context( null, 100.0 )
+		);
+
+		$selected_ids = array_map(
+			static fn ( $d ) => $d->get_promotion_id(),
+			$plan->get_selected_decisions()
+		);
+		$this->assertSame( array( 1, 3 ), $selected_ids );
+		$this->assertFalse( $plan->get_decisions()[1]->is_selected() );
+		$this->assertSame(
+			PromotionEvaluationDecision::REASON_EXCLUDED_BY_SELECTED,
+			$plan->get_decisions()[1]->get_skipped_reason()
+		);
+	}
+
+	public function test_exclusion_does_not_block_promotion_evaluated_before_excluder(): void {
+		$cond = array(
+			array(
+				'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'amount' => 1.0,
+			),
+		);
+		$act  = array(
+			array(
+				'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'percentage' => 10.0,
+			),
+		);
+
+		$b = PromotionTestFixtures::active_promotion_with_id( 2, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+		$a = PromotionTestFixtures::active_promotion_with_id( 1, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null )
+			->with_excluded_promotion_ids( array( 2 ) );
+
+		$plan = $this->planner->plan(
+			array( $b, $a ),
+			PromotionTestFixtures::cart_context( null, 100.0 )
+		);
+
+		$selected_ids = array_map(
+			static fn ( $d ) => $d->get_promotion_id(),
+			$plan->get_selected_decisions()
+		);
+		$this->assertSame( array( 2, 1 ), $selected_ids );
+	}
+
+	public function test_exclusive_still_blocks_after_exclusion_plan(): void {
+		$cond = array(
+			array(
+				'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'amount' => 1.0,
+			),
+		);
+		$act  = array(
+			array(
+				'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'percentage' => 10.0,
+			),
+		);
+
+		$exclusive = PromotionTestFixtures::active_promotion_with_id( 1, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::EXCLUSIVE, true, null );
+		$second = PromotionTestFixtures::active_promotion_with_id( 2, $cond, $act );
+
+		$plan = $this->planner->plan(
+			array( $exclusive, $second ),
+			PromotionTestFixtures::cart_context( null, 100.0 )
+		);
+
+		$this->assertCount( 1, $plan->get_selected_decisions() );
+		$this->assertSame(
+			PromotionEvaluationDecision::REASON_BLOCKED_EXCLUSIVE,
+			$plan->get_decisions()[1]->get_skipped_reason()
+		);
+	}
 }

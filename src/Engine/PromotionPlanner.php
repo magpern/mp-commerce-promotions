@@ -28,6 +28,8 @@ final class PromotionPlanner {
 		$decisions              = array();
 		$stop_further_selection = false;
 		$exclusive_was_selected = false;
+		/** @var array<int, true> $active_exclusion_ids */
+		$active_exclusion_ids = array();
 
 		foreach ( $promotions as $promotion ) {
 			if ( $stop_further_selection ) {
@@ -49,12 +51,25 @@ final class PromotionPlanner {
 				continue;
 			}
 
+			$promotion_id = $promotion->get_id();
+			if ( $promotion_id !== null && $promotion_id > 0 && isset( $active_exclusion_ids[ $promotion_id ] ) ) {
+				$decisions[] = $this->build_skipped_decision(
+					$promotion,
+					PromotionEvaluationDecision::REASON_EXCLUDED_BY_SELECTED
+				);
+				continue;
+			}
+
 			$decisions[] = new PromotionEvaluationDecision(
 				$promotion,
 				$result,
 				true,
 				null
 			);
+
+			foreach ( $promotion->get_excluded_promotion_ids() as $excluded_id ) {
+				$active_exclusion_ids[ $excluded_id ] = true;
+			}
 
 			$is_exclusive = $promotion->get_application_mode() === PromotionApplicationMode::EXCLUSIVE;
 			if ( $is_exclusive ) {
@@ -73,6 +88,7 @@ final class PromotionPlanner {
 		$messages = array(
 			PromotionEvaluationDecision::REASON_BLOCKED_EXCLUSIVE => 'Skipped: blocked by an exclusive promotion already selected in this plan.',
 			PromotionEvaluationDecision::REASON_STOPPED_PROCESSING => 'Skipped: processing stopped after a prior selected promotion.',
+			PromotionEvaluationDecision::REASON_EXCLUDED_BY_SELECTED => 'Skipped: excluded by a previously selected promotion in this plan.',
 		);
 
 		$message = $messages[ $reason ] ?? 'Skipped by promotion application plan.';

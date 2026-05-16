@@ -92,7 +92,7 @@ A single sidebar item (**Promotions**) routes through **`AdminRouter`** using th
 
 ## Application planning (stacking groundwork)
 
-Each promotion has **application rules** (`exclusive` or `stackable`, **stop processing**, optional **max applications** reserved for later). `PromotionPlanner` builds an evaluation plan with skip reasons when multiple promotions are eligible. **Stackable** promotions with **stop processing** off can each add a cart fee; **total discount is capped at cart subtotal**. **Exclusive** promotions still stop further selections. **Promotion codes** do not stack with automatic promotions yet.
+Each promotion has **application rules** (`exclusive` or `stackable`, **stop processing**, optional **max applications** reserved for later, **excluded promotion IDs**). `PromotionPlanner` builds an evaluation plan with skip reasons when multiple promotions are eligible; exclusions skip listed promotion IDs evaluated **after** a selected promotion (priority/order matters). **Stackable** promotions with **stop processing** off can each add a cart fee; **total discount is capped at cart subtotal**. **Exclusive** promotions still stop further selections. **Promotion codes** do not stack with automatic promotions yet.
 
 ## WooCommerce compatibility
 

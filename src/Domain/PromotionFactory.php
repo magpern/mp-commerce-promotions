@@ -34,6 +34,7 @@ final class PromotionFactory {
 			PromotionApplicationMode::EXCLUSIVE,
 			true,
 			null,
+			array(),
 			$created_by,
 			null,
 			null
@@ -63,6 +64,7 @@ final class PromotionFactory {
 			$source->get_application_mode(),
 			$source->should_stop_processing(),
 			$source->get_max_applications(),
+			$source->get_excluded_promotion_ids(),
 			$created_by,
 			null,
 			null

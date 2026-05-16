@@ -38,6 +38,15 @@ final class PromotionTestFixtures {
 		return self::promotion( PromotionStatus::ACTIVE, $conditions, $actions );
 	}
 
+	public static function active_promotion_with_id( int $id, array $conditions, array $actions ): Promotion {
+		$data            = self::active_promotion( $conditions, $actions )->to_array();
+		$data['id']      = $id;
+		$data['uuid']    = sprintf( '00000000-0000-4000-8000-%012d', $id );
+		$data['name']    = 'Promotion ' . $id;
+
+		return Promotion::from_array( $data );
+	}
+
 	public static function cart_context(
 		?int $customer_id,
 		?float $subtotal,

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Tests\Unit;
 
 use MP\CommercePromotions\Domain\Promotion;
+use ReflectionClass;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\RuleTypes;
@@ -326,26 +327,43 @@ final class PromotionRuleValidatorTest extends TestCase {
 		return false;
 	}
 
-	public function test_stackable_mode_emits_info(): void {
-		$promotion = PromotionTestFixtures::active_promotion(
+	public function test_exclusion_list_emits_info(): void {
+		$promotion = Promotion::from_array(
 			array(
-				array(
-					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
-					'amount' => 0.0,
-				),
-			),
-			array(
-				array(
-					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
-					'percentage' => 5.0,
-				),
+				'id'                     => 10,
+				'uuid'                   => '11111111-1111-4111-8111-111111111111',
+				'name'                   => 'Excluder',
+				'status'                 => PromotionStatus::ACTIVE,
+				'excluded_promotion_ids' => array( 12, 15 ),
 			)
-		)->with_application_rules( PromotionApplicationMode::STACKABLE, true, null );
+		);
 
 		$issues = $this->validator->validate( $promotion );
 		$this->assertContains( 'info', $this->levels( $issues ) );
 		$this->assertTrue(
-			$this->has_error_containing( $this->messages( $issues ), 'Stackable mode is groundwork' )
+			$this->has_error_containing( $this->messages( $issues ), 'evaluated later' )
+		);
+	}
+
+	public function test_validator_reports_self_exclusion_error(): void {
+		$promotion = Promotion::from_array(
+			array(
+				'id'                     => 10,
+				'uuid'                   => '11111111-1111-4111-8111-111111111111',
+				'name'                   => 'Self',
+				'status'                 => PromotionStatus::ACTIVE,
+				'excluded_promotion_ids' => array( 12 ),
+			)
+		);
+
+		$ref  = new ReflectionClass( $promotion );
+		$prop = $ref->getProperty( 'excluded_promotion_ids' );
+		$prop->setValue( $promotion, array( 10, 12 ) );
+
+		$issues = $this->validator->validate( $promotion );
+		$this->assertContains( 'error', $this->levels( $issues ) );
+		$this->assertTrue(
+			$this->has_error_containing( $this->messages( $issues ), 'cannot exclude itself' )
 		);
 	}
 

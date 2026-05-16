@@ -45,6 +45,9 @@ final class Promotion {
 
 	private ?int $max_applications;
 
+	/** @var list<int> */
+	private array $excluded_promotion_ids;
+
 	private ?int $created_by;
 
 	private ?string $created_at;
@@ -68,6 +71,7 @@ final class Promotion {
 		string $application_mode,
 		bool $stop_processing,
 		?int $max_applications,
+		array $excluded_promotion_ids,
 		?int $created_by,
 		?string $created_at,
 		?string $updated_at
@@ -101,6 +105,8 @@ final class Promotion {
 			throw new InvalidArgumentException( 'Promotion max_applications must be null or >= 1.' );
 		}
 
+		$excluded_promotion_ids = self::normalize_excluded_promotion_ids( $excluded_promotion_ids, $id );
+
 		$this->id           = $id;
 		$this->uuid         = $uuid;
 		$this->name         = $name;
@@ -116,8 +122,9 @@ final class Promotion {
 		$this->usage_count        = $usage_count;
 		$this->application_mode   = $application_mode;
 		$this->stop_processing    = $stop_processing;
-		$this->max_applications   = $max_applications;
-		$this->created_by         = $created_by;
+		$this->max_applications       = $max_applications;
+		$this->excluded_promotion_ids = $excluded_promotion_ids;
+		$this->created_by             = $created_by;
 		$this->created_at   = $created_at;
 		$this->updated_at   = $updated_at;
 	}
@@ -140,6 +147,15 @@ final class Promotion {
 			$application_mode = PromotionApplicationMode::EXCLUSIVE;
 		}
 
+		$excluded_raw = $data['excluded_promotion_ids'] ?? null;
+		if ( is_string( $excluded_raw ) && $excluded_raw !== '' ) {
+			$decoded_excluded = json_decode( $excluded_raw, true );
+			$excluded_raw     = is_array( $decoded_excluded ) ? $decoded_excluded : array();
+		}
+		if ( ! is_array( $excluded_raw ) ) {
+			$excluded_raw = array();
+		}
+
 		return new self(
 			$id,
 			(string) ( $data['uuid'] ?? '' ),
@@ -157,6 +173,7 @@ final class Promotion {
 			$application_mode,
 			self::normalize_stop_processing( $data['stop_processing'] ?? true ),
 			$max_apps,
+			$excluded_raw,
 			$created_by,
 			self::optional_string( $data['created_at'] ?? null ),
 			self::optional_string( $data['updated_at'] ?? null )
@@ -183,8 +200,9 @@ final class Promotion {
 			'usage_count'        => $this->usage_count,
 			'application_mode'   => $this->application_mode,
 			'stop_processing'    => $this->stop_processing,
-			'max_applications'   => $this->max_applications,
-			'created_by'         => $this->created_by,
+			'max_applications'       => $this->max_applications,
+			'excluded_promotion_ids' => $this->excluded_promotion_ids,
+			'created_by'             => $this->created_by,
 			'created_at'   => $this->created_at,
 			'updated_at'   => $this->updated_at,
 		);
@@ -263,6 +281,13 @@ final class Promotion {
 		return $this->max_applications;
 	}
 
+	/**
+	 * @return list<int>
+	 */
+	public function get_excluded_promotion_ids(): array {
+		return $this->excluded_promotion_ids;
+	}
+
 	public function get_created_by(): ?int {
 		return $this->created_by;
 	}
@@ -293,6 +318,7 @@ final class Promotion {
 			$this->application_mode,
 			$this->stop_processing,
 			$this->max_applications,
+			$this->excluded_promotion_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -317,6 +343,7 @@ final class Promotion {
 			$this->application_mode,
 			$this->stop_processing,
 			$this->max_applications,
+			$this->excluded_promotion_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -341,6 +368,7 @@ final class Promotion {
 			$this->application_mode,
 			$this->stop_processing,
 			$this->max_applications,
+			$this->excluded_promotion_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -365,6 +393,7 @@ final class Promotion {
 			$this->application_mode,
 			$this->stop_processing,
 			$this->max_applications,
+			$this->excluded_promotion_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -389,6 +418,7 @@ final class Promotion {
 			$this->application_mode,
 			$this->stop_processing,
 			$this->max_applications,
+			$this->excluded_promotion_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -417,6 +447,7 @@ final class Promotion {
 			$this->application_mode,
 			$this->stop_processing,
 			$this->max_applications,
+			$this->excluded_promotion_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -446,6 +477,35 @@ final class Promotion {
 			$this->application_mode,
 			$this->stop_processing,
 			$this->max_applications,
+			$this->excluded_promotion_ids,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	/**
+	 * @param array<mixed> $ids
+	 */
+	public function with_excluded_promotion_ids( array $ids ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
+			$ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -474,10 +534,41 @@ final class Promotion {
 			$application_mode,
 			$stop_processing,
 			$max_applications,
+			$this->excluded_promotion_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
 		);
+	}
+
+	/**
+	 * @param array<mixed> $ids
+	 * @return list<int>
+	 */
+	private static function normalize_excluded_promotion_ids( array $ids, ?int $own_id ): array {
+		$normalized = array();
+		foreach ( $ids as $raw ) {
+			if ( ! is_int( $raw ) && ! is_string( $raw ) && ! is_float( $raw ) ) {
+				throw new InvalidArgumentException( 'excluded_promotion_ids must be an array of positive integers.' );
+			}
+			if ( is_string( $raw ) && $raw !== '' && ! ctype_digit( $raw ) ) {
+				throw new InvalidArgumentException( 'excluded_promotion_ids must be an array of positive integers.' );
+			}
+			$id = (int) $raw;
+			if ( $id <= 0 ) {
+				throw new InvalidArgumentException( 'excluded_promotion_ids must be an array of positive integers.' );
+			}
+			$normalized[ $id ] = $id;
+		}
+
+		if ( $own_id !== null && $own_id > 0 ) {
+			unset( $normalized[ $own_id ] );
+		}
+
+		$result = array_values( $normalized );
+		sort( $result, SORT_NUMERIC );
+
+		return $result;
 	}
 
 	/**

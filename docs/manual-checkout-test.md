@@ -244,6 +244,8 @@ Use when verifying multiple fees and multi-redemption recording.
 
 **Code-linked note:** With a promotion code coupon applied, only the linked promotion runs — automatic stackable promotions are skipped.
 
+**Exclusion note:** Promotion A with **Excluded promotion IDs** `B` should select A and skip B when A is evaluated before B (priority/order). Cart fees should match planner selection.
+
 ---
 
 ## Pass criteria

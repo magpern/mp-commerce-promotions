@@ -16,7 +16,8 @@ final class PromotionEvaluationDecision {
 
 	public const REASON_NOT_ELIGIBLE               = 'not_eligible';
 	public const REASON_BLOCKED_EXCLUSIVE          = 'blocked_by_exclusive_promotion';
-	public const REASON_STOPPED_PROCESSING       = 'stopped_processing';
+	public const REASON_STOPPED_PROCESSING         = 'stopped_processing';
+	public const REASON_EXCLUDED_BY_SELECTED       = 'excluded_by_selected_promotion';
 
 	private ?int $promotion_id;
 

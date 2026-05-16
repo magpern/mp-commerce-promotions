@@ -128,10 +128,11 @@ final class PromotionRepository {
 			'usage_count'        => $promotion->get_usage_count(),
 			'application_mode'   => $promotion->get_application_mode(),
 			'stop_processing'    => $promotion->should_stop_processing() ? 1 : 0,
-			'max_applications'   => $promotion->get_max_applications(),
-			'created_by'         => $promotion->get_created_by(),
-			'created_at'         => $promotion->get_created_at() ?? $now,
-			'updated_at'         => $promotion->get_updated_at() ?? $now,
+			'max_applications'       => $promotion->get_max_applications(),
+			'excluded_promotion_ids' => $this->encode_json( $promotion->get_excluded_promotion_ids() ),
+			'created_by'             => $promotion->get_created_by(),
+			'created_at'             => $promotion->get_created_at() ?? $now,
+			'updated_at'             => $promotion->get_updated_at() ?? $now,
 		);
 
 		$formats = array(
@@ -150,6 +151,7 @@ final class PromotionRepository {
 			'%s',
 			'%d',
 			'%d',
+			'%s',
 			'%d',
 			'%s',
 			'%s',
@@ -196,9 +198,10 @@ final class PromotionRepository {
 			'usage_count'        => $promotion->get_usage_count(),
 			'application_mode'   => $promotion->get_application_mode(),
 			'stop_processing'    => $promotion->should_stop_processing() ? 1 : 0,
-			'max_applications'   => $promotion->get_max_applications(),
-			'created_by'         => $promotion->get_created_by(),
-			'updated_at'         => $now,
+			'max_applications'       => $promotion->get_max_applications(),
+			'excluded_promotion_ids' => $this->encode_json( $promotion->get_excluded_promotion_ids() ),
+			'created_by'             => $promotion->get_created_by(),
+			'updated_at'             => $now,
 		);
 
 		$formats = array(
@@ -217,6 +220,7 @@ final class PromotionRepository {
 			'%s',
 			'%d',
 			'%d',
+			'%s',
 			'%d',
 			'%s',
 		);

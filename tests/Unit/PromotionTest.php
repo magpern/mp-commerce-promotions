@@ -107,6 +107,47 @@ final class PromotionTest extends TestCase {
 		$this->assertSame( 3, $updated->get_max_applications() );
 	}
 
+	public function test_excluded_promotion_ids_normalize_and_dedupe(): void {
+		$promotion = Promotion::from_array(
+			array(
+				'id'                     => 5,
+				'uuid'                   => '11111111-1111-4111-8111-111111111111',
+				'name'                   => 'Promo',
+				'status'                 => PromotionStatus::ACTIVE,
+				'excluded_promotion_ids' => array( 12, '15', 12, 20 ),
+			)
+		);
+
+		$this->assertSame( array( 12, 15, 20 ), $promotion->get_excluded_promotion_ids() );
+	}
+
+	public function test_excluded_promotion_ids_rejects_invalid_entry(): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		Promotion::from_array(
+			array(
+				'uuid'                   => '11111111-1111-4111-8111-111111111111',
+				'name'                   => 'Promo',
+				'status'                 => PromotionStatus::ACTIVE,
+				'excluded_promotion_ids' => array( 'abc' ),
+			)
+		);
+	}
+
+	public function test_with_excluded_promotion_ids_strips_own_id(): void {
+		$promotion = Promotion::from_array(
+			array(
+				'id'     => 7,
+				'uuid'   => '11111111-1111-4111-8111-111111111111',
+				'name'   => 'Promo',
+				'status' => PromotionStatus::ACTIVE,
+			)
+		);
+
+		$updated = $promotion->with_excluded_promotion_ids( array( 7, 8 ) );
+		$this->assertSame( array( 8 ), $updated->get_excluded_promotion_ids() );
+	}
+
 	public function test_with_usage_count_rejects_negative(): void {
 		$promotion = Promotion::from_array(
 			array(
