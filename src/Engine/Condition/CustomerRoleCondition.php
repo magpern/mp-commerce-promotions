@@ -42,21 +42,41 @@ final class CustomerRoleCondition implements ConditionInterface {
 		$metadata = $context->get_metadata();
 
 		if ( ! isset( $metadata['customer_roles'] ) || ! is_array( $metadata['customer_roles'] ) ) {
-			return ConditionResult::fail( 'Customer roles are not available (customer_roles metadata missing).' );
+			return ConditionResult::fail(
+				'Customer roles are not available (customer_roles metadata missing).',
+				ConditionTrace::REASON_METADATA_MISSING,
+				array( 'customer_roles' => null )
+			);
 		}
 
 		$actual = self::normalize_role_list( $metadata['customer_roles'] );
 		if ( $actual === array() ) {
-			return ConditionResult::fail( 'Customer has no roles in evaluation context.' );
+			return ConditionResult::fail(
+				'Customer has no roles in evaluation context.',
+				ConditionTrace::REASON_ROLE_NOT_MATCHED,
+				array(
+					'customer_roles' => array(),
+					'required_roles' => $this->required_roles,
+				)
+			);
 		}
+
+		$observed = array(
+			'customer_roles' => $actual,
+			'required_roles' => $this->required_roles,
+		);
 
 		foreach ( $this->required_roles as $required ) {
 			if ( in_array( $required, $actual, true ) ) {
-				return ConditionResult::pass();
+				return ConditionResult::pass( null, ConditionTrace::REASON_PASSED, $observed );
 			}
 		}
 
-		return ConditionResult::fail( 'Customer does not have a required role.' );
+		return ConditionResult::fail(
+			'Customer does not have a required role.',
+			ConditionTrace::REASON_ROLE_NOT_MATCHED,
+			$observed
+		);
 	}
 
 	/**

@@ -202,7 +202,9 @@ composer install
 composer run test
 ```
 
-**Scope today:** pure PHP classes under domain/engine/services that do not call WordPress APIs — including `PromotionEvaluator`, `PromotionRuleValidator`, `SimpleRuleBuilder`, `Promotion`, `RuleRegistry`, discount actions, customer conditions (`logged_in`, `first_order`, `customer_role`), and `EvaluationContext`. `CartContextBuilder` is exercised in production only; unit tests supply metadata manually.
+**Scope today:** pure PHP classes under domain/engine/services that do not call WordPress APIs — including `PromotionEvaluator`, `EvaluationResult` / `ConditionTrace` / `ActionTrace`, `PromotionRuleValidator`, `SimpleRuleBuilder`, `Promotion`, `RuleRegistry`, discount actions, customer conditions (`logged_in`, `first_order`, `customer_role`, `billing_country`, `customer_email_domain`), and `EvaluationContext`. `CartContextBuilder` is exercised in production only; unit tests supply metadata manually.
+
+**Evaluation trace:** `PromotionEvaluator::evaluate()` populates `condition_traces` and `action_traces` on every result. Use `EvaluationResult::to_array()` or getters in tests/WP-CLI smoke checks. Reason codes are stable internal strings — do not rename without a changelog note.
 
 **Future work:** WordPress/WooCommerce integration tests (bootstrap WP test suite, repositories against test DB, checkout flows) are **not** implemented yet.
 

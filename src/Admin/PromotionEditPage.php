@@ -24,6 +24,7 @@ use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\EvaluationResult;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
+use MP\CommercePromotions\Engine\RuleRegistry;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerationOutcome;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
@@ -1354,6 +1355,86 @@ final class PromotionEditPage {
 		);
 	}
 
+	private function render_evaluation_trace_tables( EvaluationResult $result ): void {
+		$condition_traces = $result->get_condition_traces();
+		if ( count( $condition_traces ) > 0 ) {
+			echo '<p><strong>' . esc_html__( 'Condition trace', 'mp-commerce-promotions' ) . '</strong></p>';
+			echo '<table class="widefat striped" style="max-width:100%;">';
+			echo '<thead><tr>';
+			echo '<th scope="col">' . esc_html__( 'Type', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Result', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Reason', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Message', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Observed', 'mp-commerce-promotions' ) . '</th>';
+			echo '</tr></thead><tbody>';
+			foreach ( $condition_traces as $trace ) {
+				if ( ! is_array( $trace ) ) {
+					continue;
+				}
+				$type = isset( $trace['type'] ) ? (string) $trace['type'] : '';
+				echo '<tr>';
+				echo '<td>' . esc_html( RuleRegistry::condition_label( $type ) ) . '</td>';
+				$passed = ! empty( $trace['passed'] );
+				echo '<td>' . esc_html( $passed ? __( 'Pass', 'mp-commerce-promotions' ) : __( 'Fail', 'mp-commerce-promotions' ) ) . '</td>';
+				echo '<td><code>' . esc_html( isset( $trace['reason_code'] ) ? (string) $trace['reason_code'] : '' ) . '</code></td>';
+				$message = isset( $trace['message'] ) && is_string( $trace['message'] ) ? $trace['message'] : '';
+				echo '<td>' . esc_html( $message ) . '</td>';
+				echo '<td>';
+				$this->render_trace_json_pre( isset( $trace['observed'] ) && is_array( $trace['observed'] ) ? $trace['observed'] : array() );
+				echo '</td>';
+				echo '</tr>';
+			}
+			echo '</tbody></table>';
+		}
+
+		$action_traces = $result->get_action_traces();
+		if ( count( $action_traces ) > 0 ) {
+			echo '<p style="margin-top:16px;"><strong>' . esc_html__( 'Action trace', 'mp-commerce-promotions' ) . '</strong></p>';
+			echo '<table class="widefat striped" style="max-width:100%;">';
+			echo '<thead><tr>';
+			echo '<th scope="col">' . esc_html__( 'Type', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Selected', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Reason', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Message', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Preview', 'mp-commerce-promotions' ) . '</th>';
+			echo '</tr></thead><tbody>';
+			foreach ( $action_traces as $trace ) {
+				if ( ! is_array( $trace ) ) {
+					continue;
+				}
+				$type = isset( $trace['type'] ) ? (string) $trace['type'] : '';
+				echo '<tr>';
+				echo '<td>' . esc_html( RuleRegistry::action_label( $type ) ) . '</td>';
+				$selected = ! empty( $trace['selected'] );
+				echo '<td>' . esc_html( $selected ? __( 'Yes', 'mp-commerce-promotions' ) : __( 'No', 'mp-commerce-promotions' ) ) . '</td>';
+				echo '<td><code>' . esc_html( isset( $trace['reason_code'] ) ? (string) $trace['reason_code'] : '' ) . '</code></td>';
+				$message = isset( $trace['message'] ) && is_string( $trace['message'] ) ? $trace['message'] : '';
+				echo '<td>' . esc_html( $message ) . '</td>';
+				echo '<td>';
+				$this->render_trace_json_pre( isset( $trace['preview'] ) && is_array( $trace['preview'] ) ? $trace['preview'] : array() );
+				echo '</td>';
+				echo '</tr>';
+			}
+			echo '</tbody></table>';
+		}
+	}
+
+	/**
+	 * @param array<string, mixed> $data
+	 */
+	private function render_trace_json_pre( array $data ): void {
+		if ( $data === array() ) {
+			echo '<span class="description">—</span>';
+			return;
+		}
+
+		$json = wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		if ( ! is_string( $json ) ) {
+			$json = '{}';
+		}
+		echo '<pre class="code" style="max-height:120px;overflow:auto;background:#f6f7f7;padding:8px;margin:0;font-size:11px;">' . esc_html( $json ) . '</pre>';
+	}
+
 	private function render_cart_preview_section( Promotion $promotion ): void {
 		$id = $promotion->get_id();
 		if ( $id === null || $id <= 0 ) {
@@ -1407,6 +1488,8 @@ final class PromotionEditPage {
 						}
 						echo '</ul>';
 					}
+
+					$this->render_evaluation_trace_tables( $result );
 
 					$action_results = $result->get_action_results();
 					echo '<p><strong>' . esc_html__( 'Action previews (JSON)', 'mp-commerce-promotions' ) . '</strong></p>';

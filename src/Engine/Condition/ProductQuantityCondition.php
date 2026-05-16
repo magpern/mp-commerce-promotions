@@ -45,8 +45,15 @@ final class ProductQuantityCondition implements ConditionInterface {
 	public function evaluate( EvaluationContext $context ): ConditionResult {
 		$actual = $this->sum_quantity_for_product( $context );
 
+		$observed = array(
+			'product_id'        => $this->product_id,
+			'actual_quantity'   => $actual,
+			'operator'          => $this->operator,
+			'required_quantity' => $this->quantity,
+		);
+
 		if ( QuantityComparator::compare( $actual, $this->operator, $this->quantity ) ) {
-			return ConditionResult::pass();
+			return ConditionResult::pass( null, ConditionTrace::REASON_PASSED, $observed );
 		}
 
 		return ConditionResult::fail(
@@ -56,7 +63,9 @@ final class ProductQuantityCondition implements ConditionInterface {
 				$actual,
 				$this->operator,
 				$this->quantity
-			)
+			),
+			ConditionTrace::REASON_QUANTITY_NOT_MET,
+			$observed
 		);
 	}
 

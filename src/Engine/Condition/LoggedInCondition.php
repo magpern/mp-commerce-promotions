@@ -20,10 +20,16 @@ final class LoggedInCondition implements ConditionInterface {
 
 	public function evaluate( EvaluationContext $context ): ConditionResult {
 		$customer_id = $context->get_customer_id();
+		$observed    = array( 'customer_id' => $customer_id );
+
 		if ( $customer_id !== null && $customer_id > 0 ) {
-			return ConditionResult::pass();
+			return ConditionResult::pass( null, ConditionTrace::REASON_PASSED, $observed );
 		}
 
-		return ConditionResult::fail( 'Customer must be logged in.' );
+		return ConditionResult::fail(
+			'Customer must be logged in.',
+			ConditionTrace::REASON_NOT_LOGGED_IN,
+			$observed
+		);
 	}
 }

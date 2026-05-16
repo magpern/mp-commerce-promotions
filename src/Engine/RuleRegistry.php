@@ -58,6 +58,30 @@ final class RuleRegistry {
 		return in_array( $type, self::supported_actions(), true );
 	}
 
+	public static function condition_label( string $type ): string {
+		$labels = array(
+			RuleTypes::CONDITION_MINIMUM_SUBTOTAL       => 'Minimum subtotal',
+			RuleTypes::CONDITION_PRODUCT_QUANTITY       => 'Product quantity',
+			RuleTypes::CONDITION_CATEGORY_QUANTITY      => 'Category quantity',
+			RuleTypes::CONDITION_LOGGED_IN              => 'Logged in',
+			RuleTypes::CONDITION_FIRST_ORDER            => 'First order',
+			RuleTypes::CONDITION_CUSTOMER_ROLE          => 'Customer role',
+			RuleTypes::CONDITION_BILLING_COUNTRY        => 'Billing country',
+			RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN  => 'Customer email domain',
+		);
+
+		return $labels[ $type ] ?? $type;
+	}
+
+	public static function action_label( string $type ): string {
+		$labels = array(
+			RuleTypes::ACTION_PERCENTAGE_DISCOUNT    => 'Percentage discount',
+			RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT  => 'Fixed amount discount',
+		);
+
+		return $labels[ $type ] ?? $type;
+	}
+
 	private function __construct() {
 	}
 }

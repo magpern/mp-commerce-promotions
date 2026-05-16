@@ -31,7 +31,11 @@ final class MinimumSubtotalCondition implements ConditionInterface {
 	public function evaluate( EvaluationContext $context ): ConditionResult {
 		$subtotal = $context->get_cart_subtotal();
 		if ( $subtotal === null ) {
-			return ConditionResult::fail( 'Cart subtotal is not available.' );
+			return ConditionResult::fail(
+				'Cart subtotal is not available.',
+				ConditionTrace::REASON_METADATA_MISSING,
+				array( 'cart_subtotal' => null )
+			);
 		}
 
 		if ( $subtotal < $this->amount ) {
@@ -40,10 +44,22 @@ final class MinimumSubtotalCondition implements ConditionInterface {
 					'Cart subtotal %.4f is below required minimum %.4f.',
 					$subtotal,
 					$this->amount
+				),
+				ConditionTrace::REASON_CART_VALUE_TOO_LOW,
+				array(
+					'cart_subtotal'    => $subtotal,
+					'required_minimum' => $this->amount,
 				)
 			);
 		}
 
-		return ConditionResult::pass();
+		return ConditionResult::pass(
+			null,
+			ConditionTrace::REASON_PASSED,
+			array(
+				'cart_subtotal'    => $subtotal,
+				'required_minimum' => $this->amount,
+			)
+		);
 	}
 }

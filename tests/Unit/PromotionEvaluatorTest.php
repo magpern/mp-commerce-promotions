@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Tests\Unit;
 
 use MP\CommercePromotions\Domain\PromotionStatus;
+use MP\CommercePromotions\Engine\Action\ActionTrace;
+use MP\CommercePromotions\Engine\Condition\ConditionTrace;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Engine\RuleTypes;
 use MP\CommercePromotions\Tests\Support\PromotionTestFixtures;
@@ -394,5 +396,208 @@ final class PromotionEvaluatorTest extends TestCase {
 				PromotionTestFixtures::cart_context( null, 10.0, array(), $bad_email )
 			)->is_eligible()
 		);
+	}
+
+	public function test_failed_minimum_subtotal_includes_cart_value_trace(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 100.0,
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 10.0,
+				),
+			)
+		);
+
+		$result = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( null, 50.0 )
+		);
+
+		$this->assertFalse( $result->is_eligible() );
+		$trace = $this->find_condition_trace( $result->get_condition_traces(), RuleTypes::CONDITION_MINIMUM_SUBTOTAL );
+		$this->assertNotNull( $trace );
+		$this->assertFalse( $trace['passed'] );
+		$this->assertSame( ConditionTrace::REASON_CART_VALUE_TOO_LOW, $trace['reason_code'] );
+		$this->assertSame( 50.0, $trace['observed']['cart_subtotal'] );
+		$this->assertSame( ActionTrace::REASON_NOT_REACHED, $result->get_action_traces()[0]['reason_code'] );
+	}
+
+	public function test_unknown_condition_includes_condition_unknown_trace(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array( 'type' => 'unknown_condition_type' ),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 5.0,
+				),
+			)
+		);
+
+		$result = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( null, 100.0 )
+		);
+
+		$this->assertFalse( $result->is_eligible() );
+		$trace = $this->find_condition_trace( $result->get_condition_traces(), 'unknown_condition_type' );
+		$this->assertNotNull( $trace );
+		$this->assertSame( ConditionTrace::REASON_UNKNOWN, $trace['reason_code'] );
+	}
+
+	public function test_unknown_action_includes_action_unknown_trace(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 0.0,
+				),
+			),
+			array(
+				array( 'type' => 'unknown_action_type' ),
+			)
+		);
+
+		$result = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( null, 100.0 )
+		);
+
+		$this->assertFalse( $result->is_eligible() );
+		$this->assertCount( 1, $result->get_action_traces() );
+		$this->assertSame( ConditionTrace::REASON_PASSED, $result->get_condition_traces()[0]['reason_code'] );
+		$this->assertSame( ActionTrace::REASON_UNKNOWN, $result->get_action_traces()[0]['reason_code'] );
+	}
+
+	public function test_successful_evaluation_includes_passed_condition_and_selected_action_trace(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 50.0,
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 10.0,
+				),
+			)
+		);
+
+		$result = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( null, 100.0 )
+		);
+
+		$this->assertTrue( $result->is_eligible() );
+		$this->assertSame( ConditionTrace::REASON_PASSED, $result->get_condition_traces()[0]['reason_code'] );
+		$this->assertTrue( $result->get_condition_traces()[0]['passed'] );
+		$this->assertSame( ActionTrace::REASON_SELECTED, $result->get_action_traces()[0]['reason_code'] );
+		$this->assertTrue( $result->get_action_traces()[0]['selected'] );
+	}
+
+	public function test_customer_role_failure_includes_role_not_matched_trace(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'  => RuleTypes::CONDITION_CUSTOMER_ROLE,
+					'roles' => array( 'customer' ),
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 5.0,
+				),
+			)
+		);
+
+		$result = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context(
+				1,
+				10.0,
+				array(),
+				array( 'customer_roles' => array( 'subscriber' ) )
+			)
+		);
+
+		$trace = $this->find_condition_trace( $result->get_condition_traces(), RuleTypes::CONDITION_CUSTOMER_ROLE );
+		$this->assertNotNull( $trace );
+		$this->assertSame( ConditionTrace::REASON_ROLE_NOT_MATCHED, $trace['reason_code'] );
+	}
+
+	public function test_billing_country_failure_includes_country_not_matched_trace(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'      => RuleTypes::CONDITION_BILLING_COUNTRY,
+					'countries' => array( 'SE' ),
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 5.0,
+				),
+			)
+		);
+
+		$result = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( null, 10.0, array(), array( 'billing_country' => 'NO' ) )
+		);
+
+		$trace = $this->find_condition_trace( $result->get_condition_traces(), RuleTypes::CONDITION_BILLING_COUNTRY );
+		$this->assertNotNull( $trace );
+		$this->assertSame( ConditionTrace::REASON_COUNTRY_NOT_MATCHED, $trace['reason_code'] );
+	}
+
+	public function test_email_domain_failure_includes_email_domain_not_matched_trace(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'    => RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN,
+					'domains' => array( 'example.com' ),
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 5.0,
+				),
+			)
+		);
+
+		$result = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( null, 10.0, array(), array( 'customer_email' => 'a@other.org' ) )
+		);
+
+		$trace = $this->find_condition_trace( $result->get_condition_traces(), RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN );
+		$this->assertNotNull( $trace );
+		$this->assertSame( ConditionTrace::REASON_EMAIL_DOMAIN, $trace['reason_code'] );
+	}
+
+	/**
+	 * @param list<array<string, mixed>> $traces
+	 * @return array<string, mixed>|null
+	 */
+	private function find_condition_trace( array $traces, string $type ): ?array {
+		foreach ( $traces as $trace ) {
+			if ( isset( $trace['type'] ) && $trace['type'] === $type ) {
+				return $trace;
+			}
+		}
+
+		return null;
 	}
 }

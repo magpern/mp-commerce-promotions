@@ -237,12 +237,27 @@ The rule engine is centered around:
 ```text
 EvaluationContext
 EvaluationResult
+ConditionTrace
+ActionTrace
 PromotionEvaluator
 RuleTypes
 RuleRegistry
 ConditionInterface
 ActionInterface
 ```
+
+### Evaluation trace (explainability)
+
+Each promotion evaluation can return structured traces on `EvaluationResult`:
+
+- **`condition_traces`** — one entry per condition evaluated (type, pass/fail, `reason_code`, message, config snapshot, observed values).
+- **`action_traces`** — one entry per configured action (type, selected flag, `reason_code`, message, config, preview payload).
+
+Reason codes are **internal, stable strings** (for example `cart_value_too_low`, `condition_unknown`, `action_selected`, `action_not_reached`). They are intended for admin debugging and future tooling — not storefront output.
+
+When conditions fail, actions receive `action_not_reached` traces without preview evaluation. When eligible, only the **first** action trace is marked `action_selected` (matching MVP cart application), while additional configured actions may still appear in `action_results` previews.
+
+The admin **Cart preview** on the promotion edit screen renders trace tables (escaped; observed/preview as JSON). No REST/AJAX or customer-facing explainability in this phase.
 
 ### Rule type identifiers (`RuleTypes`)
 

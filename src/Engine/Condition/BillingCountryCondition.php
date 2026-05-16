@@ -42,19 +42,36 @@ final class BillingCountryCondition implements ConditionInterface {
 		$metadata = $context->get_metadata();
 
 		if ( ! isset( $metadata['billing_country'] ) || ! is_string( $metadata['billing_country'] ) ) {
-			return ConditionResult::fail( 'Billing country is not available (billing_country metadata missing).' );
+			return ConditionResult::fail(
+				'Billing country is not available (billing_country metadata missing).',
+				ConditionTrace::REASON_METADATA_MISSING,
+				array( 'billing_country' => null )
+			);
 		}
 
 		$actual = self::normalize_country_code( $metadata['billing_country'] );
 		if ( $actual === '' ) {
-			return ConditionResult::fail( 'Billing country is empty in evaluation context.' );
+			return ConditionResult::fail(
+				'Billing country is empty in evaluation context.',
+				ConditionTrace::REASON_METADATA_MISSING,
+				array( 'billing_country' => '' )
+			);
 		}
+
+		$observed = array(
+			'billing_country' => $actual,
+			'countries'       => $this->countries,
+		);
 
 		if ( in_array( $actual, $this->countries, true ) ) {
-			return ConditionResult::pass();
+			return ConditionResult::pass( null, ConditionTrace::REASON_PASSED, $observed );
 		}
 
-		return ConditionResult::fail( 'Billing country does not match allowed countries.' );
+		return ConditionResult::fail(
+			'Billing country does not match allowed countries.',
+			ConditionTrace::REASON_COUNTRY_NOT_MATCHED,
+			$observed
+		);
 	}
 
 	/**

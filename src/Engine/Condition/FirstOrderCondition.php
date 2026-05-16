@@ -23,18 +23,30 @@ final class FirstOrderCondition implements ConditionInterface {
 
 		if ( ! array_key_exists( 'has_previous_orders', $metadata ) ) {
 			return ConditionResult::fail(
-				'Order history is not available (has_previous_orders metadata missing).'
+				'Order history is not available (has_previous_orders metadata missing).',
+				ConditionTrace::REASON_METADATA_MISSING,
+				array( 'has_previous_orders' => null )
 			);
 		}
 
+		$observed = array( 'has_previous_orders' => $metadata['has_previous_orders'] );
+
 		if ( $metadata['has_previous_orders'] === false ) {
-			return ConditionResult::pass();
+			return ConditionResult::pass( null, ConditionTrace::REASON_PASSED, $observed );
 		}
 
 		if ( $metadata['has_previous_orders'] === true ) {
-			return ConditionResult::fail( 'Customer has previous orders.' );
+			return ConditionResult::fail(
+				'Customer has previous orders.',
+				ConditionTrace::REASON_PREVIOUS_ORDER,
+				$observed
+			);
 		}
 
-		return ConditionResult::fail( 'has_previous_orders metadata must be a boolean.' );
+		return ConditionResult::fail(
+			'has_previous_orders metadata must be a boolean.',
+			ConditionTrace::REASON_FAILED,
+			$observed
+		);
 	}
 }

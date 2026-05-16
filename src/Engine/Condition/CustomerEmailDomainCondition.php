@@ -42,19 +42,36 @@ final class CustomerEmailDomainCondition implements ConditionInterface {
 		$metadata = $context->get_metadata();
 
 		if ( ! isset( $metadata['customer_email'] ) || ! is_string( $metadata['customer_email'] ) ) {
-			return ConditionResult::fail( 'Customer email is not available (customer_email metadata missing).' );
+			return ConditionResult::fail(
+				'Customer email is not available (customer_email metadata missing).',
+				ConditionTrace::REASON_METADATA_MISSING,
+				array( 'customer_email' => null )
+			);
 		}
 
 		$domain = self::extract_domain( $metadata['customer_email'] );
 		if ( $domain === '' ) {
-			return ConditionResult::fail( 'Customer email is invalid or has no domain.' );
+			return ConditionResult::fail(
+				'Customer email is invalid or has no domain.',
+				ConditionTrace::REASON_FAILED,
+				array( 'customer_email' => $metadata['customer_email'] )
+			);
 		}
+
+		$observed = array(
+			'email_domain' => $domain,
+			'domains'      => $this->domains,
+		);
 
 		if ( in_array( $domain, $this->domains, true ) ) {
-			return ConditionResult::pass();
+			return ConditionResult::pass( null, ConditionTrace::REASON_PASSED, $observed );
 		}
 
-		return ConditionResult::fail( 'Customer email domain does not match allowed domains.' );
+		return ConditionResult::fail(
+			'Customer email domain does not match allowed domains.',
+			ConditionTrace::REASON_EMAIL_DOMAIN,
+			$observed
+		);
 	}
 
 	/**
