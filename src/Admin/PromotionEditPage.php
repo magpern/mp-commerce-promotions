@@ -1281,6 +1281,238 @@ final class PromotionEditPage {
 		echo '</div>';
 	}
 
+	private function render_product_category_id_helper_section(): void {
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:8px 0 16px;">';
+		echo '<h3 style="margin-top:0;">' . esc_html__( 'Product and category IDs', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<p class="description">' . esc_html__(
+			'The product_quantity condition uses WooCommerce product post IDs. The category_quantity condition uses product category term IDs (taxonomy product_cat).',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<p>';
+		echo '<a class="button" href="' . esc_url( admin_url( 'edit.php?post_type=product' ) ) . '">' . esc_html__( 'Products list', 'mp-commerce-promotions' ) . '</a> ';
+		echo '<a class="button" href="' . esc_url( admin_url( 'edit-tags.php?taxonomy=product_cat&post_type=product' ) ) . '">' . esc_html__( 'Product categories list', 'mp-commerce-promotions' ) . '</a>';
+		echo '</p>';
+
+		$this->render_recent_products_id_helper_table();
+		$this->render_recent_categories_id_helper_table();
+
+		echo '</div>';
+	}
+
+	private function render_recent_products_id_helper_table(): void {
+		if ( ! post_type_exists( 'product' ) ) {
+			return;
+		}
+
+		$rows = $this->fetch_recent_products_for_id_helper();
+		if ( count( $rows ) === 0 ) {
+			return;
+		}
+
+		echo '<h4 style="margin:1.5em 0 8px;">' . esc_html__( 'Recent published products', 'mp-commerce-promotions' ) . '</h4>';
+		echo '<table class="widefat striped" style="max-width:100%;">';
+		echo '<thead><tr>';
+		echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Name', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Type / SKU', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Edit', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $rows as $row ) {
+			echo '<tr>';
+			echo '<td>' . esc_html( (string) $row['id'] ) . '</td>';
+			echo '<td>' . esc_html( $row['name'] ) . '</td>';
+			echo '<td>' . esc_html( $row['type_sku'] ) . '</td>';
+			echo '<td>';
+			if ( $row['edit_url'] !== '' ) {
+				echo '<a href="' . esc_url( $row['edit_url'] ) . '">' . esc_html__( 'Edit', 'mp-commerce-promotions' ) . '</a>';
+			} else {
+				echo '—';
+			}
+			echo '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
+	}
+
+	private function render_recent_categories_id_helper_table(): void {
+		if ( ! taxonomy_exists( 'product_cat' ) ) {
+			return;
+		}
+
+		$rows = $this->fetch_recent_categories_for_id_helper();
+		if ( count( $rows ) === 0 ) {
+			return;
+		}
+
+		echo '<h4 style="margin:1.5em 0 8px;">' . esc_html__( 'Product categories', 'mp-commerce-promotions' ) . '</h4>';
+		echo '<table class="widefat striped" style="max-width:100%;">';
+		echo '<thead><tr>';
+		echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Name', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Count', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Edit', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $rows as $row ) {
+			echo '<tr>';
+			echo '<td>' . esc_html( (string) $row['id'] ) . '</td>';
+			echo '<td>' . esc_html( $row['name'] ) . '</td>';
+			echo '<td>' . esc_html( (string) $row['count'] ) . '</td>';
+			echo '<td>';
+			if ( $row['edit_url'] !== '' ) {
+				echo '<a href="' . esc_url( $row['edit_url'] ) . '">' . esc_html__( 'Edit', 'mp-commerce-promotions' ) . '</a>';
+			} else {
+				echo '—';
+			}
+			echo '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
+	}
+
+	/**
+	 * @return list<array{id: int, name: string, type_sku: string, edit_url: string}>
+	 */
+	private function fetch_recent_products_for_id_helper(): array {
+		$rows = array();
+
+		if ( function_exists( 'wc_get_products' ) ) {
+			$products = wc_get_products(
+				array(
+					'status'  => 'publish',
+					'limit'   => 10,
+					'orderby' => 'date',
+					'order'   => 'DESC',
+				)
+			);
+
+			if ( is_array( $products ) ) {
+				foreach ( $products as $product ) {
+					if ( ! is_object( $product ) || ! method_exists( $product, 'get_id' ) ) {
+						continue;
+					}
+
+					$product_id = (int) $product->get_id();
+					if ( $product_id <= 0 ) {
+						continue;
+					}
+
+					$rows[] = $this->format_product_id_helper_row( $product_id, $product );
+				}
+			}
+
+			return $rows;
+		}
+
+		$posts = get_posts(
+			array(
+				'post_type'      => 'product',
+				'post_status'    => 'publish',
+				'posts_per_page' => 10,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+			)
+		);
+
+		if ( ! is_array( $posts ) ) {
+			return array();
+		}
+
+		foreach ( $posts as $post ) {
+			if ( ! $post instanceof \WP_Post ) {
+				continue;
+			}
+
+			$product_id = (int) $post->ID;
+			if ( $product_id <= 0 ) {
+				continue;
+			}
+
+			$wc_product = function_exists( 'wc_get_product' ) ? wc_get_product( $product_id ) : null;
+			$rows[]     = $this->format_product_id_helper_row( $product_id, $wc_product, $post );
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * @param object|null   $product WC_Product or null.
+	 * @param \WP_Post|null $post    Fallback post when product object is unavailable.
+	 * @return array{id: int, name: string, type_sku: string, edit_url: string}
+	 */
+	private function format_product_id_helper_row( int $product_id, $product, ?\WP_Post $post = null ): array {
+		$name = '';
+		if ( is_object( $product ) && method_exists( $product, 'get_name' ) ) {
+			$name = (string) $product->get_name();
+		} elseif ( $post instanceof \WP_Post ) {
+			$name = $post->post_title;
+		}
+
+		$type_sku = '—';
+		if ( is_object( $product ) && method_exists( $product, 'get_type' ) ) {
+			$type = (string) $product->get_type();
+			$sku  = method_exists( $product, 'get_sku' ) ? (string) $product->get_sku() : '';
+			if ( $sku !== '' ) {
+				$type_sku = $type . ' / ' . $sku;
+			} else {
+				$type_sku = $type;
+			}
+		}
+
+		$edit_url = get_edit_post_link( $product_id, 'raw' );
+
+		return array(
+			'id'       => $product_id,
+			'name'     => $name,
+			'type_sku' => $type_sku,
+			'edit_url' => is_string( $edit_url ) ? $edit_url : '',
+		);
+	}
+
+	/**
+	 * @return list<array{id: int, name: string, count: int, edit_url: string}>
+	 */
+	private function fetch_recent_categories_for_id_helper(): array {
+		$terms = get_terms(
+			array(
+				'taxonomy'   => 'product_cat',
+				'hide_empty' => false,
+				'number'     => 10,
+			)
+		);
+
+		if ( is_wp_error( $terms ) || ! is_array( $terms ) ) {
+			return array();
+		}
+
+		$rows = array();
+
+		foreach ( $terms as $term ) {
+			if ( ! $term instanceof \WP_Term ) {
+				continue;
+			}
+
+			$term_id = (int) $term->term_id;
+			if ( $term_id <= 0 ) {
+				continue;
+			}
+
+			$edit_url = get_edit_term_link( $term, 'product_cat', 'product' );
+
+			$rows[] = array(
+				'id'       => $term_id,
+				'name'     => $term->name,
+				'count'    => (int) $term->count,
+				'edit_url' => ( is_string( $edit_url ) && ! is_wp_error( $edit_url ) ) ? $edit_url : '',
+			);
+		}
+
+		return $rows;
+	}
+
 	private function render_rule_templates_section(): void {
 		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:8px 0 16px;">';
 		echo '<h3 style="margin-top:0;">' . esc_html__( 'Rule templates', 'mp-commerce-promotions' ) . '</h3>';
@@ -1364,6 +1596,10 @@ final class PromotionEditPage {
 
 		echo '<tr><td colspan="2">';
 		$this->render_simple_rule_builder_section( $promotion );
+		echo '</td></tr>';
+
+		echo '<tr><td colspan="2">';
+		$this->render_product_category_id_helper_section();
 		echo '</td></tr>';
 
 		echo '<tr><td colspan="2">';
