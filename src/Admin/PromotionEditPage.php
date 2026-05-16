@@ -712,7 +712,7 @@ final class PromotionEditPage {
 
 		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:16px 0;">';
 		echo '<h2 style="margin-top:0;">' . esc_html__( 'Promotion Codes', 'mp-commerce-promotions' ) . '</h2>';
-		echo '<p class="description">' . esc_html__( 'Manual codes are stored hashed; only the last four characters are shown after creation. Storefront redemption is not implemented yet.', 'mp-commerce-promotions' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'Manual codes are stored hashed; only the last four characters are shown after creation. Customers enter codes in the WooCommerce coupon field at checkout.', 'mp-commerce-promotions' ) . '</p>';
 
 		if ( count( $codes ) === 0 ) {
 			echo '<p>' . esc_html__( 'No promotion codes for this promotion yet.', 'mp-commerce-promotions' ) . '</p>';

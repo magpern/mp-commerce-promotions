@@ -151,6 +151,11 @@ final class Plugin {
 		}
 
 		$admin_router = new AdminRouter( $promotions_page, $settings_page, $diagnostics_page );
+
+		if ( is_admin() ) {
+			$admin_router->register_legacy_redirects();
+		}
+
 		$this->admin_menu = new AdminMenu( $this->woo_bridge, $admin_router );
 
 		if ( is_admin() && $this->admin_menu !== null ) {

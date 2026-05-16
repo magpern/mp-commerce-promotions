@@ -30,7 +30,6 @@ final class AdminMenu {
 
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'register_menu' ), self::MENU_PRIORITY );
-		$this->router->register_legacy_redirects();
 	}
 
 	public function register_menu(): void {
