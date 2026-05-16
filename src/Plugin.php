@@ -145,7 +145,8 @@ final class Plugin {
 				$this->promotion_code_repository,
 				$code_factory,
 				$batch_repository,
-				$batch_generator
+				$batch_generator,
+				$this->audit_logger
 			);
 			$promotions_page = new PromotionsPage( $this->promotion_repository, $this->promotion_service, $edit_page );
 		}

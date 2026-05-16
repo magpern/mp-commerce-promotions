@@ -24,6 +24,7 @@ use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\EvaluationResult;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
+use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerationOutcome;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
@@ -60,6 +61,8 @@ final class PromotionEditPage {
 
 	private ?PromotionCodeBatchGenerator $batch_generator;
 
+	private ?AuditLogger $audit_logger;
+
 	private ?PromotionCodeBatchGenerationOutcome $batch_generation_outcome = null;
 
 	private ?string $batch_generation_error = null;
@@ -83,7 +86,8 @@ final class PromotionEditPage {
 		?PromotionCodeRepository $promotion_codes = null,
 		?PromotionCodeFactory $promotion_code_factory = null,
 		?PromotionCodeBatchRepository $code_batches = null,
-		?PromotionCodeBatchGenerator $batch_generator = null
+		?PromotionCodeBatchGenerator $batch_generator = null,
+		?AuditLogger $audit_logger = null
 	) {
 		$this->promotions               = $promotions;
 		$this->promotion_service        = $promotion_service;
@@ -96,6 +100,7 @@ final class PromotionEditPage {
 		$this->promotion_code_factory   = $promotion_code_factory;
 		$this->code_batches             = $code_batches;
 		$this->batch_generator          = $batch_generator;
+		$this->audit_logger             = $audit_logger;
 	}
 
 	public function render( string $identifier ): void {
@@ -123,6 +128,7 @@ final class PromotionEditPage {
 		$this->handle_post_change_status( $promotion );
 		$this->handle_post_update( $promotion );
 		$this->handle_post_create_promotion_code( $promotion );
+		$this->handle_post_change_promotion_code_status( $promotion );
 		$this->handle_post_generate_code_batch( $promotion );
 		$this->handle_post_preview( $promotion );
 
@@ -228,6 +234,112 @@ final class PromotionEditPage {
 		}
 
 		$this->redirect_to_edit( $pid, array( 'mp_cp_code_created' => '1' ) );
+	}
+
+	private function handle_post_change_promotion_code_status( Promotion $promotion ): void {
+		if ( $this->promotion_codes === null ) {
+			return;
+		}
+
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		$action = isset( $_POST['mp_cp_action'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_action'] ) ) : '';
+		if ( $action !== 'change_promotion_code_status' ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$post_promotion_id = isset( $_POST['promotion_id'] ) ? (int) $_POST['promotion_id'] : 0;
+		if ( $post_promotion_id !== $pid ) {
+			$this->redirect_after_code_status_change( $pid, array( 'mp_cp_code_status_error' => 'id_mismatch' ) );
+		}
+
+		$code_id = isset( $_POST['promotion_code_id'] ) ? (int) $_POST['promotion_code_id'] : 0;
+		if ( $code_id <= 0 ) {
+			$this->redirect_after_code_status_change( $pid, array( 'mp_cp_code_status_error' => 'code_not_found' ) );
+		}
+
+		$nonce_action = 'mp_cp_change_promotion_code_status_' . $pid . '_' . $code_id;
+		if ( ! isset( $_POST['mp_cp_change_promotion_code_status_nonce'] ) ) {
+			$this->redirect_after_code_status_change( $pid, array( 'mp_cp_code_status_error' => 'missing_nonce' ) );
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_change_promotion_code_status_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+			$this->redirect_after_code_status_change( $pid, array( 'mp_cp_code_status_error' => 'invalid_nonce' ) );
+		}
+
+		$new_status = isset( $_POST['new_status'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['new_status'] ) ) : '';
+		if ( ! PromotionCode::is_valid_status( $new_status ) ) {
+			$this->redirect_after_code_status_change( $pid, array( 'mp_cp_code_status_error' => 'invalid_transition' ) );
+		}
+
+		$code = $this->promotion_codes->find( $code_id );
+		if ( $code === null || $code->get_promotion_id() !== $pid ) {
+			$this->redirect_after_code_status_change( $pid, array( 'mp_cp_code_status_error' => 'code_not_found' ) );
+		}
+
+		$old_status = $code->get_status();
+		if ( ! $this->is_allowed_promotion_code_status_transition( $old_status, $new_status ) ) {
+			$this->redirect_after_code_status_change( $pid, array( 'mp_cp_code_status_error' => 'invalid_transition' ) );
+		}
+
+		try {
+			$updated_code = $code->with_status( $new_status );
+		} catch ( InvalidArgumentException $e ) {
+			$this->redirect_after_code_status_change( $pid, array( 'mp_cp_code_status_error' => 'invalid_transition' ) );
+		}
+
+		if ( ! $this->promotion_codes->update( $updated_code ) ) {
+			$this->redirect_after_code_status_change( $pid, array( 'mp_cp_code_status_error' => 'update_failed' ) );
+		}
+
+		if ( $this->audit_logger !== null ) {
+			$this->audit_logger->log(
+				'promotion_code.status_changed',
+				$pid,
+				array(
+					'promotion_code_id' => $code_id,
+					'promotion_id'      => $pid,
+					'old_status'        => $old_status,
+					'new_status'        => $new_status,
+					'last4'             => $code->get_code_last4(),
+				),
+				(int) get_current_user_id()
+			);
+		}
+
+		$this->redirect_after_code_status_change( $pid, array( 'mp_cp_code_status_saved' => '1' ) );
+	}
+
+	private function is_allowed_promotion_code_status_transition( string $from_status, string $to_status ): bool {
+		if ( $from_status === $to_status ) {
+			return false;
+		}
+
+		if ( $from_status === PromotionCode::STATUS_ACTIVE && $to_status === PromotionCode::STATUS_DISABLED ) {
+			return true;
+		}
+
+		if ( $from_status === PromotionCode::STATUS_DISABLED && $to_status === PromotionCode::STATUS_ACTIVE ) {
+			return true;
+		}
+
+		if ( $from_status === PromotionCode::STATUS_DISABLED && $to_status === PromotionCode::STATUS_EXPIRED ) {
+			return true;
+		}
+
+		if ( $from_status === PromotionCode::STATUS_EXPIRED && $to_status === PromotionCode::STATUS_DISABLED ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private function handle_post_download_generated_codes_csv( Promotion $promotion ): void {
@@ -626,6 +738,36 @@ final class PromotionEditPage {
 		if ( $this->batch_detail_error !== null && $this->batch_detail_error !== '' ) {
 			echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $this->batch_detail_error ) . '</p></div>';
 		}
+
+		if ( isset( $_GET['mp_cp_code_status_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_code_status_saved'] ) ) === '1' ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Promotion code status updated.', 'mp-commerce-promotions' ) . '</p></div>';
+		}
+
+		if ( isset( $_GET['mp_cp_code_status_error'] ) ) {
+			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_code_status_error'] ) );
+			$msg  = $this->code_status_error_message_for_code( $code );
+			if ( $msg !== '' ) {
+				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
+			}
+		}
+	}
+
+	private function code_status_error_message_for_code( string $code ): string {
+		switch ( $code ) {
+			case 'invalid_nonce':
+			case 'missing_nonce':
+				return __( 'Security check failed while changing promotion code status. Please try again.', 'mp-commerce-promotions' );
+			case 'id_mismatch':
+				return __( 'Invalid promotion code status form submission.', 'mp-commerce-promotions' );
+			case 'code_not_found':
+				return __( 'Promotion code not found for this promotion.', 'mp-commerce-promotions' );
+			case 'invalid_transition':
+				return __( 'That promotion code status change is not allowed.', 'mp-commerce-promotions' );
+			case 'update_failed':
+				return __( 'Could not update the promotion code status. Please try again.', 'mp-commerce-promotions' );
+			default:
+				return '';
+		}
 	}
 
 	private function code_error_message_for_code( string $code ): string {
@@ -925,7 +1067,10 @@ final class PromotionEditPage {
 			echo '<th scope="col">' . esc_html__( 'Usage', 'mp-commerce-promotions' ) . '</th>';
 			echo '<th scope="col">' . esc_html__( 'Expires', 'mp-commerce-promotions' ) . '</th>';
 			echo '<th scope="col">' . esc_html__( 'Created', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Actions', 'mp-commerce-promotions' ) . '</th>';
 			echo '</tr></thead><tbody>';
+
+			$codes_form_action = $this->edit_url( (string) $pid );
 
 			foreach ( $codes as $code ) {
 				if ( ! $code instanceof PromotionCode ) {
@@ -940,6 +1085,9 @@ final class PromotionEditPage {
 				echo '<td>' . esc_html( $this->format_code_usage( $code ) ) . '</td>';
 				echo '<td>' . esc_html( $code->get_expires_at() ?? '—' ) . '</td>';
 				echo '<td>' . esc_html( $code->get_created_at() ?? '—' ) . '</td>';
+				echo '<td>';
+				$this->render_promotion_code_status_actions( $code, $pid, $codes_form_action );
+				echo '</td>';
 				echo '</tr>';
 			}
 
@@ -1351,7 +1499,11 @@ final class PromotionEditPage {
 		);
 		echo '</tbody></table>';
 
-		$this->render_batch_linked_codes_table( $batch_id, $linked_count );
+		$this->render_batch_linked_codes_table(
+			$batch->get_promotion_id(),
+			$batch_id,
+			$linked_count
+		);
 
 		echo '</div>';
 	}
@@ -1374,7 +1526,7 @@ final class PromotionEditPage {
 		return (string) $user_id;
 	}
 
-	private function render_batch_linked_codes_table( int $batch_id, int $linked_count ): void {
+	private function render_batch_linked_codes_table( int $promotion_id, int $batch_id, int $linked_count ): void {
 		echo '<h3>' . esc_html__( 'Linked codes', 'mp-commerce-promotions' ) . '</h3>';
 
 		if ( $this->promotion_codes === null ) {
@@ -1399,7 +1551,10 @@ final class PromotionEditPage {
 		echo '<th scope="col">' . esc_html__( 'Expires', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Created', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Updated', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Actions', 'mp-commerce-promotions' ) . '</th>';
 		echo '</tr></thead><tbody>';
+
+		$batch_form_action = $this->batch_detail_url( $promotion_id, $batch_id );
 
 		foreach ( $codes as $code ) {
 			if ( ! $code instanceof PromotionCode ) {
@@ -1415,6 +1570,9 @@ final class PromotionEditPage {
 			echo '<td>' . esc_html( $code->get_expires_at() ?? '—' ) . '</td>';
 			echo '<td>' . esc_html( $code->get_created_at() ?? '—' ) . '</td>';
 			echo '<td>' . esc_html( $code->get_updated_at() ?? '—' ) . '</td>';
+			echo '<td>';
+			$this->render_promotion_code_status_actions( $code, $promotion_id, $batch_form_action, $batch_id );
+			echo '</td>';
 			echo '</tr>';
 		}
 
@@ -1426,6 +1584,76 @@ final class PromotionEditPage {
 				'mp-commerce-promotions'
 			) . '</p>';
 		}
+	}
+
+	private function render_promotion_code_status_actions(
+		PromotionCode $code,
+		int $promotion_id,
+		string $form_action,
+		?int $batch_id = null
+	): void {
+		$code_id = $code->get_id();
+		if ( $code_id === null || $code_id <= 0 ) {
+			return;
+		}
+
+		$status = $code->get_status();
+		$buttons = array();
+
+		if ( $status === PromotionCode::STATUS_ACTIVE ) {
+			$buttons[] = array(
+				'label'      => __( 'Disable', 'mp-commerce-promotions' ),
+				'new_status' => PromotionCode::STATUS_DISABLED,
+			);
+		} elseif ( $status === PromotionCode::STATUS_DISABLED ) {
+			$buttons[] = array(
+				'label'      => __( 'Enable', 'mp-commerce-promotions' ),
+				'new_status' => PromotionCode::STATUS_ACTIVE,
+			);
+			$buttons[] = array(
+				'label'      => __( 'Mark expired', 'mp-commerce-promotions' ),
+				'new_status' => PromotionCode::STATUS_EXPIRED,
+			);
+		} elseif ( $status === PromotionCode::STATUS_EXPIRED ) {
+			$buttons[] = array(
+				'label'      => __( 'Disable', 'mp-commerce-promotions' ),
+				'new_status' => PromotionCode::STATUS_DISABLED,
+			);
+		}
+
+		if ( count( $buttons ) === 0 ) {
+			echo '—';
+			return;
+		}
+
+		$nonce_action = 'mp_cp_change_promotion_code_status_' . $promotion_id . '_' . $code_id;
+
+		foreach ( $buttons as $button ) {
+			echo '<form method="post" action="' . esc_url( $form_action ) . '" style="display:inline-block;margin:0 4px 4px 0;">';
+			wp_nonce_field( $nonce_action, 'mp_cp_change_promotion_code_status_nonce' );
+			echo '<input type="hidden" name="mp_cp_action" value="change_promotion_code_status" />';
+			echo '<input type="hidden" name="promotion_id" value="' . esc_attr( (string) $promotion_id ) . '" />';
+			echo '<input type="hidden" name="promotion_code_id" value="' . esc_attr( (string) $code_id ) . '" />';
+			echo '<input type="hidden" name="new_status" value="' . esc_attr( $button['new_status'] ) . '" />';
+			if ( $batch_id !== null && $batch_id > 0 ) {
+				echo '<input type="hidden" name="batch" value="' . esc_attr( (string) $batch_id ) . '" />';
+			}
+			echo '<button type="submit" class="button button-small">' . esc_html( $button['label'] ) . '</button>';
+			echo '</form>';
+		}
+	}
+
+	/**
+	 * @param array<string, string> $extra_query
+	 */
+	private function redirect_after_code_status_change( int $promotion_id, array $extra_query ): void {
+		$batch_id = isset( $_POST['batch'] ) ? (int) $_POST['batch'] : 0;
+		$base     = $batch_id > 0
+			? $this->batch_detail_url( $promotion_id, $batch_id )
+			: $this->edit_url( (string) $promotion_id );
+
+		wp_safe_redirect( add_query_arg( $extra_query, $base ) );
+		exit;
 	}
 
 	private function list_url(): string {

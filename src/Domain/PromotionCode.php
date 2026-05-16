@@ -187,6 +187,31 @@ final class PromotionCode {
 		return $this->status;
 	}
 
+	public function is_active(): bool {
+		return $this->status === self::STATUS_ACTIVE;
+	}
+
+	public function with_status( string $status ): self {
+		$status = trim( $status );
+		if ( ! self::is_valid_status( $status ) ) {
+			throw new InvalidArgumentException( 'Invalid promotion code status.' );
+		}
+
+		return new self(
+			$this->id,
+			$this->promotion_id,
+			$this->code_hash,
+			$this->code_last4,
+			$status,
+			$this->usage_limit,
+			$this->usage_count,
+			$this->expires_at,
+			$this->batch_id,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
 	public function get_usage_limit(): ?int {
 		return $this->usage_limit;
 	}
