@@ -16,6 +16,7 @@ use MP\CommercePromotions\Admin\PromotionEditPage;
 use MP\CommercePromotions\Admin\PromotionsPage;
 use MP\CommercePromotions\Admin\SettingsPage;
 use MP\CommercePromotions\Domain\AuditLogRepository;
+use MP\CommercePromotions\Domain\PromotionCodeBatchRepository;
 use MP\CommercePromotions\Domain\PromotionCodeFactory;
 use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionFactory;
@@ -23,6 +24,7 @@ use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Service\AuditLogger;
+use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Service\Settings;
@@ -117,8 +119,21 @@ final class Plugin {
 
 		$promotions_page = null;
 		if ( $this->promotion_repository !== null && $this->promotion_service !== null ) {
+			global $wpdb;
 			$rule_validator = new PromotionRuleValidator();
 			$code_factory     = new PromotionCodeFactory();
+			$batch_repository = ( $wpdb instanceof wpdb )
+				? new PromotionCodeBatchRepository( $wpdb )
+				: null;
+			$batch_generator = null;
+			if ( $this->audit_logger !== null && $batch_repository !== null && $this->promotion_code_repository !== null ) {
+				$batch_generator = new PromotionCodeBatchGenerator(
+					$this->promotion_code_repository,
+					$code_factory,
+					$batch_repository,
+					$this->audit_logger
+				);
+			}
 			$edit_page        = new PromotionEditPage(
 				$this->promotion_repository,
 				$this->promotion_service,
@@ -128,7 +143,9 @@ final class Plugin {
 				$this->audit_log_repository,
 				$rule_validator,
 				$this->promotion_code_repository,
-				$code_factory
+				$code_factory,
+				$batch_repository,
+				$batch_generator
 			);
 			$promotions_page = new PromotionsPage( $this->promotion_repository, $this->promotion_service, $edit_page );
 		}

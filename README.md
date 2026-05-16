@@ -25,12 +25,13 @@ Provide a structured foundation for commerce promotions using:
 
 ## Database
 
-- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.2.0`** (see `Schema::SCHEMA_VERSION`).
+- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.3.0`** (see `Schema::SCHEMA_VERSION`).
 - **Tables** (after activation / migration), using the site table prefix (e.g. `wp_`):
   - `{prefix}mp_cp_promotions` — promotion definitions (JSON-like rules in `LONGTEXT` columns).
   - `{prefix}mp_cp_redemptions` — usage against orders; **unique** `(order_id, promotion_id)` as **`order_promotion_unique`** (MySQL allows multiple `NULL` `order_id` rows; real checkouts use non-null `order_id`). Migration to **1.1.0** **refuses** `dbDelta` / version bump if duplicate non-null `(order_id, promotion_id)` pairs already exist (see `MigrationRunner`).
   - `{prefix}mp_cp_audit_log` — append-only audit trail.
   - `{prefix}mp_cp_promotion_codes` — manual promotion codes (hashed; **unique** `code_hash`). Plain codes are **never** stored; admin UI shows only **`code_last4`** after creation.
+  - `{prefix}mp_cp_code_batches` — metadata for generated code batches (from schema **1.3.0**); plain codes are **not** stored on the batch row.
 - **Deactivation:** tables and `mp_cp_schema_version` are **not** removed; migrations are **additive** and intended to be **rollback-safe** (no `DROP TABLE` / data deletion in core flows).
 - **Migrations:** `MigrationRunner` runs `dbDelta()` from Schema DDL on activation when the stored version is behind `Schema::SCHEMA_VERSION`. **1.1.0** adds the redemptions unique guard; if duplicates exist, the option is **not** advanced until data is fixed (see `MigrationRunner` / `WP_DEBUG` log).
 
@@ -42,7 +43,8 @@ Provide a structured foundation for commerce promotions using:
 - **`UsageDiagnostics`** — read-only **`analyze()`** and manual **`repair()`** for promotion/code **`usage_count`** mismatches (audited when **`AuditLogger`** is wired).
 - **`AuditLogEntry`** / **`AuditLogRepository`** — append-only writes to `{prefix}mp_cp_audit_log`; **raw IP addresses are never stored** (only a SHA-256 hash of a validated `REMOTE_ADDR` when present).
 - **`AuditLogger`** / **`PromotionService`** — internal orchestration: `PromotionService::create_draft()` persists a draft and records `promotion.created`; `update_promotion()` records `promotion.updated`; `change_status()` applies allowed lifecycle transitions and records `promotion.status_changed`.
-- **`PromotionCode`** / **`PromotionCodeFactory`** / **`PromotionCodeRepository`** — manual codes for a promotion (`active` / `disabled` / `expired`); `hash('sha256', strtoupper(trim($plain)))` for lookup; **`is_code_usable`**, **`insert`**, **`find`**, **`update`**, **`find_by_plain_code`**, **`find_for_promotion`**, **`increment_usage`** (no delete). Storefront: customers enter codes in the **WooCommerce coupon field**; **`PromotionCodeCouponBridge`** supplies virtual coupon data and validates via **`woocommerce_get_shop_coupon_data`** / **`woocommerce_coupon_is_valid`**. **`CartPromotionApplier`** applies the linked promotion fee when a matching code is on the cart; otherwise **automatic** first eligible active promotion still applies. Order meta: **`_mp_cp_promotion_code_id`**, **`_mp_cp_promotion_code_last4`**. **No batch generation** yet.
+- **`PromotionCode`** / **`PromotionCodeFactory`** / **`PromotionCodeRepository`** — manual and generated codes for a promotion (`active` / `disabled` / `expired`); `hash('sha256', strtoupper(trim($plain)))` for lookup; **`is_code_usable`**, **`insert`**, **`find`**, **`update`**, **`find_by_plain_code`**, **`find_for_promotion`**, **`find_all`**, **`increment_usage`** (no delete). Storefront: customers enter codes in the **WooCommerce coupon field**; **`PromotionCodeCouponBridge`** supplies virtual coupon data and validates via **`woocommerce_get_shop_coupon_data`** / **`woocommerce_coupon_is_valid`**. **`CartPromotionApplier`** applies the linked promotion fee when a matching code is on the cart; otherwise **automatic** first eligible active promotion still applies. Order meta: **`_mp_cp_promotion_code_id`**, **`_mp_cp_promotion_code_last4`**.
+- **`PromotionCodeBatch`** / **`PromotionCodeBatchRepository`** / **`PromotionCodeBatchGenerator`** — admins generate up to **1,000** unique codes per batch on the promotion edit screen. Codes use **`PREFIX-RANDOM`** (optional prefix) or **`RANDOM`** (12+ character cryptographically secure segment; excludes ambiguous **O/0/I/1**). Full codes are shown **once** in admin after generation; only **hashes** and **last 4** are stored. Audited as **`promotion_code.batch_generated`**. **No CSV export, PDF, or email** yet.
 
 ## Evaluation pipeline
 
@@ -79,7 +81,7 @@ A single sidebar item (**Promotions**) routes through **`AdminRouter`** using th
 - **One promotion per cart** — first eligible active promotion (by priority) or the promotion linked to an applied code; no stacking.
 - **Actions** — only **`percentage_discount`** and **`fixed_amount_discount`** (cart fee); no BOGO, free shipping, or line-item discounts.
 - **Conditions** — **`minimum_subtotal`**, **`product_quantity`**, **`category_quantity`** only (see evaluation pipeline).
-- **Codes** — manual admin entry only; no batch generation; virtual coupon amount is **0** (discount is the cart fee).
+- **Codes** — manual entry or batch generation (max **1,000** per batch); full codes shown once; virtual coupon amount is **0** (discount is the cart fee). No CSV/PDF/email export.
 - **Orders** — partial refunds not handled; reversal is idempotent per order/promotion.
 - **Diagnostics** — scans up to **100** promotions/codes per run; repair is manual (POST on Diagnostics tab), not scheduled.
 - **Admin** — no promotion hard-delete UI (`PromotionRepository::delete` exists for internal/tests only).

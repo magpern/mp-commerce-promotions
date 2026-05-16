@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.2.0';
+	public const SCHEMA_VERSION = '1.3.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -37,6 +37,10 @@ final class Schema {
 
 	public static function promotion_codes_table( wpdb $wpdb ): string {
 		return $wpdb->prefix . 'mp_cp_promotion_codes';
+	}
+
+	public static function code_batches_table( wpdb $wpdb ): string {
+		return $wpdb->prefix . 'mp_cp_code_batches';
 	}
 
 	public static function promotions_create_sql( wpdb $wpdb ): string {
@@ -132,6 +136,28 @@ UNIQUE KEY code_hash (code_hash),
 KEY promotion_id (promotion_id),
 KEY status (status),
 KEY expires_at (expires_at)
+) {$collate};";
+	}
+
+	public static function code_batches_create_sql( wpdb $wpdb ): string {
+		$table   = self::code_batches_table( $wpdb );
+		$collate = $wpdb->get_charset_collate();
+
+		return "CREATE TABLE {$table} (
+id bigint(20) unsigned NOT NULL auto_increment,
+promotion_id bigint(20) unsigned NOT NULL,
+batch_uuid char(36) NOT NULL,
+name varchar(191) NOT NULL,
+quantity int(10) unsigned NOT NULL,
+code_prefix varchar(32) NULL,
+usage_limit int(10) unsigned NULL,
+expires_at datetime NULL,
+created_by bigint(20) unsigned NULL,
+created_at datetime NOT NULL default CURRENT_TIMESTAMP,
+PRIMARY KEY  (id),
+UNIQUE KEY batch_uuid (batch_uuid),
+KEY promotion_id (promotion_id),
+KEY created_at (created_at)
 ) {$collate};";
 	}
 }

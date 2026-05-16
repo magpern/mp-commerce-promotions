@@ -14,6 +14,8 @@ use MP\CommercePromotions\Domain\AuditLogRepository;
 use InvalidArgumentException;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionCode;
+use MP\CommercePromotions\Domain\PromotionCodeBatch;
+use MP\CommercePromotions\Domain\PromotionCodeBatchRepository;
 use MP\CommercePromotions\Domain\PromotionCodeFactory;
 use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionRepository;
@@ -22,6 +24,8 @@ use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\EvaluationResult;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
+use MP\CommercePromotions\Service\PromotionCodeBatchGenerationOutcome;
+use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Woo\CartContextBuilder;
@@ -52,6 +56,14 @@ final class PromotionEditPage {
 
 	private ?PromotionCodeFactory $promotion_code_factory;
 
+	private ?PromotionCodeBatchRepository $code_batches;
+
+	private ?PromotionCodeBatchGenerator $batch_generator;
+
+	private ?PromotionCodeBatchGenerationOutcome $batch_generation_outcome = null;
+
+	private ?string $batch_generation_error = null;
+
 	private const ADMIN_USAGE_AUDIT_LIMIT = 25;
 
 	public function __construct(
@@ -63,7 +75,9 @@ final class PromotionEditPage {
 		?AuditLogRepository $audit_logs = null,
 		?PromotionRuleValidator $rule_validator = null,
 		?PromotionCodeRepository $promotion_codes = null,
-		?PromotionCodeFactory $promotion_code_factory = null
+		?PromotionCodeFactory $promotion_code_factory = null,
+		?PromotionCodeBatchRepository $code_batches = null,
+		?PromotionCodeBatchGenerator $batch_generator = null
 	) {
 		$this->promotions               = $promotions;
 		$this->promotion_service        = $promotion_service;
@@ -74,6 +88,8 @@ final class PromotionEditPage {
 		$this->rule_validator           = $rule_validator ?? new PromotionRuleValidator();
 		$this->promotion_codes          = $promotion_codes;
 		$this->promotion_code_factory   = $promotion_code_factory;
+		$this->code_batches             = $code_batches;
+		$this->batch_generator          = $batch_generator;
 	}
 
 	public function render( string $identifier ): void {
@@ -87,12 +103,15 @@ final class PromotionEditPage {
 			exit;
 		}
 
-		$this->cart_preview_result = null;
-		$this->cart_preview_error  = null;
+		$this->cart_preview_result        = null;
+		$this->cart_preview_error         = null;
+		$this->batch_generation_outcome     = null;
+		$this->batch_generation_error       = null;
 
 		$this->handle_post_change_status( $promotion );
 		$this->handle_post_update( $promotion );
 		$this->handle_post_create_promotion_code( $promotion );
+		$this->handle_post_generate_code_batch( $promotion );
 		$this->handle_post_preview( $promotion );
 
 		$promotion = $this->promotions->find_by_id_or_uuid( $identifier );
@@ -103,6 +122,7 @@ final class PromotionEditPage {
 
 		echo '<div class="wrap">';
 		$this->render_notices();
+		$this->render_code_batch_generation_outcome();
 		echo '<h1>' . esc_html__( 'Edit promotion', 'mp-commerce-promotions' ) . '</h1>';
 		echo '<p>';
 		echo '<a href="' . esc_url( $this->list_url() ) . '">' . esc_html__( '← Back to promotions', 'mp-commerce-promotions' ) . '</a>';
@@ -187,6 +207,99 @@ final class PromotionEditPage {
 		}
 
 		$this->redirect_to_edit( $pid, array( 'mp_cp_code_created' => '1' ) );
+	}
+
+	private function handle_post_generate_code_batch( Promotion $promotion ): void {
+		if ( $this->batch_generator === null ) {
+			return;
+		}
+
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_generate_code_batch_submit'] ) ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$nonce_action = 'mp_cp_generate_code_batch_' . $pid;
+		if ( ! isset( $_POST['mp_cp_generate_code_batch_nonce'] ) ) {
+			$this->batch_generation_error = __( 'Security check failed. Please try again.', 'mp-commerce-promotions' );
+			return;
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_generate_code_batch_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+			$this->batch_generation_error = __( 'Security check failed. Please try again.', 'mp-commerce-promotions' );
+			return;
+		}
+
+		$batch_name = isset( $_POST['mp_cp_batch_name'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_batch_name'] ) )
+			: '';
+		if ( $batch_name === '' ) {
+			$this->batch_generation_error = __( 'Please enter a batch name.', 'mp-commerce-promotions' );
+			return;
+		}
+
+		$quantity = isset( $_POST['mp_cp_batch_quantity'] ) ? (int) $_POST['mp_cp_batch_quantity'] : 0;
+		if ( $quantity <= 0 || $quantity > PromotionCodeBatch::MAX_QUANTITY ) {
+			$this->batch_generation_error = sprintf(
+				/* translators: %d: maximum batch size */
+				__( 'Quantity must be between 1 and %d.', 'mp-commerce-promotions' ),
+				PromotionCodeBatch::MAX_QUANTITY
+			);
+			return;
+		}
+
+		$prefix = isset( $_POST['mp_cp_batch_prefix'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_batch_prefix'] ) )
+			: '';
+		if ( $prefix === '' ) {
+			$prefix = null;
+		}
+
+		$usage_limit = null;
+		if ( isset( $_POST['mp_cp_batch_usage_limit'] ) && $_POST['mp_cp_batch_usage_limit'] !== '' ) {
+			$usage_limit = (int) $_POST['mp_cp_batch_usage_limit'];
+			if ( $usage_limit < 0 ) {
+				$this->batch_generation_error = __( 'Usage limit must be zero or greater.', 'mp-commerce-promotions' );
+				return;
+			}
+		}
+
+		$expires_at = isset( $_POST['mp_cp_batch_expires_at'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_batch_expires_at'] ) )
+			: '';
+		if ( $expires_at === '' ) {
+			$expires_at = null;
+		}
+
+		$actor = (int) get_current_user_id();
+		if ( $actor <= 0 ) {
+			$actor = null;
+		}
+
+		try {
+			$this->batch_generation_outcome = $this->batch_generator->generate(
+				$pid,
+				$batch_name,
+				$quantity,
+				$prefix,
+				$usage_limit,
+				$expires_at,
+				$actor
+			);
+		} catch ( InvalidArgumentException $e ) {
+			$this->batch_generation_error = $e->getMessage();
+		} catch ( RuntimeException $e ) {
+			$this->batch_generation_error = $e->getMessage();
+		}
 	}
 
 	private function handle_post_preview( Promotion $promotion ): void {
@@ -763,6 +876,120 @@ final class PromotionEditPage {
 		echo '</tbody></table>';
 		echo '<p class="submit"><button type="submit" name="mp_cp_create_promotion_code_submit" value="1" class="button">' . esc_html__( 'Create promotion code', 'mp-commerce-promotions' ) . '</button></p>';
 		echo '</form>';
+
+		$this->render_generate_code_batch_section( $pid, $form_action );
+
+		echo '</div>';
+	}
+
+	private function render_generate_code_batch_section( int $pid, string $form_action ): void {
+		if ( $this->batch_generator === null || $this->code_batches === null ) {
+			return;
+		}
+
+		if ( $this->batch_generation_error !== null && $this->batch_generation_error !== '' ) {
+			echo '<div class="notice notice-error" style="margin:12px 0;"><p>' . esc_html( $this->batch_generation_error ) . '</p></div>';
+		}
+
+		$batches = $this->code_batches->find_for_promotion( $pid, 50 );
+
+		echo '<h3>' . esc_html__( 'Generate Code Batch', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<p class="description">' . esc_html__(
+			'Generate up to 1,000 unique codes per batch. Full codes are shown once after generation; only hashes are stored.',
+			'mp-commerce-promotions'
+		) . '</p>';
+
+		$batch_nonce_action = 'mp_cp_generate_code_batch_' . $pid;
+		echo '<form method="post" action="' . esc_url( $form_action ) . '">';
+		wp_nonce_field( $batch_nonce_action, 'mp_cp_generate_code_batch_nonce' );
+		echo '<table class="form-table" role="presentation"><tbody>';
+		echo '<tr><th scope="row"><label for="mp_cp_batch_name">' . esc_html__( 'Batch name', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_batch_name" name="mp_cp_batch_name" maxlength="191" required /></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_batch_quantity">' . esc_html__( 'Quantity', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_batch_quantity" name="mp_cp_batch_quantity" min="1" max="' . esc_attr( (string) PromotionCodeBatch::MAX_QUANTITY ) . '" step="1" value="10" required />';
+		echo '<p class="description">' . esc_html__( 'Maximum 1,000 codes per batch.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_batch_prefix">' . esc_html__( 'Prefix (optional)', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_batch_prefix" name="mp_cp_batch_prefix" maxlength="32" autocomplete="off" />';
+		echo '<p class="description">' . esc_html__( 'Codes will be PREFIX-RANDOM when set; otherwise RANDOM only.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_batch_usage_limit">' . esc_html__( 'Usage limit', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_batch_usage_limit" name="mp_cp_batch_usage_limit" min="0" step="1" />';
+		echo '<p class="description">' . esc_html__( 'Optional. Leave empty for unlimited.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_batch_expires_at">' . esc_html__( 'Expires at', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_batch_expires_at" name="mp_cp_batch_expires_at" placeholder="' . esc_attr__( 'YYYY-MM-DD HH:MM:SS or leave empty', 'mp-commerce-promotions' ) . '" />';
+		echo '</td></tr>';
+		echo '</tbody></table>';
+		echo '<p class="submit"><button type="submit" name="mp_cp_generate_code_batch_submit" value="1" class="button button-primary">' . esc_html__( 'Generate code batch', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form>';
+
+		echo '<h3>' . esc_html__( 'Previous code batches', 'mp-commerce-promotions' ) . '</h3>';
+		if ( count( $batches ) === 0 ) {
+			echo '<p>' . esc_html__( 'No code batches for this promotion yet.', 'mp-commerce-promotions' ) . '</p>';
+			return;
+		}
+
+		echo '<table class="widefat striped" style="max-width:100%;">';
+		echo '<thead><tr>';
+		echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Name', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Quantity', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Prefix', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Usage limit', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Expires', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Created', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $batches as $batch ) {
+			if ( ! $batch instanceof PromotionCodeBatch ) {
+				continue;
+			}
+			$prefix = $batch->get_code_prefix();
+			$limit  = $batch->get_usage_limit();
+			echo '<tr>';
+			echo '<td>' . esc_html( (string) ( $batch->get_id() ?? '' ) ) . '</td>';
+			echo '<td>' . esc_html( $batch->get_name() ) . '</td>';
+			echo '<td>' . esc_html( (string) $batch->get_quantity() ) . '</td>';
+			echo '<td>' . esc_html( $prefix !== null && $prefix !== '' ? $prefix : '—' ) . '</td>';
+			echo '<td>' . esc_html( $limit !== null ? (string) $limit : '—' ) . '</td>';
+			echo '<td>' . esc_html( $batch->get_expires_at() ?? '—' ) . '</td>';
+			echo '<td>' . esc_html( $batch->get_created_at() ?? '—' ) . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
+	}
+
+	private function render_code_batch_generation_outcome(): void {
+		if ( $this->batch_generation_outcome === null ) {
+			return;
+		}
+
+		$outcome = $this->batch_generation_outcome;
+		$batch   = $outcome->get_batch();
+		$codes   = $outcome->get_plain_codes();
+		$lines   = implode( "\n", $codes );
+
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:16px 0;border-left:4px solid #00a32a;">';
+		echo '<h2 style="margin-top:0;">' . esc_html__( 'Generated code batch', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p><strong>' . esc_html__( 'Batch ID', 'mp-commerce-promotions' ) . ':</strong> ';
+		echo esc_html( (string) ( $batch->get_id() ?? '' ) ) . '</p>';
+		echo '<p><strong>' . esc_html__( 'Batch name', 'mp-commerce-promotions' ) . ':</strong> ';
+		echo esc_html( $batch->get_name() ) . '</p>';
+		echo '<p><strong>' . esc_html__( 'Codes generated', 'mp-commerce-promotions' ) . ':</strong> ';
+		echo esc_html( (string) $outcome->get_inserted_count() );
+		echo ' / ' . esc_html( (string) $outcome->get_requested_quantity() ) . '</p>';
+
+		$warning = $outcome->get_warning();
+		if ( $warning !== null && $warning !== '' ) {
+			echo '<div class="notice notice-warning inline" style="margin:12px 0;"><p>' . esc_html( $warning ) . '</p></div>';
+		}
+
+		echo '<p class="description" style="font-weight:600;">' . esc_html__(
+			'Copy these codes now. They will not be shown again.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<textarea class="large-text code" rows="' . esc_attr( (string) min( 20, max( 4, count( $codes ) + 1 ) ) ) . '" readonly style="font-family:monospace;">';
+		echo esc_textarea( $lines );
+		echo '</textarea>';
 		echo '</div>';
 	}
 
