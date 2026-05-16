@@ -154,6 +154,41 @@ final class PromotionCodeRepository {
 	/**
 	 * @return list<PromotionCode>
 	 */
+	public function find_all( int $limit = 100, int $offset = 0 ): array {
+		$limit  = max( 1, min( 100, $limit ) );
+		$offset = max( 0, $offset );
+
+		$table = Schema::promotion_codes_table( $this->wpdb );
+		$sql   = "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d";
+
+		$prepared = $this->wpdb->prepare( $sql, $limit, $offset );
+		if ( ! is_string( $prepared ) ) {
+			return array();
+		}
+
+		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		$codes = array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			try {
+				$codes[] = PromotionCode::from_array( $row );
+			} catch ( \InvalidArgumentException $e ) {
+				continue;
+			}
+		}
+
+		return $codes;
+	}
+
+	/**
+	 * @return list<PromotionCode>
+	 */
 	public function find_for_promotion( int $promotion_id, int $limit = 50 ): array {
 		if ( $promotion_id <= 0 ) {
 			return array();

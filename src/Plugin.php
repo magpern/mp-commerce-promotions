@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace MP\CommercePromotions;
 
 use MP\CommercePromotions\Admin\AdminMenu;
+use MP\CommercePromotions\Admin\DiagnosticsPage;
 use MP\CommercePromotions\Admin\PromotionEditPage;
 use MP\CommercePromotions\Admin\PromotionsPage;
 use MP\CommercePromotions\Admin\SettingsPage;
@@ -24,6 +25,7 @@ use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Service\Settings;
+use MP\CommercePromotions\Service\UsageDiagnostics;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use MP\CommercePromotions\Woo\CartPromotionApplier;
 use MP\CommercePromotions\Woo\OrderPromotionRecorder;
@@ -132,7 +134,21 @@ final class Plugin {
 
 		$settings_page = new SettingsPage( $this->settings );
 
-		$this->admin_menu = new AdminMenu( $this->woo_bridge, $promotions_page, $settings_page );
+		$diagnostics_page = null;
+		if (
+			$this->promotion_repository !== null
+			&& $this->promotion_code_repository !== null
+			&& $this->redemption_repository !== null
+		) {
+			$usage_diagnostics = new UsageDiagnostics(
+				$this->promotion_repository,
+				$this->promotion_code_repository,
+				$this->redemption_repository
+			);
+			$diagnostics_page = new DiagnosticsPage( $usage_diagnostics );
+		}
+
+		$this->admin_menu = new AdminMenu( $this->woo_bridge, $promotions_page, $settings_page, $diagnostics_page );
 
 		if ( is_admin() && $this->admin_menu !== null ) {
 			$this->admin_menu->register();

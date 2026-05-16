@@ -15,6 +15,8 @@ final class AdminNavigation {
 
 	public const TAB_SETTINGS = 'mp-commerce-promotions-settings';
 
+	public const TAB_DIAGNOSTICS = 'mp-commerce-promotions-diagnostics';
+
 	/**
 	 * @param self::TAB_* $active_slug
 	 */
@@ -27,6 +29,10 @@ final class AdminNavigation {
 			self::TAB_SETTINGS       => array(
 				'label' => __( 'Settings', 'mp-commerce-promotions' ),
 				'url'   => admin_url( 'admin.php?page=' . self::TAB_SETTINGS ),
+			),
+			self::TAB_DIAGNOSTICS    => array(
+				'label' => __( 'Diagnostics', 'mp-commerce-promotions' ),
+				'url'   => admin_url( 'admin.php?page=' . self::TAB_DIAGNOSTICS ),
 			),
 		);
 

@@ -28,14 +28,18 @@ final class AdminMenu {
 
 	private ?SettingsPage $settings_page;
 
+	private ?DiagnosticsPage $diagnostics_page;
+
 	public function __construct(
 		WooCommerceBridge $woo_bridge,
 		?PromotionsPage $promotions_page = null,
-		?SettingsPage $settings_page = null
+		?SettingsPage $settings_page = null,
+		?DiagnosticsPage $diagnostics_page = null
 	) {
-		$this->woo_bridge      = $woo_bridge;
-		$this->promotions_page = $promotions_page;
-		$this->settings_page   = $settings_page;
+		$this->woo_bridge         = $woo_bridge;
+		$this->promotions_page    = $promotions_page;
+		$this->settings_page      = $settings_page;
+		$this->diagnostics_page   = $diagnostics_page;
 	}
 
 	public function register(): void {
@@ -53,6 +57,10 @@ final class AdminMenu {
 
 		if ( $this->settings_page !== null ) {
 			$this->register_promotion_settings_submenu();
+		}
+
+		if ( $this->diagnostics_page !== null ) {
+			$this->register_diagnostics_submenu();
 		}
 	}
 
@@ -83,6 +91,21 @@ final class AdminMenu {
 			self::CAPABILITY,
 			SettingsPage::PAGE_SLUG,
 			array( $this->settings_page, 'render' )
+		);
+	}
+
+	private function register_diagnostics_submenu(): void {
+		if ( $this->diagnostics_page === null ) {
+			return;
+		}
+
+		add_submenu_page(
+			'woocommerce',
+			__( 'Promotion Diagnostics', 'mp-commerce-promotions' ),
+			__( 'Promotion Diagnostics', 'mp-commerce-promotions' ),
+			self::CAPABILITY,
+			DiagnosticsPage::PAGE_SLUG,
+			array( $this->diagnostics_page, 'render' )
 		);
 	}
 }

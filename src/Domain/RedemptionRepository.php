@@ -126,6 +126,58 @@ final class RedemptionRepository {
 		return $found !== null && $found !== '' && (int) $found > 0;
 	}
 
+	public function count_recorded_for_promotion( int $promotion_id ): int {
+		return $this->count_by_promotion_and_status( $promotion_id, Redemption::STATUS_RECORDED );
+	}
+
+	public function count_reversed_for_promotion( int $promotion_id ): int {
+		return $this->count_by_promotion_and_status( $promotion_id, Redemption::STATUS_REVERSED );
+	}
+
+	/**
+	 * Recorded redemptions whose order meta links to this promotion code id.
+	 */
+	public function count_recorded_for_promotion_code( int $code_id ): int {
+		if ( $code_id <= 0 ) {
+			return 0;
+		}
+
+		$meta_key = '_mp_cp_promotion_code_id';
+		$meta_val = (string) $code_id;
+
+		$redemptions_table = Schema::redemptions_table( $this->wpdb );
+		$status            = Redemption::STATUS_RECORDED;
+
+		if ( $this->uses_custom_orders_table() ) {
+			$meta_table = $this->wpdb->prefix . 'wc_orders_meta';
+			$sql        = "SELECT COUNT(DISTINCT r.id) FROM {$redemptions_table} r
+				INNER JOIN {$meta_table} om ON om.order_id = r.order_id
+					AND om.meta_key = %s AND om.meta_value = %s
+				WHERE r.status = %s AND r.order_id IS NOT NULL";
+
+			$prepared = $this->wpdb->prepare( $sql, $meta_key, $meta_val, $status );
+		} else {
+			$meta_table = $this->wpdb->postmeta;
+			$sql        = "SELECT COUNT(DISTINCT r.id) FROM {$redemptions_table} r
+				INNER JOIN {$meta_table} pm ON pm.post_id = r.order_id
+					AND pm.meta_key = %s AND pm.meta_value = %s
+				WHERE r.status = %s AND r.order_id IS NOT NULL";
+
+			$prepared = $this->wpdb->prepare( $sql, $meta_key, $meta_val, $status );
+		}
+
+		if ( ! is_string( $prepared ) ) {
+			return 0;
+		}
+
+		$count = $this->wpdb->get_var( $prepared );
+		if ( ! is_numeric( $count ) ) {
+			return 0;
+		}
+
+		return (int) $count;
+	}
+
 	public function count_for_order( int $order_id ): int {
 		if ( $order_id <= 0 ) {
 			return 0;
@@ -195,6 +247,35 @@ final class RedemptionRepository {
 		}
 
 		return $this->rows_to_redemptions( $rows );
+	}
+
+	private function count_by_promotion_and_status( int $promotion_id, string $status ): int {
+		if ( $promotion_id <= 0 ) {
+			return 0;
+		}
+
+		$table = Schema::redemptions_table( $this->wpdb );
+		$sql   = "SELECT COUNT(*) FROM {$table} WHERE promotion_id = %d AND status = %s";
+
+		$prepared = $this->wpdb->prepare( $sql, $promotion_id, $status );
+		if ( ! is_string( $prepared ) ) {
+			return 0;
+		}
+
+		$count = $this->wpdb->get_var( $prepared );
+		if ( ! is_numeric( $count ) ) {
+			return 0;
+		}
+
+		return (int) $count;
+	}
+
+	private function uses_custom_orders_table(): bool {
+		if ( ! class_exists( '\Automattic\WooCommerce\Utilities\OrderUtil' ) ) {
+			return false;
+		}
+
+		return \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
 	}
 
 	/**

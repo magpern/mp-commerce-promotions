@@ -61,13 +61,15 @@ Admin navigation (under **WooCommerce**):
 ```text
 WooCommerce
 ├── Promotions
-└── Promotion Settings
+├── Promotion Settings
+└── Promotion Diagnostics
 ```
 
-Both plugin screens share **in-page nav tabs** (**All Promotions** | **Settings**) using WordPress `nav-tab` styling (no JavaScript).
+List, settings, and diagnostics screens share **in-page nav tabs** (**All Promotions** | **Settings** | **Diagnostics**) using WordPress `nav-tab` styling (no JavaScript).
 
 - **Promotions** (`admin.php?page=mp-commerce-promotions`) lists promotions (status column is read-only), supports **Create draft promotion** (name + nonce), and **Edit** opens a detail page (`promotion` query arg: numeric id or UUID). The **All Promotions** tab is active on this screen.
 - **Promotion Settings** (`admin.php?page=mp-commerce-promotions-settings`) provides an **Enable cart discounts** checkbox (stored as **`mp_cp_cart_discounts_enabled`**, default **yes**). The **Settings** tab is active on this screen.
+- **Promotion Diagnostics** (`admin.php?page=mp-commerce-promotions-diagnostics`) is a **read-only** admin page (**`UsageDiagnostics`**) that compares stored **`usage_count`** values on promotions and codes against computed counts from **recorded** / **reversed** redemptions (and order meta **`_mp_cp_promotion_code_id`** for codes). Mismatches are highlighted; **no auto-repair** or destructive actions are offered yet. The **Diagnostics** tab is active on this screen.
 - **Status** is changed only via **controlled POST actions** (Activate / Pause / Archive); **archived** promotions **cannot be reactivated**. The main form edits name, description, priority, dates, and **raw JSON** for conditions, actions, and restrictions (validated as JSON arrays). The edit screen includes a read-only **Rule Validation** panel (**`PromotionRuleValidator`**) that checks stored JSON against supported condition/action types (unknown types, missing fields, no actions, multiple actions, status hints). It does **not** guarantee cart eligibility. **Promotion Codes** on the edit screen let admins create **manual** codes (hashed at rest; list shows **last 4** only). **Storefront code entry / redemption** is **not** implemented yet. **Preview against current cart** runs **`PromotionEvaluator`** in-memory using **`CartContextBuilder`** (no DB writes; **does not** add storefront fees). The promotion detail page also shows **read-only** **Usage / Redemptions** (latest 25 rows from **`RedemptionRepository::find_for_promotion`**) and **Audit Log** (latest 25 from **`AuditLogRepository::find_for_promotion`**, context as pretty JSON). **Hard delete UI**, **visual rule builder**, and **REST/AJAX** are **not** implemented yet.
 
 ## Install (development)
