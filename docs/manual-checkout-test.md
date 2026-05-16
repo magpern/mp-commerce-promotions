@@ -143,6 +143,79 @@ Do **not** expect the following in v1; failures here are out of scope for this c
 
 ---
 
+## Test Run — 2026-05-16
+
+Recorded results from an automated **WP-CLI / WooCommerce cart simulation** on the local Docker stack (`https://www.biopentra.eu` site URL option; HTTP tested at `http://127.0.0.1`). This run validates promotion engine behavior; it is **not** a full human browser checkout.
+
+### Environment
+
+| Item | Result |
+|------|--------|
+| WooCommerce active | **Yes** — version **10.7.0** |
+| MP Commerce Promotions active | **Yes** |
+| Schema version (`mp_cp_schema_version`) | **1.1.0** |
+
+### Test data
+
+| Item | Value |
+|------|--------|
+| Product | **MOTS-C** parent **3702**, variation **3703** (in stock) |
+| Test promotion | **Manual Checkout Test 10 Percent** (promotion ID **18**) |
+| Conditions | `[{"type":"minimum_subtotal","amount":1}]` |
+| Actions | `[{"type":"percentage_discount","percentage":10}]` |
+
+### Cart
+
+| Check | Result |
+|-------|--------|
+| Cart subtotal | **€46.00** |
+| Promotion fee label | `Commerce promotion: Manual Checkout Test 10 Percent` |
+| Promotion fee amount | **-€4.60** (10% of subtotal; diff **0**) |
+| Promotion fee count | **1** |
+| Session `mp_cp_applied_promotion` | Present (`promotion_id` **18**, `discount_amount` **4.6**) |
+
+### Order and persistence
+
+| Check | Result |
+|-------|--------|
+| Order created | **Yes** — order **#4310** (programmatic `wc_create_order` + `woocommerce_checkout_create_order`) |
+| Redemption recorded | **Yes** — one row, status **recorded** |
+| `usage_count` | **0 → 1** after recording |
+| Order meta `_mp_cp_*` | All expected keys set; `_mp_cp_redemption_recorded` = **yes** |
+| Audit `promotion.redeemed` | **1** row for order **4310** |
+
+### Idempotency
+
+| Check | Result |
+|-------|--------|
+| Second `woocommerce_checkout_create_order` on same order | **Passed** — still **1** redemption row; `usage_count` stayed **1** |
+
+### Reversal
+
+| Check | Result |
+|-------|--------|
+| Order cancelled | **Yes** |
+| Redemption status | **reversed** |
+| `usage_count` | **1 → 0** |
+| `_mp_cp_redemption_reversed` | **yes** |
+| Audit `promotion.redemption_reversed` | **1** row for order **4310** |
+| Second cancel hook | **Passed** — no second decrement; still **1** reversal audit |
+
+### Cleanup
+
+| Check | Result |
+|-------|--------|
+| Test promotion | **Archived** (ID **18**); no active test promotion left |
+| Redemption / audit rows | Left in database (acceptable) |
+
+### Limitations of this run
+
+- **Programmatic WooCommerce order simulation**, not a full human browser checkout (no checkout UI or payment capture).
+- Local storefront **`/cart/`** returned **404** (permalink/theme); cart fee was verified via **WP-CLI** `WC()->cart` only.
+- **BTCPay-only** payment gateway (`btcpaygf_default`) prevented a simple manual payment test in the browser.
+
+---
+
 ## Pass criteria
 
 All checked items in sections **1–8** pass, and behavior matches **Known limitations** in section **9**.
