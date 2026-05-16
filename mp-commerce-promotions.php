@@ -1,13 +1,19 @@
 <?php
 /**
- * Plugin Name:       MP Commerce Promotions
- * Description:       Lightweight commerce promotion engine foundation (conditions, actions, evaluation pipeline).
+ * Plugin Name:       Commerce Promotions for WooCommerce
+ * Plugin URI:        https://github.com/magpern/mp-commerce-promotions
+ * Description:       Generic WooCommerce promotion engine for discounts, promotion codes, and voucher workflows.
  * Version:           0.1.0
- * Requires at least: 6.4
+ * Requires at least: 6.5
  * Requires PHP:      7.4
- * Author:            MP
+ * Author:            Magpern
+ * Author URI:        https://github.com/magpern
  * Text Domain:       mp-commerce-promotions
  * Domain Path:       /languages
+ * License:           GPL-2.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * WC requires at least: 8.0
+ * WC tested up to:   10.7
  *
  * @package MP\CommercePromotions
  */
@@ -27,6 +33,17 @@ require_once MP_COMMERCE_PROMOTIONS_PATH . 'src/autoload.php';
 
 register_activation_hook( __FILE__, array( \MP\CommercePromotions\Infrastructure\Activator::class, 'activate' ) );
 register_deactivation_hook( __FILE__, array( \MP\CommercePromotions\Infrastructure\Deactivator::class, 'deactivate' ) );
+
+/**
+ * Loads plugin translations (no-op if the languages directory is empty or missing).
+ */
+function mp_commerce_promotions_load_textdomain(): void {
+	load_plugin_textdomain(
+		'mp-commerce-promotions',
+		false,
+		dirname( plugin_basename( MP_COMMERCE_PROMOTIONS_FILE ) ) . '/languages'
+	);
+}
 
 /**
  * Bootstraps the plugin after all plugins are loaded.
@@ -54,4 +71,5 @@ function mp_commerce_promotions_bootstrap(): void {
 	}
 }
 
+add_action( 'plugins_loaded', 'mp_commerce_promotions_load_textdomain', 0 );
 add_action( 'plugins_loaded', 'mp_commerce_promotions_bootstrap', 10 );

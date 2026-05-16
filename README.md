@@ -4,6 +4,17 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 
 **Repository:** [https://github.com/magpern/mp-commerce-promotions](https://github.com/magpern/mp-commerce-promotions)
 
+**Maturity:** Early MVP / active development. Suitable for testing and staged rollouts; not positioned as marketplace-ready or production-complete without your own review.
+
+## Documentation
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — system design, layers, security, and roadmap
+- [docs/TASKS.md](docs/TASKS.md) — milestones, backlog, and out-of-scope items
+- [docs/manual-checkout-test.md](docs/manual-checkout-test.md) — storefront checkout and redemption walkthrough
+- [docs/manual-promotion-code-test.md](docs/manual-promotion-code-test.md) — promotion codes and coupon-field behavior
+
+WordPress.org-style [readme.txt](readme.txt) and [LICENSE](LICENSE) are included as distribution scaffolding.
+
 ## Purpose
 
 Provide a structured foundation for commerce promotions using:
@@ -19,9 +30,9 @@ Provide a structured foundation for commerce promotions using:
 
 ## Requirements
 
-- WordPress 6.4+
+- WordPress 6.5+
 - PHP 7.4+
-- WooCommerce (recommended for admin integration and future features)
+- WooCommerce 8.0+ (required for cart integration, codes, and admin UI)
 
 ## Database
 
@@ -92,4 +103,9 @@ Copy this folder into `wp-content/plugins/`, then activate **MP Commerce Promoti
 
 ## Manual testing
 
-For a full storefront walkthrough (cart fee, order meta, redemption, idempotency, reversal), use **[docs/manual-checkout-test.md](docs/manual-checkout-test.md)**.
+- Storefront checkout, fees, redemption, reversal: [docs/manual-checkout-test.md](docs/manual-checkout-test.md)
+- Promotion codes and coupon field: [docs/manual-promotion-code-test.md](docs/manual-promotion-code-test.md)
+
+## Uninstall
+
+Custom tables and plugin options are **retained on uninstall** in the current MVP to prevent accidental data loss. See `uninstall.php` and readme.txt for the policy; a future explicit “delete all data” setting may be added.
