@@ -66,6 +66,31 @@ final class PromotionCodeBatchRepository {
 		return $new_id > 0 ? $new_id : 0;
 	}
 
+	public function find( int $id ): ?PromotionCodeBatch {
+		if ( $id <= 0 ) {
+			return null;
+		}
+
+		$table = Schema::code_batches_table( $this->wpdb );
+		$sql   = "SELECT * FROM {$table} WHERE id = %d LIMIT 1";
+
+		$prepared = $this->wpdb->prepare( $sql, $id );
+		if ( ! is_string( $prepared ) ) {
+			return null;
+		}
+
+		$row = $this->wpdb->get_row( $prepared, ARRAY_A );
+		if ( ! is_array( $row ) ) {
+			return null;
+		}
+
+		try {
+			return PromotionCodeBatch::from_array( $row );
+		} catch ( \InvalidArgumentException $e ) {
+			return null;
+		}
+	}
+
 	/**
 	 * @return list<PromotionCodeBatch>
 	 */

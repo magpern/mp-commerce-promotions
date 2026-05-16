@@ -238,7 +238,7 @@ final class PromotionCodeRepository {
 		$limit = max( 1, min( 100, $limit ) );
 
 		$table = Schema::promotion_codes_table( $this->wpdb );
-		$sql   = "SELECT * FROM {$table} WHERE batch_id = %d ORDER BY id ASC LIMIT %d";
+		$sql   = "SELECT * FROM {$table} WHERE batch_id = %d ORDER BY id DESC LIMIT %d";
 
 		$prepared = $this->wpdb->prepare( $sql, $batch_id, $limit );
 		if ( ! is_string( $prepared ) ) {

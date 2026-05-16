@@ -64,7 +64,13 @@ final class PromotionEditPage {
 
 	private ?string $batch_generation_error = null;
 
+	private ?PromotionCodeBatch $batch_detail = null;
+
+	private ?string $batch_detail_error = null;
+
 	private const ADMIN_USAGE_AUDIT_LIMIT = 25;
+
+	private const BATCH_DETAIL_CODES_LIMIT = 100;
 
 	public function __construct(
 		PromotionRepository $promotions,
@@ -107,6 +113,10 @@ final class PromotionEditPage {
 		$this->cart_preview_error         = null;
 		$this->batch_generation_outcome     = null;
 		$this->batch_generation_error       = null;
+		$this->batch_detail                 = null;
+		$this->batch_detail_error           = null;
+
+		$this->resolve_batch_detail_view( $promotion );
 
 		$this->handle_post_download_generated_codes_csv( $promotion );
 
@@ -122,13 +132,22 @@ final class PromotionEditPage {
 			exit;
 		}
 
+		$pid = $promotion->get_id();
+
 		echo '<div class="wrap">';
 		$this->render_notices();
 		$this->render_code_batch_generation_outcome();
 		echo '<h1>' . esc_html__( 'Edit promotion', 'mp-commerce-promotions' ) . '</h1>';
 		echo '<p>';
 		echo '<a href="' . esc_url( $this->list_url() ) . '">' . esc_html__( '← Back to promotions', 'mp-commerce-promotions' ) . '</a>';
+		if ( $this->batch_detail instanceof PromotionCodeBatch && $pid !== null && $pid > 0 ) {
+			echo ' | <a href="' . esc_url( $this->edit_url( (string) $pid ) ) . '">' . esc_html__( '← Back to promotion', 'mp-commerce-promotions' ) . '</a>';
+		}
 		echo '</p>';
+
+		if ( $this->batch_detail instanceof PromotionCodeBatch ) {
+			$this->render_batch_detail_section( $this->batch_detail );
+		}
 
 		$this->render_status_section( $promotion );
 		$this->render_rule_validation_section( $promotion );
@@ -603,6 +622,10 @@ final class PromotionEditPage {
 				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
 			}
 		}
+
+		if ( $this->batch_detail_error !== null && $this->batch_detail_error !== '' ) {
+			echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $this->batch_detail_error ) . '</p></div>';
+		}
 	}
 
 	private function code_error_message_for_code( string $code ): string {
@@ -1018,7 +1041,13 @@ final class PromotionEditPage {
 			}
 			echo '<tr>';
 			echo '<td>' . esc_html( (string) ( $batch_row_id ?? '' ) ) . '</td>';
-			echo '<td>' . esc_html( $batch->get_name() ) . '</td>';
+			echo '<td>';
+			if ( $batch_row_id !== null && $batch_row_id > 0 ) {
+				echo '<a href="' . esc_url( $this->batch_detail_url( $pid, $batch_row_id ) ) . '">' . esc_html( $batch->get_name() ) . '</a>';
+			} else {
+				echo esc_html( $batch->get_name() );
+			}
+			echo '</td>';
 			echo '<td>' . esc_html( (string) $batch->get_quantity() ) . '</td>';
 			echo '<td>' . esc_html( $code_count ) . '</td>';
 			echo '<td>' . esc_html( $prefix !== null && $prefix !== '' ? $prefix : '—' ) . '</td>';
@@ -1236,6 +1265,169 @@ final class PromotionEditPage {
 		echo '</div>';
 	}
 
+	private function resolve_batch_detail_view( Promotion $promotion ): void {
+		if ( $this->code_batches === null ) {
+			return;
+		}
+
+		if ( ! isset( $_GET['batch'] ) ) {
+			return;
+		}
+
+		$batch_id_arg = (int) $_GET['batch'];
+		if ( $batch_id_arg <= 0 ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$batch = $this->code_batches->find( $batch_id_arg );
+		if ( $batch === null ) {
+			$this->batch_detail_error = __( 'Code batch not found.', 'mp-commerce-promotions' );
+			return;
+		}
+
+		if ( $batch->get_promotion_id() !== $pid ) {
+			$this->batch_detail_error = __( 'That code batch does not belong to this promotion.', 'mp-commerce-promotions' );
+			return;
+		}
+
+		$this->batch_detail = $batch;
+	}
+
+	private function render_batch_detail_section( PromotionCodeBatch $batch ): void {
+		$batch_id = $batch->get_id();
+		if ( $batch_id === null || $batch_id <= 0 ) {
+			return;
+		}
+
+		$linked_count = 0;
+		if ( $this->promotion_codes !== null ) {
+			$linked_count = $this->promotion_codes->count_for_batch( $batch_id );
+		}
+
+		$prefix = $batch->get_code_prefix();
+		$limit  = $batch->get_usage_limit();
+
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:16px 0;">';
+		echo '<h2 style="margin-top:0;">' . esc_html__( 'Code batch detail', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="description">' . esc_html__(
+			'Read-only batch metadata and linked codes. Full codes are not stored and cannot be recovered.',
+			'mp-commerce-promotions'
+		) . '</p>';
+
+		echo '<table class="form-table" role="presentation"><tbody>';
+		$this->render_batch_detail_row( __( 'Batch ID', 'mp-commerce-promotions' ), (string) $batch_id );
+		$this->render_batch_detail_row( __( 'Batch UUID', 'mp-commerce-promotions' ), $batch->get_batch_uuid() );
+		$this->render_batch_detail_row( __( 'Name', 'mp-commerce-promotions' ), $batch->get_name() );
+		$this->render_batch_detail_row( __( 'Promotion ID', 'mp-commerce-promotions' ), (string) $batch->get_promotion_id() );
+		$this->render_batch_detail_row( __( 'Quantity', 'mp-commerce-promotions' ), (string) $batch->get_quantity() );
+		$this->render_batch_detail_row(
+			__( 'Prefix', 'mp-commerce-promotions' ),
+			$prefix !== null && $prefix !== '' ? $prefix : '—'
+		);
+		$this->render_batch_detail_row(
+			__( 'Usage limit', 'mp-commerce-promotions' ),
+			$limit !== null ? (string) $limit : '—'
+		);
+		$this->render_batch_detail_row(
+			__( 'Expires at', 'mp-commerce-promotions' ),
+			$batch->get_expires_at() ?? '—'
+		);
+		$this->render_batch_detail_row(
+			__( 'Created by', 'mp-commerce-promotions' ),
+			$this->format_batch_created_by( $batch->get_created_by() )
+		);
+		$this->render_batch_detail_row(
+			__( 'Created at', 'mp-commerce-promotions' ),
+			$batch->get_created_at() ?? '—'
+		);
+		$this->render_batch_detail_row(
+			__( 'Linked code count', 'mp-commerce-promotions' ),
+			(string) $linked_count
+		);
+		echo '</tbody></table>';
+
+		$this->render_batch_linked_codes_table( $batch_id, $linked_count );
+
+		echo '</div>';
+	}
+
+	private function render_batch_detail_row( string $label, string $value ): void {
+		echo '<tr><th scope="row">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';
+	}
+
+	private function format_batch_created_by( ?int $user_id ): string {
+		if ( $user_id === null || $user_id <= 0 ) {
+			return '—';
+		}
+
+		$user = get_userdata( $user_id );
+		if ( $user instanceof \WP_User ) {
+			$display = $user->display_name !== '' ? $user->display_name : $user->user_login;
+			return sprintf( '%s (#%d)', $display, $user_id );
+		}
+
+		return (string) $user_id;
+	}
+
+	private function render_batch_linked_codes_table( int $batch_id, int $linked_count ): void {
+		echo '<h3>' . esc_html__( 'Linked codes', 'mp-commerce-promotions' ) . '</h3>';
+
+		if ( $this->promotion_codes === null ) {
+			echo '<p>' . esc_html__( 'Promotion codes are unavailable.', 'mp-commerce-promotions' ) . '</p>';
+			return;
+		}
+
+		if ( $linked_count === 0 ) {
+			echo '<p>' . esc_html__( 'No codes are linked to this batch.', 'mp-commerce-promotions' ) . '</p>';
+			return;
+		}
+
+		$codes = $this->promotion_codes->find_for_batch( $batch_id, self::BATCH_DETAIL_CODES_LIMIT );
+
+		echo '<table class="widefat striped" style="max-width:100%;">';
+		echo '<thead><tr>';
+		echo '<th scope="col">' . esc_html__( 'Code ID', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Last 4', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Usage', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Usage limit', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Expires', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Created', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Updated', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $codes as $code ) {
+			if ( ! $code instanceof PromotionCode ) {
+				continue;
+			}
+			$code_limit = $code->get_usage_limit();
+			echo '<tr>';
+			echo '<td>' . esc_html( (string) ( $code->get_id() ?? '' ) ) . '</td>';
+			echo '<td>****' . esc_html( $code->get_code_last4() ) . '</td>';
+			echo '<td>' . esc_html( $code->get_status() ) . '</td>';
+			echo '<td>' . esc_html( $this->format_code_usage( $code ) ) . '</td>';
+			echo '<td>' . esc_html( $code_limit !== null ? (string) $code_limit : '—' ) . '</td>';
+			echo '<td>' . esc_html( $code->get_expires_at() ?? '—' ) . '</td>';
+			echo '<td>' . esc_html( $code->get_created_at() ?? '—' ) . '</td>';
+			echo '<td>' . esc_html( $code->get_updated_at() ?? '—' ) . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
+
+		if ( $linked_count > count( $codes ) ) {
+			echo '<p class="description">' . esc_html__(
+				'Showing the latest linked codes only (up to 100).',
+				'mp-commerce-promotions'
+			) . '</p>';
+		}
+	}
+
 	private function list_url(): string {
 		return AdminNavigation::tab_url( AdminNavigation::TAB_ALL );
 	}
@@ -1243,6 +1435,16 @@ final class PromotionEditPage {
 	private function edit_url( string $promotion_identifier ): string {
 		return add_query_arg(
 			array( 'promotion' => $promotion_identifier ),
+			AdminNavigation::tab_url( AdminNavigation::TAB_ALL )
+		);
+	}
+
+	private function batch_detail_url( int $promotion_id, int $batch_id ): string {
+		return add_query_arg(
+			array(
+				'promotion' => (string) $promotion_id,
+				'batch'     => (string) $batch_id,
+			),
 			AdminNavigation::tab_url( AdminNavigation::TAB_ALL )
 		);
 	}
