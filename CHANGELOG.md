@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Promotion stacking groundwork** — `application_mode`, `stop_processing`, `max_applications` on promotions; `PromotionPlanner` / `PromotionEvaluationPlan` for multi-promotion selection with skip reasons; storefront still applies one cart fee.
+- **Stackable cart fees** — `CartPromotionApplier` applies one negative fee per planner-selected promotion; cumulative discount capped at cart subtotal; session `applied_promotions` array; order meta `_mp_cp_applied_promotions`; multi-promotion redemption recording and reversal.
+- **Promotion stacking groundwork** — `application_mode`, `stop_processing`, `max_applications` on promotions; `PromotionPlanner` / `PromotionEvaluationPlan` for multi-promotion selection with skip reasons.
 - **WooCommerce HPOS compatibility** — declares `custom_order_tables` via `FeaturesUtil` on `before_woocommerce_init` (`WooCompatibility`); cart/checkout blocks not declared pending block-checkout verification.
 - **Evaluation trace / explainability** — `ConditionTrace`, `ActionTrace`, and trace arrays on `EvaluationResult` with stable machine-readable `reason_code` values; admin cart preview shows condition/action trace tables (admin/debug only).
 - Conditions **`billing_country`** (ISO codes) and **`customer_email_domain`** (email domain match, case-insensitive).

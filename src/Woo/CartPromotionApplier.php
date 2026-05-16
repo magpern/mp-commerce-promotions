@@ -1,6 +1,6 @@
 <?php
 /**
- * v1: applies promotion discount as a negative cart fee (automatic or via coupon code).
+ * Applies promotion discounts as negative cart fees (automatic or via coupon code).
  *
  * @package MP\CommercePromotions
  */
@@ -56,7 +56,7 @@ final class CartPromotionApplier {
 	}
 
 	/**
-	 * WooCommerce cart fee hook: apply at most one promotion as a negative fee.
+	 * WooCommerce cart fee hook: apply selected promotion(s) as negative fee(s).
 	 */
 	public function apply(): void {
 		/**
@@ -100,11 +100,11 @@ final class CartPromotionApplier {
 			return;
 		}
 
-		$this->apply_automatic_first_eligible_promotion( $cart, $context, $subtotal );
+		$this->apply_automatic_promotions( $cart, $context, $subtotal );
 	}
 
 	/**
-	 * When a WooCommerce coupon matches a promotion code, apply only that linked promotion.
+	 * When a WooCommerce coupon matches a promotion code, apply only that linked promotion (no automatic stack).
 	 *
 	 * @param object $cart WooCommerce cart.
 	 */
@@ -140,30 +140,17 @@ final class CartPromotionApplier {
 				return true;
 			}
 
-			$plan    = $this->planner->plan( array( $promotion ), $context );
-			$applied = false;
-			foreach ( $plan->get_selected_decisions() as $decision ) {
-				$applied = $this->apply_first_discount_fee_for_decision(
-					$decision,
-					$context,
-					$subtotal,
-					$cart,
-					$promotion_code
-				);
-				if ( is_array( $applied ) ) {
-					break;
-				}
-			}
+			$plan     = $this->planner->plan( array( $promotion ), $context );
+			$entries  = $this->apply_selected_decisions(
+				$plan->get_selected_decisions(),
+				$context,
+				$subtotal,
+				$cart,
+				$promotion_code
+			);
 
-			if ( is_array( $applied ) ) {
-				$this->store_applied_promotion_session(
-					$applied['promotion'],
-					$applied['discount'],
-					$applied['action_type'],
-					isset( $applied['percentage'] ) ? (float) $applied['percentage'] : null,
-					isset( $applied['fixed_amount'] ) ? (float) $applied['fixed_amount'] : null,
-					$promotion_code
-				);
+			if ( $entries !== array() ) {
+				$this->store_applied_promotions_session( $entries );
 				return true;
 			}
 
@@ -177,71 +164,123 @@ final class CartPromotionApplier {
 	/**
 	 * @param object $cart WooCommerce cart.
 	 */
-	private function apply_automatic_first_eligible_promotion( $cart, EvaluationContext $context, float $subtotal ): void {
-		$active = $this->promotions->find_active( 50 );
-		$plan   = $this->planner->plan( $active, $context );
+	private function apply_automatic_promotions( $cart, EvaluationContext $context, float $subtotal ): void {
+		$active  = $this->promotions->find_active( 50 );
+		$plan    = $this->planner->plan( $active, $context );
+		$entries = $this->apply_selected_decisions(
+			$plan->get_selected_decisions(),
+			$context,
+			$subtotal,
+			$cart,
+			null
+		);
 
-		foreach ( $plan->get_selected_decisions() as $decision ) {
-			$applied = $this->apply_first_discount_fee_for_decision( $decision, $context, $subtotal, $cart, null );
-			if ( is_array( $applied ) ) {
-				$this->store_applied_promotion_session(
-					$applied['promotion'],
-					$applied['discount'],
-					$applied['action_type'],
-					isset( $applied['percentage'] ) ? (float) $applied['percentage'] : null,
-					isset( $applied['fixed_amount'] ) ? (float) $applied['fixed_amount'] : null,
-					null
-				);
-				return;
-			}
+		if ( $entries !== array() ) {
+			$this->store_applied_promotions_session( $entries );
+			return;
 		}
 
 		$this->clear_applied_promotion_session();
 	}
 
 	/**
-	 * @param float|null $percentage   Configured percentage when action is percentage_discount.
-	 * @param float|null $fixed_amount Configured fixed amount when action is fixed_amount_discount.
+	 * @param list<PromotionEvaluationDecision> $decisions
+	 * @param object                          $cart
+	 * @return list<array<string, mixed>>
 	 */
-	private function store_applied_promotion_session(
-		Promotion $promotion,
-		float $discount,
-		string $action_type,
-		?float $percentage = null,
-		?float $fixed_amount = null,
-		?PromotionCode $promotion_code = null
-	): void {
-		if ( ! CartSessionHelper::has_wc_session() ) {
-			return;
+	private function apply_selected_decisions(
+		array $decisions,
+		EvaluationContext $context,
+		float $subtotal,
+		$cart,
+		?PromotionCode $promotion_code
+	): array {
+		$remaining_allowance = $subtotal;
+		$session_entries     = array();
+
+		foreach ( $decisions as $decision ) {
+			if ( $remaining_allowance <= 0 ) {
+				break;
+			}
+
+			$applied = $this->apply_first_discount_fee_for_decision(
+				$decision,
+				$context,
+				$subtotal,
+				$remaining_allowance,
+				$cart,
+				$promotion_code
+			);
+
+			if ( ! is_array( $applied ) ) {
+				continue;
+			}
+
+			$entry = $this->build_session_entry_from_applied( $applied, $promotion_code );
+			if ( $entry === null ) {
+				continue;
+			}
+
+			$session_entries[] = $entry;
+			$remaining_allowance -= (float) $applied['discount'];
 		}
 
-		$pid = $promotion->get_id();
+		return $session_entries;
+	}
+
+	/**
+	 * @param array<string, mixed> $applied
+	 * @return array<string, mixed>|null
+	 */
+	private function build_session_entry_from_applied( array $applied, ?PromotionCode $promotion_code ): ?array {
+		if ( ! isset( $applied['promotion'] ) || ! $applied['promotion'] instanceof Promotion ) {
+			return null;
+		}
+
+		$promotion = $applied['promotion'];
+		$pid       = $promotion->get_id();
 		if ( $pid === null || $pid <= 0 ) {
-			return;
+			return null;
 		}
 
-		$payload = array(
+		$entry = array(
 			'promotion_id'    => $pid,
 			'promotion_uuid'  => $promotion->get_uuid(),
 			'promotion_name'  => $promotion->get_name(),
-			'discount_amount' => $discount,
-			'action_type'     => $action_type,
+			'discount_amount' => (float) $applied['discount'],
+			'action_type'     => (string) $applied['action_type'],
 		);
 
-		if ( $percentage !== null ) {
-			$payload['percentage'] = $percentage;
+		if ( isset( $applied['percentage'] ) ) {
+			$entry['percentage'] = (float) $applied['percentage'];
 		}
-		if ( $fixed_amount !== null ) {
-			$payload['fixed_amount'] = $fixed_amount;
+		if ( isset( $applied['fixed_amount'] ) ) {
+			$entry['fixed_amount'] = (float) $applied['fixed_amount'];
 		}
 
 		if ( $promotion_code !== null ) {
 			$code_id = $promotion_code->get_id();
 			if ( $code_id !== null && $code_id > 0 ) {
-				$payload['promotion_code_id'] = $code_id;
+				$entry['promotion_code_id'] = $code_id;
 			}
-			$payload['promotion_code_last4'] = $promotion_code->get_code_last4();
-			$payload['entered_code_hash']    = $promotion_code->get_code_hash();
+			$entry['promotion_code_last4'] = $promotion_code->get_code_last4();
+			$entry['entered_code_hash']    = $promotion_code->get_code_hash();
+		}
+
+		return $entry;
+	}
+
+	/**
+	 * @param list<array<string, mixed>> $entries
+	 */
+	private function store_applied_promotions_session( array $entries ): void {
+		if ( ! CartSessionHelper::has_wc_session() || $entries === array() ) {
+			return;
+		}
+
+		$payload = AppliedPromotionSession::build_session_payload( $entries );
+		if ( $payload === array() ) {
+			return;
 		}
 
 		CartSessionHelper::set_applied_promotion( $payload );
@@ -259,7 +298,8 @@ final class CartPromotionApplier {
 	private function apply_first_discount_fee_for_decision(
 		PromotionEvaluationDecision $decision,
 		EvaluationContext $context,
-		float $subtotal,
+		float $cart_subtotal,
+		float $remaining_allowance,
 		$cart,
 		?PromotionCode $promotion_code
 	) {
@@ -280,7 +320,14 @@ final class CartPromotionApplier {
 				: array();
 
 			if ( $type === self::ACTION_PERCENTAGE_DISCOUNT ) {
-				$applied = $this->apply_percentage_discount_fee( $promotion, $payload, $subtotal, $cart, $promotion_code );
+				$applied = $this->apply_percentage_discount_fee(
+					$promotion,
+					$payload,
+					$cart_subtotal,
+					$remaining_allowance,
+					$cart,
+					$promotion_code
+				);
 				if ( is_array( $applied ) ) {
 					return $applied;
 				}
@@ -288,7 +335,13 @@ final class CartPromotionApplier {
 			}
 
 			if ( $type === self::ACTION_FIXED_AMOUNT_DISCOUNT ) {
-				$applied = $this->apply_fixed_amount_discount_fee( $promotion, $payload, $subtotal, $cart, $promotion_code );
+				$applied = $this->apply_fixed_amount_discount_fee(
+					$promotion,
+					$payload,
+					$remaining_allowance,
+					$cart,
+					$promotion_code
+				);
 				if ( is_array( $applied ) ) {
 					return $applied;
 				}
@@ -306,7 +359,8 @@ final class CartPromotionApplier {
 	private function apply_percentage_discount_fee(
 		Promotion $promotion,
 		array $payload,
-		float $subtotal,
+		float $cart_subtotal,
+		float $remaining_allowance,
 		$cart,
 		?PromotionCode $promotion_code
 	) {
@@ -319,8 +373,8 @@ final class CartPromotionApplier {
 			return false;
 		}
 
-		$discount = $subtotal * $pct / 100.0;
-		$discount = $this->clamp_discount_to_subtotal( $discount, $subtotal );
+		$discount = $cart_subtotal * $pct / 100.0;
+		$discount = DiscountCapAllocator::clamp_to_remaining( $discount, $remaining_allowance );
 		if ( $discount <= 0 ) {
 			return false;
 		}
@@ -343,7 +397,7 @@ final class CartPromotionApplier {
 	private function apply_fixed_amount_discount_fee(
 		Promotion $promotion,
 		array $payload,
-		float $subtotal,
+		float $remaining_allowance,
 		$cart,
 		?PromotionCode $promotion_code
 	) {
@@ -356,7 +410,7 @@ final class CartPromotionApplier {
 			return false;
 		}
 
-		$discount = $this->clamp_discount_to_subtotal( $configured, $subtotal );
+		$discount = DiscountCapAllocator::clamp_to_remaining( $configured, $remaining_allowance );
 		if ( $discount <= 0 ) {
 			return false;
 		}
@@ -369,17 +423,6 @@ final class CartPromotionApplier {
 			'action_type'  => self::ACTION_FIXED_AMOUNT_DISCOUNT,
 			'fixed_amount' => $configured,
 		);
-	}
-
-	private function clamp_discount_to_subtotal( float $discount, float $subtotal ): float {
-		if ( $discount <= 0 ) {
-			return 0.0;
-		}
-		if ( $discount > $subtotal ) {
-			return $subtotal;
-		}
-
-		return $discount;
 	}
 
 	/**

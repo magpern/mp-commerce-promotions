@@ -26,7 +26,7 @@ For architecture, limitations, and development workflow, see the plugin reposito
 
 * Custom promotion tables (not stored as native WooCommerce coupons)
 * Promotion lifecycle: draft, active, paused, archived
-* Promotion application planning groundwork (exclusive/stackable modes; one cart fee in MVP)
+* Stackable promotions can apply multiple cart fees (capped at subtotal); exclusive/code-linked behavior preserved
 * Declares compatibility with WooCommerce High-Performance Order Storage (HPOS)
 * Rule evaluation pipeline with pluggable condition/action types (MVP set)
 * Conditions: minimum subtotal, product/category quantity, logged in, first order, customer role, billing country, customer email domain (Woo-enriched metadata when available)

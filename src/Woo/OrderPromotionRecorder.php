@@ -1,6 +1,6 @@
 <?php
 /**
- * Persists applied cart promotion to order meta, redemptions table, and audit on checkout.
+ * Persists applied cart promotion(s) to order meta, redemptions table, and audit on checkout.
  *
  * @package MP\CommercePromotions
  */
@@ -21,6 +21,8 @@ final class OrderPromotionRecorder {
 	private const META_REDEMPTION_RECORDED = '_mp_cp_redemption_recorded';
 
 	private const META_REDEMPTION_REVERSED = '_mp_cp_redemption_reversed';
+
+	private const META_APPLIED_PROMOTIONS = '_mp_cp_applied_promotions';
 
 	private const META_PROMOTION_CODE_ID = '_mp_cp_promotion_code_id';
 
@@ -64,55 +66,17 @@ final class OrderPromotionRecorder {
 				return;
 			}
 
-			$raw = CartSessionHelper::get_applied_promotion();
-			if ( $raw === null ) {
-				return;
-			}
-
-			$promotion_id = isset( $raw['promotion_id'] ) ? (int) $raw['promotion_id'] : 0;
-			if ( $promotion_id <= 0 ) {
-				return;
-			}
-
-			$uuid = isset( $raw['promotion_uuid'] ) ? (string) $raw['promotion_uuid'] : '';
-			$name = isset( $raw['promotion_name'] ) ? (string) $raw['promotion_name'] : '';
-			if ( ! isset( $raw['discount_amount'] ) || ! is_numeric( $raw['discount_amount'] ) ) {
-				return;
-			}
-
-			$discount = (float) $raw['discount_amount'];
-			if ( $discount < 0 ) {
-				return;
-			}
-
-			$action_type  = isset( $raw['action_type'] ) ? (string) $raw['action_type'] : '';
-			$percentage   = null;
-			$fixed_amount = null;
-
-			if ( $action_type === CartPromotionApplier::ACTION_PERCENTAGE_DISCOUNT ) {
-				$percentage = isset( $raw['percentage'] ) && is_numeric( $raw['percentage'] )
-					? (float) $raw['percentage']
-					: null;
-				if ( $percentage === null || $percentage <= 0 ) {
-					return;
-				}
-			} elseif ( $action_type === CartPromotionApplier::ACTION_FIXED_AMOUNT_DISCOUNT ) {
-				$fixed_amount = isset( $raw['fixed_amount'] ) && is_numeric( $raw['fixed_amount'] )
-					? (float) $raw['fixed_amount']
-					: null;
-				if ( $fixed_amount === null || $fixed_amount <= 0 ) {
-					return;
-				}
-			} else {
-				return;
-			}
-
 			$order_id = (int) $order->get_id();
 			if ( $order_id <= 0 ) {
 				return;
 			}
 
-			$code_meta = $this->extract_promotion_code_meta_from_session( $raw );
+			$entries = AppliedPromotionSession::entries_from_session(
+				CartSessionHelper::get_applied_promotion()
+			);
+			if ( $entries === array() ) {
+				return;
+			}
 
 			$cid         = (int) $order->get_customer_id();
 			$customer_id = $cid > 0 ? $cid : null;
@@ -120,79 +84,35 @@ final class OrderPromotionRecorder {
 			$currency    = is_string( $currency ) && $currency !== '' ? $currency : null;
 			$now         = current_time( 'mysql' );
 
-			if ( $this->redemptions->exists_for_order_and_promotion( $order_id, $promotion_id ) ) {
-				$this->apply_promotion_meta_to_order(
+			$recorded_meta = array();
+
+			foreach ( $entries as $entry ) {
+				$recorded = $this->record_single_entry(
 					$order,
-					$promotion_id,
-					$uuid,
-					$name,
-					$discount,
-					$action_type,
-					$percentage,
-					$fixed_amount,
-					$code_meta
+					$order_id,
+					$entry,
+					$customer_id,
+					$currency,
+					$now
 				);
-				$order->update_meta_data( self::META_REDEMPTION_RECORDED, self::META_VALUE_YES );
-				$order->save();
-				$this->clear_applied_promotion_session();
+				if ( $recorded !== null ) {
+					$recorded_meta[] = $recorded;
+				}
+			}
+
+			if ( $recorded_meta === array() ) {
 				return;
 			}
 
-			$redemption = new Redemption(
-				null,
-				$promotion_id,
-				$order_id,
-				$customer_id,
-				null,
-				$discount,
-				$currency,
-				Redemption::STATUS_RECORDED,
-				$now,
-				$now
-			);
-
-			$new_id = $this->redemptions->insert( $redemption );
-			if ( $new_id <= 0 ) {
-				return;
+			$json = wp_json_encode( $recorded_meta, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+			if ( is_string( $json ) ) {
+				$order->update_meta_data( self::META_APPLIED_PROMOTIONS, $json );
 			}
 
-			$this->apply_promotion_meta_to_order(
-				$order,
-				$promotion_id,
-				$uuid,
-				$name,
-				$discount,
-				$action_type,
-				$percentage,
-				$fixed_amount,
-				$code_meta
-			);
+			$first = $entries[0];
+			$this->apply_legacy_primary_meta_from_entry( $order, $first );
+
 			$order->update_meta_data( self::META_REDEMPTION_RECORDED, self::META_VALUE_YES );
-
-			$promotion = $this->promotions->find( $promotion_id );
-			if ( $promotion !== null ) {
-				$updated = $promotion->with_usage_count( $promotion->get_usage_count() + 1 );
-				$this->promotions->update( $updated );
-			}
-
-			if ( $code_meta['promotion_code_id'] > 0 ) {
-				$this->promotion_codes->increment_usage( $code_meta['promotion_code_id'] );
-			}
-
-			$this->audit->log(
-				'promotion.redeemed',
-				$promotion_id,
-				array(
-					'promotion_id'         => $promotion_id,
-					'order_id'             => $order_id,
-					'discount_amount'      => $discount,
-					'action_type'          => $action_type,
-					'promotion_code_id'    => $code_meta['promotion_code_id'] > 0 ? $code_meta['promotion_code_id'] : null,
-					'promotion_code_last4' => $code_meta['promotion_code_last4'] !== '' ? $code_meta['promotion_code_last4'] : null,
-				),
-				null
-			);
-
 			$order->save();
 			$this->clear_applied_promotion_session();
 		} catch ( Throwable $e ) {
@@ -209,8 +129,7 @@ final class OrderPromotionRecorder {
 	}
 
 	/**
-	 * Reverse a recorded redemption when the order is cancelled, failed, refunded, trashed, or deleted.
-	 * Idempotent via `_mp_cp_redemption_reversed` = yes.
+	 * Reverse recorded redemption(s) when the order is cancelled, failed, refunded, trashed, or deleted.
 	 *
 	 * @param int $order_id WooCommerce order ID.
 	 */
@@ -233,52 +152,23 @@ final class OrderPromotionRecorder {
 				return;
 			}
 
-			$promotion_id = (int) $order->get_meta( '_mp_cp_promotion_id', true );
-			if ( $promotion_id <= 0 ) {
+			$promotion_ids = $this->resolve_promotion_ids_for_reversal( $order );
+			if ( $promotion_ids === array() ) {
 				return;
 			}
 
-			$redemption = $this->redemptions->find_recorded_for_order_and_promotion( $order_id, $promotion_id );
-			if ( $redemption === null ) {
-				return;
-			}
+			$reversed_any = false;
 
-			$reversed = $redemption->with_status( Redemption::STATUS_REVERSED );
-			if ( ! $this->redemptions->update( $reversed ) ) {
-				return;
-			}
-
-			$promotion = $this->promotions->find( $promotion_id );
-			if ( $promotion !== null ) {
-				$new_usage = max( 0, $promotion->get_usage_count() - 1 );
-				$this->promotions->update( $promotion->with_usage_count( $new_usage ) );
-			}
-
-			$promotion_code_id = (int) $order->get_meta( self::META_PROMOTION_CODE_ID, true );
-			if ( $promotion_code_id > 0 ) {
-				$promotion_code = $this->promotion_codes->find( $promotion_code_id );
-				if ( $promotion_code !== null ) {
-					$new_code_usage = max( 0, $promotion_code->get_usage_count() - 1 );
-					$this->promotion_codes->update( $promotion_code->with_usage_count( $new_code_usage ) );
+			foreach ( $promotion_ids as $promotion_id ) {
+				if ( $this->reverse_single_promotion( $order, $order_id, $promotion_id ) ) {
+					$reversed_any = true;
 				}
 			}
 
-			$audit_context = array(
-				'promotion_id' => $promotion_id,
-				'order_id'     => $order_id,
-			);
-			if ( $promotion_code_id > 0 ) {
-				$audit_context['promotion_code_id'] = $promotion_code_id;
+			if ( $reversed_any ) {
+				$order->update_meta_data( self::META_REDEMPTION_REVERSED, self::META_VALUE_YES );
+				$order->save();
 			}
-
-			$order->update_meta_data( self::META_REDEMPTION_REVERSED, self::META_VALUE_YES );
-			$this->audit->log(
-				'promotion.redemption_reversed',
-				$promotion_id,
-				$audit_context,
-				null
-			);
-			$order->save();
 		} catch ( Throwable $e ) {
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
@@ -290,6 +180,264 @@ final class OrderPromotionRecorder {
 				);
 			}
 		}
+	}
+
+	/**
+	 * @param \WC_Order              $order
+	 * @param array<string, mixed>   $entry
+	 * @return array<string, mixed>|null Summary for _mp_cp_applied_promotions meta.
+	 */
+	private function record_single_entry(
+		$order,
+		int $order_id,
+		array $entry,
+		?int $customer_id,
+		?string $currency,
+		string $now
+	): ?array {
+		if ( ! AppliedPromotionSession::is_valid_entry( $entry ) ) {
+			return null;
+		}
+
+		$promotion_id = (int) $entry['promotion_id'];
+		$uuid         = isset( $entry['promotion_uuid'] ) ? (string) $entry['promotion_uuid'] : '';
+		$name         = isset( $entry['promotion_name'] ) ? (string) $entry['promotion_name'] : '';
+		$discount     = (float) $entry['discount_amount'];
+		$action_type  = (string) $entry['action_type'];
+
+		$percentage   = null;
+		$fixed_amount = null;
+
+		if ( $action_type === CartPromotionApplier::ACTION_PERCENTAGE_DISCOUNT ) {
+			$percentage = isset( $entry['percentage'] ) && is_numeric( $entry['percentage'] )
+				? (float) $entry['percentage']
+				: null;
+			if ( $percentage === null || $percentage <= 0 ) {
+				return null;
+			}
+		} elseif ( $action_type === CartPromotionApplier::ACTION_FIXED_AMOUNT_DISCOUNT ) {
+			$fixed_amount = isset( $entry['fixed_amount'] ) && is_numeric( $entry['fixed_amount'] )
+				? (float) $entry['fixed_amount']
+				: null;
+			if ( $fixed_amount === null || $fixed_amount <= 0 ) {
+				return null;
+			}
+		} else {
+			return null;
+		}
+
+		$code_meta = $this->extract_promotion_code_meta_from_entry( $entry );
+		$newly     = false;
+
+		if ( $this->redemptions->exists_for_order_and_promotion( $order_id, $promotion_id ) ) {
+			$this->apply_promotion_meta_to_order(
+				$order,
+				$promotion_id,
+				$uuid,
+				$name,
+				$discount,
+				$action_type,
+				$percentage,
+				$fixed_amount,
+				$code_meta
+			);
+		} else {
+			$redemption = new Redemption(
+				null,
+				$promotion_id,
+				$order_id,
+				$customer_id,
+				null,
+				$discount,
+				$currency,
+				Redemption::STATUS_RECORDED,
+				$now,
+				$now
+			);
+
+			$new_id = $this->redemptions->insert( $redemption );
+			if ( $new_id <= 0 ) {
+				return null;
+			}
+
+			$promotion = $this->promotions->find( $promotion_id );
+			if ( $promotion !== null ) {
+				$this->promotions->update(
+					$promotion->with_usage_count( $promotion->get_usage_count() + 1 )
+				);
+			}
+
+			if ( $code_meta['promotion_code_id'] > 0 ) {
+				$this->promotion_codes->increment_usage( $code_meta['promotion_code_id'] );
+			}
+
+			$this->audit->log(
+				'promotion.redeemed',
+				$promotion_id,
+				array(
+					'promotion_id'         => $promotion_id,
+					'order_id'             => $order_id,
+					'discount_amount'      => $discount,
+					'action_type'          => $action_type,
+					'promotion_code_id'    => $code_meta['promotion_code_id'] > 0 ? $code_meta['promotion_code_id'] : null,
+					'promotion_code_last4' => $code_meta['promotion_code_last4'] !== '' ? $code_meta['promotion_code_last4'] : null,
+				),
+				null
+			);
+
+			$newly = true;
+		}
+
+		return array(
+			'promotion_id'         => $promotion_id,
+			'promotion_uuid'       => $uuid,
+			'promotion_name'       => $name,
+			'discount_amount'      => $discount,
+			'action_type'          => $action_type,
+			'promotion_code_id'    => $code_meta['promotion_code_id'] > 0 ? $code_meta['promotion_code_id'] : null,
+			'promotion_code_last4' => $code_meta['promotion_code_last4'] !== '' ? $code_meta['promotion_code_last4'] : null,
+			'newly_recorded'       => $newly,
+		);
+	}
+
+	/**
+	 * @param \WC_Order $order
+	 * @return list<int>
+	 */
+	private function resolve_promotion_ids_for_reversal( $order ): array {
+		$raw = $order->get_meta( self::META_APPLIED_PROMOTIONS, true );
+		if ( is_string( $raw ) && $raw !== '' ) {
+			$decoded = json_decode( $raw, true );
+			if ( is_array( $decoded ) ) {
+				$ids = array();
+				foreach ( $decoded as $row ) {
+					if ( is_array( $row ) && isset( $row['promotion_id'] ) ) {
+						$id = (int) $row['promotion_id'];
+						if ( $id > 0 ) {
+							$ids[] = $id;
+						}
+					}
+				}
+				if ( $ids !== array() ) {
+					return array_values( array_unique( $ids ) );
+				}
+			}
+		}
+
+		$legacy_id = (int) $order->get_meta( '_mp_cp_promotion_id', true );
+		if ( $legacy_id > 0 ) {
+			return array( $legacy_id );
+		}
+
+		return array();
+	}
+
+	private function reverse_single_promotion( $order, int $order_id, int $promotion_id ): bool {
+		$redemption = $this->redemptions->find_recorded_for_order_and_promotion( $order_id, $promotion_id );
+		if ( $redemption === null ) {
+			return false;
+		}
+
+		$reversed = $redemption->with_status( Redemption::STATUS_REVERSED );
+		if ( ! $this->redemptions->update( $reversed ) ) {
+			return false;
+		}
+
+		$promotion = $this->promotions->find( $promotion_id );
+		if ( $promotion !== null ) {
+			$new_usage = max( 0, $promotion->get_usage_count() - 1 );
+			$this->promotions->update( $promotion->with_usage_count( $new_usage ) );
+		}
+
+		$promotion_code_id = (int) $order->get_meta( self::META_PROMOTION_CODE_ID, true );
+		if ( $promotion_id === (int) $order->get_meta( '_mp_cp_promotion_id', true ) && $promotion_code_id > 0 ) {
+			$promotion_code = $this->promotion_codes->find( $promotion_code_id );
+			if ( $promotion_code !== null ) {
+				$new_code_usage = max( 0, $promotion_code->get_usage_count() - 1 );
+				$this->promotion_codes->update( $promotion_code->with_usage_count( $new_code_usage ) );
+			}
+		}
+
+		$code_id_from_meta = $this->code_id_for_promotion_from_applied_meta( $order, $promotion_id );
+		if ( $code_id_from_meta > 0 && $code_id_from_meta !== $promotion_code_id ) {
+			$promotion_code = $this->promotion_codes->find( $code_id_from_meta );
+			if ( $promotion_code !== null ) {
+				$new_code_usage = max( 0, $promotion_code->get_usage_count() - 1 );
+				$this->promotion_codes->update( $promotion_code->with_usage_count( $new_code_usage ) );
+			}
+		}
+
+		$this->audit->log(
+			'promotion.redemption_reversed',
+			$promotion_id,
+			array(
+				'promotion_id' => $promotion_id,
+				'order_id'     => $order_id,
+			),
+			null
+		);
+
+		return true;
+	}
+
+	/**
+	 * @param \WC_Order $order
+	 */
+	private function code_id_for_promotion_from_applied_meta( $order, int $promotion_id ): int {
+		$raw = $order->get_meta( self::META_APPLIED_PROMOTIONS, true );
+		if ( ! is_string( $raw ) || $raw === '' ) {
+			return 0;
+		}
+
+		$decoded = json_decode( $raw, true );
+		if ( ! is_array( $decoded ) ) {
+			return 0;
+		}
+
+		foreach ( $decoded as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			if ( (int) ( $row['promotion_id'] ?? 0 ) !== $promotion_id ) {
+				continue;
+			}
+			$code_id = isset( $row['promotion_code_id'] ) ? (int) $row['promotion_code_id'] : 0;
+
+			return $code_id > 0 ? $code_id : 0;
+		}
+
+		return 0;
+	}
+
+	/**
+	 * @param \WC_Order            $order
+	 * @param array<string, mixed> $entry
+	 */
+	private function apply_legacy_primary_meta_from_entry( $order, array $entry ): void {
+		$promotion_id = (int) $entry['promotion_id'];
+		$uuid         = isset( $entry['promotion_uuid'] ) ? (string) $entry['promotion_uuid'] : '';
+		$name         = isset( $entry['promotion_name'] ) ? (string) $entry['promotion_name'] : '';
+		$discount     = (float) $entry['discount_amount'];
+		$action_type  = (string) $entry['action_type'];
+
+		$percentage   = isset( $entry['percentage'] ) && is_numeric( $entry['percentage'] )
+			? (float) $entry['percentage']
+			: null;
+		$fixed_amount = isset( $entry['fixed_amount'] ) && is_numeric( $entry['fixed_amount'] )
+			? (float) $entry['fixed_amount']
+			: null;
+
+		$this->apply_promotion_meta_to_order(
+			$order,
+			$promotion_id,
+			$uuid,
+			$name,
+			$discount,
+			$action_type,
+			$percentage,
+			$fixed_amount,
+			$this->extract_promotion_code_meta_from_entry( $entry )
+		);
 	}
 
 	/**
@@ -407,12 +555,12 @@ final class OrderPromotionRecorder {
 	}
 
 	/**
-	 * @param array<string, mixed> $raw Session payload.
+	 * @param array<string, mixed> $entry
 	 * @return array{promotion_code_id: int, promotion_code_last4: string}
 	 */
-	private function extract_promotion_code_meta_from_session( array $raw ): array {
-		$code_id = isset( $raw['promotion_code_id'] ) ? (int) $raw['promotion_code_id'] : 0;
-		$last4   = isset( $raw['promotion_code_last4'] ) ? sanitize_text_field( (string) $raw['promotion_code_last4'] ) : '';
+	private function extract_promotion_code_meta_from_entry( array $entry ): array {
+		$code_id = isset( $entry['promotion_code_id'] ) ? (int) $entry['promotion_code_id'] : 0;
+		$last4   = isset( $entry['promotion_code_last4'] ) ? sanitize_text_field( (string) $entry['promotion_code_last4'] ) : '';
 
 		return array(
 			'promotion_code_id'    => $code_id > 0 ? $code_id : 0,

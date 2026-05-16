@@ -223,6 +223,29 @@ Recorded results from an automated **WP-CLI / WooCommerce cart simulation** on t
 
 ---
 
+## 10. Stackable promotions (WP-CLI)
+
+Use when verifying multiple fees and multi-redemption recording.
+
+1. Create two **active** promotions with:
+   - `application_mode`: `stackable`
+   - `stop_processing`: false (unchecked in admin)
+   - Actions: e.g. `fixed_amount_discount` **10** and **15**
+   - Low `minimum_subtotal` (e.g. `1`)
+2. Cart subtotal **100** (or use a product line that totals 100).
+3. Confirm **two** negative fees (or `applied_promotions` count **2** in session) and **total discount 25**.
+4. Cap case: promotions **80** + **50** fixed → **total discount 100**, not 130.
+5. Place order (or simulate `woocommerce_checkout_create_order`):
+   - `_mp_cp_applied_promotions` JSON array on order
+   - **Two** redemption rows (`order_id` + distinct `promotion_id`)
+   - `usage_count` +1 on each promotion
+6. Re-run recording hook → no duplicate increments.
+7. Cancel order → both redemptions **reversed**, both `usage_count` decremented once.
+
+**Code-linked note:** With a promotion code coupon applied, only the linked promotion runs — automatic stackable promotions are skipped.
+
+---
+
 ## Pass criteria
 
 All checked items in sections **1–8** pass, and behavior matches **Known limitations** in section **9**.

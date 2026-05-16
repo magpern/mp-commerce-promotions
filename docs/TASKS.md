@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Stackable cart fees** — multiple planner-selected promotions apply separate fees (subtotal cap); multi-redemption recording
 - **Promotion stacking groundwork** — application_mode / stop_processing / max_applications, PromotionPlanner, admin application rules
 - **WooCommerce HPOS compatibility** — `custom_order_tables` declaration; HPOS order-meta audit; blocks compatibility intentionally omitted
 - **Evaluation trace / explainability** — `ConditionTrace`, `ActionTrace`, `EvaluationResult` traces, admin cart preview tables, PHPUnit coverage

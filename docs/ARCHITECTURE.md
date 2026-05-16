@@ -323,7 +323,9 @@ Each promotion row stores application strategy fields:
 
 `PromotionPlanner::plan()` evaluates promotions in caller order (typically priority, then id), builds a `PromotionEvaluationPlan` of `PromotionEvaluationDecision` entries (selected flag + `skipped_reason`: `not_eligible`, `blocked_by_exclusive_promotion`, `stopped_processing`), and does not apply cart fees.
 
-`CartPromotionApplier` uses the planner for automatic and code-linked promotions but still applies **only the first selected promotion’s first supported action** as a single negative fee (MVP unchanged on storefront).
+`CartPromotionApplier` uses the planner for automatic promotions and may apply **multiple negative fees** when several stackable promotions are selected (`stop_processing=false`). Each selected promotion still uses only its **first supported action**. **Cumulative discount is capped at cart subtotal.** Code-linked promotions (coupon field) still evaluate **only the linked promotion** — automatic promotions do not stack on top.
+
+Session key `mp_cp_applied_promotion` includes `applied_promotions[]` plus legacy top-level fields for the first entry. Checkout writes `_mp_cp_applied_promotions` (JSON) and one redemption row per promotion.
 
 ---
 
