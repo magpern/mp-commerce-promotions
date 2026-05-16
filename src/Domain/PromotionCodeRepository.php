@@ -9,7 +9,10 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Domain;
 
+use InvalidArgumentException;
+use MP\CommercePromotions\Infrastructure\Database\DbQuery;
 use MP\CommercePromotions\Infrastructure\Database\Schema;
+use MP\CommercePromotions\Infrastructure\Database\TableName;
 use wpdb;
 
 final class PromotionCodeRepository {
@@ -20,10 +23,16 @@ final class PromotionCodeRepository {
 		$this->wpdb = $wpdb;
 	}
 
+	/**
+	 * SHA-256 hash of normalized plain code (uppercase trim).
+	 */
 	public static function hash_plain_code( string $plain_code ): string {
 		return hash( 'sha256', strtoupper( trim( $plain_code ) ) );
 	}
 
+	/**
+	 * Insert a promotion code row; returns new id or 0 on failure.
+	 */
 	public function insert( PromotionCode $code ): int {
 		$now = current_time( 'mysql' );
 
@@ -40,8 +49,8 @@ final class PromotionCodeRepository {
 			'updated_at'   => $code->get_updated_at() ?? $now,
 		);
 
-		$batch_id_format      = $data['batch_id'] === null ? '%s' : '%d';
-		$usage_limit_format   = $data['usage_limit'] === null ? '%s' : '%d';
+		$batch_id_format    = $data['batch_id'] === null ? '%s' : '%d';
+		$usage_limit_format = $data['usage_limit'] === null ? '%s' : '%d';
 
 		$formats = array(
 			'%d',
@@ -57,7 +66,7 @@ final class PromotionCodeRepository {
 		);
 
 		$inserted = $this->wpdb->insert(
-			Schema::promotion_codes_table( $this->wpdb ),
+			$this->promotion_codes_table(),
 			$data,
 			$formats
 		);
@@ -67,34 +76,31 @@ final class PromotionCodeRepository {
 		}
 
 		$new_id = (int) $this->wpdb->insert_id;
+
 		return $new_id > 0 ? $new_id : 0;
 	}
 
+	/**
+	 * Find a promotion code by primary key.
+	 */
 	public function find( int $id ): ?PromotionCode {
 		if ( $id <= 0 ) {
 			return null;
 		}
 
-		$table = Schema::promotion_codes_table( $this->wpdb );
-		$sql   = "SELECT * FROM {$table} WHERE id = %d LIMIT 1";
+		$table = $this->promotion_codes_table();
+		$row   = DbQuery::get_row(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE id = %d LIMIT 1",
+			array( $id )
+		);
 
-		$prepared = $this->wpdb->prepare( $sql, $id );
-		if ( ! is_string( $prepared ) ) {
-			return null;
-		}
-
-		$row = $this->wpdb->get_row( $prepared, ARRAY_A );
-		if ( ! is_array( $row ) ) {
-			return null;
-		}
-
-		try {
-			return PromotionCode::from_array( $row );
-		} catch ( \InvalidArgumentException $e ) {
-			return null;
-		}
+		return $this->row_to_code( $row );
 	}
 
+	/**
+	 * Update mutable promotion code fields.
+	 */
 	public function update( PromotionCode $code ): bool {
 		$id = $code->get_id();
 		if ( $id === null || $id <= 0 ) {
@@ -104,11 +110,11 @@ final class PromotionCodeRepository {
 		$now = current_time( 'mysql' );
 
 		$data = array(
-			'status'       => $code->get_status(),
-			'usage_limit'  => $code->get_usage_limit(),
-			'usage_count'  => $code->get_usage_count(),
-			'expires_at'   => $code->get_expires_at(),
-			'updated_at'   => $now,
+			'status'      => $code->get_status(),
+			'usage_limit' => $code->get_usage_limit(),
+			'usage_count' => $code->get_usage_count(),
+			'expires_at'  => $code->get_expires_at(),
+			'updated_at'  => $now,
 		);
 
 		$usage_limit_format = $data['usage_limit'] === null ? '%s' : '%d';
@@ -122,7 +128,7 @@ final class PromotionCodeRepository {
 		);
 
 		$updated = $this->wpdb->update(
-			Schema::promotion_codes_table( $this->wpdb ),
+			$this->promotion_codes_table(),
 			$data,
 			array( 'id' => $id ),
 			$formats,
@@ -132,26 +138,31 @@ final class PromotionCodeRepository {
 		return false !== $updated;
 	}
 
+	/**
+	 * Find a code by plain text (hashed lookup).
+	 */
 	public function find_by_plain_code( string $plain_code ): ?PromotionCode {
 		$hash = self::hash_plain_code( $plain_code );
 		if ( strlen( $hash ) !== 64 ) {
 			return null;
 		}
 
-		$table = Schema::promotion_codes_table( $this->wpdb );
-		$sql   = "SELECT * FROM {$table} WHERE code_hash = %s LIMIT 1";
+		$table = $this->promotion_codes_table();
+		$row   = DbQuery::get_row(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE code_hash = %s LIMIT 1",
+			array( $hash )
+		);
 
-		$prepared = $this->wpdb->prepare( $sql, $hash );
-		if ( ! is_string( $prepared ) ) {
+		if ( $row === null ) {
 			return null;
 		}
 
-		$row = $this->wpdb->get_row( $prepared, ARRAY_A );
-		if ( ! is_array( $row ) ) {
+		try {
+			return PromotionCode::from_array( $row );
+		} catch ( InvalidArgumentException $e ) {
 			return null;
 		}
-
-		return PromotionCode::from_array( $row );
 	}
 
 	/**
@@ -160,33 +171,15 @@ final class PromotionCodeRepository {
 	public function find_all( int $limit = 100, int $offset = 0 ): array {
 		$limit  = max( 1, min( 100, $limit ) );
 		$offset = max( 0, $offset );
+		$table  = $this->promotion_codes_table();
 
-		$table = Schema::promotion_codes_table( $this->wpdb );
-		$sql   = "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d";
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			"SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d",
+			array( $limit, $offset )
+		);
 
-		$prepared = $this->wpdb->prepare( $sql, $limit, $offset );
-		if ( ! is_string( $prepared ) ) {
-			return array();
-		}
-
-		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
-		if ( ! is_array( $rows ) ) {
-			return array();
-		}
-
-		$codes = array();
-		foreach ( $rows as $row ) {
-			if ( ! is_array( $row ) ) {
-				continue;
-			}
-			try {
-				$codes[] = PromotionCode::from_array( $row );
-			} catch ( \InvalidArgumentException $e ) {
-				continue;
-			}
-		}
-
-		return $codes;
+		return $this->rows_to_codes( $rows );
 	}
 
 	/**
@@ -198,33 +191,15 @@ final class PromotionCodeRepository {
 		}
 
 		$limit = max( 1, min( 100, $limit ) );
+		$table = $this->promotion_codes_table();
 
-		$table = Schema::promotion_codes_table( $this->wpdb );
-		$sql   = "SELECT * FROM {$table} WHERE promotion_id = %d ORDER BY id DESC LIMIT %d";
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE promotion_id = %d ORDER BY id DESC LIMIT %d",
+			array( $promotion_id, $limit )
+		);
 
-		$prepared = $this->wpdb->prepare( $sql, $promotion_id, $limit );
-		if ( ! is_string( $prepared ) ) {
-			return array();
-		}
-
-		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
-		if ( ! is_array( $rows ) ) {
-			return array();
-		}
-
-		$codes = array();
-		foreach ( $rows as $row ) {
-			if ( ! is_array( $row ) ) {
-				continue;
-			}
-			try {
-				$codes[] = PromotionCode::from_array( $row );
-			} catch ( \InvalidArgumentException $e ) {
-				continue;
-			}
-		}
-
-		return $codes;
+		return $this->rows_to_codes( $rows );
 	}
 
 	/**
@@ -236,119 +211,76 @@ final class PromotionCodeRepository {
 		}
 
 		$limit = max( 1, min( 100, $limit ) );
+		$table = $this->promotion_codes_table();
 
-		$table = Schema::promotion_codes_table( $this->wpdb );
-		$sql   = "SELECT * FROM {$table} WHERE batch_id = %d ORDER BY id DESC LIMIT %d";
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE batch_id = %d ORDER BY id DESC LIMIT %d",
+			array( $batch_id, $limit )
+		);
 
-		$prepared = $this->wpdb->prepare( $sql, $batch_id, $limit );
-		if ( ! is_string( $prepared ) ) {
-			return array();
-		}
-
-		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
-		if ( ! is_array( $rows ) ) {
-			return array();
-		}
-
-		$codes = array();
-		foreach ( $rows as $row ) {
-			if ( ! is_array( $row ) ) {
-				continue;
-			}
-			try {
-				$codes[] = PromotionCode::from_array( $row );
-			} catch ( \InvalidArgumentException $e ) {
-				continue;
-			}
-		}
-
-		return $codes;
+		return $this->rows_to_codes( $rows );
 	}
 
+	/**
+	 * Count codes belonging to a batch.
+	 */
 	public function count_for_batch( int $batch_id ): int {
 		if ( $batch_id <= 0 ) {
 			return 0;
 		}
 
-		$table = Schema::promotion_codes_table( $this->wpdb );
-		$sql   = "SELECT COUNT(*) FROM {$table} WHERE batch_id = %d";
-
-		$prepared = $this->wpdb->prepare( $sql, $batch_id );
-		if ( ! is_string( $prepared ) ) {
-			return 0;
-		}
-
-		$count = $this->wpdb->get_var( $prepared );
-		if ( ! is_numeric( $count ) ) {
-			return 0;
-		}
-
-		return (int) $count;
+		return $this->count_scalar(
+			"SELECT COUNT(*) FROM {$this->promotion_codes_table()} WHERE batch_id = %d",
+			array( $batch_id )
+		);
 	}
 
+	/**
+	 * Count codes for a promotion.
+	 */
 	public function count_for_promotion( int $promotion_id ): int {
 		if ( $promotion_id <= 0 ) {
 			return 0;
 		}
 
-		$table = Schema::promotion_codes_table( $this->wpdb );
-		$sql   = "SELECT COUNT(*) FROM {$table} WHERE promotion_id = %d";
-
-		$prepared = $this->wpdb->prepare( $sql, $promotion_id );
-		if ( ! is_string( $prepared ) ) {
-			return 0;
-		}
-
-		$count = $this->wpdb->get_var( $prepared );
-		if ( ! is_numeric( $count ) ) {
-			return 0;
-		}
-
-		return (int) $count;
+		return $this->count_scalar(
+			"SELECT COUNT(*) FROM {$this->promotion_codes_table()} WHERE promotion_id = %d",
+			array( $promotion_id )
+		);
 	}
 
+	/**
+	 * Count active codes for a promotion.
+	 */
 	public function count_active_for_promotion( int $promotion_id ): int {
 		if ( $promotion_id <= 0 ) {
 			return 0;
 		}
 
-		$table = Schema::promotion_codes_table( $this->wpdb );
-		$sql   = "SELECT COUNT(*) FROM {$table} WHERE promotion_id = %d AND status = %s";
-
-		$prepared = $this->wpdb->prepare( $sql, $promotion_id, PromotionCode::STATUS_ACTIVE );
-		if ( ! is_string( $prepared ) ) {
-			return 0;
-		}
-
-		$count = $this->wpdb->get_var( $prepared );
-		if ( ! is_numeric( $count ) ) {
-			return 0;
-		}
-
-		return (int) $count;
+		return $this->count_scalar(
+			"SELECT COUNT(*) FROM {$this->promotion_codes_table()} WHERE promotion_id = %d AND status = %s",
+			array( $promotion_id, PromotionCode::STATUS_ACTIVE )
+		);
 	}
 
+	/**
+	 * Count codes in a batch with a given status.
+	 */
 	public function count_for_batch_with_status( int $batch_id, string $status ): int {
 		if ( $batch_id <= 0 || ! PromotionCode::is_valid_status( $status ) ) {
 			return 0;
 		}
 
-		$table = Schema::promotion_codes_table( $this->wpdb );
-		$sql   = "SELECT COUNT(*) FROM {$table} WHERE batch_id = %d AND status = %s";
-
-		$prepared = $this->wpdb->prepare( $sql, $batch_id, $status );
-		if ( ! is_string( $prepared ) ) {
-			return 0;
-		}
-
-		$count = $this->wpdb->get_var( $prepared );
-		if ( ! is_numeric( $count ) ) {
-			return 0;
-		}
-
-		return (int) $count;
+		return $this->count_scalar(
+			"SELECT COUNT(*) FROM {$this->promotion_codes_table()} WHERE batch_id = %d AND status = %s",
+			array( $batch_id, $status )
+		);
 	}
 
+	/**
+	 * Bulk status transition for all codes in a batch matching $from_status.
+	 */
 	public function bulk_update_status_for_batch( int $batch_id, string $from_status, string $to_status ): int {
 		if ( $batch_id <= 0 ) {
 			return 0;
@@ -358,18 +290,15 @@ final class PromotionCodeRepository {
 			return 0;
 		}
 
-		$table = Schema::promotion_codes_table( $this->wpdb );
+		$table = $this->promotion_codes_table();
 		$now   = current_time( 'mysql' );
 
-		$sql = "UPDATE {$table} SET status = %s, updated_at = %s WHERE batch_id = %d AND status = %s";
+		$updated = DbQuery::query(
+			$this->wpdb,
+			"UPDATE {$table} SET status = %s, updated_at = %s WHERE batch_id = %d AND status = %s",
+			array( $to_status, $now, $batch_id, $from_status )
+		);
 
-		$prepared = $this->wpdb->prepare( $sql, $to_status, $now, $batch_id, $from_status );
-		if ( ! is_string( $prepared ) ) {
-			return 0;
-		}
-
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $prepared is from $wpdb->prepare().
-		$updated = $this->wpdb->query( $prepared );
 		if ( false === $updated ) {
 			return 0;
 		}
@@ -377,6 +306,9 @@ final class PromotionCodeRepository {
 		return (int) $updated;
 	}
 
+	/**
+	 * Whether the code is active, within usage limit, and not expired.
+	 */
 	public function is_code_usable( PromotionCode $code ): bool {
 		if ( $code->get_status() !== PromotionCode::STATUS_ACTIVE ) {
 			return false;
@@ -398,27 +330,73 @@ final class PromotionCodeRepository {
 		return true;
 	}
 
+	/**
+	 * Atomically increment usage_count for a code id.
+	 */
 	public function increment_usage( int $id ): bool {
 		if ( $id <= 0 ) {
 			return false;
 		}
 
-		$table = Schema::promotion_codes_table( $this->wpdb );
-		$now   = current_time( 'mysql' );
+		$table   = $this->promotion_codes_table();
+		$now     = current_time( 'mysql' );
+		$updated = DbQuery::query(
+			$this->wpdb,
+			"UPDATE {$table} SET usage_count = usage_count + 1, updated_at = %s WHERE id = %d",
+			array( $now, $id )
+		);
 
-		$sql = "UPDATE {$table} SET usage_count = usage_count + 1, updated_at = %s WHERE id = %d";
-
-		$prepared = $this->wpdb->prepare( $sql, $now, $id );
-		if ( ! is_string( $prepared ) ) {
-			return false;
-		}
-
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $prepared is from $wpdb->prepare().
-		$updated = $this->wpdb->query( $prepared );
 		if ( false === $updated ) {
 			return false;
 		}
 
 		return (int) $updated > 0;
+	}
+
+	private function promotion_codes_table(): string {
+		return TableName::assert_valid( Schema::promotion_codes_table( $this->wpdb ) );
+	}
+
+	/**
+	 * @param array<int, mixed> $args
+	 */
+	private function count_scalar( string $sql, array $args ): int {
+		$count = DbQuery::get_var( $this->wpdb, $sql, $args );
+		if ( ! is_numeric( $count ) ) {
+			return 0;
+		}
+
+		return (int) $count;
+	}
+
+	/**
+	 * @param list<array<string, mixed>> $rows
+	 * @return list<PromotionCode>
+	 */
+	private function rows_to_codes( array $rows ): array {
+		$codes = array();
+		foreach ( $rows as $row ) {
+			$code = $this->row_to_code( $row );
+			if ( $code instanceof PromotionCode ) {
+				$codes[] = $code;
+			}
+		}
+
+		return $codes;
+	}
+
+	/**
+	 * @param array<string, mixed>|null $row
+	 */
+	private function row_to_code( ?array $row ): ?PromotionCode {
+		if ( $row === null ) {
+			return null;
+		}
+
+		try {
+			return PromotionCode::from_array( $row );
+		} catch ( InvalidArgumentException $e ) {
+			return null;
+		}
 	}
 }

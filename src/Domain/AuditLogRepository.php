@@ -9,7 +9,10 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Domain;
 
+use InvalidArgumentException;
+use MP\CommercePromotions\Infrastructure\Database\DbQuery;
 use MP\CommercePromotions\Infrastructure\Database\Schema;
+use MP\CommercePromotions\Infrastructure\Database\TableName;
 use wpdb;
 
 final class AuditLogRepository {
@@ -20,6 +23,9 @@ final class AuditLogRepository {
 		$this->wpdb = $wpdb;
 	}
 
+	/**
+	 * Insert an audit log entry; returns new id or 0 on failure.
+	 */
 	public function insert( AuditLogEntry $entry ): int {
 		$now = current_time( 'mysql' );
 
@@ -42,7 +48,7 @@ final class AuditLogRepository {
 		);
 
 		$inserted = $this->wpdb->insert(
-			Schema::audit_log_table( $this->wpdb ),
+			$this->audit_log_table(),
 			$data,
 			$formats
 		);
@@ -52,6 +58,7 @@ final class AuditLogRepository {
 		}
 
 		$new_id = (int) $this->wpdb->insert_id;
+
 		return $new_id > 0 ? $new_id : 0;
 	}
 
@@ -64,33 +71,28 @@ final class AuditLogRepository {
 		}
 
 		$limit = max( 1, min( 100, $limit ) );
+		$table = $this->audit_log_table();
 
-		$table = Schema::audit_log_table( $this->wpdb );
-		$sql   = "SELECT * FROM {$table} WHERE promotion_id = %d ORDER BY created_at DESC, id DESC LIMIT %d";
-
-		$prepared = $this->wpdb->prepare( $sql, $promotion_id, $limit );
-		if ( ! is_string( $prepared ) ) {
-			return array();
-		}
-
-		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
-		if ( ! is_array( $rows ) ) {
-			return array();
-		}
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE promotion_id = %d ORDER BY created_at DESC, id DESC LIMIT %d",
+			array( $promotion_id, $limit )
+		);
 
 		$out = array();
 		foreach ( $rows as $row ) {
-			if ( ! is_array( $row ) ) {
-				continue;
-			}
 			try {
 				$out[] = AuditLogEntry::from_array( $row );
-			} catch ( \InvalidArgumentException $e ) {
+			} catch ( InvalidArgumentException $e ) {
 				continue;
 			}
 		}
 
 		return $out;
+	}
+
+	private function audit_log_table(): string {
+		return TableName::assert_valid( Schema::audit_log_table( $this->wpdb ) );
 	}
 
 	/**

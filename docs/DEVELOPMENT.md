@@ -110,6 +110,21 @@ Configured standards:
 | `AdminSection` | Titled `.card` sections on the promotion edit screen |
 | `AdminUrl` | List, edit, tab, settings, and diagnostics URLs |
 
+## Repository SQL pattern
+
+Domain repositories use custom tables defined in `Schema` only.
+
+| Rule | Detail |
+|------|--------|
+| Table names | Always from `Schema::*_table( $wpdb )`, then `TableName::assert_valid()` before interpolating into SQL |
+| Values | Always via `$wpdb->prepare()` placeholders (`%s`, `%d`, …) — use `DbQuery::prepare()` / `get_row()` / `get_var()` / `get_results()` / `query()` |
+| LIKE | Wrap user search with `$wpdb->esc_like()` before binding `%s` |
+| LIMIT / OFFSET | Cast and clamp integers, then pass as `%d` placeholders |
+| Never prepare table names | Identifiers are validated, not placeholder-bound |
+| Woo/core meta tables | When joined (e.g. `postmeta`, `wc_orders_meta`), validate with `TableName::assert_valid()` the same way |
+
+`DbQuery` centralizes the PHPCS-safe prepare → execute flow so repositories do not repeat `phpcs:ignore` on every `get_var( $prepared )` call.
+
 ## Docker / WP-CLI verification
 
 Project WordPress root: `/home/magpern/woocommerce`

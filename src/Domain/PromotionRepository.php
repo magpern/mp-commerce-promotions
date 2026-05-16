@@ -9,7 +9,10 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Domain;
 
+use InvalidArgumentException;
+use MP\CommercePromotions\Infrastructure\Database\DbQuery;
 use MP\CommercePromotions\Infrastructure\Database\Schema;
+use MP\CommercePromotions\Infrastructure\Database\TableName;
 use wpdb;
 
 final class PromotionRepository {
@@ -20,39 +23,46 @@ final class PromotionRepository {
 		$this->wpdb = $wpdb;
 	}
 
+	/**
+	 * Find a promotion by primary key.
+	 */
 	public function find( int $id ): ?Promotion {
 		if ( $id <= 0 ) {
 			return null;
 		}
 
-		$table = Schema::promotions_table( $this->wpdb );
-		$sql = "SELECT * FROM {$table} WHERE id = %d";
-
-		$row = $this->wpdb->get_row(
-			$this->wpdb->prepare( $sql, $id ),
-			ARRAY_A
+		$table = $this->promotions_table();
+		$row   = DbQuery::get_row(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE id = %d",
+			array( $id )
 		);
 
 		return $this->row_to_promotion( $row );
 	}
 
+	/**
+	 * Find a promotion by UUID.
+	 */
 	public function find_by_uuid( string $uuid ): ?Promotion {
 		$uuid = trim( $uuid );
 		if ( $uuid === '' ) {
 			return null;
 		}
 
-		$table = Schema::promotions_table( $this->wpdb );
-		$sql = "SELECT * FROM {$table} WHERE uuid = %s";
-
-		$row = $this->wpdb->get_row(
-			$this->wpdb->prepare( $sql, $uuid ),
-			ARRAY_A
+		$table = $this->promotions_table();
+		$row   = DbQuery::get_row(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE uuid = %s",
+			array( $uuid )
 		);
 
 		return $this->row_to_promotion( $row );
 	}
 
+	/**
+	 * Resolve numeric id or UUID string to a promotion.
+	 */
 	public function find_by_id_or_uuid( string $identifier ): ?Promotion {
 		$identifier = trim( $identifier );
 		if ( $identifier === '' ) {
@@ -73,8 +83,7 @@ final class PromotionRepository {
 	 */
 	public function find_active( int $limit = 50 ): array {
 		$limit = max( 1, min( 100, $limit ) );
-
-		$table = Schema::promotions_table( $this->wpdb );
+		$table = $this->promotions_table();
 		$now   = current_time( 'mysql' );
 
 		$sql = "SELECT * FROM {$table}
@@ -84,53 +93,42 @@ final class PromotionRepository {
 			ORDER BY priority ASC, id ASC
 			LIMIT %d";
 
-		$prepared = $this->wpdb->prepare(
+		$rows = DbQuery::get_results(
+			$this->wpdb,
 			$sql,
-			PromotionStatus::ACTIVE,
-			$now,
-			$now,
-			$limit
+			array(
+				PromotionStatus::ACTIVE,
+				$now,
+				$now,
+				$limit,
+			)
 		);
 
-		if ( ! is_string( $prepared ) ) {
-			return array();
-		}
-
-		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
-		if ( ! is_array( $rows ) ) {
-			return array();
-		}
-
-		$out = array();
-		foreach ( $rows as $row ) {
-			$p = $this->row_to_promotion( $row );
-			if ( $p instanceof Promotion ) {
-				$out[] = $p;
-			}
-		}
-
-		return $out;
+		return $this->rows_to_promotions( $rows );
 	}
 
+	/**
+	 * Insert a new promotion row; returns new id or 0 on failure.
+	 */
 	public function insert( Promotion $promotion ): int {
 		$now = current_time( 'mysql' );
 
 		$data = array(
-			'uuid'          => $promotion->get_uuid(),
-			'name'          => $promotion->get_name(),
-			'description'   => $promotion->get_description(),
-			'status'        => $promotion->get_status(),
-			'priority'      => $promotion->get_priority(),
-			'starts_at'     => $promotion->get_starts_at(),
-			'ends_at'       => $promotion->get_ends_at(),
-			'conditions'    => $this->encode_json( $promotion->get_conditions() ),
-			'actions'       => $this->encode_json( $promotion->get_actions() ),
-			'restrictions'  => $this->encode_json( $promotion->get_restrictions() ),
-			'usage_limit'   => $promotion->get_usage_limit(),
-			'usage_count'   => $promotion->get_usage_count(),
-			'created_by'    => $promotion->get_created_by(),
-			'created_at'    => $promotion->get_created_at() ?? $now,
-			'updated_at'    => $promotion->get_updated_at() ?? $now,
+			'uuid'         => $promotion->get_uuid(),
+			'name'         => $promotion->get_name(),
+			'description'  => $promotion->get_description(),
+			'status'       => $promotion->get_status(),
+			'priority'     => $promotion->get_priority(),
+			'starts_at'    => $promotion->get_starts_at(),
+			'ends_at'      => $promotion->get_ends_at(),
+			'conditions'   => $this->encode_json( $promotion->get_conditions() ),
+			'actions'      => $this->encode_json( $promotion->get_actions() ),
+			'restrictions' => $this->encode_json( $promotion->get_restrictions() ),
+			'usage_limit'  => $promotion->get_usage_limit(),
+			'usage_count'  => $promotion->get_usage_count(),
+			'created_by'   => $promotion->get_created_by(),
+			'created_at'   => $promotion->get_created_at() ?? $now,
+			'updated_at'   => $promotion->get_updated_at() ?? $now,
 		);
 
 		$formats = array(
@@ -152,7 +150,7 @@ final class PromotionRepository {
 		);
 
 		$inserted = $this->wpdb->insert(
-			Schema::promotions_table( $this->wpdb ),
+			$this->promotions_table(),
 			$data,
 			$formats
 		);
@@ -162,9 +160,13 @@ final class PromotionRepository {
 		}
 
 		$new_id = (int) $this->wpdb->insert_id;
+
 		return $new_id > 0 ? $new_id : 0;
 	}
 
+	/**
+	 * Update an existing promotion row.
+	 */
 	public function update( Promotion $promotion ): bool {
 		$id = $promotion->get_id();
 		if ( $id === null || $id <= 0 ) {
@@ -174,20 +176,20 @@ final class PromotionRepository {
 		$now = current_time( 'mysql' );
 
 		$data = array(
-			'uuid'          => $promotion->get_uuid(),
-			'name'          => $promotion->get_name(),
-			'description'   => $promotion->get_description(),
-			'status'        => $promotion->get_status(),
-			'priority'      => $promotion->get_priority(),
-			'starts_at'     => $promotion->get_starts_at(),
-			'ends_at'       => $promotion->get_ends_at(),
-			'conditions'    => $this->encode_json( $promotion->get_conditions() ),
-			'actions'       => $this->encode_json( $promotion->get_actions() ),
-			'restrictions'  => $this->encode_json( $promotion->get_restrictions() ),
-			'usage_limit'   => $promotion->get_usage_limit(),
-			'usage_count'   => $promotion->get_usage_count(),
-			'created_by'    => $promotion->get_created_by(),
-			'updated_at'    => $now,
+			'uuid'         => $promotion->get_uuid(),
+			'name'         => $promotion->get_name(),
+			'description'  => $promotion->get_description(),
+			'status'       => $promotion->get_status(),
+			'priority'     => $promotion->get_priority(),
+			'starts_at'    => $promotion->get_starts_at(),
+			'ends_at'      => $promotion->get_ends_at(),
+			'conditions'   => $this->encode_json( $promotion->get_conditions() ),
+			'actions'      => $this->encode_json( $promotion->get_actions() ),
+			'restrictions' => $this->encode_json( $promotion->get_restrictions() ),
+			'usage_limit'  => $promotion->get_usage_limit(),
+			'usage_count'  => $promotion->get_usage_count(),
+			'created_by'   => $promotion->get_created_by(),
+			'updated_at'   => $now,
 		);
 
 		$formats = array(
@@ -208,7 +210,7 @@ final class PromotionRepository {
 		);
 
 		$updated = $this->wpdb->update(
-			Schema::promotions_table( $this->wpdb ),
+			$this->promotions_table(),
 			$data,
 			array( 'id' => $id ),
 			$formats,
@@ -218,13 +220,16 @@ final class PromotionRepository {
 		return false !== $updated;
 	}
 
+	/**
+	 * Hard-delete a promotion by id.
+	 */
 	public function delete( int $id ): bool {
 		if ( $id <= 0 ) {
 			return false;
 		}
 
 		$deleted = $this->wpdb->delete(
-			Schema::promotions_table( $this->wpdb ),
+			$this->promotions_table(),
 			array( 'id' => $id ),
 			array( '%d' )
 		);
@@ -238,31 +243,20 @@ final class PromotionRepository {
 	public function find_all( int $limit = 50, int $offset = 0 ): array {
 		$limit  = max( 1, min( 100, $limit ) );
 		$offset = max( 0, $offset );
+		$table  = $this->promotions_table();
 
-		$table = Schema::promotions_table( $this->wpdb );
-		$sql   = "SELECT * FROM {$table} ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d";
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			"SELECT * FROM {$table} ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d",
+			array( $limit, $offset )
+		);
 
-		$prepared = $this->wpdb->prepare( $sql, $limit, $offset );
-		if ( ! is_string( $prepared ) ) {
-			return array();
-		}
-
-		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
-		if ( ! is_array( $rows ) ) {
-			return array();
-		}
-
-		$out = array();
-		foreach ( $rows as $row ) {
-			$p = $this->row_to_promotion( $row );
-			if ( $p instanceof Promotion ) {
-				$out[] = $p;
-			}
-		}
-
-		return $out;
+		return $this->rows_to_promotions( $rows );
 	}
 
+	/**
+	 * Count all promotions (no filters).
+	 */
 	public function count_all(): int {
 		return $this->count_filtered( array() );
 	}
@@ -283,7 +277,7 @@ final class PromotionRepository {
 		$offset = max( 0, $offset );
 
 		$filter = $this->build_filtered_where( $args );
-		$table  = Schema::promotions_table( $this->wpdb );
+		$table  = $this->promotions_table();
 
 		$sql = "SELECT * FROM {$table} WHERE {$filter['where']} ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d";
 
@@ -291,25 +285,9 @@ final class PromotionRepository {
 		$params[] = $limit;
 		$params[] = $offset;
 
-		$prepared = $this->wpdb->prepare( $sql, ...$params );
-		if ( ! is_string( $prepared ) ) {
-			return array();
-		}
+		$rows = DbQuery::get_results( $this->wpdb, $sql, $params );
 
-		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
-		if ( ! is_array( $rows ) ) {
-			return array();
-		}
-
-		$out = array();
-		foreach ( $rows as $row ) {
-			$p = $this->row_to_promotion( $row );
-			if ( $p instanceof Promotion ) {
-				$out[] = $p;
-			}
-		}
-
-		return $out;
+		return $this->rows_to_promotions( $rows );
 	}
 
 	/**
@@ -322,25 +300,23 @@ final class PromotionRepository {
 	 */
 	public function count_filtered( array $args ): int {
 		$filter = $this->build_filtered_where( $args );
-		$table  = Schema::promotions_table( $this->wpdb );
+		$table  = $this->promotions_table();
 		$sql    = "SELECT COUNT(*) FROM {$table} WHERE {$filter['where']}";
 
-		if ( count( $filter['params'] ) === 0 ) {
-			$count = $this->wpdb->get_var( $sql );
-		} else {
-			$prepared = $this->wpdb->prepare( $sql, ...$filter['params'] );
-			if ( ! is_string( $prepared ) ) {
-				return 0;
-			}
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $prepared is from $wpdb->prepare().
-			$count = $this->wpdb->get_var( $prepared );
-		}
+		$count = DbQuery::get_var( $this->wpdb, $sql, $filter['params'] );
 
 		if ( ! is_numeric( $count ) ) {
 			return 0;
 		}
 
 		return (int) $count;
+	}
+
+	/**
+	 * Validated promotions table name from Schema.
+	 */
+	private function promotions_table(): string {
+		return TableName::assert_valid( Schema::promotions_table( $this->wpdb ) );
 	}
 
 	/**
@@ -359,7 +335,7 @@ final class PromotionRepository {
 		$status = isset( $args['status'] ) ? trim( (string) $args['status'] ) : '';
 		if ( $status !== '' ) {
 			if ( ! PromotionStatus::is_valid( $status ) ) {
-				throw new \InvalidArgumentException( 'Invalid promotion status filter.' );
+				throw new InvalidArgumentException( 'Invalid promotion status filter.' );
 			}
 			$clauses[] = 'status = %s';
 			$params[]  = $status;
@@ -380,16 +356,32 @@ final class PromotionRepository {
 	}
 
 	/**
-	 * @param array<string, mixed>|object|null $row
+	 * @param list<array<string, mixed>> $rows
+	 * @return list<Promotion>
 	 */
-	private function row_to_promotion( $row ): ?Promotion {
-		if ( ! is_array( $row ) || empty( $row ) ) {
+	private function rows_to_promotions( array $rows ): array {
+		$out = array();
+		foreach ( $rows as $row ) {
+			$p = $this->row_to_promotion( $row );
+			if ( $p instanceof Promotion ) {
+				$out[] = $p;
+			}
+		}
+
+		return $out;
+	}
+
+	/**
+	 * @param array<string, mixed>|null $row
+	 */
+	private function row_to_promotion( ?array $row ): ?Promotion {
+		if ( $row === null || $row === array() ) {
 			return null;
 		}
 
 		try {
 			return Promotion::from_array( $row );
-		} catch ( \InvalidArgumentException $e ) {
+		} catch ( InvalidArgumentException $e ) {
 			return null;
 		}
 	}

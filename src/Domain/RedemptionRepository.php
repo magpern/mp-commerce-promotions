@@ -9,7 +9,10 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Domain;
 
+use InvalidArgumentException;
+use MP\CommercePromotions\Infrastructure\Database\DbQuery;
 use MP\CommercePromotions\Infrastructure\Database\Schema;
+use MP\CommercePromotions\Infrastructure\Database\TableName;
 use wpdb;
 
 final class RedemptionRepository {
@@ -20,6 +23,9 @@ final class RedemptionRepository {
 		$this->wpdb = $wpdb;
 	}
 
+	/**
+	 * Insert a redemption row; returns new id or 0 on failure.
+	 */
 	public function insert( Redemption $redemption ): int {
 		$now = current_time( 'mysql' );
 
@@ -48,7 +54,7 @@ final class RedemptionRepository {
 		);
 
 		$inserted = $this->wpdb->insert(
-			Schema::redemptions_table( $this->wpdb ),
+			$this->redemptions_table(),
 			$data,
 			$formats
 		);
@@ -58,19 +64,21 @@ final class RedemptionRepository {
 		}
 
 		$new_id = (int) $this->wpdb->insert_id;
+
 		return $new_id > 0 ? $new_id : 0;
 	}
 
+	/**
+	 * Update redemption status (e.g. recorded → reversed).
+	 */
 	public function update( Redemption $redemption ): bool {
 		$id = $redemption->get_id();
 		if ( $id === null || $id <= 0 ) {
 			return false;
 		}
 
-		$table = Schema::redemptions_table( $this->wpdb );
-
 		$updated = $this->wpdb->update(
-			$table,
+			$this->redemptions_table(),
 			array( 'status' => $redemption->get_status() ),
 			array( 'id' => $id ),
 			array( '%s' ),
@@ -84,52 +92,52 @@ final class RedemptionRepository {
 		return (int) $updated > 0;
 	}
 
+	/**
+	 * Find a recorded redemption for order + promotion.
+	 */
 	public function find_recorded_for_order_and_promotion( int $order_id, int $promotion_id ): ?Redemption {
 		if ( $order_id <= 0 || $promotion_id <= 0 ) {
 			return null;
 		}
 
-		$table = Schema::redemptions_table( $this->wpdb );
-		$sql   = "SELECT * FROM {$table} WHERE order_id = %d AND promotion_id = %d AND status = %s LIMIT 1";
+		$table = $this->redemptions_table();
+		$row   = DbQuery::get_row(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE order_id = %d AND promotion_id = %d AND status = %s LIMIT 1",
+			array( $order_id, $promotion_id, Redemption::STATUS_RECORDED )
+		);
 
-		$prepared = $this->wpdb->prepare( $sql, $order_id, $promotion_id, Redemption::STATUS_RECORDED );
-		if ( ! is_string( $prepared ) ) {
-			return null;
-		}
-
-		$row = $this->wpdb->get_row( $prepared, ARRAY_A );
-		if ( ! is_array( $row ) ) {
-			return null;
-		}
-
-		try {
-			return Redemption::from_array( $row );
-		} catch ( \InvalidArgumentException $e ) {
-			return null;
-		}
+		return $this->row_to_redemption( $row );
 	}
 
+	/**
+	 * Whether any redemption exists for order + promotion (any status).
+	 */
 	public function exists_for_order_and_promotion( int $order_id, int $promotion_id ): bool {
 		if ( $order_id <= 0 || $promotion_id <= 0 ) {
 			return false;
 		}
 
-		$table = Schema::redemptions_table( $this->wpdb );
-		$sql   = "SELECT 1 FROM {$table} WHERE order_id = %d AND promotion_id = %d LIMIT 1";
+		$table = $this->redemptions_table();
+		$found = DbQuery::get_var(
+			$this->wpdb,
+			"SELECT 1 FROM {$table} WHERE order_id = %d AND promotion_id = %d LIMIT 1",
+			array( $order_id, $promotion_id )
+		);
 
-		$prepared = $this->wpdb->prepare( $sql, $order_id, $promotion_id );
-		if ( ! is_string( $prepared ) ) {
-			return false;
-		}
-
-		$found = $this->wpdb->get_var( $prepared );
 		return $found !== null && $found !== '' && (int) $found > 0;
 	}
 
+	/**
+	 * Count recorded redemptions for a promotion.
+	 */
 	public function count_recorded_for_promotion( int $promotion_id ): int {
 		return $this->count_by_promotion_and_status( $promotion_id, Redemption::STATUS_RECORDED );
 	}
 
+	/**
+	 * Count reversed redemptions for a promotion.
+	 */
 	public function count_reversed_for_promotion( int $promotion_id ): int {
 		return $this->count_by_promotion_and_status( $promotion_id, Redemption::STATUS_REVERSED );
 	}
@@ -142,35 +150,31 @@ final class RedemptionRepository {
 			return 0;
 		}
 
-		$meta_key = '_mp_cp_promotion_code_id';
-		$meta_val = (string) $code_id;
-
-		$redemptions_table = Schema::redemptions_table( $this->wpdb );
-		$status            = Redemption::STATUS_RECORDED;
+		$meta_key            = '_mp_cp_promotion_code_id';
+		$meta_val            = (string) $code_id;
+		$redemptions_table   = $this->redemptions_table();
+		$status              = Redemption::STATUS_RECORDED;
 
 		if ( $this->uses_custom_orders_table() ) {
-			$meta_table = $this->wpdb->prefix . 'wc_orders_meta';
+			$meta_table = TableName::assert_valid( $this->wpdb->prefix . 'wc_orders_meta' );
 			$sql        = "SELECT COUNT(DISTINCT r.id) FROM {$redemptions_table} r
 				INNER JOIN {$meta_table} om ON om.order_id = r.order_id
 					AND om.meta_key = %s AND om.meta_value = %s
 				WHERE r.status = %s AND r.order_id IS NOT NULL";
-
-			$prepared = $this->wpdb->prepare( $sql, $meta_key, $meta_val, $status );
 		} else {
-			$meta_table = $this->wpdb->postmeta;
+			$meta_table = TableName::assert_valid( $this->wpdb->postmeta );
 			$sql        = "SELECT COUNT(DISTINCT r.id) FROM {$redemptions_table} r
 				INNER JOIN {$meta_table} pm ON pm.post_id = r.order_id
 					AND pm.meta_key = %s AND pm.meta_value = %s
 				WHERE r.status = %s AND r.order_id IS NOT NULL";
-
-			$prepared = $this->wpdb->prepare( $sql, $meta_key, $meta_val, $status );
 		}
 
-		if ( ! is_string( $prepared ) ) {
-			return 0;
-		}
+		$count = DbQuery::get_var(
+			$this->wpdb,
+			$sql,
+			array( $meta_key, $meta_val, $status )
+		);
 
-		$count = $this->wpdb->get_var( $prepared );
 		if ( ! is_numeric( $count ) ) {
 			return 0;
 		}
@@ -178,20 +182,21 @@ final class RedemptionRepository {
 		return (int) $count;
 	}
 
+	/**
+	 * Count redemptions for an order.
+	 */
 	public function count_for_order( int $order_id ): int {
 		if ( $order_id <= 0 ) {
 			return 0;
 		}
 
-		$table = Schema::redemptions_table( $this->wpdb );
-		$sql   = "SELECT COUNT(*) FROM {$table} WHERE order_id = %d";
+		$table = $this->redemptions_table();
+		$count = DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COUNT(*) FROM {$table} WHERE order_id = %d",
+			array( $order_id )
+		);
 
-		$prepared = $this->wpdb->prepare( $sql, $order_id );
-		if ( ! is_string( $prepared ) ) {
-			return 0;
-		}
-
-		$count = $this->wpdb->get_var( $prepared );
 		if ( ! is_numeric( $count ) ) {
 			return 0;
 		}
@@ -207,18 +212,12 @@ final class RedemptionRepository {
 			return array();
 		}
 
-		$table = Schema::redemptions_table( $this->wpdb );
-		$sql   = "SELECT * FROM {$table} WHERE order_id = %d ORDER BY redeemed_at DESC, id DESC";
-
-		$prepared = $this->wpdb->prepare( $sql, $order_id );
-		if ( ! is_string( $prepared ) ) {
-			return array();
-		}
-
-		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
-		if ( ! is_array( $rows ) ) {
-			return array();
-		}
+		$table = $this->redemptions_table();
+		$rows  = DbQuery::get_results(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE order_id = %d ORDER BY redeemed_at DESC, id DESC",
+			array( $order_id )
+		);
 
 		return $this->rows_to_redemptions( $rows );
 	}
@@ -232,19 +231,13 @@ final class RedemptionRepository {
 		}
 
 		$limit = max( 1, min( 100, $limit ) );
+		$table = $this->redemptions_table();
 
-		$table = Schema::redemptions_table( $this->wpdb );
-		$sql   = "SELECT * FROM {$table} WHERE promotion_id = %d ORDER BY created_at DESC, id DESC LIMIT %d";
-
-		$prepared = $this->wpdb->prepare( $sql, $promotion_id, $limit );
-		if ( ! is_string( $prepared ) ) {
-			return array();
-		}
-
-		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
-		if ( ! is_array( $rows ) ) {
-			return array();
-		}
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE promotion_id = %d ORDER BY created_at DESC, id DESC LIMIT %d",
+			array( $promotion_id, $limit )
+		);
 
 		return $this->rows_to_redemptions( $rows );
 	}
@@ -254,20 +247,22 @@ final class RedemptionRepository {
 			return 0;
 		}
 
-		$table = Schema::redemptions_table( $this->wpdb );
-		$sql   = "SELECT COUNT(*) FROM {$table} WHERE promotion_id = %d AND status = %s";
+		$table = $this->redemptions_table();
+		$count = DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COUNT(*) FROM {$table} WHERE promotion_id = %d AND status = %s",
+			array( $promotion_id, $status )
+		);
 
-		$prepared = $this->wpdb->prepare( $sql, $promotion_id, $status );
-		if ( ! is_string( $prepared ) ) {
-			return 0;
-		}
-
-		$count = $this->wpdb->get_var( $prepared );
 		if ( ! is_numeric( $count ) ) {
 			return 0;
 		}
 
 		return (int) $count;
+	}
+
+	private function redemptions_table(): string {
+		return TableName::assert_valid( Schema::redemptions_table( $this->wpdb ) );
 	}
 
 	private function uses_custom_orders_table(): bool {
@@ -279,19 +274,30 @@ final class RedemptionRepository {
 	}
 
 	/**
+	 * @param array<string, mixed>|null $row
+	 */
+	private function row_to_redemption( ?array $row ): ?Redemption {
+		if ( $row === null ) {
+			return null;
+		}
+
+		try {
+			return Redemption::from_array( $row );
+		} catch ( InvalidArgumentException $e ) {
+			return null;
+		}
+	}
+
+	/**
 	 * @param list<array<string, mixed>> $rows
 	 * @return list<Redemption>
 	 */
 	private function rows_to_redemptions( array $rows ): array {
 		$out = array();
 		foreach ( $rows as $row ) {
-			if ( ! is_array( $row ) ) {
-				continue;
-			}
-			try {
-				$out[] = Redemption::from_array( $row );
-			} catch ( \InvalidArgumentException $e ) {
-				continue;
+			$redemption = $this->row_to_redemption( $row );
+			if ( $redemption instanceof Redemption ) {
+				$out[] = $redemption;
 			}
 		}
 

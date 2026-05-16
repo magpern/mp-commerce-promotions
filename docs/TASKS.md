@@ -9,6 +9,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 ## Recently completed
 
 - **Reusable admin infrastructure** — `AdminNotice`, `AdminSection`, `AdminUrl`; edit/list/settings/diagnostics refactors
+- **PHPCS repository batch** — `TableName`, `DbQuery`, repository SQL hardening (see [DEVELOPMENT.md](DEVELOPMENT.md))
 - **PHPCS cleanup batch #1** — admin alignment/escaping; warnings reduced (see [DEVELOPMENT.md](DEVELOPMENT.md))
 - **Code quality tooling** — `composer.json`, `phpcs.xml.dist`, `docs/DEVELOPMENT.md`
 - Admin UX bundle: duplicate promotion, edit screen layout, standardized notices
@@ -20,7 +21,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Next planned
 
-1. **PHPCS / WPCS baseline** — batch #2+ (repositories, domain docblocks; see [DEVELOPMENT.md](DEVELOPMENT.md))
+1. **PHPCS / WPCS baseline** — batch #3+ (domain/engine docblocks, Woo layer; see [DEVELOPMENT.md](DEVELOPMENT.md))
 2. **PHPUnit smoke tests** — evaluator, repositories, duplication service
 3. **CI workflow** — lint + test on push
 4. **Composer autoloading** — optional PSR-4 via Composer for releases

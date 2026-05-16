@@ -145,14 +145,14 @@ final class MigrationRunner {
 	}
 
 	private function redemptions_has_duplicate_non_null_order_promotion_pairs(): bool {
-		$table = Schema::redemptions_table( $this->wpdb );
-		if ( ! is_string( $table ) || $table === '' || ! preg_match( '/^[a-zA-Z0-9_]+$/', $table ) ) {
+		$table = $this->schema_table( array( Schema::class, 'redemptions_table' ) );
+		if ( $table === null ) {
 			return false;
 		}
 
 		$sql = "SELECT 1 FROM `{$table}` WHERE order_id IS NOT NULL GROUP BY order_id, promotion_id HAVING COUNT(*) > 1 LIMIT 1";
 
-		$found = $this->wpdb->get_var( $sql );
+		$found = DbQuery::get_var( $this->wpdb, $sql );
 		return $found !== null && $found !== '';
 	}
 
@@ -186,14 +186,13 @@ final class MigrationRunner {
 	}
 
 	private function promotion_codes_batch_id_index_exists(): bool {
-		$table = Schema::promotion_codes_table( $this->wpdb );
-		if ( ! is_string( $table ) || $table === '' || ! preg_match( '/^[a-zA-Z0-9_]+$/', $table ) ) {
+		$table = $this->schema_table( array( Schema::class, 'promotion_codes_table' ) );
+		if ( $table === null ) {
 			return false;
 		}
 
-		$sql  = "SHOW INDEX FROM `{$table}` WHERE Key_name = 'batch_id'";
-		$rows = $this->wpdb->get_results( $sql, ARRAY_A );
-		return is_array( $rows ) && count( $rows ) > 0;
+		$rows = DbQuery::get_results( $this->wpdb, "SHOW INDEX FROM `{$table}` WHERE Key_name = 'batch_id'" );
+		return count( $rows ) > 0;
 	}
 
 	private function code_batches_table_exists(): bool {
@@ -208,30 +207,44 @@ final class MigrationRunner {
 	}
 
 	private function promotion_codes_code_hash_unique_index_exists(): bool {
-		$table = Schema::promotion_codes_table( $this->wpdb );
-		if ( ! is_string( $table ) || $table === '' || ! preg_match( '/^[a-zA-Z0-9_]+$/', $table ) ) {
+		$table = $this->schema_table( array( Schema::class, 'promotion_codes_table' ) );
+		if ( $table === null ) {
 			return false;
 		}
 
-		$sql  = "SHOW INDEX FROM `{$table}` WHERE Key_name = 'code_hash'";
-		$rows = $this->wpdb->get_results( $sql, ARRAY_A );
-		return is_array( $rows ) && count( $rows ) > 0;
+		$rows = DbQuery::get_results( $this->wpdb, "SHOW INDEX FROM `{$table}` WHERE Key_name = 'code_hash'" );
+		return count( $rows ) > 0;
 	}
 
 	private function redemptions_unique_order_promotion_index_exists(): bool {
-		$table = Schema::redemptions_table( $this->wpdb );
-		if ( ! is_string( $table ) || $table === '' || ! preg_match( '/^[a-zA-Z0-9_]+$/', $table ) ) {
+		$table = $this->schema_table( array( Schema::class, 'redemptions_table' ) );
+		if ( $table === null ) {
 			return false;
 		}
 
-		$key = self::REDEMPTIONS_UNIQUE_KEY_NAME;
-		if ( ! preg_match( '/^[a-zA-Z0-9_]+$/', $key ) ) {
-			return false;
+		$key  = self::REDEMPTIONS_UNIQUE_KEY_NAME;
+		$rows = DbQuery::get_results( $this->wpdb, "SHOW INDEX FROM `{$table}` WHERE Key_name = '{$key}'" );
+		return count( $rows ) > 0;
+	}
+
+	/**
+	 * @param array{0: class-string, 1: string} $schema_method Callable Schema::*_table( wpdb ).
+	 */
+	private function schema_table( array $schema_method ): ?string {
+		if ( ! is_callable( $schema_method ) ) {
+			return null;
 		}
 
-		$sql  = "SHOW INDEX FROM `{$table}` WHERE Key_name = '{$key}'";
-		$rows = $this->wpdb->get_results( $sql, ARRAY_A );
-		return is_array( $rows ) && count( $rows ) > 0;
+		$table = (string) $schema_method( $this->wpdb );
+		if ( $table === '' ) {
+			return null;
+		}
+
+		try {
+			return TableName::assert_valid( $table );
+		} catch ( \RuntimeException $e ) {
+			return null;
+		}
 	}
 
 	private function tables_exist(): bool {
