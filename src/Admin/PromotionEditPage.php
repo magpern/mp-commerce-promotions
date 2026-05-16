@@ -1330,11 +1330,17 @@ final class PromotionEditPage {
 					$level   = isset( $issue['level'] ) ? (string) $issue['level'] : 'info';
 					$message = isset( $issue['message'] ) ? (string) $issue['message'] : '';
 
-					$label = match ( $level ) {
-						'error' => __( 'Error', 'mp-commerce-promotions' ),
-						'warning' => __( 'Warning', 'mp-commerce-promotions' ),
-						default => __( 'Info', 'mp-commerce-promotions' ),
-					};
+					switch ( $level ) {
+						case 'error':
+							$label = __( 'Error', 'mp-commerce-promotions' );
+							break;
+						case 'warning':
+							$label = __( 'Warning', 'mp-commerce-promotions' );
+							break;
+						default:
+							$label = __( 'Info', 'mp-commerce-promotions' );
+							break;
+					}
 
 					echo '<li><strong>' . esc_html( $label ) . ':</strong> ' . esc_html( $message ) . '</li>';
 				}
