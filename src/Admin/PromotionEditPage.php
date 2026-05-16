@@ -108,6 +108,8 @@ final class PromotionEditPage {
 		$this->batch_generation_outcome     = null;
 		$this->batch_generation_error       = null;
 
+		$this->handle_post_download_generated_codes_csv( $promotion );
+
 		$this->handle_post_change_status( $promotion );
 		$this->handle_post_update( $promotion );
 		$this->handle_post_create_promotion_code( $promotion );
@@ -207,6 +209,67 @@ final class PromotionEditPage {
 		}
 
 		$this->redirect_to_edit( $pid, array( 'mp_cp_code_created' => '1' ) );
+	}
+
+	private function handle_post_download_generated_codes_csv( Promotion $promotion ): void {
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_download_generated_codes_submit'] ) ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			wp_die( esc_html__( 'Invalid promotion.', 'mp-commerce-promotions' ) );
+		}
+
+		$nonce_action = 'mp_cp_download_generated_codes_' . $pid;
+		if ( ! isset( $_POST['mp_cp_download_generated_codes_nonce'] ) ) {
+			wp_die( esc_html__( 'Security check failed. Please try again.', 'mp-commerce-promotions' ) );
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_download_generated_codes_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+			wp_die( esc_html__( 'Security check failed. Please try again.', 'mp-commerce-promotions' ) );
+		}
+
+		if ( ! isset( $_POST['mp_cp_generated_codes_payload'] ) ) {
+			wp_die( esc_html__( 'No generated codes were submitted for download.', 'mp-commerce-promotions' ) );
+		}
+
+		$encoded = wp_unslash( (string) $_POST['mp_cp_generated_codes_payload'] );
+		$encoded = trim( $encoded );
+		if ( $encoded !== '' && ! preg_match( '/^[A-Za-z0-9+\/=]+$/', $encoded ) ) {
+			wp_die( esc_html__( 'Generated codes payload is invalid or expired.', 'mp-commerce-promotions' ) );
+		}
+
+		$decoded = PromotionCodeBatchGenerationOutcome::decode_download_payload( $encoded );
+		if ( $decoded === null ) {
+			wp_die( esc_html__( 'Generated codes payload is invalid or expired.', 'mp-commerce-promotions' ) );
+		}
+
+		if ( (int) $decoded['promotion_id'] !== $pid ) {
+			wp_die( esc_html__( 'Generated codes do not match this promotion.', 'mp-commerce-promotions' ) );
+		}
+
+		$batch_id = (int) $decoded['batch_id'];
+		$csv      = PromotionCodeBatchGenerationOutcome::build_csv_string(
+			$decoded['codes'],
+			$pid,
+			$batch_id,
+			$decoded['generated_at']
+		);
+
+		$filename = sprintf( 'promotion-codes-%d-%d.csv', $pid, $batch_id );
+
+		nocache_headers();
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSV file body.
+		echo "\xEF\xBB\xBF" . $csv;
+		exit;
 	}
 
 	private function handle_post_generate_code_batch( Promotion $promotion ): void {
@@ -990,6 +1053,35 @@ final class PromotionEditPage {
 		echo '<textarea class="large-text code" rows="' . esc_attr( (string) min( 20, max( 4, count( $codes ) + 1 ) ) ) . '" readonly style="font-family:monospace;">';
 		echo esc_textarea( $lines );
 		echo '</textarea>';
+
+		$batch_id      = $batch->get_id();
+		$promotion_id  = $batch->get_promotion_id();
+		$generated_at  = $outcome->get_generated_at();
+		$download_nonce = 'mp_cp_download_generated_codes_' . $promotion_id;
+		$form_action    = $this->edit_url( (string) $promotion_id );
+		$payload        = PromotionCodeBatchGenerationOutcome::encode_download_payload(
+			$codes,
+			$promotion_id,
+			$batch_id !== null && $batch_id > 0 ? $batch_id : 0,
+			$generated_at
+		);
+
+		if ( $payload !== '' && $batch_id !== null && $batch_id > 0 ) {
+			echo '<form method="post" action="' . esc_url( $form_action ) . '" style="margin-top:12px;">';
+			wp_nonce_field( $download_nonce, 'mp_cp_download_generated_codes_nonce' );
+			echo '<input type="hidden" name="mp_cp_generated_codes_payload" value="' . esc_attr( $payload ) . '" />';
+			echo '<p class="submit" style="margin:0;padding:0;">';
+			echo '<button type="submit" name="mp_cp_download_generated_codes_submit" value="1" class="button">';
+			echo esc_html__( 'Download CSV', 'mp-commerce-promotions' );
+			echo '</button>';
+			echo '</p>';
+			echo '<p class="description">' . esc_html__(
+				'Download the CSV before leaving or refreshing this page. Plain codes are not stored and cannot be downloaded later.',
+				'mp-commerce-promotions'
+			) . '</p>';
+			echo '</form>';
+		}
+
 		echo '</div>';
 	}
 
