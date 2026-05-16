@@ -2,6 +2,12 @@
 
 Use this checklist to verify the end-to-end promotion flow on a real WooCommerce storefront (cart fee, order meta, redemption, audit, idempotency, and reversal). Run in a **staging or local** environment with a test payment method.
 
+**Browser storefront verification is preferred.** WP-CLI can simulate orders and hooks, but the WooCommerce cart in CLI often reports **subtotal 0** and may **not run `woocommerce_cart_calculate_fees`** the same way as a browser session. Use WP-CLI for database/meta checks; use the **storefront cart/checkout** to confirm fee labels and amounts.
+
+**How discounts apply (v1):** eligible promotions apply as a **negative WooCommerce cart fee**, not a native coupon discount line. Only the **first eligible active** promotion applies per cart calculation.
+
+**Reversal:** cancelling, failing, refunding, trashing, or deleting an order runs reversal logic — redemption status becomes **`reversed`**, promotion **`usage_count`** decrements by at most **1** (never below 0), and **`promotion.redemption_reversed`** is logged once per order.
+
 **WP-CLI quick checks (optional):**
 
 ```bash
@@ -134,9 +140,10 @@ Verify recording does not run twice for the same order/promotion:
 
 Do **not** expect the following in v1; failures here are out of scope for this checklist:
 
-- **Negative cart fee strategy** — discount is a WooCommerce **fee** (negative amount), not a native coupon line
+- **Negative cart fee strategy** — discount is a WooCommerce **fee** (negative amount), not a native coupon discount line
+- **WP-CLI cart subtotal unreliable** — programmatic `WC()->cart` may show **0** subtotal; fee calculation and session payload are best verified in a **browser**
 - **No partial refund logic** — only full **refunded** status (or cancel/failed/trash/delete paths) triggers reversal; partial refunds do not proportionally adjust usage
-- **No coupon codes** — promotions are not WooCommerce coupons
+- **Automatic promotions only in this doc** — promotion **codes** use the coupon field; see [manual-promotion-code-test.md](manual-promotion-code-test.md)
 - **No BOGO / free product** actions yet
 - **Only the first eligible promotion** applies (by priority / active list order)
 - **Admin “Preview against current cart”** may **not** match the storefront session cart (different context; preview does not add fees)

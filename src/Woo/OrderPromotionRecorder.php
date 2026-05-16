@@ -36,16 +36,22 @@ final class OrderPromotionRecorder {
 
 	private AuditLogger $audit;
 
+	/**
+	 * @param RedemptionRepository    $redemptions     Redemption persistence.
+	 * @param PromotionRepository     $promotions      Promotion persistence.
+	 * @param PromotionCodeRepository $promotion_codes Code persistence.
+	 * @param AuditLogger             $audit           Audit trail writer.
+	 */
 	public function __construct(
 		RedemptionRepository $redemptions,
 		PromotionRepository $promotions,
 		PromotionCodeRepository $promotion_codes,
 		AuditLogger $audit
 	) {
-		$this->redemptions      = $redemptions;
-		$this->promotions       = $promotions;
-		$this->promotion_codes  = $promotion_codes;
-		$this->audit            = $audit;
+		$this->redemptions     = $redemptions;
+		$this->promotions      = $promotions;
+		$this->promotion_codes = $promotion_codes;
+		$this->audit           = $audit;
 	}
 
 	/**
@@ -58,12 +64,8 @@ final class OrderPromotionRecorder {
 				return;
 			}
 
-			if ( ! function_exists( 'WC' ) || ! WC() || ! WC()->session ) {
-				return;
-			}
-
-			$raw = WC()->session->get( CartPromotionApplier::SESSION_KEY );
-			if ( ! is_array( $raw ) ) {
+			$raw = CartSessionHelper::get_applied_promotion();
+			if ( $raw === null ) {
 				return;
 			}
 
@@ -83,8 +85,8 @@ final class OrderPromotionRecorder {
 				return;
 			}
 
-			$action_type = isset( $raw['action_type'] ) ? (string) $raw['action_type'] : '';
-			$percentage  = null;
+			$action_type  = isset( $raw['action_type'] ) ? (string) $raw['action_type'] : '';
+			$percentage   = null;
 			$fixed_amount = null;
 
 			if ( $action_type === CartPromotionApplier::ACTION_PERCENTAGE_DISCOUNT ) {
@@ -112,11 +114,11 @@ final class OrderPromotionRecorder {
 
 			$code_meta = $this->extract_promotion_code_meta_from_session( $raw );
 
-			$cid           = (int) $order->get_customer_id();
-			$customer_id   = $cid > 0 ? $cid : null;
-			$currency      = $order->get_currency();
-			$currency      = is_string( $currency ) && $currency !== '' ? $currency : null;
-			$now           = current_time( 'mysql' );
+			$cid         = (int) $order->get_customer_id();
+			$customer_id = $cid > 0 ? $cid : null;
+			$currency    = $order->get_currency();
+			$currency    = is_string( $currency ) && $currency !== '' ? $currency : null;
+			$now         = current_time( 'mysql' );
 
 			if ( $this->redemptions->exists_for_order_and_promotion( $order_id, $promotion_id ) ) {
 				$this->apply_promotion_meta_to_order(
@@ -354,7 +356,7 @@ final class OrderPromotionRecorder {
 	/**
 	 * CPT fallback when the order post is permanently deleted.
 	 *
-	 * @param int          $post_id Post ID.
+	 * @param int           $post_id Post ID.
 	 * @param \WP_Post|null $post   Post object (optional).
 	 */
 	public function on_before_delete_post_for_reversal( $post_id, $post = null ): void {
@@ -419,7 +421,7 @@ final class OrderPromotionRecorder {
 	}
 
 	/**
-	 * @param \WC_Order $order
+	 * @param \WC_Order                                                   $order
 	 * @param array{promotion_code_id: int, promotion_code_last4: string} $code_meta
 	 */
 	private function apply_promotion_meta_to_order(
@@ -468,16 +470,6 @@ final class OrderPromotionRecorder {
 	}
 
 	private function clear_applied_promotion_session(): void {
-		if ( ! function_exists( 'WC' ) || ! WC() || ! WC()->session ) {
-			return;
-		}
-
-		$session = WC()->session;
-		if ( $session instanceof \ArrayAccess ) {
-			unset( $session[ CartPromotionApplier::SESSION_KEY ] );
-		}
-		if ( method_exists( $session, 'set' ) ) {
-			$session->set( CartPromotionApplier::SESSION_KEY, null );
-		}
+		CartSessionHelper::clear_applied_promotion();
 	}
 }

@@ -2,6 +2,12 @@
 
 Use this checklist to verify **manual promotion code redemption** through the standard **WooCommerce coupon field** (virtual coupon + negative cart fee). Run in **staging or local** with a test payment method when placing a real order.
 
+**Browser storefront verification is preferred.** WP-CLI can test the coupon bridge filters and order recording, but cart **subtotal** and **fee calculation** are often wrong in CLI — confirm fee label and amount on the **storefront cart**.
+
+**Virtual coupon behavior:** matching codes return a **virtual** `WC_Coupon` payload with **0** native WooCommerce discount. The real discount is still a **negative cart fee** from this plugin. WooCommerce accepts the code in the coupon field; the fee line shows e.g. `Commerce promotion code: ****5555`.
+
+**Reversal:** cancel/refund/trash/delete decrements **both** promotion and **code** `usage_count` by at most **1** each (idempotent; never below 0). Redemption row becomes **`reversed`**.
+
 **Related:** [manual-checkout-test.md](manual-checkout-test.md) (automatic promotion fee flow without codes).
 
 **WP-CLI quick checks (optional):**
@@ -144,12 +150,13 @@ On the **storefront** (browser, not wp-admin):
 
 ## 10. Known limitations
 
-- Virtual WooCommerce coupon has **0** native Woo discount; the real discount is a **negative cart fee**.
-- Only the **first** matching applied coupon that resolves to an MP promotion code is used.
+- **Virtual coupon, real fee** — WooCommerce coupon validation passes with **amount 0**; discount appears only as a **negative cart fee** (same strategy as automatic promotions).
+- **WP-CLI cart subtotal unreliable** — do not treat CLI `get_subtotal()` as proof; verify fees in a **browser** (section 4).
+- Only the **first** matching applied coupon that resolves to an MP promotion code is used; automatic promotions are skipped when a usable MP code coupon is on the cart.
 - **`code_hash`** is globally unique — the same code string cannot be assigned to two promotions.
-- **Reversal** decrements promotion and code **`usage_count`** once each (idempotent; never below 0).
-- **No** generated code batches, PDF/email, partner logic, or custom storefront code form.
-- **WP-CLI / programmatic cart** often reports **subtotal 0** and does not run fee calculation reliably — use a **browser** for section 4.
+- **Reversal works** — promotion and code **`usage_count`** each decrement at most once; **`promotion.redemption_reversed`** audit is idempotent.
+- **No partial refunds** — full cancel/refund/trash/delete paths only.
+- **No** generated code batches UI on storefront, PDF/email, partner logic, or custom code entry form (coupon field only).
 
 ---
 

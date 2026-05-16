@@ -24,6 +24,9 @@ final class PromotionCodeCouponBridge {
 		$this->promotion_codes = $promotion_codes;
 	}
 
+	/**
+	 * Register virtual-coupon filters (see WooCommerceBridge class docblock for hook list).
+	 */
 	public function register_hooks(): void {
 		if ( $this->hooks_registered ) {
 			return;
@@ -56,7 +59,7 @@ final class PromotionCodeCouponBridge {
 	}
 
 	/**
-	 * @param bool            $valid   Whether the coupon is valid.
+	 * @param bool              $valid   Whether the coupon is valid.
 	 * @param WC_Coupon         $coupon  Coupon object.
 	 * @param WC_Discounts|null $discounts Discounts instance.
 	 */
@@ -83,23 +86,23 @@ final class PromotionCodeCouponBridge {
 	 */
 	private function build_virtual_coupon_data( string $code ): array {
 		return array(
-			'code'                         => $code,
-			'amount'                       => '0',
-			'discount_type'                => 'fixed_cart',
-			'description'                  => __( 'Commerce promotion code', 'mp-commerce-promotions' ),
-			'individual_use'               => false,
-			'product_ids'                  => array(),
-			'excluded_product_ids'         => array(),
-			'usage_limit'                  => '',
-			'usage_limit_per_user'         => '',
-			'limit_usage_to_x_items'       => null,
-			'free_shipping'                => false,
-			'product_categories'           => array(),
-			'excluded_product_categories'  => array(),
-			'exclude_sale_items'           => false,
-			'minimum_amount'               => '',
-			'maximum_amount'               => '',
-			'email_restrictions'           => array(),
+			'code'                        => $code,
+			'amount'                      => '0',
+			'discount_type'               => 'fixed_cart',
+			'description'                 => __( 'Commerce promotion code', 'mp-commerce-promotions' ),
+			'individual_use'              => false,
+			'product_ids'                 => array(),
+			'excluded_product_ids'        => array(),
+			'usage_limit'                 => '',
+			'usage_limit_per_user'        => '',
+			'limit_usage_to_x_items'      => null,
+			'free_shipping'               => false,
+			'product_categories'          => array(),
+			'excluded_product_categories' => array(),
+			'exclude_sale_items'          => false,
+			'minimum_amount'              => '',
+			'maximum_amount'              => '',
+			'email_restrictions'          => array(),
 		);
 	}
 }

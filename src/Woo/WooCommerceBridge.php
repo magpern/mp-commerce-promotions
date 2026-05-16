@@ -1,6 +1,27 @@
 <?php
 /**
- * WooCommerce integration boundary (detection, cart context, cart fee hook, checkout recording).
+ * WooCommerce integration boundary: detection, hook registration, service wiring.
+ *
+ * Registered WooCommerce hooks (priorities unchanged unless noted):
+ *
+ * Cart fee (negative fee discount):
+ * - `woocommerce_cart_calculate_fees` → CartPromotionApplier::apply (priority 20)
+ *
+ * Checkout recording:
+ * - `woocommerce_checkout_create_order` → OrderPromotionRecorder::record_on_order_create (10, 2 args)
+ *
+ * Order reversal (usage_count / redemption status):
+ * - `woocommerce_order_status_cancelled` → OrderPromotionRecorder::on_order_status_reversal (10, 2)
+ * - `woocommerce_order_status_failed` → OrderPromotionRecorder::on_order_status_reversal (10, 2)
+ * - `woocommerce_order_status_refunded` → OrderPromotionRecorder::on_order_status_reversal (10, 2)
+ * - `woocommerce_before_trash_order` → OrderPromotionRecorder::on_woocommerce_before_trash_order (10, 2)
+ * - `woocommerce_before_delete_order` → OrderPromotionRecorder::on_woocommerce_before_delete_order (10, 2)
+ * - `before_trash_post` → OrderPromotionRecorder::on_before_trash_post_for_reversal (10, 1)
+ * - `before_delete_post` → OrderPromotionRecorder::on_before_delete_post_for_reversal (10, 2)
+ *
+ * Promotion code in standard coupon field (virtual coupon, 0 native WC discount):
+ * - `woocommerce_get_shop_coupon_data` → PromotionCodeCouponBridge::filter_shop_coupon_data (10, 2)
+ * - `woocommerce_coupon_is_valid` → PromotionCodeCouponBridge::filter_coupon_is_valid (10, 3)
  *
  * @package MP\CommercePromotions
  */
@@ -29,11 +50,17 @@ final class WooCommerceBridge {
 
 	private bool $promotion_code_coupon_hooks_registered = false;
 
+	/**
+	 * Detect WooCommerce availability (call once during plugin bootstrap).
+	 */
 	public function init(): void {
 		$this->available = class_exists( \WooCommerce::class, false )
 			&& function_exists( 'WC' );
 	}
 
+	/**
+	 * Whether WooCommerce is loaded.
+	 */
 	public function is_available(): bool {
 		return $this->available;
 	}
@@ -49,17 +76,8 @@ final class WooCommerceBridge {
 	public function set_cart_promotion_applier( ?CartPromotionApplier $applier ): void {
 		$this->cart_promotion_applier = $applier;
 
-		if (
-			$this->cart_promotion_applier !== null
-			&& $this->available
-			&& ! $this->cart_fee_hook_registered
-		) {
-			add_action(
-				'woocommerce_cart_calculate_fees',
-				array( $this->cart_promotion_applier, 'apply' ),
-				20
-			);
-			$this->cart_fee_hook_registered = true;
+		if ( $this->cart_promotion_applier !== null && $this->available ) {
+			$this->register_cart_fee_hook();
 		}
 	}
 
@@ -70,38 +88,9 @@ final class WooCommerceBridge {
 	public function set_order_promotion_recorder( ?OrderPromotionRecorder $recorder ): void {
 		$this->order_promotion_recorder = $recorder;
 
-		if (
-			$this->order_promotion_recorder !== null
-			&& $this->available
-			&& ! $this->order_checkout_hook_registered
-		) {
-			add_action(
-				'woocommerce_checkout_create_order',
-				array( $this->order_promotion_recorder, 'record_on_order_create' ),
-				10,
-				2
-			);
-			$this->order_checkout_hook_registered = true;
-		}
-
-		if (
-			$this->order_promotion_recorder !== null
-			&& $this->available
-			&& ! $this->order_reversal_hooks_registered
-		) {
-			$r = $this->order_promotion_recorder;
-
-			add_action( 'woocommerce_order_status_cancelled', array( $r, 'on_order_status_reversal' ), 10, 2 );
-			add_action( 'woocommerce_order_status_failed', array( $r, 'on_order_status_reversal' ), 10, 2 );
-			add_action( 'woocommerce_order_status_refunded', array( $r, 'on_order_status_reversal' ), 10, 2 );
-
-			add_action( 'woocommerce_before_trash_order', array( $r, 'on_woocommerce_before_trash_order' ), 10, 2 );
-			add_action( 'woocommerce_before_delete_order', array( $r, 'on_woocommerce_before_delete_order' ), 10, 2 );
-
-			add_action( 'before_trash_post', array( $r, 'on_before_trash_post_for_reversal' ), 10, 1 );
-			add_action( 'before_delete_post', array( $r, 'on_before_delete_post_for_reversal' ), 10, 2 );
-
-			$this->order_reversal_hooks_registered = true;
+		if ( $this->order_promotion_recorder !== null && $this->available ) {
+			$this->register_order_checkout_hook();
+			$this->register_order_reversal_hooks();
 		}
 	}
 
@@ -112,17 +101,80 @@ final class WooCommerceBridge {
 	public function set_promotion_code_coupon_bridge( ?PromotionCodeCouponBridge $bridge ): void {
 		$this->promotion_code_coupon_bridge = $bridge;
 
-		if (
-			$this->promotion_code_coupon_bridge !== null
-			&& $this->available
-			&& ! $this->promotion_code_coupon_hooks_registered
-		) {
-			$this->promotion_code_coupon_bridge->register_hooks();
-			$this->promotion_code_coupon_hooks_registered = true;
+		if ( $this->promotion_code_coupon_bridge !== null && $this->available ) {
+			$this->register_promotion_code_coupon_hooks();
 		}
 	}
 
 	public function get_promotion_code_coupon_bridge(): ?PromotionCodeCouponBridge {
 		return $this->promotion_code_coupon_bridge;
+	}
+
+	/**
+	 * Cart negative-fee application during totals calculation.
+	 */
+	private function register_cart_fee_hook(): void {
+		if ( $this->cart_fee_hook_registered || $this->cart_promotion_applier === null ) {
+			return;
+		}
+
+		add_action(
+			'woocommerce_cart_calculate_fees',
+			array( $this->cart_promotion_applier, 'apply' ),
+			20
+		);
+		$this->cart_fee_hook_registered = true;
+	}
+
+	/**
+	 * Persist session promotion to order meta, redemptions, and audit on checkout.
+	 */
+	private function register_order_checkout_hook(): void {
+		if ( $this->order_checkout_hook_registered || $this->order_promotion_recorder === null ) {
+			return;
+		}
+
+		add_action(
+			'woocommerce_checkout_create_order',
+			array( $this->order_promotion_recorder, 'record_on_order_create' ),
+			10,
+			2
+		);
+		$this->order_checkout_hook_registered = true;
+	}
+
+	/**
+	 * Reverse redemption and decrement usage when orders are cancelled, failed, refunded, or removed.
+	 */
+	private function register_order_reversal_hooks(): void {
+		if ( $this->order_reversal_hooks_registered || $this->order_promotion_recorder === null ) {
+			return;
+		}
+
+		$recorder = $this->order_promotion_recorder;
+
+		add_action( 'woocommerce_order_status_cancelled', array( $recorder, 'on_order_status_reversal' ), 10, 2 );
+		add_action( 'woocommerce_order_status_failed', array( $recorder, 'on_order_status_reversal' ), 10, 2 );
+		add_action( 'woocommerce_order_status_refunded', array( $recorder, 'on_order_status_reversal' ), 10, 2 );
+
+		add_action( 'woocommerce_before_trash_order', array( $recorder, 'on_woocommerce_before_trash_order' ), 10, 2 );
+		add_action( 'woocommerce_before_delete_order', array( $recorder, 'on_woocommerce_before_delete_order' ), 10, 2 );
+
+		add_action( 'before_trash_post', array( $recorder, 'on_before_trash_post_for_reversal' ), 10, 1 );
+		add_action( 'before_delete_post', array( $recorder, 'on_before_delete_post_for_reversal' ), 10, 2 );
+
+		$this->order_reversal_hooks_registered = true;
+	}
+
+	/**
+	 * Virtual coupon bridge so promotion codes work in the WooCommerce coupon field.
+	 */
+	private function register_promotion_code_coupon_hooks(): void {
+		if ( $this->promotion_code_coupon_hooks_registered || $this->promotion_code_coupon_bridge === null ) {
+			return;
+		}
+
+		$this->promotion_code_coupon_bridge->register_hooks();
+		$this->promotion_code_coupon_hooks_registered = true;
 	}
 }

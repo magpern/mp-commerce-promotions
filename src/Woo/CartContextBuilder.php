@@ -13,6 +13,9 @@ use MP\CommercePromotions\Engine\EvaluationContext;
 
 final class CartContextBuilder {
 
+	/**
+	 * Build evaluation context from the current WooCommerce cart (read-only).
+	 */
 	public function build_from_cart(): EvaluationContext {
 		if ( ! function_exists( 'WC' ) ) {
 			return $this->empty_context();
@@ -30,7 +33,7 @@ final class CartContextBuilder {
 
 		$customer_id = null;
 		if ( function_exists( 'is_user_logged_in' ) && is_user_logged_in() && function_exists( 'get_current_user_id' ) ) {
-			$uid = (int) get_current_user_id();
+			$uid         = (int) get_current_user_id();
 			$customer_id = $uid > 0 ? $uid : null;
 		}
 
@@ -47,7 +50,7 @@ final class CartContextBuilder {
 			}
 		}
 
-		$items = array();
+		$items    = array();
 		$raw_cart = $cart->get_cart();
 		if ( is_array( $raw_cart ) ) {
 			foreach ( $raw_cart as $cart_item ) {

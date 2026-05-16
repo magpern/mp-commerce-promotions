@@ -42,13 +42,16 @@ final class CartPromotionApplier {
 		CartContextBuilder $context_builder,
 		Settings $settings
 	) {
-		$this->promotions       = $promotions;
-		$this->promotion_codes  = $promotion_codes;
-		$this->evaluator        = $evaluator;
-		$this->context_builder  = $context_builder;
-		$this->settings         = $settings;
+		$this->promotions      = $promotions;
+		$this->promotion_codes = $promotion_codes;
+		$this->evaluator       = $evaluator;
+		$this->context_builder = $context_builder;
+		$this->settings        = $settings;
 	}
 
+	/**
+	 * WooCommerce cart fee hook: apply at most one promotion as a negative fee.
+	 */
 	public function apply(): void {
 		/**
 		 * Disable cart discount fees (admin setting or custom code).
@@ -80,7 +83,7 @@ final class CartPromotionApplier {
 			return;
 		}
 
-		$context = $this->context_builder->build_from_cart();
+		$context  = $this->context_builder->build_from_cart();
 		$subtotal = $context->get_cart_subtotal();
 		if ( $subtotal === null || $subtotal <= 0 ) {
 			$this->clear_applied_promotion_session();
@@ -193,12 +196,7 @@ final class CartPromotionApplier {
 		?float $fixed_amount = null,
 		?PromotionCode $promotion_code = null
 	): void {
-		if ( ! function_exists( 'WC' ) ) {
-			return;
-		}
-
-		$wc = WC();
-		if ( ! is_object( $wc ) || empty( $wc->session ) ) {
+		if ( ! CartSessionHelper::has_wc_session() ) {
 			return;
 		}
 
@@ -231,26 +229,11 @@ final class CartPromotionApplier {
 			$payload['entered_code_hash']    = $promotion_code->get_code_hash();
 		}
 
-		$wc->session->set( self::SESSION_KEY, $payload );
+		CartSessionHelper::set_applied_promotion( $payload );
 	}
 
 	private function clear_applied_promotion_session(): void {
-		if ( ! function_exists( 'WC' ) ) {
-			return;
-		}
-
-		$wc = WC();
-		if ( ! is_object( $wc ) || empty( $wc->session ) ) {
-			return;
-		}
-
-		$session = $wc->session;
-		if ( $session instanceof \ArrayAccess ) {
-			unset( $session[ self::SESSION_KEY ] );
-		}
-		if ( method_exists( $session, 'set' ) ) {
-			$session->set( self::SESSION_KEY, null );
-		}
+		CartSessionHelper::clear_applied_promotion();
 	}
 
 	/**
