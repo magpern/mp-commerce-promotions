@@ -485,8 +485,10 @@ AdminRouter
 AdminNavigation
 PromotionsPage
 PromotionEditPage
+PromotionPicker
 SettingsPage
 DiagnosticsPage
+ReportsPage
 ```
 
 ### Current Navigation
@@ -501,7 +503,7 @@ WooCommerce
 Inside the plugin screen:
 
 ```text
-All Promotions | Settings | Diagnostics
+All Promotions | Settings | Diagnostics | Reports
 ```
 
 The main admin route is:
@@ -516,7 +518,14 @@ Tabs are routed with:
 tab=all
 tab=settings
 tab=diagnostics
+tab=reports
 ```
+
+**Bulk status (All Promotions):** checkbox column + POST bulk Activate / Pause / Archive (`mp_cp_bulk_promotions` nonce). Uses `PromotionService::change_status()` and allowed transitions only; shows changed/skipped summary. No bulk delete.
+
+**Exclusion UI:** edit screen checklist (latest 25 promotions) merges with comma-separated IDs on save; cannot exclude self.
+
+**PromotionPicker:** server-rendered `<select>` of up to 100 promotions (ID, name, status) for Reports filter and reuse.
 
 ### Admin Security Rules
 

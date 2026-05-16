@@ -2413,12 +2413,17 @@ final class PromotionEditPage {
 
 		$excluded       = $promotion->get_excluded_promotion_ids();
 		$excluded_value = $excluded !== array() ? implode( ',', array_map( 'strval', $excluded ) ) : '';
-		echo '<tr><th scope="row"><label for="mp_cp_excluded_promotion_ids">' . esc_html__( 'Excluded promotion IDs', 'mp-commerce-promotions' ) . '</label></th><td>';
-		echo '<input type="text" class="regular-text" id="mp_cp_excluded_promotion_ids" name="promotion_excluded_promotion_ids" value="' . esc_attr( $excluded_value ) . '" placeholder="' . esc_attr__( '12,15,20', 'mp-commerce-promotions' ) . '" />';
+		$current_pid    = (int) ( $promotion->get_id() ?? 0 );
+		echo '<tr><th scope="row">' . esc_html__( 'Excluded promotions', 'mp-commerce-promotions' ) . '</th><td>';
 		echo '<p class="description">' . esc_html__(
-			'When this promotion is selected, these promotion IDs will be skipped even if eligible.',
+			'When this promotion is selected, checked promotions and any manual IDs below will be skipped even if eligible. Your own promotion ID cannot be excluded.',
 			'mp-commerce-promotions'
-		) . '</p></td></tr>';
+		) . '</p>';
+		$picker = new PromotionPicker( $this->promotions );
+		$picker->render_exclusion_checklist( $excluded, $current_pid );
+		echo '<p style="margin-top:12px;"><label for="mp_cp_excluded_promotion_ids">' . esc_html__( 'Additional IDs (comma-separated)', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<input type="text" class="regular-text" id="mp_cp_excluded_promotion_ids" name="promotion_excluded_promotion_ids" value="' . esc_attr( $excluded_value ) . '" placeholder="' . esc_attr__( '12,15,20', 'mp-commerce-promotions' ) . '" /></p>';
+		echo '</td></tr>';
 
 		echo '</tbody></table></div>';
 
@@ -3193,37 +3198,56 @@ final class PromotionEditPage {
 	 * @return list<int>|null Null when input is invalid or includes the current promotion ID.
 	 */
 	private function parse_excluded_promotion_ids_from_post( int $current_promotion_id ): ?array {
+		$ids = array();
+
+		if ( isset( $_POST['promotion_excluded_check'] ) && is_array( $_POST['promotion_excluded_check'] ) ) {
+			foreach ( $_POST['promotion_excluded_check'] as $raw_id ) {
+				if ( ! is_scalar( $raw_id ) ) {
+					continue;
+				}
+				$id = (int) $raw_id;
+				if ( $id <= 0 ) {
+					continue;
+				}
+				if ( $current_promotion_id > 0 && $id === $current_promotion_id ) {
+					return null;
+				}
+				$ids[ $id ] = $id;
+			}
+		}
+
 		$raw = isset( $_POST['promotion_excluded_promotion_ids'] )
 			? sanitize_text_field( wp_unslash( (string) $_POST['promotion_excluded_promotion_ids'] ) )
 			: '';
 
 		$raw = trim( $raw );
-		if ( $raw === '' ) {
+		if ( $raw !== '' ) {
+			$parts = preg_split( '/[\s,]+/', $raw );
+			if ( ! is_array( $parts ) ) {
+				return null;
+			}
+
+			foreach ( $parts as $part ) {
+				$part = trim( (string) $part );
+				if ( $part === '' ) {
+					continue;
+				}
+				if ( ! ctype_digit( $part ) ) {
+					return null;
+				}
+				$id = (int) $part;
+				if ( $id <= 0 ) {
+					return null;
+				}
+				if ( $current_promotion_id > 0 && $id === $current_promotion_id ) {
+					return null;
+				}
+				$ids[ $id ] = $id;
+			}
+		}
+
+		if ( $ids === array() ) {
 			return array();
-		}
-
-		$parts = preg_split( '/[\s,]+/', $raw );
-		if ( ! is_array( $parts ) ) {
-			return null;
-		}
-
-		$ids = array();
-		foreach ( $parts as $part ) {
-			$part = trim( (string) $part );
-			if ( $part === '' ) {
-				continue;
-			}
-			if ( ! ctype_digit( $part ) ) {
-				return null;
-			}
-			$id = (int) $part;
-			if ( $id <= 0 ) {
-				return null;
-			}
-			if ( $current_promotion_id > 0 && $id === $current_promotion_id ) {
-				return null;
-			}
-			$ids[ $id ] = $id;
 		}
 
 		$result = array_values( $ids );

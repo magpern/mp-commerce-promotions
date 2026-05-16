@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Admin;
 
+use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Service\PromotionReports;
 
@@ -22,8 +23,11 @@ final class ReportsPage {
 
 	private PromotionReports $reports;
 
-	public function __construct( PromotionReports $reports ) {
+	private PromotionPicker $picker;
+
+	public function __construct( PromotionReports $reports, PromotionRepository $promotions ) {
 		$this->reports = $reports;
+		$this->picker  = new PromotionPicker( $promotions );
 	}
 
 	public function render(): void {
@@ -124,10 +128,17 @@ final class ReportsPage {
 		echo '<tr><th scope="row"><label for="mp_cp_reports_date_to">' . esc_html__( 'Date to', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="date" id="mp_cp_reports_date_to" name="date_to" value="' . esc_attr( $filters['date_to'] ?? '' ) . '" /></td></tr>';
 
-		echo '<tr><th scope="row"><label for="mp_cp_reports_promotion_id">' . esc_html__( 'Promotion ID', 'mp-commerce-promotions' ) . '</label></th><td>';
-		echo '<input type="number" class="small-text" id="mp_cp_reports_promotion_id" name="promotion_id" min="1" step="1" value="';
-		echo $filters['promotion_id'] !== null ? esc_attr( (string) $filters['promotion_id'] ) : '';
-		echo '" /></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_reports_promotion_id">' . esc_html__( 'Promotion', 'mp-commerce-promotions' ) . '</label></th><td>';
+		$this->picker->render_select(
+			array(
+				'name'         => 'promotion_id',
+				'id'           => 'mp_cp_reports_promotion_id',
+				'selected'     => $filters['promotion_id'],
+				'include_empty' => true,
+				'empty_label'  => __( 'All promotions', 'mp-commerce-promotions' ),
+			)
+		);
+		echo '</td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_reports_status">' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<select id="mp_cp_reports_status" name="status">';

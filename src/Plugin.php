@@ -193,7 +193,7 @@ final class Plugin {
 				$this->promotion_repository,
 				$this->redemption_repository
 			);
-			$reports_page = new ReportsPage( $promotion_reports );
+			$reports_page = new ReportsPage( $promotion_reports, $this->promotion_repository );
 		}
 
 		$admin_router = new AdminRouter( $promotions_page, $settings_page, $diagnostics_page, $reports_page );

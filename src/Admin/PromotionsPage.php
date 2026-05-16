@@ -24,6 +24,10 @@ final class PromotionsPage {
 
 	private const NONCE_ACTION = 'mp_cp_create_promotion';
 
+	private const BULK_NONCE_ACTION = 'mp_cp_bulk_promotions';
+
+	private const BULK_NONCE_FIELD = 'mp_cp_bulk_promotions_nonce';
+
 	private const PER_PAGE = 20;
 
 	private PromotionRepository $promotions;
@@ -71,9 +75,10 @@ final class PromotionsPage {
 			}
 		}
 
-		$this->handle_post_create();
-
 		$list_query = $this->parse_list_query_args();
+
+		$this->handle_post_bulk( $list_query );
+		$this->handle_post_create();
 		$repo_args  = array(
 			'status' => $list_query['status'],
 			'search' => $list_query['search'],
@@ -105,7 +110,7 @@ final class PromotionsPage {
 		$this->render_create_form();
 		$this->render_list_filters( $list_query );
 		$this->render_list_summary( $list_query, $total, $total_pages );
-		$this->render_promotions_table( $list, $list_query );
+		$this->render_promotions_list_form( $list, $list_query );
 
 		if ( $total_pages > 1 ) {
 			$this->render_pagination( $list_query, $total_pages );
@@ -235,14 +240,20 @@ final class PromotionsPage {
 	 * @param list<Promotion>                                                          $list
 	 * @param array{status: string|null, search: string|null, paged: int, offset: int} $list_query
 	 */
-	private function render_promotions_table( array $list, array $list_query ): void {
+	private function render_promotions_list_form( array $list, array $list_query ): void {
 		if ( count( $list ) === 0 ) {
 			echo '<p>' . esc_html__( 'No promotions found.', 'mp-commerce-promotions' ) . '</p>';
 			return;
 		}
 
+		echo '<form method="post" action="' . esc_url( $this->list_url( $this->list_query_to_url_args( $list_query ) ) ) . '">';
+		wp_nonce_field( self::BULK_NONCE_ACTION, self::BULK_NONCE_FIELD );
+		$this->render_bulk_hidden_fields( $list_query );
+		$this->render_bulk_actions_bar( 'top' );
+
 		echo '<table class="widefat striped" style="max-width:100%;">';
 		echo '<thead><tr>';
+		echo '<td id="cb" class="manage-column column-cb check-column"><span class="screen-reader-text">' . esc_html__( 'Select', 'mp-commerce-promotions' ) . '</span></td>';
 		$headers = array(
 			__( 'ID', 'mp-commerce-promotions' ),
 			__( 'Name', 'mp-commerce-promotions' ),
@@ -279,6 +290,14 @@ final class PromotionsPage {
 				$edit     = ' <a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'mp-commerce-promotions' ) . '</a>';
 			}
 			echo '<tr>';
+			echo '<th scope="row" class="check-column">';
+			if ( $pid !== null && $pid > 0 ) {
+				printf(
+					'<input type="checkbox" name="mp_cp_promotion_ids[]" value="%1$d" />',
+					(int) $pid
+				);
+			}
+			echo '</th>';
 			echo '<td>' . esc_html( (string) ( $pid ?? '' ) ) . '</td>';
 			echo '<td>' . esc_html( $promo->get_name() ) . $edit . '</td>';
 			echo '<td>' . esc_html( $promo->get_status() ) . '</td>';
@@ -296,6 +315,152 @@ final class PromotionsPage {
 		}
 
 		echo '</tbody></table>';
+
+		$this->render_bulk_actions_bar( 'bottom' );
+		echo '</form>';
+	}
+
+	/**
+	 * @param array{status: string|null, search: string|null, paged: int, offset: int} $list_query
+	 */
+	private function render_bulk_hidden_fields( array $list_query ): void {
+		if ( $list_query['status'] !== null ) {
+			echo '<input type="hidden" name="promotion_status" value="' . esc_attr( $list_query['status'] ) . '" />';
+		}
+		if ( $list_query['search'] !== null && $list_query['search'] !== '' ) {
+			echo '<input type="hidden" name="s" value="' . esc_attr( $list_query['search'] ) . '" />';
+		}
+		if ( $list_query['paged'] > 1 ) {
+			echo '<input type="hidden" name="paged" value="' . esc_attr( (string) $list_query['paged'] ) . '" />';
+		}
+	}
+
+	private function render_bulk_actions_bar( string $which ): void {
+		$id_suffix = $which === 'bottom' ? '_bottom' : '_top';
+
+		echo '<div class="tablenav ' . esc_attr( $which ) . '" style="margin:8px 0;"><div class="alignleft actions bulkactions">';
+		echo '<label for="mp_cp_bulk_action' . esc_attr( $id_suffix ) . '" class="screen-reader-text">';
+		echo esc_html__( 'Bulk actions', 'mp-commerce-promotions' );
+		echo '</label>';
+		echo '<select name="mp_cp_bulk_action" id="mp_cp_bulk_action' . esc_attr( $id_suffix ) . '">';
+		echo '<option value="">' . esc_html__( 'Bulk actions', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="activate">' . esc_html__( 'Activate', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="pause">' . esc_html__( 'Pause', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="archive">' . esc_html__( 'Archive', 'mp-commerce-promotions' ) . '</option>';
+		echo '</select> ';
+		submit_button( __( 'Apply', 'mp-commerce-promotions' ), 'secondary', 'mp_cp_bulk_submit', false );
+		echo '</div></div>';
+	}
+
+	/**
+	 * @param array{status: string|null, search: string|null, paged: int, offset: int} $list_query
+	 */
+	private function handle_post_bulk( array $list_query ): void {
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_bulk_submit'] ) ) {
+			return;
+		}
+
+		$redirect = $this->list_url( $this->list_query_to_url_args( $list_query ) );
+
+		if ( ! isset( $_POST[ self::BULK_NONCE_FIELD ] ) ) {
+			wp_safe_redirect( add_query_arg( 'mp_cp_error', 'missing_nonce', $redirect ) );
+			exit;
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST[ self::BULK_NONCE_FIELD ] ) );
+		if ( ! wp_verify_nonce( $nonce, self::BULK_NONCE_ACTION ) ) {
+			wp_safe_redirect( add_query_arg( 'mp_cp_error', 'invalid_nonce', $redirect ) );
+			exit;
+		}
+
+		$action = isset( $_POST['mp_cp_bulk_action'] )
+			? sanitize_key( wp_unslash( (string) $_POST['mp_cp_bulk_action'] ) )
+			: '';
+
+		$target_status = $this->bulk_action_to_status( $action );
+		if ( $target_status === null ) {
+			wp_safe_redirect( add_query_arg( 'mp_cp_error', 'invalid_bulk_action', $redirect ) );
+			exit;
+		}
+
+		$raw_ids = isset( $_POST['mp_cp_promotion_ids'] ) && is_array( $_POST['mp_cp_promotion_ids'] )
+			? $_POST['mp_cp_promotion_ids']
+			: array();
+
+		$ids = array();
+		foreach ( $raw_ids as $raw ) {
+			if ( is_scalar( $raw ) ) {
+				$id = (int) $raw;
+				if ( $id > 0 ) {
+					$ids[ $id ] = $id;
+				}
+			}
+		}
+
+		if ( $ids === array() ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'mp_cp_bulk_changed' => '0',
+						'mp_cp_bulk_skipped' => '0',
+					),
+					$redirect
+				)
+			);
+			exit;
+		}
+
+		$actor   = (int) get_current_user_id();
+		$changed = 0;
+		$skipped = 0;
+
+		foreach ( $ids as $promotion_id ) {
+			$promotion = $this->promotions->find( $promotion_id );
+			if ( $promotion === null ) {
+				++$skipped;
+				continue;
+			}
+
+			if ( ! PromotionService::is_allowed_status_transition( $promotion->get_status(), $target_status ) ) {
+				++$skipped;
+				continue;
+			}
+
+			try {
+				$this->promotion_service->change_status( $promotion, $target_status, $actor > 0 ? $actor : null );
+				++$changed;
+			} catch ( RuntimeException $e ) {
+				++$skipped;
+			}
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'mp_cp_bulk_changed' => (string) $changed,
+					'mp_cp_bulk_skipped' => (string) $skipped,
+				),
+				$redirect
+			)
+		);
+		exit;
+	}
+
+	private function bulk_action_to_status( string $action ): ?string {
+		switch ( $action ) {
+			case 'activate':
+				return PromotionStatus::ACTIVE;
+			case 'pause':
+				return PromotionStatus::PAUSED;
+			case 'archive':
+				return PromotionStatus::ARCHIVED;
+			default:
+				return null;
+		}
 	}
 
 	/**
@@ -398,6 +563,23 @@ final class PromotionsPage {
 			AdminNotice::success( __( 'Draft promotion created.', 'mp-commerce-promotions' ) );
 		}
 
+		if ( isset( $_GET['mp_cp_bulk_changed'] ) || isset( $_GET['mp_cp_bulk_skipped'] ) ) {
+			$changed = isset( $_GET['mp_cp_bulk_changed'] ) ? (int) $_GET['mp_cp_bulk_changed'] : 0;
+			$skipped = isset( $_GET['mp_cp_bulk_skipped'] ) ? (int) $_GET['mp_cp_bulk_skipped'] : 0;
+			if ( $changed > 0 || $skipped > 0 ) {
+				AdminNotice::success(
+					sprintf(
+						/* translators: 1: number of promotions updated, 2: number skipped */
+						__( 'Bulk update complete: %1$d changed, %2$d skipped.', 'mp-commerce-promotions' ),
+						$changed,
+						$skipped
+					)
+				);
+			} else {
+				AdminNotice::error( __( 'No promotions were selected for bulk update.', 'mp-commerce-promotions' ) );
+			}
+		}
+
 		if ( isset( $_GET['mp_cp_error'] ) ) {
 			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_error'] ) );
 			$msg  = $this->error_message_for_code( $code );
@@ -416,6 +598,8 @@ final class PromotionsPage {
 				return __( 'Please enter a promotion name.', 'mp-commerce-promotions' );
 			case 'create_failed':
 				return __( 'Could not create the promotion. Please try again.', 'mp-commerce-promotions' );
+			case 'invalid_bulk_action':
+				return __( 'Please choose a bulk action.', 'mp-commerce-promotions' );
 			case 'promotion_not_found':
 				return __( 'That promotion could not be found.', 'mp-commerce-promotions' );
 			default:

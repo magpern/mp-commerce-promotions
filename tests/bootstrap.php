@@ -28,6 +28,38 @@ if ( ! function_exists( '__' ) ) {
 	}
 }
 
+if ( ! function_exists( 'selected' ) ) {
+	/**
+	 * @param mixed $selected
+	 * @param mixed $current
+	 * @param bool  $echo
+	 * @return string
+	 */
+	function selected( $selected, $current, $echo = true ) {
+		$result = ( (string) $selected === (string) $current ) ? ' selected="selected"' : '';
+		if ( $echo ) {
+			echo $result;
+		}
+		return $result;
+	}
+}
+
+if ( ! function_exists( 'checked' ) ) {
+	/**
+	 * @param mixed $checked
+	 * @param mixed $current
+	 * @param bool  $echo
+	 * @return string
+	 */
+	function checked( $checked, $current, $echo = true ) {
+		$result = ( (bool) $checked === (bool) $current ) ? ' checked="checked"' : '';
+		if ( $echo ) {
+			echo $result;
+		}
+		return $result;
+	}
+}
+
 if ( ! function_exists( 'sanitize_key' ) ) {
 	/**
 	 * @param string $key

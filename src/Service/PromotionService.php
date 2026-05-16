@@ -105,7 +105,7 @@ final class PromotionService {
 	/**
 	 * Allowed transitions only (archived is terminal).
 	 */
-	private static function is_allowed_status_transition( string $from, string $to ): bool {
+	public static function is_allowed_status_transition( string $from, string $to ): bool {
 		if ( $from === $to ) {
 			return false;
 		}

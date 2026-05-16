@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Admin UX polish** — PromotionPicker, bulk status actions, exclusion checklist
 - **Promotion reports** — Reports admin tab, `PromotionReports` service, redemption CSV export (5k cap), `scripts/reports-smoke.php`
 - **Checkout redemption integrity** — `OrderPromotionState`, idempotent record/reverse/restore, `FreeGiftCartSynchronizer`, audit trace actions, smoke/docs
 - **Redemption restrictions** — global/per-customer usage limits (schema 1.7.0), date enforcement, min/max cart quantity conditions, planner reason codes, smoke/docs
