@@ -14,6 +14,8 @@ use MP\CommercePromotions\Admin\PromotionEditPage;
 use MP\CommercePromotions\Admin\PromotionsPage;
 use MP\CommercePromotions\Admin\SettingsPage;
 use MP\CommercePromotions\Domain\AuditLogRepository;
+use MP\CommercePromotions\Domain\PromotionCodeFactory;
+use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionFactory;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\RedemptionRepository;
@@ -48,6 +50,8 @@ final class Plugin {
 
 	private ?RedemptionRepository $redemption_repository = null;
 
+	private ?PromotionCodeRepository $promotion_code_repository = null;
+
 	private Settings $settings;
 
 	public function __construct() {
@@ -65,7 +69,8 @@ final class Plugin {
 				$this->audit_logger
 			);
 
-			$this->redemption_repository = new RedemptionRepository( $wpdb );
+			$this->redemption_repository   = new RedemptionRepository( $wpdb );
+			$this->promotion_code_repository = new PromotionCodeRepository( $wpdb );
 		}
 
 		$this->woo_bridge           = new WooCommerceBridge();
@@ -104,14 +109,17 @@ final class Plugin {
 		$promotions_page = null;
 		if ( $this->promotion_repository !== null && $this->promotion_service !== null ) {
 			$rule_validator = new PromotionRuleValidator();
-			$edit_page      = new PromotionEditPage(
+			$code_factory     = new PromotionCodeFactory();
+			$edit_page        = new PromotionEditPage(
 				$this->promotion_repository,
 				$this->promotion_service,
 				$cart_builder,
 				$this->promotion_evaluator,
 				$this->redemption_repository,
 				$this->audit_log_repository,
-				$rule_validator
+				$rule_validator,
+				$this->promotion_code_repository,
+				$code_factory
 			);
 			$promotions_page = new PromotionsPage( $this->promotion_repository, $this->promotion_service, $edit_page );
 		}

@@ -11,7 +11,11 @@ namespace MP\CommercePromotions\Admin;
 
 use MP\CommercePromotions\Domain\AuditLogEntry;
 use MP\CommercePromotions\Domain\AuditLogRepository;
+use InvalidArgumentException;
 use MP\CommercePromotions\Domain\Promotion;
+use MP\CommercePromotions\Domain\PromotionCode;
+use MP\CommercePromotions\Domain\PromotionCodeFactory;
+use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\Redemption;
@@ -44,6 +48,10 @@ final class PromotionEditPage {
 
 	private PromotionRuleValidator $rule_validator;
 
+	private ?PromotionCodeRepository $promotion_codes;
+
+	private ?PromotionCodeFactory $promotion_code_factory;
+
 	private const ADMIN_USAGE_AUDIT_LIMIT = 25;
 
 	public function __construct(
@@ -53,15 +61,19 @@ final class PromotionEditPage {
 		?PromotionEvaluator $promotion_evaluator = null,
 		?RedemptionRepository $redemptions = null,
 		?AuditLogRepository $audit_logs = null,
-		?PromotionRuleValidator $rule_validator = null
+		?PromotionRuleValidator $rule_validator = null,
+		?PromotionCodeRepository $promotion_codes = null,
+		?PromotionCodeFactory $promotion_code_factory = null
 	) {
-		$this->promotions             = $promotions;
-		$this->promotion_service      = $promotion_service;
-		$this->cart_context_builder   = $cart_context_builder;
-		$this->promotion_evaluator    = $promotion_evaluator ?? new PromotionEvaluator();
-		$this->redemptions            = $redemptions;
-		$this->audit_logs             = $audit_logs;
-		$this->rule_validator         = $rule_validator ?? new PromotionRuleValidator();
+		$this->promotions               = $promotions;
+		$this->promotion_service        = $promotion_service;
+		$this->cart_context_builder     = $cart_context_builder;
+		$this->promotion_evaluator      = $promotion_evaluator ?? new PromotionEvaluator();
+		$this->redemptions              = $redemptions;
+		$this->audit_logs               = $audit_logs;
+		$this->rule_validator           = $rule_validator ?? new PromotionRuleValidator();
+		$this->promotion_codes          = $promotion_codes;
+		$this->promotion_code_factory   = $promotion_code_factory;
 	}
 
 	public function render( string $identifier ): void {
@@ -80,6 +92,7 @@ final class PromotionEditPage {
 
 		$this->handle_post_change_status( $promotion );
 		$this->handle_post_update( $promotion );
+		$this->handle_post_create_promotion_code( $promotion );
 		$this->handle_post_preview( $promotion );
 
 		$promotion = $this->promotions->find_by_id_or_uuid( $identifier );
@@ -99,9 +112,81 @@ final class PromotionEditPage {
 		$this->render_rule_validation_section( $promotion );
 		$this->render_cart_preview_section( $promotion );
 		$this->render_form( $promotion );
+		$this->render_promotion_codes_section( $promotion );
 		$this->render_usage_redemptions_section( $promotion );
 		$this->render_audit_log_section( $promotion );
 		echo '</div>';
+	}
+
+	private function handle_post_create_promotion_code( Promotion $promotion ): void {
+		if ( $this->promotion_codes === null || $this->promotion_code_factory === null ) {
+			return;
+		}
+
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_create_promotion_code_submit'] ) ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$nonce_action = 'mp_cp_create_promotion_code_' . $pid;
+		if ( ! isset( $_POST['mp_cp_create_promotion_code_nonce'] ) ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_code_error' => 'missing_nonce' ) );
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_create_promotion_code_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_code_error' => 'invalid_nonce' ) );
+		}
+
+		$plain = isset( $_POST['mp_cp_promotion_code'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_promotion_code'] ) )
+			: '';
+		if ( $plain === '' ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_code_error' => 'empty_code' ) );
+		}
+
+		$usage_limit = null;
+		if ( isset( $_POST['mp_cp_code_usage_limit'] ) && $_POST['mp_cp_code_usage_limit'] !== '' ) {
+			$usage_limit = (int) $_POST['mp_cp_code_usage_limit'];
+			if ( $usage_limit < 0 ) {
+				$this->redirect_to_edit( $pid, array( 'mp_cp_code_error' => 'invalid_usage_limit' ) );
+			}
+		}
+
+		$expires_at = isset( $_POST['mp_cp_code_expires_at'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_code_expires_at'] ) )
+			: '';
+		if ( $expires_at === '' ) {
+			$expires_at = null;
+		}
+
+		if ( $this->promotion_codes->find_by_plain_code( $plain ) !== null ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_code_error' => 'duplicate_code' ) );
+		}
+
+		try {
+			$code = $this->promotion_code_factory->create_manual_code( $pid, $plain, $usage_limit, $expires_at );
+		} catch ( InvalidArgumentException $e ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_code_error' => 'invalid_code' ) );
+		}
+
+		$new_id = $this->promotion_codes->insert( $code );
+		if ( $new_id <= 0 ) {
+			if ( $this->promotion_codes->find_by_plain_code( $plain ) !== null ) {
+				$this->redirect_to_edit( $pid, array( 'mp_cp_code_error' => 'duplicate_code' ) );
+			}
+			$this->redirect_to_edit( $pid, array( 'mp_cp_code_error' => 'insert_failed' ) );
+		}
+
+		$this->redirect_to_edit( $pid, array( 'mp_cp_code_created' => '1' ) );
 	}
 
 	private function handle_post_preview( Promotion $promotion ): void {
@@ -329,6 +414,38 @@ final class PromotionEditPage {
 			if ( $msg !== '' ) {
 				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
 			}
+		}
+
+		if ( isset( $_GET['mp_cp_code_created'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_code_created'] ) ) === '1' ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Promotion code created.', 'mp-commerce-promotions' ) . '</p></div>';
+		}
+
+		if ( isset( $_GET['mp_cp_code_error'] ) ) {
+			$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_code_error'] ) );
+			$msg  = $this->code_error_message_for_code( $code );
+			if ( $msg !== '' ) {
+				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $msg ) . '</p></div>';
+			}
+		}
+	}
+
+	private function code_error_message_for_code( string $code ): string {
+		switch ( $code ) {
+			case 'invalid_nonce':
+			case 'missing_nonce':
+				return __( 'Security check failed while creating a promotion code. Please try again.', 'mp-commerce-promotions' );
+			case 'empty_code':
+				return __( 'Please enter a promotion code.', 'mp-commerce-promotions' );
+			case 'invalid_code':
+				return __( 'Promotion code must be at least 4 characters and use only A-Z, 0-9, and hyphens.', 'mp-commerce-promotions' );
+			case 'invalid_usage_limit':
+				return __( 'Usage limit must be zero or greater.', 'mp-commerce-promotions' );
+			case 'duplicate_code':
+				return __( 'That promotion code already exists.', 'mp-commerce-promotions' );
+			case 'insert_failed':
+				return __( 'Could not create the promotion code. Please try again.', 'mp-commerce-promotions' );
+			default:
+				return '';
 		}
 	}
 
@@ -579,6 +696,92 @@ final class PromotionEditPage {
 
 		echo '<p class="submit"><button type="submit" name="mp_cp_update_promotion_submit" value="1" class="button button-primary">' . esc_html__( 'Save promotion', 'mp-commerce-promotions' ) . '</button></p>';
 		echo '</form>';
+	}
+
+	private function render_promotion_codes_section( Promotion $promotion ): void {
+		if ( $this->promotion_codes === null || $this->promotion_code_factory === null ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$codes = $this->promotion_codes->find_for_promotion( $pid, 50 );
+
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:16px 0;">';
+		echo '<h2 style="margin-top:0;">' . esc_html__( 'Promotion Codes', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="description">' . esc_html__( 'Manual codes are stored hashed; only the last four characters are shown after creation. Storefront redemption is not implemented yet.', 'mp-commerce-promotions' ) . '</p>';
+
+		if ( count( $codes ) === 0 ) {
+			echo '<p>' . esc_html__( 'No promotion codes for this promotion yet.', 'mp-commerce-promotions' ) . '</p>';
+		} else {
+			echo '<table class="widefat striped" style="max-width:100%;">';
+			echo '<thead><tr>';
+			echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Last 4', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Usage', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Expires', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Created', 'mp-commerce-promotions' ) . '</th>';
+			echo '</tr></thead><tbody>';
+
+			foreach ( $codes as $code ) {
+				if ( ! $code instanceof PromotionCode ) {
+					continue;
+				}
+				echo '<tr>';
+				echo '<td>' . esc_html( (string) ( $code->get_id() ?? '' ) ) . '</td>';
+				echo '<td>****' . esc_html( $code->get_code_last4() ) . '</td>';
+				echo '<td>' . esc_html( $code->get_status() ) . '</td>';
+				echo '<td>' . esc_html( $this->format_code_usage( $code ) ) . '</td>';
+				echo '<td>' . esc_html( $code->get_expires_at() ?? '—' ) . '</td>';
+				echo '<td>' . esc_html( $code->get_created_at() ?? '—' ) . '</td>';
+				echo '</tr>';
+			}
+
+			echo '</tbody></table>';
+		}
+
+		$nonce_action = 'mp_cp_create_promotion_code_' . $pid;
+		$form_action  = $this->edit_url( (string) $pid );
+
+		echo '<h3>' . esc_html__( 'Add manual code', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<form method="post" action="' . esc_url( $form_action ) . '">';
+		wp_nonce_field( $nonce_action, 'mp_cp_create_promotion_code_nonce' );
+		echo '<table class="form-table" role="presentation"><tbody>';
+		echo '<tr><th scope="row"><label for="mp_cp_promotion_code">' . esc_html__( 'Code', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_promotion_code" name="mp_cp_promotion_code" maxlength="64" autocomplete="off" required />';
+		echo '<p class="description">' . esc_html__( 'A-Z, 0-9, and hyphens only; minimum 4 characters.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_code_usage_limit">' . esc_html__( 'Usage limit', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_code_usage_limit" name="mp_cp_code_usage_limit" min="0" step="1" />';
+		echo '<p class="description">' . esc_html__( 'Optional. Leave empty for unlimited.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_code_expires_at">' . esc_html__( 'Expires at', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_code_expires_at" name="mp_cp_code_expires_at" placeholder="' . esc_attr__( 'YYYY-MM-DD HH:MM:SS or leave empty', 'mp-commerce-promotions' ) . '" />';
+		echo '</td></tr>';
+		echo '</tbody></table>';
+		echo '<p class="submit"><button type="submit" name="mp_cp_create_promotion_code_submit" value="1" class="button">' . esc_html__( 'Create promotion code', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form>';
+		echo '</div>';
+	}
+
+	private function format_code_usage( PromotionCode $code ): string {
+		$limit = $code->get_usage_limit();
+		if ( $limit === null ) {
+			return sprintf(
+				/* translators: %d: usage count */
+				__( '%d / —', 'mp-commerce-promotions' ),
+				$code->get_usage_count()
+			);
+		}
+
+		return sprintf(
+			/* translators: 1: usage count, 2: usage limit */
+			__( '%1$d / %2$d', 'mp-commerce-promotions' ),
+			$code->get_usage_count(),
+			$limit
+		);
 	}
 
 	private function render_usage_redemptions_section( Promotion $promotion ): void {

@@ -83,6 +83,7 @@ final class MigrationRunner {
 			Schema::promotions_create_sql( $this->wpdb ),
 			Schema::redemptions_create_sql( $this->wpdb ),
 			Schema::audit_log_create_sql( $this->wpdb ),
+			Schema::promotion_codes_create_sql( $this->wpdb ),
 		);
 
 		foreach ( $statements as $sql ) {
@@ -159,10 +160,27 @@ final class MigrationRunner {
 	 */
 	private function verify_post_migration_schema(): bool {
 		if ( version_compare( Schema::SCHEMA_VERSION, '1.1.0', '>=' ) ) {
-			return $this->redemptions_unique_order_promotion_index_exists();
+			if ( ! $this->redemptions_unique_order_promotion_index_exists() ) {
+				return false;
+			}
+		}
+
+		if ( version_compare( Schema::SCHEMA_VERSION, '1.2.0', '>=' ) ) {
+			return $this->promotion_codes_code_hash_unique_index_exists();
 		}
 
 		return true;
+	}
+
+	private function promotion_codes_code_hash_unique_index_exists(): bool {
+		$table = Schema::promotion_codes_table( $this->wpdb );
+		if ( ! is_string( $table ) || $table === '' || ! preg_match( '/^[a-zA-Z0-9_]+$/', $table ) ) {
+			return false;
+		}
+
+		$sql  = "SHOW INDEX FROM `{$table}` WHERE Key_name = 'code_hash'";
+		$rows = $this->wpdb->get_results( $sql, ARRAY_A );
+		return is_array( $rows ) && count( $rows ) > 0;
 	}
 
 	private function redemptions_unique_order_promotion_index_exists(): bool {
@@ -187,6 +205,10 @@ final class MigrationRunner {
 			Schema::redemptions_table( $this->wpdb ),
 			Schema::audit_log_table( $this->wpdb ),
 		);
+
+		if ( version_compare( Schema::SCHEMA_VERSION, '1.2.0', '>=' ) ) {
+			$required[] = Schema::promotion_codes_table( $this->wpdb );
+		}
 
 		foreach ( $required as $table ) {
 			if ( ! is_string( $table ) || $table === '' ) {

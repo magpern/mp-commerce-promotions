@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.1.0';
+	public const SCHEMA_VERSION = '1.2.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -33,6 +33,10 @@ final class Schema {
 
 	public static function audit_log_table( wpdb $wpdb ): string {
 		return $wpdb->prefix . 'mp_cp_audit_log';
+	}
+
+	public static function promotion_codes_table( wpdb $wpdb ): string {
+		return $wpdb->prefix . 'mp_cp_promotion_codes';
 	}
 
 	public static function promotions_create_sql( wpdb $wpdb ): string {
@@ -105,6 +109,29 @@ KEY promotion_id (promotion_id),
 KEY actor_user_id (actor_user_id),
 KEY action (action),
 KEY created_at (created_at)
+) {$collate};";
+	}
+
+	public static function promotion_codes_create_sql( wpdb $wpdb ): string {
+		$table   = self::promotion_codes_table( $wpdb );
+		$collate = $wpdb->get_charset_collate();
+
+		return "CREATE TABLE {$table} (
+id bigint(20) unsigned NOT NULL auto_increment,
+promotion_id bigint(20) unsigned NOT NULL,
+code_hash char(64) NOT NULL,
+code_last4 varchar(8) NOT NULL,
+status varchar(32) NOT NULL default 'active',
+usage_limit int(10) unsigned NULL,
+usage_count int(10) unsigned NOT NULL default 0,
+expires_at datetime NULL,
+created_at datetime NOT NULL default CURRENT_TIMESTAMP,
+updated_at datetime NOT NULL default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+PRIMARY KEY  (id),
+UNIQUE KEY code_hash (code_hash),
+KEY promotion_id (promotion_id),
+KEY status (status),
+KEY expires_at (expires_at)
 ) {$collate};";
 	}
 }

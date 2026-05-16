@@ -25,11 +25,12 @@ Provide a structured foundation for commerce promotions using:
 
 ## Database
 
-- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.1.0`** (see `Schema::SCHEMA_VERSION`).
+- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.2.0`** (see `Schema::SCHEMA_VERSION`).
 - **Tables** (after activation / migration), using the site table prefix (e.g. `wp_`):
   - `{prefix}mp_cp_promotions` — promotion definitions (JSON-like rules in `LONGTEXT` columns).
   - `{prefix}mp_cp_redemptions` — usage against orders; **unique** `(order_id, promotion_id)` as **`order_promotion_unique`** (MySQL allows multiple `NULL` `order_id` rows; real checkouts use non-null `order_id`). Migration to **1.1.0** **refuses** `dbDelta` / version bump if duplicate non-null `(order_id, promotion_id)` pairs already exist (see `MigrationRunner`).
   - `{prefix}mp_cp_audit_log` — append-only audit trail.
+  - `{prefix}mp_cp_promotion_codes` — manual promotion codes (hashed; **unique** `code_hash`). Plain codes are **never** stored; admin UI shows only **`code_last4`** after creation.
 - **Deactivation:** tables and `mp_cp_schema_version` are **not** removed; migrations are **additive** and intended to be **rollback-safe** (no `DROP TABLE` / data deletion in core flows).
 - **Migrations:** `MigrationRunner` runs `dbDelta()` from Schema DDL on activation when the stored version is behind `Schema::SCHEMA_VERSION`. **1.1.0** adds the redemptions unique guard; if duplicates exist, the option is **not** advanced until data is fixed (see `MigrationRunner` / `WP_DEBUG` log).
 
@@ -40,6 +41,7 @@ Provide a structured foundation for commerce promotions using:
 - **`Redemption`** / **`RedemptionRepository`** — **`{prefix}mp_cp_redemptions`** rows (**`insert`**, **`update`** status only, **`find_for_order`**, **`find_for_promotion`**, **`find_recorded_for_order_and_promotion`**, **`exists_for_order_and_promotion`**, **`count_for_order`**); statuses **`recorded`** / **`reversed`**; **no delete API**. From schema **1.1.0**, the table has a **unique** index **`order_promotion_unique`** on **`(order_id, promotion_id)`** (duplicate inserts for the same non-null pair fail at the database).
 - **`AuditLogEntry`** / **`AuditLogRepository`** — append-only writes to `{prefix}mp_cp_audit_log`; **raw IP addresses are never stored** (only a SHA-256 hash of a validated `REMOTE_ADDR` when present).
 - **`AuditLogger`** / **`PromotionService`** — internal orchestration: `PromotionService::create_draft()` persists a draft and records `promotion.created`; `update_promotion()` records `promotion.updated`; `change_status()` applies allowed lifecycle transitions and records `promotion.status_changed`.
+- **`PromotionCode`** / **`PromotionCodeFactory`** / **`PromotionCodeRepository`** — manual codes for a promotion (`active` / `disabled` / `expired`); `hash('sha256', strtoupper(trim($plain)))` for lookup; **`insert`**, **`find_by_plain_code`**, **`find_for_promotion`**, **`increment_usage`** only (no delete). **No storefront redemption**, **no WooCommerce coupon field integration**, and **no batch generation** in this phase.
 
 ## Evaluation pipeline
 
@@ -66,7 +68,7 @@ Both plugin screens share **in-page nav tabs** (**All Promotions** | **Settings*
 
 - **Promotions** (`admin.php?page=mp-commerce-promotions`) lists promotions (status column is read-only), supports **Create draft promotion** (name + nonce), and **Edit** opens a detail page (`promotion` query arg: numeric id or UUID). The **All Promotions** tab is active on this screen.
 - **Promotion Settings** (`admin.php?page=mp-commerce-promotions-settings`) provides an **Enable cart discounts** checkbox (stored as **`mp_cp_cart_discounts_enabled`**, default **yes**). The **Settings** tab is active on this screen.
-- **Status** is changed only via **controlled POST actions** (Activate / Pause / Archive); **archived** promotions **cannot be reactivated**. The main form edits name, description, priority, dates, and **raw JSON** for conditions, actions, and restrictions (validated as JSON arrays). The edit screen includes a read-only **Rule Validation** panel (**`PromotionRuleValidator`**) that checks stored JSON against supported condition/action types (unknown types, missing fields, no actions, multiple actions, status hints). It does **not** guarantee cart eligibility. **Preview against current cart** runs **`PromotionEvaluator`** in-memory using **`CartContextBuilder`** (no DB writes; **does not** add storefront fees). The promotion detail page also shows **read-only** **Usage / Redemptions** (latest 25 rows from **`RedemptionRepository::find_for_promotion`**) and **Audit Log** (latest 25 from **`AuditLogRepository::find_for_promotion`**, context as pretty JSON). **Hard delete UI**, **visual rule builder**, and **REST/AJAX** are **not** implemented yet.
+- **Status** is changed only via **controlled POST actions** (Activate / Pause / Archive); **archived** promotions **cannot be reactivated**. The main form edits name, description, priority, dates, and **raw JSON** for conditions, actions, and restrictions (validated as JSON arrays). The edit screen includes a read-only **Rule Validation** panel (**`PromotionRuleValidator`**) that checks stored JSON against supported condition/action types (unknown types, missing fields, no actions, multiple actions, status hints). It does **not** guarantee cart eligibility. **Promotion Codes** on the edit screen let admins create **manual** codes (hashed at rest; list shows **last 4** only). **Storefront code entry / redemption** is **not** implemented yet. **Preview against current cart** runs **`PromotionEvaluator`** in-memory using **`CartContextBuilder`** (no DB writes; **does not** add storefront fees). The promotion detail page also shows **read-only** **Usage / Redemptions** (latest 25 rows from **`RedemptionRepository::find_for_promotion`**) and **Audit Log** (latest 25 from **`AuditLogRepository::find_for_promotion`**, context as pretty JSON). **Hard delete UI**, **visual rule builder**, and **REST/AJAX** are **not** implemented yet.
 
 ## Install (development)
 
