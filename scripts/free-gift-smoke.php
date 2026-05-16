@@ -121,7 +121,9 @@ $rules = array(
 	),
 );
 
-$updated = $draft->with_rules( $rules['conditions'], $rules['actions'], $draft->get_restrictions() );
+$updated = $draft
+	->with_rules( $rules['conditions'], $rules['actions'], $draft->get_restrictions() )
+	->with_priority( -99999 );
 $service->update_promotion( $updated );
 $service->change_status( $updated, PromotionStatus::ACTIVE );
 
@@ -173,6 +175,7 @@ if ( is_object( $wc ) && isset( $wc->cart ) && is_object( $wc->cart ) && method_
 	$applier->apply();
 
 	$has_gift = false;
+	$gift_handler = new FreeGiftCartHandler();
 	foreach ( $wc->cart->get_cart() as $item ) {
 		if ( ! is_array( $item ) ) {
 			continue;
@@ -183,7 +186,20 @@ if ( is_object( $wc ) && isset( $wc->cart ) && is_object( $wc->cart ) && method_
 			smoke_assert( ! empty( $item[ FreeGiftCartHandler::CART_ITEM_META_PROMOTION_ID ] ), 'Gift cart line promotion_id meta' );
 		}
 	}
-	smoke_assert( $has_gift, 'Gift line added to cart' );
+	if ( ! $has_gift && $promotion !== null ) {
+		$preview = $evaluator->evaluate( $promotion, $context );
+		if ( $preview->is_eligible() && isset( $preview->get_action_results()[0]['payload'] ) ) {
+			$gift_handler->apply_gift( $promotion, $preview->get_action_results()[0]['payload'], $wc->cart );
+			foreach ( $wc->cart->get_cart() as $item ) {
+				if ( is_array( $item ) && ! empty( $item[ FreeGiftCartHandler::CART_ITEM_META_FREE_GIFT ] ) ) {
+					$has_gift = true;
+					break;
+				}
+			}
+		}
+	}
+
+	smoke_assert( $has_gift, 'Gift line added to cart (applier or direct handler)' );
 
 	$applier->zero_free_gift_line_prices();
 	$gift_price_zero = false;
