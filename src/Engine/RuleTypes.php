@@ -23,6 +23,10 @@ final class RuleTypes {
 
 	public const CONDITION_CUSTOMER_ROLE = 'customer_role';
 
+	public const CONDITION_BILLING_COUNTRY = 'billing_country';
+
+	public const CONDITION_CUSTOMER_EMAIL_DOMAIN = 'customer_email_domain';
+
 	public const ACTION_PERCENTAGE_DISCOUNT = 'percentage_discount';
 
 	public const ACTION_FIXED_AMOUNT_DISCOUNT = 'fixed_amount_discount';

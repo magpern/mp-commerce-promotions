@@ -15,6 +15,8 @@ use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
 use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\BillingCountryCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerEmailDomainCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
@@ -140,6 +142,16 @@ final class PromotionRuleValidator {
 			return;
 		}
 
+		if ( $type === RuleTypes::CONDITION_BILLING_COUNTRY ) {
+			$this->validate_billing_country( $index, $raw, $issues );
+			return;
+		}
+
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN ) {
+			$this->validate_customer_email_domain( $index, $raw, $issues );
+			return;
+		}
+
 		$issues[] = $this->error(
 			sprintf(
 				/* translators: %s: condition type string */
@@ -153,6 +165,56 @@ final class PromotionRuleValidator {
 	 * @param array<string, mixed>                        $raw
 	 * @param list<array{level: string, message: string}> $issues
 	 */
+	private function validate_billing_country( int $index, array $raw, array &$issues ): void {
+		if ( ! isset( $raw['countries'] ) || ! is_array( $raw['countries'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based condition index */
+					__( 'billing_country at index %s is missing a countries array.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		try {
+			new BillingCountryCondition( $raw['countries'] );
+		} catch ( InvalidArgumentException $e ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based condition index */
+					__( 'billing_country at index %s has invalid countries.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+		}
+	}
+
+	private function validate_customer_email_domain( int $index, array $raw, array &$issues ): void {
+		if ( ! isset( $raw['domains'] ) || ! is_array( $raw['domains'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based condition index */
+					__( 'customer_email_domain at index %s is missing a domains array.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		try {
+			new CustomerEmailDomainCondition( $raw['domains'] );
+		} catch ( InvalidArgumentException $e ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based condition index */
+					__( 'customer_email_domain at index %s has invalid domains.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+		}
+	}
+
 	private function validate_customer_role( int $index, array $raw, array &$issues ): void {
 		if ( ! isset( $raw['roles'] ) || ! is_array( $raw['roles'] ) ) {
 			$issues[] = $this->error(

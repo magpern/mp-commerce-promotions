@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Customer/location restrictions** — `billing_country`, `customer_email_domain`; Woo billing metadata enrichment
 - **Customer context enrichment** — Woo `has_previous_orders` + `customer_roles` metadata; `customer_role` condition
 - **Customer/order conditions + engine tests** — `logged_in`, `first_order` (metadata); expanded PHPUnit for evaluator, validator, builder, domain
 - **PHPUnit unit scaffold** — `phpunit.xml.dist`, `tests/Unit/*`, `composer run test` in CI; no WordPress bootstrap yet

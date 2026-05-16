@@ -100,6 +100,8 @@ final class CartContextBuilder {
 			$this->enrich_customer_metadata( $customer_id, $metadata );
 		}
 
+		$this->enrich_billing_metadata( $customer_id, $metadata );
+
 		return new EvaluationContext( $customer_id, $subtotal, $currency, $items, $metadata );
 	}
 
@@ -141,6 +143,95 @@ final class CartContextBuilder {
 		}
 
 		return count( $orders ) > 0;
+	}
+
+	/**
+	 * @return list<string>|null Role slugs from WordPress user object, or null if unavailable.
+	 */
+	/**
+	 * @param array<string, mixed> $metadata
+	 */
+	private function enrich_billing_metadata( ?int $customer_id, array &$metadata ): void {
+		$country = $this->resolve_billing_country( $customer_id );
+		if ( $country !== null && $country !== '' ) {
+			$metadata['billing_country'] = strtoupper( $country );
+		}
+
+		$email = $this->resolve_customer_email( $customer_id );
+		if ( $email !== null && $email !== '' ) {
+			$metadata['customer_email'] = $email;
+		}
+	}
+
+	private function resolve_billing_country( ?int $customer_id ): ?string {
+		$from_session = $this->wc_customer_billing_country();
+		if ( $from_session !== null && $from_session !== '' ) {
+			return $from_session;
+		}
+
+		if ( $customer_id !== null && $customer_id > 0 && function_exists( 'get_user_meta' ) ) {
+			$meta = get_user_meta( $customer_id, 'billing_country', true );
+			if ( is_string( $meta ) && $meta !== '' ) {
+				return $meta;
+			}
+		}
+
+		return null;
+	}
+
+	private function resolve_customer_email( ?int $customer_id ): ?string {
+		if ( $customer_id !== null && $customer_id > 0 && function_exists( 'get_userdata' ) ) {
+			$user = get_userdata( $customer_id );
+			if ( is_object( $user ) && isset( $user->user_email ) && is_string( $user->user_email ) && $user->user_email !== '' ) {
+				return $user->user_email;
+			}
+		}
+
+		return $this->wc_customer_billing_email();
+	}
+
+	private function wc_customer_billing_country(): ?string {
+		if ( ! function_exists( 'WC' ) ) {
+			return null;
+		}
+
+		$wc = WC();
+		if ( ! is_object( $wc ) || ! isset( $wc->customer ) || ! is_object( $wc->customer ) ) {
+			return null;
+		}
+
+		if ( ! method_exists( $wc->customer, 'get_billing_country' ) ) {
+			return null;
+		}
+
+		$country = $wc->customer->get_billing_country();
+		if ( ! is_string( $country ) || $country === '' ) {
+			return null;
+		}
+
+		return $country;
+	}
+
+	private function wc_customer_billing_email(): ?string {
+		if ( ! function_exists( 'WC' ) ) {
+			return null;
+		}
+
+		$wc = WC();
+		if ( ! is_object( $wc ) || ! isset( $wc->customer ) || ! is_object( $wc->customer ) ) {
+			return null;
+		}
+
+		if ( ! method_exists( $wc->customer, 'get_billing_email' ) ) {
+			return null;
+		}
+
+		$email = $wc->customer->get_billing_email();
+		if ( ! is_string( $email ) || $email === '' ) {
+			return null;
+		}
+
+		return $email;
 	}
 
 	/**

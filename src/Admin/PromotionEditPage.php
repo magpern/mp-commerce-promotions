@@ -1756,6 +1756,14 @@ final class PromotionEditPage {
 					__( 'Customer role', 'mp-commerce-promotions' ),
 					"[\n  {\"type\":\"customer_role\",\"roles\":[\"customer\",\"vip\"]}\n]"
 				);
+				$this->render_rule_template_readonly(
+					__( 'Billing country', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"billing_country\",\"countries\":[\"SE\",\"NO\",\"DK\"]}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'Customer email domain', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"customer_email_domain\",\"domains\":[\"example.com\",\"company.com\"]}\n]"
+				);
 
 				echo '<h4 style="margin-top:1.5em;">' . esc_html__( 'Actions examples', 'mp-commerce-promotions' ) . '</h4>';
 
@@ -1769,7 +1777,7 @@ final class PromotionEditPage {
 				);
 			},
 			__(
-				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action is applied in this MVP. Product and category IDs must be numeric WordPress IDs. For logged-in carts, WooCommerce enriches has_previous_orders and customer_roles when APIs are available. customer_role roles are WordPress role slugs (compared case-insensitively). logged_in, first_order, and customer_role are raw JSON only (not in Simple Rule Builder v0).',
+				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action is applied in this MVP. Product and category IDs must be numeric WordPress IDs. Woo cart context may enrich has_previous_orders, customer_roles, billing_country, and customer_email when session data is available (logged-in or guest checkout). billing_country uses ISO codes (uppercase). customer_email_domain matches the part after @ (case-insensitive). Customer/location conditions are raw JSON only (not in Simple Rule Builder v0).',
 				'mp-commerce-promotions'
 			),
 			array(

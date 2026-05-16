@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Conditions **`billing_country`** (ISO codes) and **`customer_email_domain`** (email domain match, case-insensitive).
+- Woo cart metadata: `billing_country` and `customer_email` from session customer / user account when available.
 - Condition **`customer_role`** (WordPress role slugs in JSON; matches metadata `customer_roles`, case-insensitive).
 - Woo cart context enrichment for logged-in users: `has_previous_orders` via `wc_get_orders()` (limit 1), `customer_roles` via user object.
 - Conditions **`logged_in`** and **`first_order`**; expanded PHPUnit coverage for evaluator, validator, builder, and domain.

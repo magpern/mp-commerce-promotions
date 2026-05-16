@@ -25,6 +25,8 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_LOGGED_IN,
 			RuleTypes::CONDITION_FIRST_ORDER,
 			RuleTypes::CONDITION_CUSTOMER_ROLE,
+			RuleTypes::CONDITION_BILLING_COUNTRY,
+			RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN,
 		);
 	}
 

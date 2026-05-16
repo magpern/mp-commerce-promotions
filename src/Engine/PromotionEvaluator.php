@@ -16,6 +16,8 @@ use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
 use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\ConditionInterface;
+use MP\CommercePromotions\Engine\Condition\BillingCountryCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerEmailDomainCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\FirstOrderCondition;
 use MP\CommercePromotions\Engine\Condition\LoggedInCondition;
@@ -170,6 +172,36 @@ final class PromotionEvaluator {
 			} catch ( \InvalidArgumentException $e ) {
 				return EvaluationResult::ineligible(
 					array( 'Invalid customer_role condition configuration.' )
+				);
+			}
+		}
+
+		if ( $type === RuleTypes::CONDITION_BILLING_COUNTRY ) {
+			if ( ! isset( $raw['countries'] ) || ! is_array( $raw['countries'] ) ) {
+				return EvaluationResult::ineligible(
+					array( 'Invalid billing_country condition configuration.' )
+				);
+			}
+			try {
+				return new BillingCountryCondition( $raw['countries'] );
+			} catch ( \InvalidArgumentException $e ) {
+				return EvaluationResult::ineligible(
+					array( 'Invalid billing_country condition configuration.' )
+				);
+			}
+		}
+
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN ) {
+			if ( ! isset( $raw['domains'] ) || ! is_array( $raw['domains'] ) ) {
+				return EvaluationResult::ineligible(
+					array( 'Invalid customer_email_domain condition configuration.' )
+				);
+			}
+			try {
+				return new CustomerEmailDomainCondition( $raw['domains'] );
+			} catch ( \InvalidArgumentException $e ) {
+				return EvaluationResult::ineligible(
+					array( 'Invalid customer_email_domain condition configuration.' )
 				);
 			}
 		}

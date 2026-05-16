@@ -266,13 +266,21 @@ category_quantity
 logged_in
 first_order
 customer_role
+billing_country
+customer_email_domain
 ```
 
 `logged_in` passes when `EvaluationContext::get_customer_id()` is a positive integer.
 
 `first_order` passes when context metadata `has_previous_orders` is explicitly `false`. For logged-in carts, `CartContextBuilder` sets this via `wc_get_orders()` (limit 1; statuses `completed`, `processing`, `on-hold` only). If lookup fails, the key is omitted and the condition fails safely.
 
-`customer_role` passes when any configured WordPress **role slug** in the condition JSON matches a slug in metadata `customer_roles` (case-insensitive comparison). `CartContextBuilder` populates `customer_roles` from the logged-in user object when available. Raw JSON only in admin v0 (not in Simple Rule Builder).
+`customer_role` passes when any configured WordPress **role slug** in the condition JSON matches a slug in metadata `customer_roles` (case-insensitive comparison). `CartContextBuilder` populates `customer_roles` from the logged-in user object when available.
+
+`billing_country` passes when metadata `billing_country` (ISO code) is in the configured `countries` list (uppercase comparison). `CartContextBuilder` sets this from `WC()->customer->get_billing_country()` or user meta `billing_country` when available (logged-in or guest session).
+
+`customer_email_domain` passes when the domain part of metadata `customer_email` matches a configured domain (case-insensitive). `CartContextBuilder` sets email from the user account or `WC()->customer->get_billing_email()` when available.
+
+Customer/location conditions are **raw JSON only** in admin v0 (not in Simple Rule Builder).
 
 ### Current Actions
 

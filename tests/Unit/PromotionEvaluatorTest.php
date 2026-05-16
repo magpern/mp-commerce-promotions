@@ -344,4 +344,55 @@ final class PromotionEvaluatorTest extends TestCase {
 		);
 		$this->assertFalse( $missing_meta->is_eligible() );
 	}
+
+	public function test_billing_country_and_email_domain_conditions(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'      => RuleTypes::CONDITION_BILLING_COUNTRY,
+					'countries' => array( 'SE', 'NO' ),
+				),
+				array(
+					'type'    => RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN,
+					'domains' => array( 'example.com' ),
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 5.0,
+				),
+			)
+		);
+
+		$meta = array(
+			'billing_country' => 'SE',
+			'customer_email'  => 'test@example.com',
+		);
+
+		$this->assertTrue(
+			$this->evaluator->evaluate(
+				$promotion,
+				PromotionTestFixtures::cart_context( null, 10.0, array(), $meta )
+			)->is_eligible()
+		);
+
+		$bad_country = $meta;
+		$bad_country['billing_country'] = 'US';
+		$this->assertFalse(
+			$this->evaluator->evaluate(
+				$promotion,
+				PromotionTestFixtures::cart_context( null, 10.0, array(), $bad_country )
+			)->is_eligible()
+		);
+
+		$bad_email = $meta;
+		$bad_email['customer_email'] = 'test@other.org';
+		$this->assertFalse(
+			$this->evaluator->evaluate(
+				$promotion,
+				PromotionTestFixtures::cart_context( null, 10.0, array(), $bad_email )
+			)->is_eligible()
+		);
+	}
 }
