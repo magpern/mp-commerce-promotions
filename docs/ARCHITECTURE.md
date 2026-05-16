@@ -327,11 +327,24 @@ Important classes:
 
 ```text
 WooCommerceBridge
+WooCompatibility
 CartContextBuilder
 CartPromotionApplier
 OrderPromotionRecorder
 PromotionCodeCouponBridge
 ```
+
+### Feature compatibility (HPOS)
+
+`WooCompatibility` registers on `before_woocommerce_init` and declares compatibility with WooCommerce **High-Performance Order Storage** (`custom_order_tables`) when `FeaturesUtil` exists. No fatal occurs if WooCommerce is inactive or an older version lacks the API.
+
+**Cart & Checkout Blocks** (`cart_checkout_blocks`) is **not** declared: discounts use cart fees and the standard coupon field; block checkout compatibility has not been verified end-to-end in the browser. Omitting the declaration avoids a false “compatible” label until tested.
+
+### HPOS-safe order metadata
+
+- **`OrderPromotionRecorder`** — reads/writes order meta only through `WC_Order::get_meta()`, `update_meta_data()`, and `save()`; loads orders via `wc_get_order()`. CPT trash/delete hooks remain as legacy fallbacks and still resolve orders through `wc_get_order()`.
+- **`RedemptionRepository::count_recorded_for_promotion_code()`** — read-only join against `wp_wc_orders_meta` when HPOS is enabled, else `wp_postmeta`; uses `WooCompatibility::is_hpos_enabled()`.
+- **`UsageDiagnostics`** — derives counts from custom redemption tables and the repository above; no direct `wp_posts` order assumptions.
 
 ### Current WooCommerce Behavior
 

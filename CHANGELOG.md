@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **WooCommerce HPOS compatibility** — declares `custom_order_tables` via `FeaturesUtil` on `before_woocommerce_init` (`WooCompatibility`); cart/checkout blocks not declared pending block-checkout verification.
 - **Evaluation trace / explainability** — `ConditionTrace`, `ActionTrace`, and trace arrays on `EvaluationResult` with stable machine-readable `reason_code` values; admin cart preview shows condition/action trace tables (admin/debug only).
 - Conditions **`billing_country`** (ISO codes) and **`customer_email_domain`** (email domain match, case-insensitive).
 - Woo cart metadata: `billing_country` and `customer_email` from session customer / user account when available.

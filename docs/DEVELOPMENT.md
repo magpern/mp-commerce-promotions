@@ -206,6 +206,8 @@ composer run test
 
 **Evaluation trace:** `PromotionEvaluator::evaluate()` populates `condition_traces` and `action_traces` on every result. Use `EvaluationResult::to_array()` or getters in tests/WP-CLI smoke checks. Reason codes are stable internal strings — do not rename without a changelog note.
 
+**WooCommerce compatibility:** `WooCompatibility::register()` runs from `mp-commerce-promotions.php` immediately after autoload so `before_woocommerce_init` can declare HPOS (`custom_order_tables`) compatibility. Do not declare `cart_checkout_blocks` without block checkout QA. Order meta must use `WC_Order` CRUD, not raw postmeta writes.
+
 **Future work:** WordPress/WooCommerce integration tests (bootstrap WP test suite, repositories against test DB, checkout flows) are **not** implemented yet.
 
 Run the same checks locally before pushing:

@@ -13,6 +13,7 @@ use InvalidArgumentException;
 use MP\CommercePromotions\Infrastructure\Database\DbQuery;
 use MP\CommercePromotions\Infrastructure\Database\Schema;
 use MP\CommercePromotions\Infrastructure\Database\TableName;
+use MP\CommercePromotions\Woo\WooCompatibility;
 use wpdb;
 
 final class RedemptionRepository {
@@ -266,11 +267,7 @@ final class RedemptionRepository {
 	}
 
 	private function uses_custom_orders_table(): bool {
-		if ( ! class_exists( '\Automattic\WooCommerce\Utilities\OrderUtil' ) ) {
-			return false;
-		}
-
-		return \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+		return WooCompatibility::is_hpos_enabled();
 	}
 
 	/**

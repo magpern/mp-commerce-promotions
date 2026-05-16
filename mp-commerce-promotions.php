@@ -31,6 +31,8 @@ define( 'MP_COMMERCE_PROMOTIONS_URL', plugin_dir_url( __FILE__ ) );
 
 require_once MP_COMMERCE_PROMOTIONS_PATH . 'src/autoload.php';
 
+\MP\CommercePromotions\Woo\WooCompatibility::register();
+
 register_activation_hook( __FILE__, array( \MP\CommercePromotions\Infrastructure\Activator::class, 'activate' ) );
 register_deactivation_hook( __FILE__, array( \MP\CommercePromotions\Infrastructure\Deactivator::class, 'deactivate' ) );
 

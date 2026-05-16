@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **WooCommerce HPOS compatibility** — `custom_order_tables` declaration; HPOS order-meta audit; blocks compatibility intentionally omitted
 - **Evaluation trace / explainability** — `ConditionTrace`, `ActionTrace`, `EvaluationResult` traces, admin cart preview tables, PHPUnit coverage
 - **Customer/location restrictions** — `billing_country`, `customer_email_domain`; Woo billing metadata enrichment
 - **Customer context enrichment** — Woo `has_previous_orders` + `customer_roles` metadata; `customer_role` condition
