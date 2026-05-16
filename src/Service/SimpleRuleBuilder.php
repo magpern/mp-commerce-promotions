@@ -11,8 +11,13 @@ namespace MP\CommercePromotions\Service;
 
 use InvalidArgumentException;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
+use MP\CommercePromotions\Engine\Action\FreeShippingAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
+use MP\CommercePromotions\Engine\Condition\BillingCountryCondition;
 use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerEmailDomainCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
@@ -66,6 +71,56 @@ final class SimpleRuleBuilder {
 			);
 		}
 
+		if ( $type === RuleTypes::CONDITION_LOGGED_IN ) {
+			return array( 'type' => RuleTypes::CONDITION_LOGGED_IN );
+		}
+
+		if ( $type === RuleTypes::CONDITION_FIRST_ORDER ) {
+			return array( 'type' => RuleTypes::CONDITION_FIRST_ORDER );
+		}
+
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_ROLE ) {
+			$roles = self::parse_comma_list( $post, 'mp_cp_builder_roles', 'invalid_roles' );
+			new CustomerRoleCondition( $roles );
+
+			return array(
+				'type'  => RuleTypes::CONDITION_CUSTOMER_ROLE,
+				'roles' => $roles,
+			);
+		}
+
+		if ( $type === RuleTypes::CONDITION_BILLING_COUNTRY ) {
+			$countries = self::parse_comma_list( $post, 'mp_cp_builder_countries', 'invalid_countries' );
+			new BillingCountryCondition( $countries );
+
+			return array(
+				'type'      => RuleTypes::CONDITION_BILLING_COUNTRY,
+				'countries' => $countries,
+			);
+		}
+
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN ) {
+			$domains = self::parse_comma_list( $post, 'mp_cp_builder_domains', 'invalid_domains' );
+			new CustomerEmailDomainCondition( $domains );
+
+			return array(
+				'type'    => RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN,
+				'domains' => $domains,
+			);
+		}
+
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT ) {
+			$operator = self::parse_operator( $post );
+			$count    = self::parse_required_float( $post, 'mp_cp_builder_redemption_count', 'invalid_redemption_count' );
+			new CustomerRedemptionCountCondition( $operator, $count );
+
+			return array(
+				'type'     => RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT,
+				'operator' => $operator,
+				'count'    => $count,
+			);
+		}
+
 		$operator = self::parse_operator( $post );
 		$quantity = self::parse_required_float( $post, 'mp_cp_builder_quantity', 'invalid_quantity' );
 
@@ -107,6 +162,12 @@ final class SimpleRuleBuilder {
 			);
 		}
 
+		if ( $type === RuleTypes::ACTION_FREE_SHIPPING ) {
+			new FreeShippingAction();
+
+			return array( 'type' => RuleTypes::ACTION_FREE_SHIPPING );
+		}
+
 		$amount = self::parse_required_float( $post, 'mp_cp_builder_fixed_amount', 'invalid_fixed_amount' );
 		new FixedAmountDiscountAction( $amount );
 
@@ -118,10 +179,45 @@ final class SimpleRuleBuilder {
 
 	/**
 	 * @param array<string, mixed> $post
+	 * @return list<string>
+	 */
+	private static function parse_comma_list( array $post, string $key, string $error_code ): array {
+		if ( ! isset( $post[ $key ] ) || ! is_string( $post[ $key ] ) ) {
+			throw new InvalidArgumentException( $error_code );
+		}
+
+		$raw = trim( $post[ $key ] );
+		if ( $raw === '' ) {
+			throw new InvalidArgumentException( $error_code );
+		}
+
+		$parts  = preg_split( '/\s*,\s*/', $raw );
+		$values = array();
+		if ( is_array( $parts ) ) {
+			foreach ( $parts as $part ) {
+				if ( ! is_string( $part ) ) {
+					continue;
+				}
+				$part = trim( $part );
+				if ( $part !== '' ) {
+					$values[] = $part;
+				}
+			}
+		}
+
+		if ( $values === array() ) {
+			throw new InvalidArgumentException( $error_code );
+		}
+
+		return array_values( array_unique( $values ) );
+	}
+
+	/**
+	 * @param array<string, mixed> $post
 	 */
 	private static function parse_operator( array $post ): string {
 		$operator = isset( $post['mp_cp_builder_operator'] )
-			? sanitize_text_field( (string) $post['mp_cp_builder_operator'] )
+			? trim( (string) $post['mp_cp_builder_operator'] )
 			: '';
 
 		if ( ! QuantityComparator::supports( $operator ) ) {

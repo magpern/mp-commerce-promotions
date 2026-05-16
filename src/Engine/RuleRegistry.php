@@ -27,6 +27,7 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_CUSTOMER_ROLE,
 			RuleTypes::CONDITION_BILLING_COUNTRY,
 			RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN,
+			RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT,
 		);
 	}
 
@@ -37,6 +38,7 @@ final class RuleRegistry {
 		return array(
 			RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
 			RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT,
+			RuleTypes::ACTION_FREE_SHIPPING,
 		);
 	}
 
@@ -68,6 +70,7 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_CUSTOMER_ROLE          => 'Customer role',
 			RuleTypes::CONDITION_BILLING_COUNTRY        => 'Billing country',
 			RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN  => 'Customer email domain',
+			RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT => 'Customer redemption count',
 		);
 
 		return $labels[ $type ] ?? $type;
@@ -77,6 +80,7 @@ final class RuleRegistry {
 		$labels = array(
 			RuleTypes::ACTION_PERCENTAGE_DISCOUNT    => 'Percentage discount',
 			RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT  => 'Fixed amount discount',
+			RuleTypes::ACTION_FREE_SHIPPING          => 'Free shipping',
 		);
 
 		return $labels[ $type ] ?? $type;

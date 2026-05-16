@@ -25,6 +25,7 @@ final class ConditionTrace {
 	public const REASON_ROLE_NOT_MATCHED    = 'role_not_matched';
 	public const REASON_COUNTRY_NOT_MATCHED = 'country_not_matched';
 	public const REASON_EMAIL_DOMAIN        = 'email_domain_not_matched';
+	public const REASON_REDEMPTION_COUNT_NOT_MET = 'redemption_count_not_met';
 
 	private string $type;
 

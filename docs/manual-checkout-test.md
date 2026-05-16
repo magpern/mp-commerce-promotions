@@ -252,6 +252,28 @@ WP-CLI: `./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/stacki
 
 ---
 
+## 11. Free shipping (browser required)
+
+`free_shipping` is an **MVP fee offset**: a negative cart fee equal to the current WooCommerce **shipping total** when it is **> 0**. It does not change shipping method rates natively.
+
+**WP-CLI (evaluator only):**
+
+```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/free-shipping-smoke.php
+```
+
+**Browser checklist:**
+
+1. Create an **active** promotion with action `[{"type":"free_shipping"}]` and a condition you can satisfy (e.g. `minimum_subtotal` **1**), or use **Simple Rule Builder** → **Free shipping**.
+2. Configure at least one **shipping zone/method** that returns a **non-zero** shipping cost for your test address.
+3. Add a product to cart, enter shipping address on cart/checkout, and confirm a fee labeled **`Commerce promotion: Free shipping - {name}`** (or code variant with **Free shipping ****1234**).
+4. Confirm cart **shipping** line + **fee** offset net to **zero shipping charge** (or your store’s expected total).
+5. With **shipping total 0** (free shipping method or no method), confirm **no** promotion fee is added.
+
+**Customer redemption count:** for logged-in customers only, condition `[{"type":"customer_redemption_count","operator":"<","count":1}]` passes when metadata `customer_redemption_count` is below **1** (enriched from recorded redemptions). Guests fail when metadata is missing.
+
+---
+
 ## Pass criteria
 
 All checked items in sections **1–8** pass, and behavior matches **Known limitations** in section **9**.

@@ -88,7 +88,7 @@ final class Plugin {
 
 		$cart_builder = null;
 		if ( $this->woo_bridge->is_available() && $this->promotion_repository !== null && $this->promotion_code_repository !== null ) {
-			$cart_builder = new CartContextBuilder();
+			$cart_builder = new CartContextBuilder( $this->redemption_repository );
 			$this->woo_bridge->set_cart_context_builder( $cart_builder );
 
 			$coupon_bridge = new PromotionCodeCouponBridge( $this->promotion_code_repository );
@@ -113,7 +113,7 @@ final class Plugin {
 				$this->woo_bridge->set_order_promotion_recorder( $order_recorder );
 			}
 		} elseif ( $this->woo_bridge->is_available() ) {
-			$cart_builder = new CartContextBuilder();
+			$cart_builder = new CartContextBuilder( $this->redemption_repository );
 			$this->woo_bridge->set_cart_context_builder( $cart_builder );
 		}
 

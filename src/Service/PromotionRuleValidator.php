@@ -14,10 +14,12 @@ use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
+use MP\CommercePromotions\Engine\Action\FreeShippingAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
 use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\BillingCountryCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerEmailDomainCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
@@ -215,6 +217,11 @@ final class PromotionRuleValidator {
 
 		if ( $type === RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN ) {
 			$this->validate_customer_email_domain( $index, $raw, $issues );
+			return;
+		}
+
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT ) {
+			$this->validate_customer_redemption_count( $index, $raw, $issues );
 			return;
 		}
 
@@ -506,6 +513,21 @@ final class PromotionRuleValidator {
 			return;
 		}
 
+		if ( $type === RuleTypes::ACTION_FREE_SHIPPING ) {
+			try {
+				new FreeShippingAction();
+			} catch ( InvalidArgumentException $e ) {
+				$issues[] = $this->error(
+					sprintf(
+						/* translators: %s: zero-based action index */
+						__( 'free_shipping at index %s is invalid.', 'mp-commerce-promotions' ),
+						(string) $index
+					)
+				);
+			}
+			return;
+		}
+
 		if ( ! isset( $raw['amount'] ) || ! is_numeric( $raw['amount'] ) ) {
 			$issues[] = $this->error(
 				sprintf(
@@ -524,6 +546,58 @@ final class PromotionRuleValidator {
 				sprintf(
 					/* translators: %s: zero-based action index */
 					__( 'fixed_amount_discount at index %s has an invalid amount.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+		}
+	}
+
+	/**
+	 * @param array<string, mixed>                        $raw
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function validate_customer_redemption_count( int $index, array $raw, array &$issues ): void {
+		if ( ! isset( $raw['operator'] ) || ! is_string( $raw['operator'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based condition index */
+					__( 'customer_redemption_count at index %s is missing or has an invalid operator.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		$operator = trim( $raw['operator'] );
+		if ( ! QuantityComparator::supports( $operator ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based condition index */
+					__( 'customer_redemption_count at index %s has an unsupported operator.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		if ( ! isset( $raw['count'] ) || ! is_numeric( $raw['count'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based condition index */
+					__( 'customer_redemption_count at index %s is missing or has an invalid count.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		try {
+			new CustomerRedemptionCountCondition( $operator, (float) $raw['count'] );
+		} catch ( InvalidArgumentException $e ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based condition index */
+					__( 'customer_redemption_count at index %s has invalid field values.', 'mp-commerce-promotions' ),
 					(string) $index
 				)
 			);

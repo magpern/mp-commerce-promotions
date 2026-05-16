@@ -27,6 +27,8 @@ final class CartPromotionApplier {
 
 	public const ACTION_FIXED_AMOUNT_DISCOUNT = 'fixed_amount_discount';
 
+	public const ACTION_FREE_SHIPPING = 'free_shipping';
+
 	private PromotionRepository $promotions;
 
 	private PromotionCodeRepository $promotion_codes;
@@ -222,7 +224,9 @@ final class CartPromotionApplier {
 			}
 
 			$session_entries[] = $entry;
-			$remaining_allowance -= (float) $applied['discount'];
+			if ( (string) $applied['action_type'] !== self::ACTION_FREE_SHIPPING ) {
+				$remaining_allowance -= (float) $applied['discount'];
+			}
 		}
 
 		return $session_entries;
@@ -345,6 +349,18 @@ final class CartPromotionApplier {
 				if ( is_array( $applied ) ) {
 					return $applied;
 				}
+				continue;
+			}
+
+			if ( $type === self::ACTION_FREE_SHIPPING ) {
+				$applied = $this->apply_free_shipping_fee(
+					$promotion,
+					$cart,
+					$promotion_code
+				);
+				if ( is_array( $applied ) ) {
+					return $applied;
+				}
 			}
 		}
 
@@ -426,28 +442,99 @@ final class CartPromotionApplier {
 	}
 
 	/**
+	 * @param object $cart WooCommerce cart (WC_Cart).
+	 * @return array<string, mixed>|false
+	 */
+	private function apply_free_shipping_fee(
+		Promotion $promotion,
+		$cart,
+		?PromotionCode $promotion_code
+	) {
+		$shipping_total = $this->resolve_cart_shipping_total( $cart );
+		if ( $shipping_total === null || $shipping_total <= 0 ) {
+			return false;
+		}
+
+		$this->add_promotion_fee(
+			$cart,
+			$promotion,
+			$shipping_total,
+			$promotion_code,
+			true
+		);
+
+		return array(
+			'promotion'   => $promotion,
+			'discount'    => $shipping_total,
+			'action_type' => self::ACTION_FREE_SHIPPING,
+		);
+	}
+
+	/**
+	 * @param object $cart WooCommerce cart (WC_Cart).
+	 */
+	private function resolve_cart_shipping_total( $cart ): ?float {
+		if ( ! method_exists( $cart, 'get_shipping_total' ) ) {
+			return null;
+		}
+
+		if ( method_exists( $cart, 'calculate_totals' ) ) {
+			$cart->calculate_totals();
+		}
+
+		$total = (float) $cart->get_shipping_total();
+		if ( $total < 0 ) {
+			return null;
+		}
+
+		return $total;
+	}
+
+	/**
 	 * @param object             $cart WooCommerce cart (WC_Cart).
 	 * @param PromotionCode|null $promotion_code
 	 */
-	private function add_promotion_fee( $cart, Promotion $promotion, float $discount, ?PromotionCode $promotion_code ): void {
+	private function add_promotion_fee(
+		$cart,
+		Promotion $promotion,
+		float $discount,
+		?PromotionCode $promotion_code,
+		bool $free_shipping = false
+	): void {
 		if ( $promotion_code !== null ) {
 			$last4 = sanitize_text_field( $promotion_code->get_code_last4() );
-			$label = sprintf(
-				/* translators: %s: last four characters of the promotion code */
-				__( 'Commerce promotion code: ****%s', 'mp-commerce-promotions' ),
-				$last4
-			);
+			if ( $free_shipping ) {
+				$label = sprintf(
+					/* translators: %s: last four characters of the promotion code */
+					__( 'Commerce promotion code: Free shipping ****%s', 'mp-commerce-promotions' ),
+					$last4
+				);
+			} else {
+				$label = sprintf(
+					/* translators: %s: last four characters of the promotion code */
+					__( 'Commerce promotion code: ****%s', 'mp-commerce-promotions' ),
+					$last4
+				);
+			}
 		} else {
 			$name = sanitize_text_field( $promotion->get_name() );
 			if ( $name === '' ) {
 				$name = __( 'Promotion', 'mp-commerce-promotions' );
 			}
 
-			$label = sprintf(
-				/* translators: %s: sanitized promotion name */
-				__( 'Commerce promotion: %s', 'mp-commerce-promotions' ),
-				$name
-			);
+			if ( $free_shipping ) {
+				$label = sprintf(
+					/* translators: %s: sanitized promotion name */
+					__( 'Commerce promotion: Free shipping - %s', 'mp-commerce-promotions' ),
+					$name
+				);
+			} else {
+				$label = sprintf(
+					/* translators: %s: sanitized promotion name */
+					__( 'Commerce promotion: %s', 'mp-commerce-promotions' ),
+					$name
+				);
+			}
 		}
 
 		$cart->add_fee( $label, -$discount, false );

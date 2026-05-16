@@ -24,6 +24,7 @@ final class RuleRegistryTest extends TestCase {
 		$this->assertContains( RuleTypes::CONDITION_CUSTOMER_ROLE, $conditions );
 		$this->assertContains( RuleTypes::CONDITION_BILLING_COUNTRY, $conditions );
 		$this->assertContains( RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN, $conditions );
+		$this->assertContains( RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT, $conditions );
 	}
 
 	public function test_supported_actions_includes_mvp_types(): void {
@@ -31,6 +32,7 @@ final class RuleRegistryTest extends TestCase {
 
 		$this->assertContains( RuleTypes::ACTION_PERCENTAGE_DISCOUNT, $actions );
 		$this->assertContains( RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT, $actions );
+		$this->assertContains( RuleTypes::ACTION_FREE_SHIPPING, $actions );
 	}
 
 	public function test_unknown_condition_and_action_return_false(): void {

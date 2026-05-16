@@ -810,6 +810,18 @@ final class PromotionEditPage {
 			'mp_cp_builder_fixed_amount'   => isset( $_POST['mp_cp_builder_fixed_amount'] )
 				? wp_unslash( (string) $_POST['mp_cp_builder_fixed_amount'] )
 				: '',
+			'mp_cp_builder_roles'          => isset( $_POST['mp_cp_builder_roles'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_roles'] )
+				: '',
+			'mp_cp_builder_countries'      => isset( $_POST['mp_cp_builder_countries'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_countries'] )
+				: '',
+			'mp_cp_builder_domains'        => isset( $_POST['mp_cp_builder_domains'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_domains'] )
+				: '',
+			'mp_cp_builder_redemption_count' => isset( $_POST['mp_cp_builder_redemption_count'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_redemption_count'] )
+				: '',
 		);
 
 		try {
@@ -1691,6 +1703,12 @@ final class PromotionEditPage {
 		echo '<option value="minimum_subtotal">' . esc_html__( 'Minimum subtotal', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="product_quantity">' . esc_html__( 'Product quantity', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="category_quantity">' . esc_html__( 'Category quantity', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="logged_in">' . esc_html__( 'Logged in', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="first_order">' . esc_html__( 'First order', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="customer_role">' . esc_html__( 'Customer role', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="billing_country">' . esc_html__( 'Billing country', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="customer_email_domain">' . esc_html__( 'Customer email domain', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="customer_redemption_count">' . esc_html__( 'Customer redemption count', 'mp-commerce-promotions' ) . '</option>';
 		echo '</select></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_amount">' . esc_html__( 'Minimum subtotal amount', 'mp-commerce-promotions' ) . '</label></th><td>';
@@ -1708,15 +1726,32 @@ final class PromotionEditPage {
 			echo '<option value="' . esc_attr( $op ) . '">' . esc_html( $op ) . '</option>';
 		}
 		echo '</select>';
-		echo '<p class="description">' . esc_html__( 'Used for product quantity and category quantity conditions.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+		echo '<p class="description">' . esc_html__( 'Used for product/category quantity and customer redemption count conditions.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_quantity">' . esc_html__( 'Quantity', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_builder_quantity" name="mp_cp_builder_quantity" min="0" step="1" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_roles">' . esc_html__( 'Customer roles', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_roles" name="mp_cp_builder_roles" placeholder="customer, vip" />';
+		echo '<p class="description">' . esc_html__( 'Comma-separated WordPress role slugs (customer_role condition).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_countries">' . esc_html__( 'Billing countries', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_countries" name="mp_cp_builder_countries" placeholder="SE, NO, DK" />';
+		echo '<p class="description">' . esc_html__( 'Comma-separated ISO country codes (billing_country condition).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_domains">' . esc_html__( 'Email domains', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_domains" name="mp_cp_builder_domains" placeholder="example.com, company.com" />';
+		echo '<p class="description">' . esc_html__( 'Comma-separated domains without @ (customer_email_domain condition).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_redemption_count">' . esc_html__( 'Redemption count', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_redemption_count" name="mp_cp_builder_redemption_count" min="0" step="1" />';
+		echo '<p class="description">' . esc_html__( 'Compared with operator for customer_redemption_count (logged-in customers only).', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_action_type">' . esc_html__( 'Action type', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<select id="mp_cp_builder_action_type" name="mp_cp_builder_action_type">';
 		echo '<option value="percentage_discount">' . esc_html__( 'Percentage discount', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="fixed_amount_discount">' . esc_html__( 'Fixed amount discount', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="free_shipping">' . esc_html__( 'Free shipping', 'mp-commerce-promotions' ) . '</option>';
 		echo '</select></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_percentage">' . esc_html__( 'Percentage', 'mp-commerce-promotions' ) . '</label></th><td>';
@@ -2006,6 +2041,10 @@ final class PromotionEditPage {
 					__( 'Customer email domain', 'mp-commerce-promotions' ),
 					"[\n  {\"type\":\"customer_email_domain\",\"domains\":[\"example.com\",\"company.com\"]}\n]"
 				);
+				$this->render_rule_template_readonly(
+					__( 'Customer redemption count', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"customer_redemption_count\",\"operator\":\"<\",\"count\":1}\n]"
+				);
 
 				echo '<h4 style="margin-top:1.5em;">' . esc_html__( 'Actions examples', 'mp-commerce-promotions' ) . '</h4>';
 
@@ -2017,9 +2056,13 @@ final class PromotionEditPage {
 					__( 'Fixed amount discount', 'mp-commerce-promotions' ),
 					"[\n  {\"type\":\"fixed_amount_discount\",\"amount\":25}\n]"
 				);
+				$this->render_rule_template_readonly(
+					__( 'Free shipping', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"free_shipping\"}\n]"
+				);
 			},
 			__(
-				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action per promotion is applied on the storefront. Product and category IDs must be numeric WordPress IDs. Woo cart context may enrich has_previous_orders, customer_roles, billing_country, and customer_email when session data is available (logged-in or guest checkout). billing_country uses ISO codes (uppercase). customer_email_domain matches the part after @ (case-insensitive). Customer/location conditions are raw JSON only (not in Simple Rule Builder v0).',
+				'Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action per promotion is applied on the storefront. Product and category IDs must be numeric WordPress IDs. Woo cart context enriches has_previous_orders, customer_roles, billing_country, customer_email, and customer_redemption_count (logged-in only) when available. billing_country uses ISO codes (uppercase). customer_email_domain matches the part after @ (case-insensitive). free_shipping is an MVP fee offset equal to the current shipping total (verify in browser checkout when shipping is configured). Simple Rule Builder supports customer/location conditions and free shipping without extra JSON editing.',
 				'mp-commerce-promotions'
 			),
 			array(

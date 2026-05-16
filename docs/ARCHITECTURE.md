@@ -283,6 +283,7 @@ first_order
 customer_role
 billing_country
 customer_email_domain
+customer_redemption_count
 ```
 
 `logged_in` passes when `EvaluationContext::get_customer_id()` is a positive integer.
@@ -295,14 +296,19 @@ customer_email_domain
 
 `customer_email_domain` passes when the domain part of metadata `customer_email` matches a configured domain (case-insensitive). `CartContextBuilder` sets email from the user account or `WC()->customer->get_billing_email()` when available.
 
-Customer/location conditions are **raw JSON only** in admin v0 (not in Simple Rule Builder).
+`customer_redemption_count` compares metadata `customer_redemption_count` (integer) using `QuantityComparator` operators against JSON `count`. For logged-in carts, `CartContextBuilder` sets this via `RedemptionRepository::count_recorded_for_customer()` when the repository is wired. Guests omit the key and the condition fails safely.
+
+**Simple Rule Builder v0** supports all current condition and action types (including customer/location conditions and `free_shipping`).
 
 ### Current Actions
 
 ```text
 percentage_discount
 fixed_amount_discount
+free_shipping
 ```
+
+`free_shipping` preview returns `{ "free_shipping": true }`. On the storefront, `CartPromotionApplier` adds a **negative cart fee** equal to the current WooCommerce shipping total when it is **> 0** (MVP fee-offset; not native shipping-method manipulation). Fee labels: `Commerce promotion: Free shipping - {name}` or `Commerce promotion code: Free shipping ****{last4}`. When shipping is zero or unavailable, no fee is added. Free shipping does not consume the cart subtotal discount cap allowance.
 
 ### Engine Rules
 
@@ -572,10 +578,9 @@ Current limitations include:
 - Only first supported action per promotion is applied
 - Stackable multi-fee, exclusions, and max_applications are plan-level (not per-customer usage limits)
 - No BOGO/free product logic yet
-- No free shipping action yet
+- `free_shipping` is fee-offset only (verify in browser checkout; block checkout not declared)
 - No partial refund proportional reversal
-- No customer segmentation yet
-- No first-order/customer-role/country restrictions yet
+- No advanced customer segmentation beyond role/country/email/redemption count
 - No product/category search in builder yet
 - No persistent access to generated full codes
 - No PDF/email delivery yet

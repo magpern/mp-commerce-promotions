@@ -280,6 +280,63 @@ final class PromotionRuleValidatorTest extends TestCase {
 		$this->assertTrue( $this->has_error_containing( $this->messages( $this->validator->validate( $invalid ) ), 'billing_country' ) );
 	}
 
+	public function test_free_shipping_action_validates_without_extra_fields(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 1.0,
+				),
+			),
+			array(
+				array( 'type' => RuleTypes::ACTION_FREE_SHIPPING ),
+			)
+		);
+
+		$this->assertSame( array(), $this->validator->validate( $promotion ) );
+	}
+
+	public function test_customer_redemption_count_validates_operator_and_count(): void {
+		$valid = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'     => RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT,
+					'operator' => '<',
+					'count'    => 1,
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 10.0,
+				),
+			)
+		);
+		$this->assertSame( array(), $this->validator->validate( $valid ) );
+
+		$invalid = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'     => RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT,
+					'operator' => '!=',
+					'count'    => 1,
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 10.0,
+				),
+			)
+		);
+		$this->assertTrue(
+			$this->has_error_containing(
+				$this->messages( $this->validator->validate( $invalid ) ),
+				'customer_redemption_count'
+			)
+		);
+	}
+
 	public function test_logged_in_and_first_order_types_validate_without_extra_fields(): void {
 		$promotion = PromotionTestFixtures::active_promotion(
 			array(

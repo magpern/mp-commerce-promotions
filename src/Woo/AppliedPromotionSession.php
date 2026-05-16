@@ -102,6 +102,7 @@ final class AppliedPromotionSession {
 		$action_type = isset( $entry['action_type'] ) ? (string) $entry['action_type'] : '';
 
 		return $action_type === CartPromotionApplier::ACTION_PERCENTAGE_DISCOUNT
-			|| $action_type === CartPromotionApplier::ACTION_FIXED_AMOUNT_DISCOUNT;
+			|| $action_type === CartPromotionApplier::ACTION_FIXED_AMOUNT_DISCOUNT
+			|| $action_type === CartPromotionApplier::ACTION_FREE_SHIPPING;
 	}
 }

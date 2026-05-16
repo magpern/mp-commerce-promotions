@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`free_shipping` action** — preview `{ "free_shipping": true }`; storefront MVP applies a negative cart fee equal to current shipping total when > 0; dedicated fee labels; `scripts/free-shipping-smoke.php`.
+- **`customer_redemption_count` condition** — `QuantityComparator` on metadata; `RedemptionRepository::count_recorded_for_customer()`; logged-in cart enrichment via `CartContextBuilder`.
+- **Simple Rule Builder expansion** — `logged_in`, `first_order`, `customer_role`, `billing_country`, `customer_email_domain`, `customer_redemption_count`, and `free_shipping` (no JavaScript).
 - **Stacking documentation and smoke** — clarified multi-fee vs exclusive behavior; `docs/manual-stacking-test.md`; cap smoke at natural subtotal (~46).
 - **Max applications enforcement** — `PromotionPlanner` enforces plan-level cap (minimum `max_applications` among selected promotions); skipped reason `max_applications_reached`; admin promotion plan table in cart preview.
 - **Promotion exclusion rules** — `excluded_promotion_ids` on promotions (schema 1.6.0); planner skips later eligible promotions with `excluded_by_selected_promotion`; admin comma-separated ID field; list column shows exclusion count.

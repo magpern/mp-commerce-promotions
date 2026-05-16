@@ -9,9 +9,16 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Woo;
 
+use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\EvaluationContext;
 
 final class CartContextBuilder {
+
+	private ?RedemptionRepository $redemptions;
+
+	public function __construct( ?RedemptionRepository $redemptions = null ) {
+		$this->redemptions = $redemptions;
+	}
 
 	/**
 	 * Order statuses that count as a previous purchase for first_order.
@@ -117,6 +124,10 @@ final class CartContextBuilder {
 		$roles = $this->customer_role_slugs( $customer_id );
 		if ( $roles !== null ) {
 			$metadata['customer_roles'] = $roles;
+		}
+
+		if ( $this->redemptions !== null ) {
+			$metadata['customer_redemption_count'] = $this->redemptions->count_recorded_for_customer( $customer_id );
 		}
 	}
 

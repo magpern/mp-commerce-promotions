@@ -132,6 +132,85 @@ final class SimpleRuleBuilderTest extends TestCase {
 		);
 	}
 
+	public function test_builds_logged_in_and_free_shipping(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type' => RuleTypes::CONDITION_LOGGED_IN,
+				'mp_cp_builder_action_type'    => RuleTypes::ACTION_FREE_SHIPPING,
+			)
+		);
+
+		$this->assertSame( RuleTypes::CONDITION_LOGGED_IN, $built['conditions'][0]['type'] );
+		$this->assertSame( RuleTypes::ACTION_FREE_SHIPPING, $built['actions'][0]['type'] );
+	}
+
+	public function test_builds_first_order(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type' => RuleTypes::CONDITION_FIRST_ORDER,
+				'mp_cp_builder_action_type'    => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'mp_cp_builder_percentage'     => '5',
+			)
+		);
+
+		$this->assertSame( RuleTypes::CONDITION_FIRST_ORDER, $built['conditions'][0]['type'] );
+	}
+
+	public function test_builds_customer_role_from_comma_list(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type' => RuleTypes::CONDITION_CUSTOMER_ROLE,
+				'mp_cp_builder_roles'          => 'customer, vip',
+				'mp_cp_builder_action_type'    => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'mp_cp_builder_percentage'     => '10',
+			)
+		);
+
+		$this->assertSame( array( 'customer', 'vip' ), $built['conditions'][0]['roles'] );
+	}
+
+	public function test_builds_billing_country_from_comma_list(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type' => RuleTypes::CONDITION_BILLING_COUNTRY,
+				'mp_cp_builder_countries'      => 'SE, NO',
+				'mp_cp_builder_action_type'    => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'mp_cp_builder_percentage'     => '10',
+			)
+		);
+
+		$this->assertSame( array( 'SE', 'NO' ), $built['conditions'][0]['countries'] );
+	}
+
+	public function test_builds_customer_email_domain_from_comma_list(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type' => RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN,
+				'mp_cp_builder_domains'        => 'example.com, company.com',
+				'mp_cp_builder_action_type'    => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'mp_cp_builder_percentage'     => '10',
+			)
+		);
+
+		$this->assertSame( array( 'example.com', 'company.com' ), $built['conditions'][0]['domains'] );
+	}
+
+	public function test_builds_customer_redemption_count(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type'   => RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT,
+				'mp_cp_builder_operator'         => '<',
+				'mp_cp_builder_redemption_count' => '1',
+				'mp_cp_builder_action_type'      => RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT,
+				'mp_cp_builder_fixed_amount'     => '5',
+			)
+		);
+
+		$this->assertSame( RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT, $built['conditions'][0]['type'] );
+		$this->assertSame( '<', $built['conditions'][0]['operator'] );
+		$this->assertSame( 1.0, $built['conditions'][0]['count'] );
+	}
+
 	public function test_rejects_invalid_fixed_amount(): void {
 		$this->expectException( InvalidArgumentException::class );
 		$this->expectExceptionMessage( 'invalid_fixed_amount' );

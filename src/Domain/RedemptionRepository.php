@@ -137,6 +137,28 @@ final class RedemptionRepository {
 	}
 
 	/**
+	 * Count recorded redemptions for a customer (read-only).
+	 */
+	public function count_recorded_for_customer( int $customer_id ): int {
+		if ( $customer_id <= 0 ) {
+			return 0;
+		}
+
+		$table = $this->redemptions_table();
+		$count = DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COUNT(*) FROM {$table} WHERE customer_id = %d AND status = %s",
+			array( $customer_id, Redemption::STATUS_RECORDED )
+		);
+
+		if ( ! is_numeric( $count ) ) {
+			return 0;
+		}
+
+		return (int) $count;
+	}
+
+	/**
 	 * Count reversed redemptions for a promotion.
 	 */
 	public function count_reversed_for_promotion( int $promotion_id ): int {

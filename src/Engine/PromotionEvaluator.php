@@ -14,12 +14,14 @@ use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\Action\ActionInterface;
 use MP\CommercePromotions\Engine\Action\ActionTrace;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
+use MP\CommercePromotions\Engine\Action\FreeShippingAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
 use MP\CommercePromotions\Engine\Condition\BillingCountryCondition;
 use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\ConditionInterface;
 use MP\CommercePromotions\Engine\Condition\ConditionTrace;
 use MP\CommercePromotions\Engine\Condition\CustomerEmailDomainCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\FirstOrderCondition;
 use MP\CommercePromotions\Engine\Condition\LoggedInCondition;
@@ -262,6 +264,9 @@ final class PromotionEvaluator {
 		if ( $type === RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN ) {
 			return 'Invalid customer_email_domain condition configuration.';
 		}
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT ) {
+			return 'Invalid customer_redemption_count condition configuration.';
+		}
 
 		return 'Invalid condition configuration.';
 	}
@@ -272,6 +277,9 @@ final class PromotionEvaluator {
 		}
 		if ( $type === RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT ) {
 			return 'Invalid fixed_amount_discount action configuration.';
+		}
+		if ( $type === RuleTypes::ACTION_FREE_SHIPPING ) {
+			return 'Invalid free_shipping action configuration.';
 		}
 
 		return 'Invalid action configuration.';
@@ -380,6 +388,10 @@ final class PromotionEvaluator {
 			}
 		}
 
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT ) {
+			return $this->resolve_customer_redemption_count_condition( $raw );
+		}
+
 		if ( $type === '' ) {
 			return array( 'condition' => null, 'error' => 'unknown' );
 		}
@@ -456,10 +468,43 @@ final class PromotionEvaluator {
 			}
 		}
 
+		if ( $type === RuleTypes::ACTION_FREE_SHIPPING ) {
+			return array(
+				'action' => new FreeShippingAction(),
+				'error'  => null,
+			);
+		}
+
 		if ( $type === '' ) {
 			return array( 'action' => null, 'error' => 'unknown' );
 		}
 
 		return array( 'action' => null, 'error' => 'unknown' );
+	}
+
+	/**
+	 * @param array<string, mixed> $raw
+	 * @return array{condition: ?ConditionInterface, error: ?string}
+	 */
+	private function resolve_customer_redemption_count_condition( array $raw ): array {
+		if ( ! isset( $raw['operator'] ) || ! is_string( $raw['operator'] ) ) {
+			return array( 'condition' => null, 'error' => 'invalid' );
+		}
+		$operator = trim( $raw['operator'] );
+		if ( ! QuantityComparator::supports( $operator ) ) {
+			return array( 'condition' => null, 'error' => 'invalid' );
+		}
+		if ( ! isset( $raw['count'] ) || ! is_numeric( $raw['count'] ) ) {
+			return array( 'condition' => null, 'error' => 'invalid' );
+		}
+
+		try {
+			return array(
+				'condition' => new CustomerRedemptionCountCondition( $operator, (float) $raw['count'] ),
+				'error'     => null,
+			);
+		} catch ( \InvalidArgumentException $e ) {
+			return array( 'condition' => null, 'error' => 'invalid' );
+		}
 	}
 }

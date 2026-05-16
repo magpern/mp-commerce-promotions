@@ -27,9 +27,13 @@ final class RuleTypes {
 
 	public const CONDITION_CUSTOMER_EMAIL_DOMAIN = 'customer_email_domain';
 
+	public const CONDITION_CUSTOMER_REDEMPTION_COUNT = 'customer_redemption_count';
+
 	public const ACTION_PERCENTAGE_DISCOUNT = 'percentage_discount';
 
 	public const ACTION_FIXED_AMOUNT_DISCOUNT = 'fixed_amount_discount';
+
+	public const ACTION_FREE_SHIPPING = 'free_shipping';
 
 	private function __construct() {
 	}

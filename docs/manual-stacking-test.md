@@ -9,6 +9,7 @@ Use this checklist to verify **stackable** promotion fees, **subtotal cap**, **e
 ```bash
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/stacking-smoke.php
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/stacking-limits-smoke.php
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/free-shipping-smoke.php
 ```
 
 ---

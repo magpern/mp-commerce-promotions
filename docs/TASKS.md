@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Free shipping + customer usage rules** — `free_shipping` fee-offset action; `customer_redemption_count` condition; builder expansion; smoke `scripts/free-shipping-smoke.php`
 - **Stacking behavior docs and smoke** — manual-stacking-test.md, stale copy cleanup, cap smoke at natural subtotal
 - **Max applications enforcement** — planner plan cap, `max_applications_reached`, admin promotion plan preview
 - **Promotion exclusion rules** — `excluded_promotion_ids` (schema 1.6.0), planner `excluded_by_selected_promotion`, admin field, list summary
@@ -40,7 +41,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 1. **PHPUnit expansion** — repositories, duplication service (still no WP integration suite)
 2. **PHPCS / WPCS baseline** — remaining packages; then enable `lint:phpcs` as CI gate
 3. **Composer autoloading** — optional PSR-4 via Composer for releases
-5. **Promotion mechanics (Phase C)** — free shipping, BOGO, stackability (see architecture roadmap)
+5. **Promotion mechanics (Phase C)** — BOGO, line-item discounts, native shipping methods (see architecture roadmap)
 
 ## Backlog
 
@@ -53,8 +54,8 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ### Promotion engine
 
-- Additional conditions (first order, customer role, country)
-- Additional actions (free shipping, line-item targeting)
+- Additional conditions (cart contents, tags, schedules)
+- Additional actions (line-item targeting, native shipping integration)
 - Additional promotion action types (BOGO, free product, line-item discounts)
 
 ### Storefront / WooCommerce

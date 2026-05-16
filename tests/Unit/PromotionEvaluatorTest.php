@@ -561,6 +561,62 @@ final class PromotionEvaluatorTest extends TestCase {
 		$this->assertSame( ConditionTrace::REASON_COUNTRY_NOT_MATCHED, $trace['reason_code'] );
 	}
 
+	public function test_free_shipping_action_preview_eligible(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 1.0,
+				),
+			),
+			array(
+				array( 'type' => RuleTypes::ACTION_FREE_SHIPPING ),
+			)
+		);
+
+		$result = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( null, 50.0 )
+		);
+
+		$this->assertTrue( $result->is_eligible() );
+		$this->assertSame( RuleTypes::ACTION_FREE_SHIPPING, $result->get_action_results()[0]['type'] );
+		$this->assertTrue( $result->get_action_results()[0]['payload']['free_shipping'] );
+	}
+
+	public function test_customer_redemption_count_passes_and_fails(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'     => RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT,
+					'operator' => '<',
+					'count'    => 1,
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 5.0,
+				),
+			)
+		);
+
+		$pass = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( 1, 10.0, array(), array( 'customer_redemption_count' => 0 ) )
+		);
+		$this->assertTrue( $pass->is_eligible() );
+
+		$fail = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( 1, 10.0, array(), array( 'customer_redemption_count' => 2 ) )
+		);
+		$this->assertFalse( $fail->is_eligible() );
+		$trace = $this->find_condition_trace( $fail->get_condition_traces(), RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT );
+		$this->assertNotNull( $trace );
+		$this->assertSame( ConditionTrace::REASON_REDEMPTION_COUNT_NOT_MET, $trace['reason_code'] );
+	}
+
 	public function test_email_domain_failure_includes_email_domain_not_matched_trace(): void {
 		$promotion = PromotionTestFixtures::active_promotion(
 			array(
