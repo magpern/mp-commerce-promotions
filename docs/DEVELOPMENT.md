@@ -71,6 +71,7 @@ Requires [Composer](https://getcomposer.org/) on the machine running the command
 | `composer run lint:php` | `php -l` on all plugin `.php` files (excludes `vendor/`, `node_modules/`) |
 | `composer run lint:phpcs` | PHPCS using `phpcs.xml.dist` |
 | `composer run lint` | Both of the above |
+| `composer run test` | PHPUnit unit tests (`phpunit.xml.dist`) |
 | `composer validate` | Validate `composer.json` |
 
 Direct PHPCS (after `composer install`):
@@ -184,6 +185,7 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) on `push` / 
 | `composer validate --strict` | Yes |
 | `composer install` | Yes |
 | `composer run lint:php` | Yes (`php -l` on all plugin `.php` files) |
+| `composer run test` | Yes (PHPUnit unit tests in `tests/Unit`) |
 | `bash scripts/build-zip.sh` | Yes (artifact path verified) |
 | `composer run lint:phpcs` | **No** — not run in CI yet |
 
@@ -191,12 +193,26 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) on `push` / 
 
 PHPCS is installed via Composer for local incremental cleanup; the baseline is **not clean** (see PHPCS section above). PHPCS will become a **gating** CI step after the remaining batches land and the team agrees on an acceptable error budget (or a committed baseline file).
 
+## PHPUnit (unit tests only)
+
+Configuration: `phpunit.xml.dist`, bootstrap `tests/bootstrap.php` (defines `ABSPATH` / `MP_COMMERCE_PROMOTIONS_PATH` and loads `src/autoload.php` **without** WordPress).
+
+```bash
+composer install
+composer run test
+```
+
+**Scope today:** pure PHP classes under domain/engine/services that do not call WordPress APIs (e.g. `RuleRegistry`, `QuantityComparator`, discount actions, `EvaluationContext`).
+
+**Future work:** WordPress/WooCommerce integration tests (bootstrap WP test suite, repositories against test DB, checkout flows) are **not** implemented yet.
+
 Run the same checks locally before pushing:
 
 ```bash
 composer validate --strict
 composer install
 composer run lint:php
+composer run test
 bash scripts/build-zip.sh
 ```
 

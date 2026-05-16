@@ -10,7 +10,7 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 
 - [CHANGELOG.md](CHANGELOG.md) — release history (Keep a Changelog)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — system design, layers, security, and roadmap
-- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — Composer lint tooling, PHPCS incremental cleanup, admin helpers, Docker/WP-CLI verification
+- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — Composer lint/test tooling, PHPCS incremental cleanup, admin helpers, Docker/WP-CLI verification
 - [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) — version bump, tag, zip, sync, and manual test steps
 - [docs/TASKS.md](docs/TASKS.md) — milestones, backlog, and out-of-scope items
 - [docs/manual-checkout-test.md](docs/manual-checkout-test.md) — storefront checkout and redemption walkthrough
@@ -121,7 +121,7 @@ bash scripts/build-zip.sh
 
 Output: `/home/magpern/mp-commerce-promotions-staging/build/mp-commerce-promotions-0.1.0.zip`. See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) before tagging a release.
 
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for paths, exclusions (never copy `.git` or `vendor` to live), and Composer lint commands.
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for paths, exclusions (never copy `.git` or `vendor` to live), Composer lint/test commands (`composer run test` — pure PHP unit tests only; WordPress integration tests are future work).
 
 ## Manual testing
 

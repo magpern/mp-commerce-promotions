@@ -39,6 +39,9 @@ jobs:
       - name: PHP syntax lint
         run: composer run lint:php
 
+      - name: PHPUnit unit tests
+        run: composer run test
+
       - name: Build release zip
         run: bash scripts/build-zip.sh
 
