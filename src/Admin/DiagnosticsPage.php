@@ -1,6 +1,6 @@
 <?php
 /**
- * WooCommerce admin: read-only promotion usage diagnostics.
+ * WooCommerce admin: promotion usage diagnostics and manual repair.
  *
  * @package MP\CommercePromotions
  */
@@ -15,6 +15,12 @@ final class DiagnosticsPage {
 
 	public const PAGE_SLUG = 'mp-commerce-promotions-diagnostics';
 
+	private const NONCE_ACTION = 'mp_cp_repair_usage_counters';
+
+	private const NONCE_FIELD = 'mp_cp_repair_usage_nonce';
+
+	private const REPAIR_SUBMIT = 'mp_cp_repair_usage_submit';
+
 	private UsageDiagnostics $diagnostics;
 
 	public function __construct( UsageDiagnostics $diagnostics ) {
@@ -26,17 +32,161 @@ final class DiagnosticsPage {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mp-commerce-promotions' ) );
 		}
 
+		$this->handle_post_repair();
+
 		$report = $this->diagnostics->analyze();
 
 		echo '<div class="wrap">';
+		$this->render_notices();
 		echo '<h1>' . esc_html__( 'Promotion Diagnostics', 'mp-commerce-promotions' ) . '</h1>';
 		AdminNavigation::render_tabs( AdminNavigation::TAB_DIAGNOSTICS );
-		echo '<p>' . esc_html__( 'Read-only comparison of stored usage_count values against redemption and order-meta records. No automatic repair is available.', 'mp-commerce-promotions' ) . '</p>';
+		echo '<p>' . esc_html__( 'Compare stored usage_count values against redemption and order-meta records. Use the repair action to recalculate mismatched counters from recorded redemptions.', 'mp-commerce-promotions' ) . '</p>';
 
+		$this->render_repair_form();
 		$this->render_promotions_table( $report['promotions'] );
 		$this->render_codes_table( $report['codes'] );
 
 		echo '</div>';
+	}
+
+	private function render_repair_form(): void {
+		$confirm = esc_js(
+			__( 'Repair usage counters for all mismatches shown below?', 'mp-commerce-promotions' )
+		);
+
+		echo '<form method="post" action="" style="margin:1em 0;">';
+		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
+		echo '<p class="description">';
+		echo esc_html__(
+			'This recalculates stored usage counters from recorded redemptions. No rows are deleted.',
+			'mp-commerce-promotions'
+		);
+		echo '</p>';
+		echo '<p class="submit">';
+		printf(
+			'<button type="submit" name="%1$s" value="1" class="button button-secondary" onclick="return confirm(\'%2$s\');">%3$s</button>',
+			esc_attr( self::REPAIR_SUBMIT ),
+			$confirm,
+			esc_html__( 'Repair Usage Counters', 'mp-commerce-promotions' )
+		);
+		echo '</p>';
+		echo '</form>';
+	}
+
+	private function handle_post_repair(): void {
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( ! isset( $_POST[ self::REPAIR_SUBMIT ] ) ) {
+			return;
+		}
+
+		if ( ! isset( $_POST[ self::NONCE_FIELD ] ) ) {
+			$this->redirect_with_notice( 'error', 'missing_nonce' );
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST[ self::NONCE_FIELD ] ) );
+		if ( ! wp_verify_nonce( $nonce, self::NONCE_ACTION ) ) {
+			$this->redirect_with_notice( 'error', 'invalid_nonce' );
+		}
+
+		$result = $this->diagnostics->repair();
+
+		if ( count( $result['errors'] ) > 0 ) {
+			$this->redirect_with_notice(
+				'error',
+				'repair_partial',
+				array(
+					'promotions' => (int) $result['promotions_repaired'],
+					'codes'      => (int) $result['codes_repaired'],
+				)
+			);
+		}
+
+		if ( $result['promotions_repaired'] === 0 && $result['codes_repaired'] === 0 ) {
+			$this->redirect_with_notice( 'success', 'repair_none' );
+		}
+
+		$this->redirect_with_notice(
+			'success',
+			'repair_done',
+			array(
+				'promotions' => (int) $result['promotions_repaired'],
+				'codes'      => (int) $result['codes_repaired'],
+			)
+		);
+	}
+
+	private function render_notices(): void {
+		if ( ! isset( $_GET['mp_cp_diag_notice'] ) || ! isset( $_GET['mp_cp_diag_code'] ) ) {
+			return;
+		}
+
+		$type = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_diag_notice'] ) );
+		$code = sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_diag_code'] ) );
+
+		$promotions = isset( $_GET['mp_cp_diag_promotions'] )
+			? (int) $_GET['mp_cp_diag_promotions']
+			: 0;
+		$codes = isset( $_GET['mp_cp_diag_codes'] )
+			? (int) $_GET['mp_cp_diag_codes']
+			: 0;
+
+		$message = $this->notice_message_for_code( $code, $promotions, $codes );
+		if ( $message === '' ) {
+			return;
+		}
+
+		$class = $type === 'success' ? 'notice-success' : 'notice-error';
+		echo '<div class="notice ' . esc_attr( $class ) . ' is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
+	}
+
+	private function notice_message_for_code( string $code, int $promotions, int $codes ): string {
+		switch ( $code ) {
+			case 'repair_done':
+				return sprintf(
+					/* translators: 1: promotions repaired count, 2: codes repaired count */
+					__( 'Usage counters repaired: %1$d promotion(s), %2$d code(s).', 'mp-commerce-promotions' ),
+					$promotions,
+					$codes
+				);
+			case 'repair_none':
+				return __( 'No usage counter mismatches were found to repair.', 'mp-commerce-promotions' );
+			case 'repair_partial':
+				return sprintf(
+					/* translators: 1: promotions repaired count, 2: codes repaired count */
+					__( 'Repair completed with errors. Repaired: %1$d promotion(s), %2$d code(s). Check logs for details.', 'mp-commerce-promotions' ),
+					$promotions,
+					$codes
+				);
+			case 'missing_nonce':
+			case 'invalid_nonce':
+				return __( 'Security check failed. Please try again.', 'mp-commerce-promotions' );
+			default:
+				return '';
+		}
+	}
+
+	/**
+	 * @param array{promotions?: int, codes?: int} $counts
+	 */
+	private function redirect_with_notice( string $type, string $code, array $counts = array() ): void {
+		$args = array(
+			'page'              => self::PAGE_SLUG,
+			'mp_cp_diag_notice' => $type,
+			'mp_cp_diag_code'   => $code,
+		);
+
+		if ( isset( $counts['promotions'] ) ) {
+			$args['mp_cp_diag_promotions'] = (int) $counts['promotions'];
+		}
+		if ( isset( $counts['codes'] ) ) {
+			$args['mp_cp_diag_codes'] = (int) $counts['codes'];
+		}
+
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
+		exit;
 	}
 
 	/**

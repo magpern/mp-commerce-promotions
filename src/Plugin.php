@@ -143,7 +143,8 @@ final class Plugin {
 			$usage_diagnostics = new UsageDiagnostics(
 				$this->promotion_repository,
 				$this->promotion_code_repository,
-				$this->redemption_repository
+				$this->redemption_repository,
+				$this->audit_logger
 			);
 			$diagnostics_page = new DiagnosticsPage( $usage_diagnostics );
 		}
