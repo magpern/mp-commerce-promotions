@@ -7,15 +7,29 @@ Local tooling and verification for **Commerce Promotions for WooCommerce**. See 
 | Path | Role |
 |------|------|
 | `/home/magpern/mp-commerce-promotions-staging/mp-commerce-promotions` | Git working tree (commit here) |
-| `/home/magpern/woocommerce/wp-content/plugins/mp-commerce-promotions` | Live WordPress plugin directory (sync target) |
+| `/home/magpern/woocommerce/wp-content/plugins/mp-commerce-promotions` | Live WordPress plugin directory (host bind mount; sync target) |
+| `scripts/sync-to-live.sh` | Safe staging → container sync (excludes dev paths) |
+| `scripts/verify-plugin.sh` | Post-sync WP-CLI checks |
 
-**Sync rule:** copy files from staging to live with `tar` (or rsync). **Never** copy `.git/` or `vendor/` into the live plugin directory unless you intentionally install Composer dependencies there (not required for runtime).
+### Staging → live sync
+
+From the plugin root (staging tree):
 
 ```bash
-tar -C /home/magpern/mp-commerce-promotions-staging/mp-commerce-promotions \
-  -cf - --exclude='.git' --exclude='vendor' . \
-  | tar -C /home/magpern/woocommerce/wp-content/plugins/mp-commerce-promotions -xf -
+bash scripts/sync-to-live.sh
 ```
+
+The script streams the staging working tree into container `woocommerce-wordpress-1` at `/var/www/html/wp-content/plugins/mp-commerce-promotions`, excludes `.git`, `vendor`, `node_modules`, and PHPCS/PHPUnit caches, removes any of those paths if they were left on target from an earlier copy, sets `www-data:www-data` ownership, and verifies the main plugin file exists.
+
+**Warning:** **Never** copy `.git/` or `vendor/` into the live plugin directory. `vendor/` is for **development tooling only** (PHPCS, WPCS). Production/runtime loads classes via `src/autoload.php`, not Composer autoload.
+
+### Post-sync verification
+
+```bash
+bash scripts/verify-plugin.sh
+```
+
+Runs `./wp plugin status`, deactivate/activate cycle, status again, and prints `mp_cp_schema_version` (read-only; no destructive DB operations).
 
 ## Composer (tooling only)
 

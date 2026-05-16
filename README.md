@@ -102,6 +102,15 @@ A single sidebar item (**Promotions**) routes through **`AdminRouter`** using th
 
 Copy this folder into `wp-content/plugins/`, then activate **MP Commerce Promotions** in the WordPress admin.
 
+On this VPS, commit in the staging tree and deploy to the live plugin directory with:
+
+```bash
+bash scripts/sync-to-live.sh
+bash scripts/verify-plugin.sh
+```
+
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for paths, exclusions (never copy `.git` or `vendor` to live), and Composer lint commands.
+
 ## Manual testing
 
 - Storefront checkout, fees, redemption, reversal: [docs/manual-checkout-test.md](docs/manual-checkout-test.md)
