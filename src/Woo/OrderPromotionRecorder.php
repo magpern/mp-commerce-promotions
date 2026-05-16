@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Woo;
 
+use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\RedemptionRepository;
@@ -21,22 +22,30 @@ final class OrderPromotionRecorder {
 
 	private const META_REDEMPTION_REVERSED = '_mp_cp_redemption_reversed';
 
+	private const META_PROMOTION_CODE_ID = '_mp_cp_promotion_code_id';
+
+	private const META_PROMOTION_CODE_LAST4 = '_mp_cp_promotion_code_last4';
+
 	private const META_VALUE_YES = 'yes';
 
 	private RedemptionRepository $redemptions;
 
 	private PromotionRepository $promotions;
 
+	private PromotionCodeRepository $promotion_codes;
+
 	private AuditLogger $audit;
 
 	public function __construct(
 		RedemptionRepository $redemptions,
 		PromotionRepository $promotions,
+		PromotionCodeRepository $promotion_codes,
 		AuditLogger $audit
 	) {
-		$this->redemptions = $redemptions;
-		$this->promotions  = $promotions;
-		$this->audit       = $audit;
+		$this->redemptions      = $redemptions;
+		$this->promotions       = $promotions;
+		$this->promotion_codes  = $promotion_codes;
+		$this->audit            = $audit;
 	}
 
 	/**
@@ -101,6 +110,8 @@ final class OrderPromotionRecorder {
 				return;
 			}
 
+			$code_meta = $this->extract_promotion_code_meta_from_session( $raw );
+
 			$cid           = (int) $order->get_customer_id();
 			$customer_id   = $cid > 0 ? $cid : null;
 			$currency      = $order->get_currency();
@@ -116,7 +127,8 @@ final class OrderPromotionRecorder {
 					$discount,
 					$action_type,
 					$percentage,
-					$fixed_amount
+					$fixed_amount,
+					$code_meta
 				);
 				$order->update_meta_data( self::META_REDEMPTION_RECORDED, self::META_VALUE_YES );
 				$order->save();
@@ -150,7 +162,8 @@ final class OrderPromotionRecorder {
 				$discount,
 				$action_type,
 				$percentage,
-				$fixed_amount
+				$fixed_amount,
+				$code_meta
 			);
 			$order->update_meta_data( self::META_REDEMPTION_RECORDED, self::META_VALUE_YES );
 
@@ -160,14 +173,20 @@ final class OrderPromotionRecorder {
 				$this->promotions->update( $updated );
 			}
 
+			if ( $code_meta['promotion_code_id'] > 0 ) {
+				$this->promotion_codes->increment_usage( $code_meta['promotion_code_id'] );
+			}
+
 			$this->audit->log(
 				'promotion.redeemed',
 				$promotion_id,
 				array(
-					'promotion_id'    => $promotion_id,
-					'order_id'        => $order_id,
-					'discount_amount' => $discount,
-					'action_type'     => $action_type,
+					'promotion_id'         => $promotion_id,
+					'order_id'             => $order_id,
+					'discount_amount'      => $discount,
+					'action_type'          => $action_type,
+					'promotion_code_id'    => $code_meta['promotion_code_id'] > 0 ? $code_meta['promotion_code_id'] : null,
+					'promotion_code_last4' => $code_meta['promotion_code_last4'] !== '' ? $code_meta['promotion_code_last4'] : null,
 				),
 				null
 			);
@@ -372,7 +391,22 @@ final class OrderPromotionRecorder {
 	}
 
 	/**
+	 * @param array<string, mixed> $raw Session payload.
+	 * @return array{promotion_code_id: int, promotion_code_last4: string}
+	 */
+	private function extract_promotion_code_meta_from_session( array $raw ): array {
+		$code_id = isset( $raw['promotion_code_id'] ) ? (int) $raw['promotion_code_id'] : 0;
+		$last4   = isset( $raw['promotion_code_last4'] ) ? sanitize_text_field( (string) $raw['promotion_code_last4'] ) : '';
+
+		return array(
+			'promotion_code_id'    => $code_id > 0 ? $code_id : 0,
+			'promotion_code_last4' => $last4,
+		);
+	}
+
+	/**
 	 * @param \WC_Order $order
+	 * @param array{promotion_code_id: int, promotion_code_last4: string} $code_meta
 	 */
 	private function apply_promotion_meta_to_order(
 		$order,
@@ -382,7 +416,8 @@ final class OrderPromotionRecorder {
 		float $discount,
 		string $action_type,
 		?float $percentage = null,
-		?float $fixed_amount = null
+		?float $fixed_amount = null,
+		array $code_meta = array()
 	): void {
 		$order->update_meta_data( '_mp_cp_promotion_id', (string) $promotion_id );
 		$order->update_meta_data( '_mp_cp_promotion_uuid', sanitize_text_field( $uuid ) );
@@ -405,6 +440,16 @@ final class OrderPromotionRecorder {
 				'_mp_cp_fixed_amount',
 				function_exists( 'wc_format_decimal' ) ? wc_format_decimal( $fixed_amount ) : (string) $fixed_amount
 			);
+		}
+
+		$code_id = isset( $code_meta['promotion_code_id'] ) ? (int) $code_meta['promotion_code_id'] : 0;
+		if ( $code_id > 0 ) {
+			$order->update_meta_data( self::META_PROMOTION_CODE_ID, (string) $code_id );
+		}
+
+		$last4 = isset( $code_meta['promotion_code_last4'] ) ? (string) $code_meta['promotion_code_last4'] : '';
+		if ( $last4 !== '' ) {
+			$order->update_meta_data( self::META_PROMOTION_CODE_LAST4, sanitize_text_field( $last4 ) );
 		}
 	}
 

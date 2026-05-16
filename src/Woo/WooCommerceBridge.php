@@ -25,6 +25,10 @@ final class WooCommerceBridge {
 
 	private bool $order_reversal_hooks_registered = false;
 
+	private ?PromotionCodeCouponBridge $promotion_code_coupon_bridge = null;
+
+	private bool $promotion_code_coupon_hooks_registered = false;
+
 	public function init(): void {
 		$this->available = class_exists( \WooCommerce::class, false )
 			&& function_exists( 'WC' );
@@ -103,5 +107,22 @@ final class WooCommerceBridge {
 
 	public function get_order_promotion_recorder(): ?OrderPromotionRecorder {
 		return $this->order_promotion_recorder;
+	}
+
+	public function set_promotion_code_coupon_bridge( ?PromotionCodeCouponBridge $bridge ): void {
+		$this->promotion_code_coupon_bridge = $bridge;
+
+		if (
+			$this->promotion_code_coupon_bridge !== null
+			&& $this->available
+			&& ! $this->promotion_code_coupon_hooks_registered
+		) {
+			$this->promotion_code_coupon_bridge->register_hooks();
+			$this->promotion_code_coupon_hooks_registered = true;
+		}
+	}
+
+	public function get_promotion_code_coupon_bridge(): ?PromotionCodeCouponBridge {
+		return $this->promotion_code_coupon_bridge;
 	}
 }

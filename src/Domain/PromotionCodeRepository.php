@@ -127,6 +127,27 @@ final class PromotionCodeRepository {
 		return $codes;
 	}
 
+	public function is_code_usable( PromotionCode $code ): bool {
+		if ( $code->get_status() !== PromotionCode::STATUS_ACTIVE ) {
+			return false;
+		}
+
+		$usage_limit = $code->get_usage_limit();
+		if ( $usage_limit !== null && $code->get_usage_count() >= $usage_limit ) {
+			return false;
+		}
+
+		$expires_at = $code->get_expires_at();
+		if ( $expires_at !== null && $expires_at !== '' ) {
+			$now = current_time( 'mysql' );
+			if ( $expires_at < $now ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	public function increment_usage( int $id ): bool {
 		if ( $id <= 0 ) {
 			return false;
