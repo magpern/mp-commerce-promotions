@@ -4,10 +4,11 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Current milestone
 
-**WooCommerce integration hardening** — Woo layer PHPCS/docblocks, hook registration clarity, `CartSessionHelper`, manual verification doc refresh (no new promotion behavior).
+**Domain/engine maintainability** — `RuleTypes`, `RuleRegistry`, domain/engine PHPCS cleanup; no new promotion behavior.
 
 ## Recently completed
 
+- **Rule registry groundwork** — `RuleTypes`, `RuleRegistry`; validator/builder/evaluator wired to central type IDs
 - **Woo layer hardening** — `CartSessionHelper`, `WooCommerceBridge` hook summary, PHPCS cleanup on `src/Woo/*`, manual test doc updates
 - **PHPCS repository batch** — `TableName`, `DbQuery`, repository SQL hardening (see [DEVELOPMENT.md](DEVELOPMENT.md))
 - **Reusable admin infrastructure** — `AdminNotice`, `AdminSection`, `AdminUrl`; edit/list/settings/diagnostics refactors
@@ -22,8 +23,8 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Next planned
 
-1. **PHPCS / WPCS baseline** — domain/engine docblocks (see [DEVELOPMENT.md](DEVELOPMENT.md))
-2. **PHPUnit smoke tests** — evaluator, repositories, duplication service
+1. **PHPUnit smoke tests** — evaluator, repositories, duplication service
+2. **PHPCS / WPCS baseline** — remaining packages (admin follow-ups, namespace prefixes deferred)
 3. **CI workflow** — lint + test on push
 4. **Composer autoloading** — optional PSR-4 via Composer for releases
 5. **Promotion mechanics (Phase C)** — free shipping, BOGO, stackability (see architecture roadmap)

@@ -18,25 +18,10 @@ use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
+use MP\CommercePromotions\Engine\RuleRegistry;
+use MP\CommercePromotions\Engine\RuleTypes;
 
 final class PromotionRuleValidator {
-
-	/**
-	 * @var list<string>
-	 */
-	private const SUPPORTED_CONDITION_TYPES = array(
-		'minimum_subtotal',
-		'product_quantity',
-		'category_quantity',
-	);
-
-	/**
-	 * @var list<string>
-	 */
-	private const SUPPORTED_ACTION_TYPES = array(
-		'percentage_discount',
-		'fixed_amount_discount',
-	);
 
 	/**
 	 * @return list<array{level: string, message: string}>
@@ -74,7 +59,7 @@ final class PromotionRuleValidator {
 	}
 
 	/**
-	 * @param array<mixed>                                  $conditions
+	 * @param array<mixed>                                $conditions
 	 * @param list<array{level: string, message: string}> $issues
 	 */
 	private function append_condition_issues( array $conditions, array &$issues ): void {
@@ -92,7 +77,7 @@ final class PromotionRuleValidator {
 	}
 
 	/**
-	 * @param mixed                                         $raw
+	 * @param mixed                                       $raw
 	 * @param list<array{level: string, message: string}> $issues
 	 */
 	private function validate_condition_entry( int $index, $raw, array &$issues ): void {
@@ -119,7 +104,7 @@ final class PromotionRuleValidator {
 			return;
 		}
 
-		if ( ! in_array( $type, self::SUPPORTED_CONDITION_TYPES, true ) ) {
+		if ( ! RuleRegistry::is_supported_condition( $type ) ) {
 			$issues[] = $this->error(
 				sprintf(
 					/* translators: %s: condition type string */
@@ -130,21 +115,21 @@ final class PromotionRuleValidator {
 			return;
 		}
 
-		if ( $type === 'minimum_subtotal' ) {
+		if ( $type === RuleTypes::CONDITION_MINIMUM_SUBTOTAL ) {
 			$this->validate_minimum_subtotal( $index, $raw, $issues );
 			return;
 		}
 
-		if ( $type === 'product_quantity' ) {
-			$this->validate_quantity_condition( $index, $raw, 'product_quantity', 'product_id', $issues );
+		if ( $type === RuleTypes::CONDITION_PRODUCT_QUANTITY ) {
+			$this->validate_quantity_condition( $index, $raw, RuleTypes::CONDITION_PRODUCT_QUANTITY, 'product_id', $issues );
 			return;
 		}
 
-		$this->validate_quantity_condition( $index, $raw, 'category_quantity', 'category_id', $issues );
+		$this->validate_quantity_condition( $index, $raw, RuleTypes::CONDITION_CATEGORY_QUANTITY, 'category_id', $issues );
 	}
 
 	/**
-	 * @param array<string, mixed>                          $raw
+	 * @param array<string, mixed>                        $raw
 	 * @param list<array{level: string, message: string}> $issues
 	 */
 	private function validate_minimum_subtotal( int $index, array $raw, array &$issues ): void {
@@ -173,7 +158,7 @@ final class PromotionRuleValidator {
 	}
 
 	/**
-	 * @param array<string, mixed>                          $raw
+	 * @param array<string, mixed>                        $raw
 	 * @param list<array{level: string, message: string}> $issues
 	 */
 	private function validate_quantity_condition(
@@ -234,7 +219,7 @@ final class PromotionRuleValidator {
 		}
 
 		try {
-			if ( $type_label === 'product_quantity' ) {
+			if ( $type_label === RuleTypes::CONDITION_PRODUCT_QUANTITY ) {
 				new ProductQuantityCondition( (int) $raw[ $id_key ], $operator, (float) $raw['quantity'] );
 			} else {
 				new CategoryQuantityCondition( (int) $raw[ $id_key ], $operator, (float) $raw['quantity'] );
@@ -252,7 +237,7 @@ final class PromotionRuleValidator {
 	}
 
 	/**
-	 * @param array<mixed>                                  $actions
+	 * @param array<mixed>                                $actions
 	 * @param list<array{level: string, message: string}> $issues
 	 */
 	private function append_action_issues( array $actions, array &$issues ): void {
@@ -289,7 +274,7 @@ final class PromotionRuleValidator {
 				continue;
 			}
 
-			if ( ! in_array( $type, self::SUPPORTED_ACTION_TYPES, true ) ) {
+			if ( ! RuleRegistry::is_supported_action( $type ) ) {
 				$issues[] = $this->error(
 					sprintf(
 						/* translators: %s: action type string */
@@ -313,11 +298,11 @@ final class PromotionRuleValidator {
 	}
 
 	/**
-	 * @param array<string, mixed>                          $raw
+	 * @param array<string, mixed>                        $raw
 	 * @param list<array{level: string, message: string}> $issues
 	 */
 	private function validate_supported_action( int $index, string $type, array $raw, array &$issues ): void {
-		if ( $type === 'percentage_discount' ) {
+		if ( $type === RuleTypes::ACTION_PERCENTAGE_DISCOUNT ) {
 			if ( ! isset( $raw['percentage'] ) || ! is_numeric( $raw['percentage'] ) ) {
 				$issues[] = $this->error(
 					sprintf(

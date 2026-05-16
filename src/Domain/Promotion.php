@@ -64,7 +64,7 @@ final class Promotion {
 		?string $updated_at
 	) {
 		$uuid = trim( $uuid );
-		$name  = trim( $name );
+		$name = trim( $name );
 
 		if ( $uuid === '' ) {
 			throw new InvalidArgumentException( 'Promotion uuid must not be empty.' );
@@ -85,22 +85,22 @@ final class Promotion {
 			throw new InvalidArgumentException( 'Promotion usage_limit must be null or >= 0.' );
 		}
 
-		$this->id            = $id;
-		$this->uuid          = $uuid;
-		$this->name          = $name;
-		$this->description   = $description;
-		$this->status        = $status;
-		$this->priority      = $priority;
-		$this->starts_at     = $starts_at;
-		$this->ends_at       = $ends_at;
-		$this->conditions    = $conditions;
-		$this->actions       = $actions;
-		$this->restrictions  = $restrictions;
-		$this->usage_limit   = $usage_limit;
-		$this->usage_count   = $usage_count;
-		$this->created_by    = $created_by;
-		$this->created_at    = $created_at;
-		$this->updated_at    = $updated_at;
+		$this->id           = $id;
+		$this->uuid         = $uuid;
+		$this->name         = $name;
+		$this->description  = $description;
+		$this->status       = $status;
+		$this->priority     = $priority;
+		$this->starts_at    = $starts_at;
+		$this->ends_at      = $ends_at;
+		$this->conditions   = $conditions;
+		$this->actions      = $actions;
+		$this->restrictions = $restrictions;
+		$this->usage_limit  = $usage_limit;
+		$this->usage_count  = $usage_count;
+		$this->created_by   = $created_by;
+		$this->created_at   = $created_at;
+		$this->updated_at   = $updated_at;
 	}
 
 	public static function from_array( array $data ): self {
@@ -108,8 +108,8 @@ final class Promotion {
 		$actions      = self::normalize_jsonish_to_array( $data['actions'] ?? null );
 		$restrictions = self::normalize_jsonish_to_array( $data['restrictions'] ?? null );
 
-		$raw_id = self::optional_int( $data['id'] ?? null );
-		$id     = ( $raw_id !== null && $raw_id > 0 ) ? $raw_id : null;
+		$raw_id      = self::optional_int( $data['id'] ?? null );
+		$id          = ( $raw_id !== null && $raw_id > 0 ) ? $raw_id : null;
 		$usage_limit = self::optional_int( $data['usage_limit'] ?? null );
 		$created_by  = self::optional_int( $data['created_by'] ?? null );
 
@@ -138,22 +138,22 @@ final class Promotion {
 	 */
 	public function to_array(): array {
 		return array(
-			'id'            => $this->id,
-			'uuid'          => $this->uuid,
-			'name'          => $this->name,
-			'description'   => $this->description,
-			'status'        => $this->status,
-			'priority'      => $this->priority,
-			'starts_at'     => $this->starts_at,
-			'ends_at'       => $this->ends_at,
-			'conditions'    => $this->conditions,
-			'actions'       => $this->actions,
-			'restrictions'  => $this->restrictions,
-			'usage_limit'   => $this->usage_limit,
-			'usage_count'   => $this->usage_count,
-			'created_by'    => $this->created_by,
-			'created_at'    => $this->created_at,
-			'updated_at'    => $this->updated_at,
+			'id'           => $this->id,
+			'uuid'         => $this->uuid,
+			'name'         => $this->name,
+			'description'  => $this->description,
+			'status'       => $this->status,
+			'priority'     => $this->priority,
+			'starts_at'    => $this->starts_at,
+			'ends_at'      => $this->ends_at,
+			'conditions'   => $this->conditions,
+			'actions'      => $this->actions,
+			'restrictions' => $this->restrictions,
+			'usage_limit'  => $this->usage_limit,
+			'usage_count'  => $this->usage_count,
+			'created_by'   => $this->created_by,
+			'created_at'   => $this->created_at,
+			'updated_at'   => $this->updated_at,
 		);
 	}
 

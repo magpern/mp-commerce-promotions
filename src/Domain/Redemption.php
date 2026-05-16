@@ -140,16 +140,16 @@ final class Redemption {
 	 */
 	public function to_array(): array {
 		return array(
-			'id'               => $this->id,
-			'promotion_id'     => $this->promotion_id,
-			'order_id'         => $this->order_id,
-			'customer_id'      => $this->customer_id,
-			'code'             => $this->code,
-			'discount_amount'  => $this->discount_amount,
-			'currency'         => $this->currency,
-			'status'           => $this->status,
-			'redeemed_at'      => $this->redeemed_at,
-			'created_at'       => $this->created_at,
+			'id'              => $this->id,
+			'promotion_id'    => $this->promotion_id,
+			'order_id'        => $this->order_id,
+			'customer_id'     => $this->customer_id,
+			'code'            => $this->code,
+			'discount_amount' => $this->discount_amount,
+			'currency'        => $this->currency,
+			'status'          => $this->status,
+			'redeemed_at'     => $this->redeemed_at,
+			'created_at'      => $this->created_at,
 		);
 	}
 

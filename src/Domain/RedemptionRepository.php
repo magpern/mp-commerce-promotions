@@ -150,10 +150,10 @@ final class RedemptionRepository {
 			return 0;
 		}
 
-		$meta_key            = '_mp_cp_promotion_code_id';
-		$meta_val            = (string) $code_id;
-		$redemptions_table   = $this->redemptions_table();
-		$status              = Redemption::STATUS_RECORDED;
+		$meta_key          = '_mp_cp_promotion_code_id';
+		$meta_val          = (string) $code_id;
+		$redemptions_table = $this->redemptions_table();
+		$status            = Redemption::STATUS_RECORDED;
 
 		if ( $this->uses_custom_orders_table() ) {
 			$meta_table = TableName::assert_valid( $this->wpdb->prefix . 'wc_orders_meta' );

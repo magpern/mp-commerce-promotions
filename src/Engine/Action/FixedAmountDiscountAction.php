@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Engine\Action;
 
 use InvalidArgumentException;
 use MP\CommercePromotions\Engine\EvaluationContext;
+use MP\CommercePromotions\Engine\RuleTypes;
 
 final class FixedAmountDiscountAction implements ActionInterface {
 
@@ -24,7 +25,7 @@ final class FixedAmountDiscountAction implements ActionInterface {
 	}
 
 	public function get_type(): string {
-		return 'fixed_amount_discount';
+		return RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT;
 	}
 
 	public function preview( EvaluationContext $context ): ActionResult {

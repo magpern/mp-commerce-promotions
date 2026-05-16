@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Engine\Action;
 
 use InvalidArgumentException;
 use MP\CommercePromotions\Engine\EvaluationContext;
+use MP\CommercePromotions\Engine\RuleTypes;
 
 final class PercentageDiscountAction implements ActionInterface {
 
@@ -24,7 +25,7 @@ final class PercentageDiscountAction implements ActionInterface {
 	}
 
 	public function get_type(): string {
-		return 'percentage_discount';
+		return RuleTypes::ACTION_PERCENTAGE_DISCOUNT;
 	}
 
 	public function preview( EvaluationContext $context ): ActionResult {

@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Engine\Condition;
 
 use InvalidArgumentException;
 use MP\CommercePromotions\Engine\EvaluationContext;
+use MP\CommercePromotions\Engine\RuleTypes;
 
 final class CategoryQuantityCondition implements ConditionInterface {
 
@@ -38,7 +39,7 @@ final class CategoryQuantityCondition implements ConditionInterface {
 	}
 
 	public function get_type(): string {
-		return 'category_quantity';
+		return RuleTypes::CONDITION_CATEGORY_QUANTITY;
 	}
 
 	public function evaluate( EvaluationContext $context ): ConditionResult {

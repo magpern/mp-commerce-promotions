@@ -46,7 +46,7 @@ final class AuditLogEntry {
 		}
 
 		$this->id            = $id;
-		$this->promotion_id = $promotion_id;
+		$this->promotion_id  = $promotion_id;
 		$this->actor_user_id = $actor_user_id;
 		$this->action        = $action;
 		$this->context       = $context;

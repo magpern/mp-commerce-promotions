@@ -16,35 +16,10 @@ use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
+use MP\CommercePromotions\Engine\RuleRegistry;
+use MP\CommercePromotions\Engine\RuleTypes;
 
 final class SimpleRuleBuilder {
-
-	private const CONDITION_MINIMUM_SUBTOTAL = 'minimum_subtotal';
-
-	private const CONDITION_PRODUCT_QUANTITY = 'product_quantity';
-
-	private const CONDITION_CATEGORY_QUANTITY = 'category_quantity';
-
-	private const ACTION_PERCENTAGE_DISCOUNT = 'percentage_discount';
-
-	private const ACTION_FIXED_AMOUNT_DISCOUNT = 'fixed_amount_discount';
-
-	/**
-	 * @var list<string>
-	 */
-	private const CONDITION_TYPES = array(
-		self::CONDITION_MINIMUM_SUBTOTAL,
-		self::CONDITION_PRODUCT_QUANTITY,
-		self::CONDITION_CATEGORY_QUANTITY,
-	);
-
-	/**
-	 * @var list<string>
-	 */
-	private const ACTION_TYPES = array(
-		self::ACTION_PERCENTAGE_DISCOUNT,
-		self::ACTION_FIXED_AMOUNT_DISCOUNT,
-	);
 
 	/**
 	 * @param array<string, mixed> $post Unslashed POST values (builder fields only).
@@ -55,7 +30,7 @@ final class SimpleRuleBuilder {
 			? sanitize_text_field( (string) $post['mp_cp_builder_condition_type'] )
 			: '';
 
-		if ( ! in_array( $condition_type, self::CONDITION_TYPES, true ) ) {
+		if ( ! RuleRegistry::is_supported_condition( $condition_type ) ) {
 			throw new InvalidArgumentException( 'invalid_condition_type' );
 		}
 
@@ -63,12 +38,12 @@ final class SimpleRuleBuilder {
 			? sanitize_text_field( (string) $post['mp_cp_builder_action_type'] )
 			: '';
 
-		if ( ! in_array( $action_type, self::ACTION_TYPES, true ) ) {
+		if ( ! RuleRegistry::is_supported_action( $action_type ) ) {
 			throw new InvalidArgumentException( 'invalid_action_type' );
 		}
 
 		$conditions = array( self::build_condition( $condition_type, $post ) );
-		$actions      = array( self::build_action( $action_type, $post ) );
+		$actions    = array( self::build_action( $action_type, $post ) );
 
 		return array(
 			'conditions' => $conditions,
@@ -81,12 +56,12 @@ final class SimpleRuleBuilder {
 	 * @return array<string, mixed>
 	 */
 	private static function build_condition( string $type, array $post ): array {
-		if ( $type === self::CONDITION_MINIMUM_SUBTOTAL ) {
+		if ( $type === RuleTypes::CONDITION_MINIMUM_SUBTOTAL ) {
 			$amount = self::parse_required_float( $post, 'mp_cp_builder_amount', 'invalid_amount' );
 			new MinimumSubtotalCondition( $amount );
 
 			return array(
-				'type'   => self::CONDITION_MINIMUM_SUBTOTAL,
+				'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
 				'amount' => $amount,
 			);
 		}
@@ -94,12 +69,12 @@ final class SimpleRuleBuilder {
 		$operator = self::parse_operator( $post );
 		$quantity = self::parse_required_float( $post, 'mp_cp_builder_quantity', 'invalid_quantity' );
 
-		if ( $type === self::CONDITION_PRODUCT_QUANTITY ) {
+		if ( $type === RuleTypes::CONDITION_PRODUCT_QUANTITY ) {
 			$product_id = self::parse_required_positive_int( $post, 'mp_cp_builder_product_id', 'invalid_product_id' );
 			new ProductQuantityCondition( $product_id, $operator, $quantity );
 
 			return array(
-				'type'       => self::CONDITION_PRODUCT_QUANTITY,
+				'type'       => RuleTypes::CONDITION_PRODUCT_QUANTITY,
 				'product_id' => $product_id,
 				'operator'   => $operator,
 				'quantity'   => $quantity,
@@ -110,7 +85,7 @@ final class SimpleRuleBuilder {
 		new CategoryQuantityCondition( $category_id, $operator, $quantity );
 
 		return array(
-			'type'        => self::CONDITION_CATEGORY_QUANTITY,
+			'type'        => RuleTypes::CONDITION_CATEGORY_QUANTITY,
 			'category_id' => $category_id,
 			'operator'    => $operator,
 			'quantity'    => $quantity,
@@ -122,12 +97,12 @@ final class SimpleRuleBuilder {
 	 * @return array<string, mixed>
 	 */
 	private static function build_action( string $type, array $post ): array {
-		if ( $type === self::ACTION_PERCENTAGE_DISCOUNT ) {
+		if ( $type === RuleTypes::ACTION_PERCENTAGE_DISCOUNT ) {
 			$percentage = self::parse_required_float( $post, 'mp_cp_builder_percentage', 'invalid_percentage' );
 			new PercentageDiscountAction( $percentage );
 
 			return array(
-				'type'       => self::ACTION_PERCENTAGE_DISCOUNT,
+				'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
 				'percentage' => $percentage,
 			);
 		}
@@ -136,7 +111,7 @@ final class SimpleRuleBuilder {
 		new FixedAmountDiscountAction( $amount );
 
 		return array(
-			'type'   => self::ACTION_FIXED_AMOUNT_DISCOUNT,
+			'type'   => RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT,
 			'amount' => $amount,
 		);
 	}

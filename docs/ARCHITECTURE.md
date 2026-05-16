@@ -238,9 +238,24 @@ The rule engine is centered around:
 EvaluationContext
 EvaluationResult
 PromotionEvaluator
+RuleTypes
+RuleRegistry
 ConditionInterface
 ActionInterface
 ```
+
+### Rule type identifiers (`RuleTypes`)
+
+`MP\CommercePromotions\Engine\RuleTypes` centralizes the canonical string identifiers for supported conditions and actions (for example `minimum_subtotal`, `percentage_discount`). Condition/action classes return these constants from `get_type()`; services and the evaluator compare against the same values.
+
+### Supported types (`RuleRegistry`)
+
+`MP\CommercePromotions\Engine\RuleRegistry` lists the engine types that are implemented today:
+
+- `supported_conditions()` / `is_supported_condition()`
+- `supported_actions()` / `is_supported_action()`
+
+`PromotionRuleValidator` and `SimpleRuleBuilder` use the registry for allow-lists. **Dynamic registration** (plugins registering new types at runtime) is **not** implemented yet; adding a type requires updating `RuleTypes`, `RuleRegistry`, and the corresponding condition/action class plus evaluator wiring.
 
 ### Current Conditions
 

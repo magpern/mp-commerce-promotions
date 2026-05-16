@@ -40,7 +40,7 @@ final class EvaluationContext {
 			throw new InvalidArgumentException( 'cart_subtotal must be null or >= 0.' );
 		}
 
-		$this->customer_id  = $customer_id;
+		$this->customer_id   = $customer_id;
 		$this->cart_subtotal = $cart_subtotal;
 		$this->currency      = $currency;
 		$this->items         = $items;

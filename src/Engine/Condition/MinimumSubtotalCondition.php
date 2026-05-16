@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Engine\Condition;
 
 use InvalidArgumentException;
 use MP\CommercePromotions\Engine\EvaluationContext;
+use MP\CommercePromotions\Engine\RuleTypes;
 
 final class MinimumSubtotalCondition implements ConditionInterface {
 
@@ -24,7 +25,7 @@ final class MinimumSubtotalCondition implements ConditionInterface {
 	}
 
 	public function get_type(): string {
-		return 'minimum_subtotal';
+		return RuleTypes::CONDITION_MINIMUM_SUBTOTAL;
 	}
 
 	public function evaluate( EvaluationContext $context ): ConditionResult {

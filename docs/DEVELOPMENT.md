@@ -60,8 +60,8 @@ Clean up PHPCS in **small, reviewable commits** grouped by concern:
 
 1. **Admin / infrastructure** — shared helpers, alignment, escaping (this milestone)
 2. **Repositories** — `$wpdb->prepare` patterns and SQL docblocks (verify behavior; no logic changes)
-3. **Domain / engine docblocks** — only where low risk
-4. **WooCommerce integration** — last; highest regression risk
+3. **Domain / engine** — `RuleTypes` / `RuleRegistry` for supported condition/action IDs; docblocks and alignment where low risk (see [ARCHITECTURE.md](ARCHITECTURE.md#promotion-rule-engine))
+4. **WooCommerce integration** — hook clarity and helpers; highest regression risk for checkout behavior
 
 After each batch:
 

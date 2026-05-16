@@ -1,6 +1,6 @@
 <?php
 /**
- * Non-persistent promotion evaluation (demo condition/action types only).
+ * Non-persistent promotion evaluation (supported condition/action types via RuleRegistry).
  *
  * @package MP\CommercePromotions
  */
@@ -14,14 +14,17 @@ use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\Action\ActionInterface;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
-use MP\CommercePromotions\Engine\Condition\ConditionInterface;
 use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\ConditionInterface;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
 
 final class PromotionEvaluator {
 
+	/**
+	 * Evaluate promotion rules against a cart/order context (no persistence).
+	 */
 	public function evaluate( Promotion $promotion, EvaluationContext $context ): EvaluationResult {
 		if ( $promotion->get_status() !== PromotionStatus::ACTIVE ) {
 			return EvaluationResult::ineligible(
@@ -100,7 +103,7 @@ final class PromotionEvaluator {
 	 * @return ConditionInterface|EvaluationResult|null
 	 */
 	private function resolve_condition( string $type, array $raw ) {
-		if ( $type === 'minimum_subtotal' ) {
+		if ( $type === RuleTypes::CONDITION_MINIMUM_SUBTOTAL ) {
 			if ( ! isset( $raw['amount'] ) || ! is_numeric( $raw['amount'] ) ) {
 				return EvaluationResult::ineligible(
 					array( 'Invalid minimum_subtotal condition configuration.' )
@@ -115,10 +118,10 @@ final class PromotionEvaluator {
 			}
 		}
 
-		if ( $type === 'product_quantity' ) {
+		if ( $type === RuleTypes::CONDITION_PRODUCT_QUANTITY ) {
 			return $this->resolve_quantity_condition(
 				$raw,
-				'product_quantity',
+				RuleTypes::CONDITION_PRODUCT_QUANTITY,
 				'product_id',
 				static function ( array $config ): ProductQuantityCondition {
 					return new ProductQuantityCondition(
@@ -130,10 +133,10 @@ final class PromotionEvaluator {
 			);
 		}
 
-		if ( $type === 'category_quantity' ) {
+		if ( $type === RuleTypes::CONDITION_CATEGORY_QUANTITY ) {
 			return $this->resolve_quantity_condition(
 				$raw,
-				'category_quantity',
+				RuleTypes::CONDITION_CATEGORY_QUANTITY,
 				'category_id',
 				static function ( array $config ): CategoryQuantityCondition {
 					return new CategoryQuantityCondition(
@@ -153,9 +156,9 @@ final class PromotionEvaluator {
 	}
 
 	/**
-	 * @param array<string, mixed>                              $raw
-	 * @param string                                            $type_label
-	 * @param string                                            $id_key
+	 * @param array<string, mixed>                                                       $raw
+	 * @param string                                                                     $type_label
+	 * @param string                                                                     $id_key
 	 * @param callable(array{id:int,operator:string,quantity:float}): ConditionInterface $factory
 	 * @return ConditionInterface|EvaluationResult|null
 	 */
@@ -202,7 +205,7 @@ final class PromotionEvaluator {
 	 * @return ActionInterface|EvaluationResult|null
 	 */
 	private function resolve_action( string $type, array $raw ) {
-		if ( $type === 'percentage_discount' ) {
+		if ( $type === RuleTypes::ACTION_PERCENTAGE_DISCOUNT ) {
 			if ( ! isset( $raw['percentage'] ) || ! is_numeric( $raw['percentage'] ) ) {
 				return EvaluationResult::ineligible(
 					array( 'Invalid percentage_discount action configuration.' )
@@ -217,7 +220,7 @@ final class PromotionEvaluator {
 			}
 		}
 
-		if ( $type === 'fixed_amount_discount' ) {
+		if ( $type === RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT ) {
 			if ( ! isset( $raw['amount'] ) || ! is_numeric( $raw['amount'] ) ) {
 				return EvaluationResult::ineligible(
 					array( 'Invalid fixed_amount_discount action configuration.' )
