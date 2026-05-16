@@ -59,3 +59,7 @@ Provide a structured foundation for commerce promotions using:
 ## Install (development)
 
 Copy this folder into `wp-content/plugins/`, then activate **MP Commerce Promotions** in the WordPress admin.
+
+## Manual testing
+
+For a full storefront walkthrough (cart fee, order meta, redemption, idempotency, reversal), use **[docs/manual-checkout-test.md](docs/manual-checkout-test.md)**.
