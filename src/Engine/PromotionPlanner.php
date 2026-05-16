@@ -30,6 +30,8 @@ final class PromotionPlanner {
 		$exclusive_was_selected = false;
 		/** @var array<int, true> $active_exclusion_ids */
 		$active_exclusion_ids = array();
+		$selected_count         = 0;
+		$plan_max_applications  = null;
 
 		foreach ( $promotions as $promotion ) {
 			if ( $stop_further_selection ) {
@@ -60,12 +62,36 @@ final class PromotionPlanner {
 				continue;
 			}
 
+			if ( $plan_max_applications !== null && $selected_count >= $plan_max_applications ) {
+				$decisions[] = $this->build_skipped_decision(
+					$promotion,
+					PromotionEvaluationDecision::REASON_MAX_APPLICATIONS_REACHED,
+					array(
+						'max_applications_limit' => $plan_max_applications,
+						'selected_count'         => $selected_count,
+					)
+				);
+				continue;
+			}
+
 			$decisions[] = new PromotionEvaluationDecision(
 				$promotion,
 				$result,
 				true,
-				null
+				null,
+				array(
+					'selected_count' => $selected_count + 1,
+				)
 			);
+
+			++$selected_count;
+
+			$promotion_max = $promotion->get_max_applications();
+			if ( $promotion_max !== null ) {
+				$plan_max_applications = $plan_max_applications === null
+					? $promotion_max
+					: min( $plan_max_applications, $promotion_max );
+			}
 
 			foreach ( $promotion->get_excluded_promotion_ids() as $excluded_id ) {
 				$active_exclusion_ids[ $excluded_id ] = true;
@@ -84,11 +110,19 @@ final class PromotionPlanner {
 		return new PromotionEvaluationPlan( $decisions );
 	}
 
-	private function build_skipped_decision( Promotion $promotion, string $reason ): PromotionEvaluationDecision {
+	/**
+	 * @param array<string, mixed> $metadata
+	 */
+	private function build_skipped_decision(
+		Promotion $promotion,
+		string $reason,
+		array $metadata = array()
+	): PromotionEvaluationDecision {
 		$messages = array(
 			PromotionEvaluationDecision::REASON_BLOCKED_EXCLUSIVE => 'Skipped: blocked by an exclusive promotion already selected in this plan.',
 			PromotionEvaluationDecision::REASON_STOPPED_PROCESSING => 'Skipped: processing stopped after a prior selected promotion.',
 			PromotionEvaluationDecision::REASON_EXCLUDED_BY_SELECTED => 'Skipped: excluded by a previously selected promotion in this plan.',
+			PromotionEvaluationDecision::REASON_MAX_APPLICATIONS_REACHED => 'Skipped: plan max applications limit reached.',
 		);
 
 		$message = $messages[ $reason ] ?? 'Skipped by promotion application plan.';
@@ -97,7 +131,8 @@ final class PromotionPlanner {
 			$promotion,
 			EvaluationResult::ineligible( array( $message ) ),
 			false,
-			$reason
+			$reason,
+			$metadata
 		);
 	}
 }

@@ -65,6 +65,26 @@ final class PromotionRuleValidator {
 			);
 		}
 
+		if ( $max !== null ) {
+			$issues[] = array(
+				'level'   => 'info',
+				'message' => __(
+					'Max applications limits how many promotions may be selected in one cart evaluation plan (not per-customer usage). The plan cap is the minimum max_applications among selected promotions.',
+					'mp-commerce-promotions'
+				),
+			);
+		}
+
+		if ( $mode === PromotionApplicationMode::EXCLUSIVE && $max !== null && $max > 1 ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __(
+					'Exclusive promotions stop further selections when stop processing is enabled; max_applications above 1 may have no effect unless stop processing is off.',
+					'mp-commerce-promotions'
+				),
+			);
+		}
+
 		$excluded = $promotion->get_excluded_promotion_ids();
 		$own_id   = $promotion->get_id();
 		if ( $own_id !== null && $own_id > 0 && in_array( $own_id, $excluded, true ) ) {

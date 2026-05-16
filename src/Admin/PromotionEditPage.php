@@ -24,7 +24,10 @@ use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\EvaluationResult;
+use MP\CommercePromotions\Engine\PromotionEvaluationDecision;
+use MP\CommercePromotions\Engine\PromotionEvaluationPlan;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
+use MP\CommercePromotions\Engine\PromotionPlanner;
 use MP\CommercePromotions\Engine\RuleRegistry;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerationOutcome;
@@ -48,7 +51,11 @@ final class PromotionEditPage {
 
 	private ?EvaluationResult $cart_preview_result = null;
 
+	private ?PromotionEvaluationPlan $cart_preview_plan = null;
+
 	private ?string $cart_preview_error = null;
+
+	private PromotionPlanner $promotion_planner;
 
 	private ?RedemptionRepository $redemptions;
 
@@ -96,6 +103,7 @@ final class PromotionEditPage {
 		$this->promotion_service      = $promotion_service;
 		$this->cart_context_builder   = $cart_context_builder;
 		$this->promotion_evaluator    = $promotion_evaluator ?? new PromotionEvaluator();
+		$this->promotion_planner      = new PromotionPlanner( $this->promotion_evaluator );
 		$this->redemptions            = $redemptions;
 		$this->audit_logs             = $audit_logs;
 		$this->rule_validator         = $rule_validator ?? new PromotionRuleValidator();
@@ -118,6 +126,7 @@ final class PromotionEditPage {
 		}
 
 		$this->cart_preview_result      = null;
+		$this->cart_preview_plan        = null;
 		$this->cart_preview_error       = null;
 		$this->batch_generation_outcome = null;
 		$this->batch_generation_error   = null;
@@ -627,6 +636,9 @@ final class PromotionEditPage {
 		try {
 			$context                   = $this->cart_context_builder->build_from_cart();
 			$this->cart_preview_result = $this->promotion_evaluator->evaluate( $promotion, $context );
+
+			$active = $this->promotions->find_active( 50 );
+			$this->cart_preview_plan   = $this->promotion_planner->plan( $active, $context );
 		} catch ( Throwable $e ) {
 			$this->cart_preview_error = __( 'Preview failed.', 'mp-commerce-promotions' );
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
@@ -1504,6 +1516,80 @@ final class PromotionEditPage {
 		echo '<pre class="code" style="max-height:120px;overflow:auto;background:#f6f7f7;padding:8px;margin:0;font-size:11px;">' . esc_html( $json ) . '</pre>';
 	}
 
+	private function render_promotion_plan_table( PromotionEvaluationPlan $plan ): void {
+		$decisions = $plan->get_decisions();
+		if ( $decisions === array() ) {
+			return;
+		}
+
+		echo '<hr style="margin:16px 0;" />';
+		echo '<p><strong>' . esc_html__( 'Promotion plan (active promotions)', 'mp-commerce-promotions' ) . '</strong></p>';
+		echo '<p class="description">' . esc_html__(
+			'How active promotions would be selected for the current cart. Cart fees follow selected rows only.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<table class="widefat striped" style="max-width:100%;"><thead><tr>';
+		echo '<th scope="col">' . esc_html__( 'Promotion', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Eligible', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Selected', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Skipped reason', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Details', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $decisions as $decision ) {
+			if ( ! $decision instanceof PromotionEvaluationDecision ) {
+				continue;
+			}
+
+			$name = $decision->get_promotion_name();
+			$pid  = $decision->get_promotion_id();
+			if ( $pid !== null && $pid > 0 ) {
+				$name .= ' (#' . $pid . ')';
+			}
+
+			$eligible_label = $decision->get_result()->is_eligible()
+				? __( 'Yes', 'mp-commerce-promotions' )
+				: __( 'No', 'mp-commerce-promotions' );
+			$selected_label = $decision->is_selected()
+				? __( 'Yes', 'mp-commerce-promotions' )
+				: __( 'No', 'mp-commerce-promotions' );
+
+			$reason = $decision->get_skipped_reason();
+			$reason_label = $reason !== null && $reason !== ''
+				? $this->format_plan_skipped_reason_label( $reason )
+				: '—';
+
+			$details = '—';
+			$meta    = $decision->get_metadata();
+			if ( $meta !== array() ) {
+				$encoded = wp_json_encode( $meta, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+				$details = is_string( $encoded ) ? $encoded : '—';
+			}
+
+			echo '<tr>';
+			echo '<td>' . esc_html( $name ) . '</td>';
+			echo '<td>' . esc_html( $eligible_label ) . '</td>';
+			echo '<td>' . esc_html( $selected_label ) . '</td>';
+			echo '<td><code>' . esc_html( $reason_label ) . '</code></td>';
+			echo '<td><code style="font-size:11px;">' . esc_html( $details ) . '</code></td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
+	}
+
+	private function format_plan_skipped_reason_label( string $reason ): string {
+		$labels = array(
+			PromotionEvaluationDecision::REASON_NOT_ELIGIBLE => 'not_eligible',
+			PromotionEvaluationDecision::REASON_BLOCKED_EXCLUSIVE => 'blocked_by_exclusive_promotion',
+			PromotionEvaluationDecision::REASON_STOPPED_PROCESSING => 'stopped_processing',
+			PromotionEvaluationDecision::REASON_EXCLUDED_BY_SELECTED => 'excluded_by_selected_promotion',
+			PromotionEvaluationDecision::REASON_MAX_APPLICATIONS_REACHED => 'max_applications_reached',
+		);
+
+		return $labels[ $reason ] ?? $reason;
+	}
+
 	private function render_cart_preview_section( Promotion $promotion ): void {
 		$id = $promotion->get_id();
 		if ( $id === null || $id <= 0 ) {
@@ -1559,6 +1645,10 @@ final class PromotionEditPage {
 					}
 
 					$this->render_evaluation_trace_tables( $result );
+
+					if ( $this->cart_preview_plan instanceof PromotionEvaluationPlan ) {
+						$this->render_promotion_plan_table( $this->cart_preview_plan );
+					}
 
 					$action_results = $result->get_action_results();
 					echo '<p><strong>' . esc_html__( 'Action previews (JSON)', 'mp-commerce-promotions' ) . '</strong></p>';
@@ -2005,7 +2095,10 @@ final class PromotionEditPage {
 		$max_apps = $promotion->get_max_applications();
 		echo '<tr><th scope="row"><label for="mp_cp_max_applications">' . esc_html__( 'Max applications', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_max_applications" name="promotion_max_applications" min="1" step="1" value="' . esc_attr( $max_apps !== null ? (string) $max_apps : '' ) . '" />';
-		echo '<p class="description">' . esc_html__( 'Optional. Reserved for future use; leave empty for unlimited.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+		echo '<p class="description">' . esc_html__(
+			'Optional. Limits how many promotions may be selected in one cart evaluation plan (not per-customer usage). Leave empty for unlimited. When set, the plan cap is the minimum max_applications among selected promotions.',
+			'mp-commerce-promotions'
+		) . '</p></td></tr>';
 
 		$excluded       = $promotion->get_excluded_promotion_ids();
 		$excluded_value = $excluded !== array() ? implode( ',', array_map( 'strval', $excluded ) ) : '';

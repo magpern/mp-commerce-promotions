@@ -297,4 +297,170 @@ final class PromotionPlannerTest extends TestCase {
 			$plan->get_decisions()[1]->get_skipped_reason()
 		);
 	}
+
+	public function test_max_applications_one_selects_first_stackable_only(): void {
+		$cond = array(
+			array(
+				'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'amount' => 1.0,
+			),
+		);
+		$act  = array(
+			array(
+				'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'percentage' => 10.0,
+			),
+		);
+
+		$first  = PromotionTestFixtures::active_promotion_with_id( 1, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, 1 );
+		$second = PromotionTestFixtures::active_promotion_with_id( 2, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+		$third  = PromotionTestFixtures::active_promotion_with_id( 3, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+
+		$plan = $this->planner->plan(
+			array( $first, $second, $third ),
+			PromotionTestFixtures::cart_context( null, 100.0 )
+		);
+
+		$this->assertCount( 1, $plan->get_selected_decisions() );
+		$this->assertSame(
+			PromotionEvaluationDecision::REASON_MAX_APPLICATIONS_REACHED,
+			$plan->get_decisions()[1]->get_skipped_reason()
+		);
+		$meta = $plan->get_decisions()[1]->get_metadata();
+		$this->assertSame( 1, $meta['max_applications_limit'] ?? null );
+		$this->assertSame( 1, $meta['selected_count'] ?? null );
+	}
+
+	public function test_max_applications_two_selects_first_two_skips_third(): void {
+		$cond = array(
+			array(
+				'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'amount' => 1.0,
+			),
+		);
+		$act  = array(
+			array(
+				'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'percentage' => 10.0,
+			),
+		);
+
+		$first  = PromotionTestFixtures::active_promotion_with_id( 1, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, 2 );
+		$second = PromotionTestFixtures::active_promotion_with_id( 2, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+		$third  = PromotionTestFixtures::active_promotion_with_id( 3, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+
+		$plan = $this->planner->plan(
+			array( $first, $second, $third ),
+			PromotionTestFixtures::cart_context( null, 100.0 )
+		);
+
+		$this->assertCount( 2, $plan->get_selected_decisions() );
+		$this->assertSame(
+			PromotionEvaluationDecision::REASON_MAX_APPLICATIONS_REACHED,
+			$plan->get_decisions()[2]->get_skipped_reason()
+		);
+	}
+
+	public function test_null_max_applications_selects_all_eligible_stackable(): void {
+		$cond = array(
+			array(
+				'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'amount' => 1.0,
+			),
+		);
+		$act  = array(
+			array(
+				'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'percentage' => 10.0,
+			),
+		);
+
+		$promos = array();
+		for ( $i = 1; $i <= 3; ++$i ) {
+			$promos[] = PromotionTestFixtures::active_promotion_with_id( $i, $cond, $act )
+				->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+		}
+
+		$plan = $this->planner->plan(
+			$promos,
+			PromotionTestFixtures::cart_context( null, 100.0 )
+		);
+
+		$this->assertCount( 3, $plan->get_selected_decisions() );
+	}
+
+	public function test_exclusion_skips_before_max_applications_cap_fills_remaining_slot(): void {
+		$cond = array(
+			array(
+				'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'amount' => 1.0,
+			),
+		);
+		$act  = array(
+			array(
+				'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'percentage' => 10.0,
+			),
+		);
+
+		$a = PromotionTestFixtures::active_promotion_with_id( 1, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, 2 )
+			->with_excluded_promotion_ids( array( 2 ) );
+		$b = PromotionTestFixtures::active_promotion_with_id( 2, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+		$c = PromotionTestFixtures::active_promotion_with_id( 3, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+
+		$plan = $this->planner->plan(
+			array( $a, $b, $c ),
+			PromotionTestFixtures::cart_context( null, 100.0 )
+		);
+
+		$selected_ids = array_map(
+			static fn ( $d ) => $d->get_promotion_id(),
+			$plan->get_selected_decisions()
+		);
+		$this->assertSame( array( 1, 3 ), $selected_ids );
+		$this->assertSame(
+			PromotionEvaluationDecision::REASON_EXCLUDED_BY_SELECTED,
+			$plan->get_decisions()[1]->get_skipped_reason()
+		);
+	}
+
+	public function test_exclusive_stops_despite_high_max_applications(): void {
+		$cond = array(
+			array(
+				'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'amount' => 1.0,
+			),
+		);
+		$act  = array(
+			array(
+				'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'percentage' => 10.0,
+			),
+		);
+
+		$exclusive = PromotionTestFixtures::active_promotion_with_id( 1, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::EXCLUSIVE, true, 5 );
+		$second = PromotionTestFixtures::active_promotion_with_id( 2, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+
+		$plan = $this->planner->plan(
+			array( $exclusive, $second ),
+			PromotionTestFixtures::cart_context( null, 100.0 )
+		);
+
+		$this->assertCount( 1, $plan->get_selected_decisions() );
+		$this->assertSame(
+			PromotionEvaluationDecision::REASON_BLOCKED_EXCLUSIVE,
+			$plan->get_decisions()[1]->get_skipped_reason()
+		);
+	}
 }

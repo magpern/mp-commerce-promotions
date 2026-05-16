@@ -319,10 +319,10 @@ Each promotion row stores application strategy fields:
 
 - **`application_mode`** — `exclusive` (default) or `stackable` (groundwork for future multi-apply).
 - **`stop_processing`** — when true (default), no further promotions are selected in a plan after this one is selected.
-- **`max_applications`** — reserved for future caps; nullable today.
+- **`max_applications`** — optional plan-level cap on how many promotions may be selected in one evaluation (not per-customer usage). When set on any selected promotion, the active cap is the **minimum** among those values; further eligible promotions are skipped with `max_applications_reached`.
 - **`excluded_promotion_ids`** — JSON array of promotion IDs to skip when this promotion is selected (evaluated later in the plan only).
 
-`PromotionPlanner::plan()` evaluates promotions in caller order (typically priority, then id), builds a `PromotionEvaluationPlan` of `PromotionEvaluationDecision` entries (selected flag + `skipped_reason`: `not_eligible`, `blocked_by_exclusive_promotion`, `stopped_processing`, `excluded_by_selected_promotion`), and does not apply cart fees. When a promotion is selected, its exclusion IDs are added to an active set; later eligible promotions in that set are skipped (priority/order matters — exclusions do not affect promotions evaluated before the excluder).
+`PromotionPlanner::plan()` evaluates promotions in caller order (typically priority, then id), builds a `PromotionEvaluationPlan` of `PromotionEvaluationDecision` entries (selected flag + `skipped_reason`: `not_eligible`, `blocked_by_exclusive_promotion`, `stopped_processing`, `excluded_by_selected_promotion`, `max_applications_reached`), optional decision `metadata`, and does not apply cart fees. When a promotion is selected, its exclusion IDs are added to an active set; later eligible promotions in that set are skipped (priority/order matters — exclusions do not affect promotions evaluated before the excluder).
 
 `CartPromotionApplier` uses the planner for automatic promotions and may apply **multiple negative fees** when several stackable promotions are selected (`stop_processing=false`). Each selected promotion still uses only its **first supported action**. **Cumulative discount is capped at cart subtotal.** Code-linked promotions (coupon field) still evaluate **only the linked promotion** — automatic promotions do not stack on top.
 

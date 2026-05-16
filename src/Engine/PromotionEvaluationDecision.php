@@ -18,6 +18,7 @@ final class PromotionEvaluationDecision {
 	public const REASON_BLOCKED_EXCLUSIVE          = 'blocked_by_exclusive_promotion';
 	public const REASON_STOPPED_PROCESSING         = 'stopped_processing';
 	public const REASON_EXCLUDED_BY_SELECTED       = 'excluded_by_selected_promotion';
+	public const REASON_MAX_APPLICATIONS_REACHED  = 'max_applications_reached';
 
 	private ?int $promotion_id;
 
@@ -33,11 +34,18 @@ final class PromotionEvaluationDecision {
 
 	private ?string $skipped_reason;
 
+	/** @var array<string, mixed> */
+	private array $metadata;
+
+	/**
+	 * @param array<string, mixed> $metadata Optional debug metadata (e.g. max_applications_limit).
+	 */
 	public function __construct(
 		Promotion $promotion,
 		EvaluationResult $result,
 		bool $selected,
-		?string $skipped_reason
+		?string $skipped_reason,
+		array $metadata = array()
 	) {
 		$id = $promotion->get_id();
 		if ( $id !== null && $id <= 0 ) {
@@ -51,6 +59,7 @@ final class PromotionEvaluationDecision {
 		$this->result          = $result;
 		$this->selected        = $selected;
 		$this->skipped_reason  = $skipped_reason;
+		$this->metadata        = $metadata;
 
 		if ( $selected && $skipped_reason !== null && $skipped_reason !== '' ) {
 			throw new InvalidArgumentException( 'Selected decisions must not set skipped_reason.' );
@@ -91,8 +100,15 @@ final class PromotionEvaluationDecision {
 	/**
 	 * @return array<string, mixed>
 	 */
+	public function get_metadata(): array {
+		return $this->metadata;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
 	public function to_array(): array {
-		return array(
+		$data = array(
 			'promotion_id'    => $this->promotion_id,
 			'promotion_uuid'  => $this->promotion_uuid,
 			'promotion_name'  => $this->promotion_name,
@@ -101,5 +117,11 @@ final class PromotionEvaluationDecision {
 			'eligible'        => $this->result->is_eligible(),
 			'result'          => $this->result->to_array(),
 		);
+
+		if ( $this->metadata !== array() ) {
+			$data['metadata'] = $this->metadata;
+		}
+
+		return $data;
 	}
 }

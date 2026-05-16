@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Max applications enforcement** — planner plan cap, `max_applications_reached`, admin promotion plan preview
 - **Promotion exclusion rules** — `excluded_promotion_ids` (schema 1.6.0), planner `excluded_by_selected_promotion`, admin field, list summary
 - **Stackable cart fees** — multiple planner-selected promotions apply separate fees (subtotal cap); multi-redemption recording
 - **Promotion stacking groundwork** — application_mode / stop_processing / max_applications, PromotionPlanner, admin application rules

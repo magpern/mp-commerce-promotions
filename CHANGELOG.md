@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Max applications enforcement** — `PromotionPlanner` enforces plan-level cap (minimum `max_applications` among selected promotions); skipped reason `max_applications_reached`; admin promotion plan table in cart preview.
 - **Promotion exclusion rules** — `excluded_promotion_ids` on promotions (schema 1.6.0); planner skips later eligible promotions with `excluded_by_selected_promotion`; admin comma-separated ID field; list column shows exclusion count.
 - **Stackable cart fees** — `CartPromotionApplier` applies one negative fee per planner-selected promotion; cumulative discount capped at cart subtotal; session `applied_promotions` array; order meta `_mp_cp_applied_promotions`; multi-promotion redemption recording and reversal.
 - **Promotion stacking groundwork** — `application_mode`, `stop_processing`, `max_applications` on promotions; `PromotionPlanner` / `PromotionEvaluationPlan` for multi-promotion selection with skip reasons.

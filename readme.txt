@@ -28,6 +28,7 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * Promotion lifecycle: draft, active, paused, archived
 * Stackable promotions can apply multiple cart fees (capped at subtotal); exclusive/code-linked behavior preserved
 * Promotion exclusion IDs — skip specific promotions when an earlier-selected promotion lists them (planner + cart)
+* Max applications — limits selected promotions per cart evaluation plan (enforced in planner + cart)
 * Declares compatibility with WooCommerce High-Performance Order Storage (HPOS)
 * Rule evaluation pipeline with pluggable condition/action types (MVP set)
 * Conditions: minimum subtotal, product/category quantity, logged in, first order, customer role, billing country, customer email domain (Woo-enriched metadata when available)
