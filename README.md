@@ -85,10 +85,13 @@ WooCommerce
 └── Promotions
     ├── All Promotions tab   (?page=mp-commerce-promotions&tab=all)
     ├── Settings tab         (?page=mp-commerce-promotions&tab=settings)
-    └── Diagnostics tab      (?page=mp-commerce-promotions&tab=diagnostics)
+    ├── Diagnostics tab      (?page=mp-commerce-promotions&tab=diagnostics)
+    └── Reports tab          (?page=mp-commerce-promotions&tab=reports)
 ```
 
-A single sidebar item (**Promotions**) routes through **`AdminRouter`** using the **`tab`** query arg (default **`all`**). In-page **nav tabs** (**All Promotions** | **Settings** | **Diagnostics**) use WordPress `nav-tab` styling (no JavaScript). Legacy URLs (`page=mp-commerce-promotions-settings` or `page=mp-commerce-promotions-diagnostics`) redirect to the matching tab.
+A single sidebar item (**Promotions**) routes through **`AdminRouter`** using the **`tab`** query arg (default **`all`**). In-page **nav tabs** (**All Promotions** | **Settings** | **Diagnostics** | **Reports**) use WordPress `nav-tab` styling (no JavaScript). Legacy URLs (`page=mp-commerce-promotions-settings` or `page=mp-commerce-promotions-diagnostics`) redirect to the matching tab.
+
+- **Reports** — read-only **`PromotionReports`** summaries (total/active promotions, recorded/reversed redemption counts, recorded discount total, top 10 promotions) with filters on **`redeemed_at`** (inclusive date range), promotion ID, and redemption status. **Export redemptions CSV** (POST + nonce) returns up to **5,000** rows; does **not** expose raw promotion codes (the `code` column may be empty).
 
 - **All Promotions** lists promotions with **search** (`s`), **status filter** (`promotion_status`: draft / active / paused / archived), and **pagination** (`paged`, 20 per page). Table columns include **Codes** (active / total), **Batches**, **Redemptions** (recorded / reversed), and **Validation** (rule validator error/warning summary). Supports **Create draft promotion** (name + nonce; redirect returns to the unfiltered list). **Edit** opens a detail page (`promotion` query arg: numeric id or UUID; edit screen omits tabs and shows **← Back to promotions**). **Code batch detail** uses `batch` on the same edit URL (`?page=mp-commerce-promotions&tab=all&promotion={id}&batch={batch_id}`): read-only batch metadata and up to **100** linked codes (**last 4** only); invalid or mismatched batch IDs show an admin error and the normal edit screen.
 - **Settings** provides an **Enable cart discounts** checkbox (stored as **`mp_cp_cart_discounts_enabled`**, default **yes**).

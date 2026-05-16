@@ -210,6 +210,8 @@ composer run test
 
 **Stacking:** Use `PromotionPlanner::plan()` in tests to assert selection/skip reasons. `CartPromotionApplier` applies one fee per selected promotion (subtotal cap). Manual checklist: [manual-stacking-test.md](manual-stacking-test.md). Smoke: `scripts/stacking-smoke.php`, `scripts/stacking-limits-smoke.php`.
 
+**Reports:** Admin tab `?page=mp-commerce-promotions&tab=reports`. Smoke from WooCommerce project root: `./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/reports-smoke.php`. PHPUnit covers `PromotionReports::sanitize_filters()` and CSV escaping (no DB).
+
 **Future work:** WordPress/WooCommerce integration tests (bootstrap WP test suite, repositories against test DB, checkout flows) are **not** implemented yet.
 
 Run the same checks locally before pushing:

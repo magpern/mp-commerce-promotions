@@ -305,6 +305,252 @@ final class RedemptionRepository {
 		return $this->rows_to_redemptions( $rows );
 	}
 
+	/**
+	 * Count recorded redemptions matching report filters (redeemed_at date window).
+	 *
+	 * @param array{
+	 *     date_from?: string|null,
+	 *     date_to?: string|null,
+	 *     promotion_id?: int|null,
+	 *     status?: string|null
+	 * } $filters
+	 */
+	public function count_recorded( array $filters = array() ): int {
+		$filters['status'] = Redemption::STATUS_RECORDED;
+
+		return $this->count_by_report_filters( $filters );
+	}
+
+	/**
+	 * Count reversed redemptions matching report filters.
+	 *
+	 * @param array{
+	 *     date_from?: string|null,
+	 *     date_to?: string|null,
+	 *     promotion_id?: int|null,
+	 *     status?: string|null
+	 * } $filters
+	 */
+	public function count_reversed( array $filters = array() ): int {
+		$filters['status'] = Redemption::STATUS_REVERSED;
+
+		return $this->count_by_report_filters( $filters );
+	}
+
+	/**
+	 * Sum discount_amount for recorded redemptions (ignores status filter; uses date/promotion only).
+	 *
+	 * @param array{
+	 *     date_from?: string|null,
+	 *     date_to?: string|null,
+	 *     promotion_id?: int|null,
+	 *     status?: string|null
+	 * } $filters
+	 */
+	public function sum_recorded_discount_amount( array $filters = array() ): float {
+		$built = $this->build_report_where( $filters, true );
+		$table = $this->redemptions_table();
+
+		$sql = "SELECT COALESCE(SUM(discount_amount), 0) FROM {$table} WHERE status = %s";
+		if ( $built['where'] !== '' ) {
+			$sql .= ' AND ' . $built['where'];
+		}
+
+		$params   = array( Redemption::STATUS_RECORDED );
+		$params   = array_merge( $params, $built['params'] );
+		$total    = DbQuery::get_var( $this->wpdb, $sql, $params );
+
+		if ( ! is_numeric( $total ) ) {
+			return 0.0;
+		}
+
+		return (float) $total;
+	}
+
+	/**
+	 * Top promotions by recorded redemption count.
+	 *
+	 * @param array{
+	 *     date_from?: string|null,
+	 *     date_to?: string|null,
+	 *     promotion_id?: int|null,
+	 *     status?: string|null
+	 * } $filters
+	 * @return list<array{
+	 *     promotion_id: int,
+	 *     name: string,
+	 *     recorded_count: int,
+	 *     reversed_count: int,
+	 *     total_discount_amount: float
+	 * }>
+	 */
+	public function top_promotions_by_redemptions( array $filters = array(), int $limit = 10 ): array {
+		$limit = max( 1, min( 50, $limit ) );
+		$built = $this->build_report_where( $filters, false, 'r' );
+
+		$r_table = $this->redemptions_table();
+		$p_table = TableName::assert_valid( Schema::promotions_table( $this->wpdb ) );
+
+		$where_sql = $built['where'] !== '' ? 'WHERE ' . $built['where'] : '';
+
+		$sql = "SELECT r.promotion_id,
+			p.name AS promotion_name,
+			SUM(CASE WHEN r.status = %s THEN 1 ELSE 0 END) AS recorded_count,
+			SUM(CASE WHEN r.status = %s THEN 1 ELSE 0 END) AS reversed_count,
+			COALESCE(SUM(CASE WHEN r.status = %s THEN r.discount_amount ELSE 0 END), 0) AS total_discount_amount
+			FROM {$r_table} r
+			INNER JOIN {$p_table} p ON p.id = r.promotion_id
+			{$where_sql}
+			GROUP BY r.promotion_id, p.name
+			ORDER BY recorded_count DESC, r.promotion_id ASC
+			LIMIT %d";
+
+		$params   = array(
+			Redemption::STATUS_RECORDED,
+			Redemption::STATUS_REVERSED,
+			Redemption::STATUS_RECORDED,
+		);
+		$params   = array_merge( $params, $built['params'] );
+		$params[] = $limit;
+
+		$rows = DbQuery::get_results( $this->wpdb, $sql, $params );
+
+		$out = array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$promotion_id = isset( $row['promotion_id'] ) ? (int) $row['promotion_id'] : 0;
+			if ( $promotion_id <= 0 ) {
+				continue;
+			}
+
+			$out[] = array(
+				'promotion_id'          => $promotion_id,
+				'name'                  => isset( $row['promotion_name'] ) ? (string) $row['promotion_name'] : '',
+				'recorded_count'        => isset( $row['recorded_count'] ) ? (int) $row['recorded_count'] : 0,
+				'reversed_count'        => isset( $row['reversed_count'] ) ? (int) $row['reversed_count'] : 0,
+				'total_discount_amount' => isset( $row['total_discount_amount'] ) ? (float) $row['total_discount_amount'] : 0.0,
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Rows for CSV export (max 5000).
+	 *
+	 * @param array{
+	 *     date_from?: string|null,
+	 *     date_to?: string|null,
+	 *     promotion_id?: int|null,
+	 *     status?: string|null
+	 * } $filters
+	 * @return list<array<string, mixed>>
+	 */
+	public function find_redemptions_for_export( array $filters = array(), int $limit = 5000 ): array {
+		$limit = max( 1, min( 5000, $limit ) );
+		$built = $this->build_report_where( $filters, false );
+
+		$table = $this->redemptions_table();
+		$sql   = "SELECT id AS redemption_id, promotion_id, order_id, customer_id, code,
+			discount_amount, currency, status, redeemed_at, created_at
+			FROM {$table}";
+
+		if ( $built['where'] !== '' ) {
+			$sql .= ' WHERE ' . $built['where'];
+		}
+
+		$sql .= ' ORDER BY redeemed_at DESC, id DESC LIMIT %d';
+
+		$params   = $built['params'];
+		$params[] = $limit;
+
+		$rows = DbQuery::get_results( $this->wpdb, $sql, $params );
+
+		$out = array();
+		foreach ( $rows as $row ) {
+			if ( is_array( $row ) ) {
+				$out[] = $row;
+			}
+		}
+
+		return $out;
+	}
+
+	/**
+	 * @param array{
+	 *     date_from?: string|null,
+	 *     date_to?: string|null,
+	 *     promotion_id?: int|null,
+	 *     status?: string|null
+	 * } $filters
+	 */
+	private function count_by_report_filters( array $filters ): int {
+		$built = $this->build_report_where( $filters, false );
+		$table = $this->redemptions_table();
+
+		$sql = "SELECT COUNT(*) FROM {$table}";
+		if ( $built['where'] !== '' ) {
+			$sql .= ' WHERE ' . $built['where'];
+		}
+
+		$count = DbQuery::get_var( $this->wpdb, $sql, $built['params'] );
+
+		if ( ! is_numeric( $count ) ) {
+			return 0;
+		}
+
+		return (int) $count;
+	}
+
+	/**
+	 * Report filters use redemption.redeemed_at for date bounds (inclusive calendar days, site timezone).
+	 *
+	 * @param array{
+	 *     date_from?: string|null,
+	 *     date_to?: string|null,
+	 *     promotion_id?: int|null,
+	 *     status?: string|null
+	 * } $filters
+	 * @return array{where: string, params: list<mixed>}
+	 */
+	private function build_report_where( array $filters, bool $ignore_status_filter, string $alias = '' ): array {
+		$prefix = $alias !== '' ? $alias . '.' : '';
+		$parts  = array();
+		$params = array();
+
+		if ( ! $ignore_status_filter && isset( $filters['status'] ) && is_string( $filters['status'] ) ) {
+			$status = $filters['status'];
+			if ( $status === Redemption::STATUS_RECORDED || $status === Redemption::STATUS_REVERSED ) {
+				$parts[]  = "{$prefix}status = %s";
+				$params[] = $status;
+			}
+		}
+
+		if ( isset( $filters['promotion_id'] ) && is_int( $filters['promotion_id'] ) && $filters['promotion_id'] > 0 ) {
+			$parts[]  = "{$prefix}promotion_id = %d";
+			$params[] = $filters['promotion_id'];
+		}
+
+		$date_from = isset( $filters['date_from'] ) ? $filters['date_from'] : null;
+		if ( is_string( $date_from ) && $date_from !== '' ) {
+			$parts[]  = "{$prefix}redeemed_at >= %s";
+			$params[] = $date_from . ' 00:00:00';
+		}
+
+		$date_to = isset( $filters['date_to'] ) ? $filters['date_to'] : null;
+		if ( is_string( $date_to ) && $date_to !== '' ) {
+			$parts[]  = "{$prefix}redeemed_at <= %s";
+			$params[] = $date_to . ' 23:59:59';
+		}
+
+		return array(
+			'where'  => implode( ' AND ', $parts ),
+			'params' => $params,
+		);
+	}
+
 	private function count_by_promotion_and_status( int $promotion_id, string $status ): int {
 		if ( $promotion_id <= 0 ) {
 			return 0;

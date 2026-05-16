@@ -8,6 +8,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Promotion reports** — Reports admin tab, `PromotionReports` service, redemption CSV export (5k cap), `scripts/reports-smoke.php`
 - **Checkout redemption integrity** — `OrderPromotionState`, idempotent record/reverse/restore, `FreeGiftCartSynchronizer`, audit trace actions, smoke/docs
 - **Redemption restrictions** — global/per-customer usage limits (schema 1.7.0), date enforcement, min/max cart quantity conditions, planner reason codes, smoke/docs
 - **Free gift product action** — `free_gift_product` cart line + zero price hook; `FreeGiftCartHandler`; order recording; builder; `docs/manual-free-gift-test.md`; smoke `scripts/free-gift-smoke.php`

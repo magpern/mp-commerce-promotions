@@ -363,6 +363,7 @@ FreeGiftCartSynchronizer
 OrderPromotionState
 OrderPromotionRecorder
 PromotionCodeCouponBridge
+PromotionReports (admin Reports tab)
 ```
 
 ### Feature compatibility (HPOS)
@@ -426,6 +427,14 @@ Redemption recording is protected against duplicate order/promotion rows by:
 - Application-level duplicate checks
 - Order meta markers
 - Database-level unique index on `(order_id, promotion_id)`
+
+### Reports (admin)
+
+**`PromotionReports`** (Reports tab) provides read-only aggregates from `{prefix}mp_cp_redemptions` and `{prefix}mp_cp_promotions`:
+
+- Summary: total/active promotions, recorded/reversed counts, sum of **recorded** `discount_amount`, top 10 promotions by recorded count.
+- Filters: inclusive calendar range on **`redeemed_at`**, optional `promotion_id`, optional `status` (`recorded` / `reversed`).
+- CSV export (POST + nonce): up to **5,000** rows; columns include redemption metadata only — **not** merchant plain-text promotion codes (the `code` column may be null).
 
 ### Reversal
 

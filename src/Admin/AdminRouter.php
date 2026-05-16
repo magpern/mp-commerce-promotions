@@ -17,14 +17,18 @@ final class AdminRouter {
 
 	private ?DiagnosticsPage $diagnostics_page;
 
+	private ?ReportsPage $reports_page;
+
 	public function __construct(
 		?PromotionsPage $promotions_page,
 		SettingsPage $settings_page,
-		?DiagnosticsPage $diagnostics_page = null
+		?DiagnosticsPage $diagnostics_page = null,
+		?ReportsPage $reports_page = null
 	) {
 		$this->promotions_page  = $promotions_page;
 		$this->settings_page    = $settings_page;
 		$this->diagnostics_page = $diagnostics_page;
+		$this->reports_page     = $reports_page;
 	}
 
 	public function register_legacy_redirects(): void {
@@ -69,6 +73,13 @@ final class AdminRouter {
 			case AdminNavigation::TAB_DIAGNOSTICS:
 				if ( $this->diagnostics_page !== null ) {
 					$this->diagnostics_page->render();
+					return;
+				}
+				break;
+
+			case AdminNavigation::TAB_REPORTS:
+				if ( $this->reports_page !== null ) {
+					$this->reports_page->render();
 					return;
 				}
 				break;

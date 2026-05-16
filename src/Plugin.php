@@ -12,6 +12,7 @@ namespace MP\CommercePromotions;
 use MP\CommercePromotions\Admin\AdminMenu;
 use MP\CommercePromotions\Admin\AdminRouter;
 use MP\CommercePromotions\Admin\DiagnosticsPage;
+use MP\CommercePromotions\Admin\ReportsPage;
 use MP\CommercePromotions\Admin\PromotionEditPage;
 use MP\CommercePromotions\Admin\PromotionsPage;
 use MP\CommercePromotions\Admin\SettingsPage;
@@ -25,6 +26,7 @@ use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
+use MP\CommercePromotions\Service\PromotionReports;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Service\Settings;
@@ -185,7 +187,16 @@ final class Plugin {
 			$diagnostics_page = new DiagnosticsPage( $usage_diagnostics );
 		}
 
-		$admin_router = new AdminRouter( $promotions_page, $settings_page, $diagnostics_page );
+		$reports_page = null;
+		if ( $this->promotion_repository !== null && $this->redemption_repository !== null ) {
+			$promotion_reports = new PromotionReports(
+				$this->promotion_repository,
+				$this->redemption_repository
+			);
+			$reports_page = new ReportsPage( $promotion_reports );
+		}
+
+		$admin_router = new AdminRouter( $promotions_page, $settings_page, $diagnostics_page, $reports_page );
 
 		if ( is_admin() ) {
 			$admin_router->register_legacy_redirects();

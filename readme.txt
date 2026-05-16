@@ -42,6 +42,7 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * Redemption tracking per order with idempotency and reversal on cancel/refund/trash
 * Audit log for key promotion and code events
 * Diagnostics and manual usage counter repair
+* Reports tab — redemption summaries and CSV export (5,000 row cap; no raw promotion codes)
 * Settings kill switch for cart discount application
 
 == Current MVP limitations ==

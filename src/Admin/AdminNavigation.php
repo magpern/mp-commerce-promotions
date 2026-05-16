@@ -19,6 +19,8 @@ final class AdminNavigation {
 
 	public const TAB_DIAGNOSTICS = 'diagnostics';
 
+	public const TAB_REPORTS = 'reports';
+
 	/** @deprecated Legacy submenu slug; use tab=settings. */
 	public const LEGACY_PAGE_SETTINGS = 'mp-commerce-promotions-settings';
 
@@ -33,6 +35,7 @@ final class AdminNavigation {
 			self::TAB_ALL,
 			self::TAB_SETTINGS,
 			self::TAB_DIAGNOSTICS,
+			self::TAB_REPORTS,
 		);
 	}
 
@@ -80,6 +83,10 @@ final class AdminNavigation {
 			self::TAB_DIAGNOSTICS => array(
 				'label' => __( 'Diagnostics', 'mp-commerce-promotions' ),
 				'url'   => self::tab_url( self::TAB_DIAGNOSTICS ),
+			),
+			self::TAB_REPORTS     => array(
+				'label' => __( 'Reports', 'mp-commerce-promotions' ),
+				'url'   => self::tab_url( self::TAB_REPORTS ),
 			),
 		);
 
