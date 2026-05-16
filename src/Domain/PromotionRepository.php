@@ -264,15 +264,119 @@ final class PromotionRepository {
 	}
 
 	public function count_all(): int {
-		$table = Schema::promotions_table( $this->wpdb );
-		$sql   = "SELECT COUNT(*) FROM {$table}";
+		return $this->count_filtered( array() );
+	}
 
-		$count = $this->wpdb->get_var( $sql );
+	/**
+	 * @param array{
+	 *     status?: string|null,
+	 *     search?: string|null,
+	 *     limit?: int,
+	 *     offset?: int
+	 * } $args
+	 * @return list<Promotion>
+	 */
+	public function find_filtered( array $args ): array {
+		$limit  = isset( $args['limit'] ) ? (int) $args['limit'] : 20;
+		$offset = isset( $args['offset'] ) ? (int) $args['offset'] : 0;
+		$limit  = max( 1, min( 100, $limit ) );
+		$offset = max( 0, $offset );
+
+		$filter = $this->build_filtered_where( $args );
+		$table  = Schema::promotions_table( $this->wpdb );
+
+		$sql = "SELECT * FROM {$table} WHERE {$filter['where']} ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d";
+
+		$params   = $filter['params'];
+		$params[] = $limit;
+		$params[] = $offset;
+
+		$prepared = $this->wpdb->prepare( $sql, ...$params );
+		if ( ! is_string( $prepared ) ) {
+			return array();
+		}
+
+		$rows = $this->wpdb->get_results( $prepared, ARRAY_A );
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		$out = array();
+		foreach ( $rows as $row ) {
+			$p = $this->row_to_promotion( $row );
+			if ( $p instanceof Promotion ) {
+				$out[] = $p;
+			}
+		}
+
+		return $out;
+	}
+
+	/**
+	 * @param array{
+	 *     status?: string|null,
+	 *     search?: string|null,
+	 *     limit?: int,
+	 *     offset?: int
+	 * } $args
+	 */
+	public function count_filtered( array $args ): int {
+		$filter = $this->build_filtered_where( $args );
+		$table  = Schema::promotions_table( $this->wpdb );
+		$sql    = "SELECT COUNT(*) FROM {$table} WHERE {$filter['where']}";
+
+		if ( count( $filter['params'] ) === 0 ) {
+			$count = $this->wpdb->get_var( $sql );
+		} else {
+			$prepared = $this->wpdb->prepare( $sql, ...$filter['params'] );
+			if ( ! is_string( $prepared ) ) {
+				return 0;
+			}
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $prepared is from $wpdb->prepare().
+			$count = $this->wpdb->get_var( $prepared );
+		}
+
 		if ( ! is_numeric( $count ) ) {
 			return 0;
 		}
 
 		return (int) $count;
+	}
+
+	/**
+	 * @param array{
+	 *     status?: string|null,
+	 *     search?: string|null,
+	 *     limit?: int,
+	 *     offset?: int
+	 * } $args
+	 * @return array{where: string, params: list<mixed>}
+	 */
+	private function build_filtered_where( array $args ): array {
+		$clauses = array( '1=1' );
+		$params  = array();
+
+		$status = isset( $args['status'] ) ? trim( (string) $args['status'] ) : '';
+		if ( $status !== '' ) {
+			if ( ! PromotionStatus::is_valid( $status ) ) {
+				throw new \InvalidArgumentException( 'Invalid promotion status filter.' );
+			}
+			$clauses[] = 'status = %s';
+			$params[]  = $status;
+		}
+
+		$search = isset( $args['search'] ) ? trim( (string) $args['search'] ) : '';
+		if ( $search !== '' ) {
+			$like      = '%' . $this->wpdb->esc_like( $search ) . '%';
+			$clauses[] = '( name LIKE %s OR uuid LIKE %s )';
+			$params[]  = $like;
+			$params[]  = $like;
+		}
+
+		return array(
+			'where'  => implode( ' AND ', $clauses ),
+			'params' => $params,
+		);
 	}
 
 	/**
