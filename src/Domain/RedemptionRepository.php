@@ -453,18 +453,24 @@ final class RedemptionRepository {
 	 */
 	public function find_redemptions_for_export( array $filters = array(), int $limit = 5000 ): array {
 		$limit = max( 1, min( 5000, $limit ) );
-		$built = $this->build_report_where( $filters, false );
+		$built = $this->build_report_where( $filters, false, 'r' );
 
-		$table = $this->redemptions_table();
-		$sql   = "SELECT id AS redemption_id, promotion_id, order_id, customer_id, code,
-			discount_amount, currency, status, redeemed_at, created_at
-			FROM {$table}";
+		$r_table = $this->redemptions_table();
+		$p_table = TableName::assert_valid( Schema::promotions_table( $this->wpdb ) );
+
+		$sql = "SELECT r.id AS redemption_id, r.promotion_id, r.order_id, r.customer_id, r.code,
+			r.discount_amount, r.currency, r.status, r.redeemed_at, r.created_at,
+			p.campaign_label AS campaign_label,
+			p.budget_amount AS budget_amount,
+			p.budget_spent AS budget_spent
+			FROM {$r_table} r
+			INNER JOIN {$p_table} p ON p.id = r.promotion_id";
 
 		if ( $built['where'] !== '' ) {
 			$sql .= ' WHERE ' . $built['where'];
 		}
 
-		$sql .= ' ORDER BY redeemed_at DESC, id DESC LIMIT %d';
+		$sql .= ' ORDER BY r.redeemed_at DESC, r.id DESC LIMIT %d';
 
 		$params   = $built['params'];
 		$params[] = $limit;

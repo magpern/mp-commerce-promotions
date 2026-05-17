@@ -31,6 +31,7 @@ use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Engine\PromotionPlanExplainer;
 use MP\CommercePromotions\Engine\PromotionPlanner;
 use MP\CommercePromotions\Service\PromotionConflictAnalyzer;
+use MP\CommercePromotions\Service\PromotionScheduleAnalyzer;
 use MP\CommercePromotions\Engine\RuleRegistry;
 use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
 use MP\CommercePromotions\Engine\RuleTypes;
@@ -185,6 +186,7 @@ final class PromotionEditPage {
 		$this->render_status_section( $promotion );
 		$this->render_form( $promotion );
 		$this->render_rule_validation_section( $promotion );
+		$this->render_schedule_warnings_section( $promotion );
 		$this->render_cart_preview_section( $promotion );
 		$this->render_promotion_codes_section( $promotion );
 		$this->render_usage_redemptions_section( $promotion );
@@ -501,6 +503,28 @@ final class PromotionEditPage {
 			$decoded['generated_at']
 		);
 
+		$code_count = count( $decoded['codes'] );
+		if ( $this->code_batches !== null && $batch_id > 0 ) {
+			$actor = (int) get_current_user_id();
+			$this->code_batches->record_export(
+				$batch_id,
+				$code_count,
+				$actor > 0 ? $actor : null
+			);
+		}
+
+		if ( $this->audit_logger !== null && $batch_id > 0 ) {
+			$this->audit_logger->log(
+				'promotion_code.batch_exported',
+				$pid,
+				array(
+					'batch_id'   => $batch_id,
+					'code_count' => $code_count,
+				),
+				(int) get_current_user_id() > 0 ? (int) get_current_user_id() : null
+			);
+		}
+
 		$filename = sprintf( 'promotion-codes-%d-%d.csv', $pid, $batch_id );
 
 		nocache_headers();
@@ -587,6 +611,13 @@ final class PromotionEditPage {
 			$actor = null;
 		}
 
+		$batch_notes = isset( $_POST['mp_cp_batch_notes'] )
+			? sanitize_textarea_field( wp_unslash( (string) $_POST['mp_cp_batch_notes'] ) )
+			: '';
+		if ( $batch_notes === '' ) {
+			$batch_notes = null;
+		}
+
 		try {
 			$this->batch_generation_outcome = $this->batch_generator->generate(
 				$pid,
@@ -595,7 +626,8 @@ final class PromotionEditPage {
 				$prefix,
 				$usage_limit,
 				$expires_at,
-				$actor
+				$actor,
+				$batch_notes
 			);
 		} catch ( InvalidArgumentException $e ) {
 			$this->batch_generation_error = $e->getMessage();
@@ -1234,6 +1266,20 @@ final class PromotionEditPage {
 			exit;
 		}
 
+		$budget_meta = $this->parse_budget_metadata_from_post();
+		if ( $budget_meta === null ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_budget_metadata',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
+			exit;
+		}
+
 		try {
 			$updated = $promotion
 				->with_name( $name )
@@ -1249,6 +1295,11 @@ final class PromotionEditPage {
 					$campaign_meta['campaign_label'],
 					$campaign_meta['internal_notes'],
 					$campaign_meta['admin_color']
+				)
+				->with_budget(
+					$budget_meta['budget_amount'],
+					$promotion->get_budget_spent(),
+					$budget_meta['budget_currency']
 				)
 				->with_rules( $conditions, $actions, $restrictions );
 
@@ -1315,6 +1366,70 @@ final class PromotionEditPage {
 		} catch ( InvalidArgumentException $e ) {
 			return null;
 		}
+	}
+
+	/**
+	 * @return array{budget_amount: ?float, budget_currency: ?string}|null
+	 */
+	private function parse_budget_metadata_from_post(): ?array {
+		$amount_raw = isset( $_POST['promotion_budget_amount'] )
+			? trim( wp_unslash( (string) $_POST['promotion_budget_amount'] ) )
+			: '';
+		$currency_raw = isset( $_POST['promotion_budget_currency'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['promotion_budget_currency'] ) )
+			: '';
+
+		$amount = null;
+		if ( $amount_raw !== '' ) {
+			if ( ! is_numeric( $amount_raw ) ) {
+				return null;
+			}
+			$amount = (float) $amount_raw;
+		}
+
+		$currency = $currency_raw === '' ? null : $currency_raw;
+
+		try {
+			return array(
+				'budget_amount'   => Promotion::normalize_budget_amount( $amount ),
+				'budget_currency' => Promotion::normalize_budget_currency( $currency ),
+			);
+		} catch ( InvalidArgumentException $e ) {
+			return null;
+		}
+	}
+
+	/**
+	 * @return list<Promotion>
+	 */
+	private function load_schedulable_catalog(): array {
+		$catalog = array();
+		foreach (
+			array(
+				PromotionStatus::ACTIVE,
+				PromotionStatus::PAUSED,
+				PromotionStatus::DRAFT,
+			) as $status
+		) {
+			try {
+				$chunk = $this->promotions->find_filtered(
+					array(
+						'status' => $status,
+						'limit'  => 100,
+						'offset' => 0,
+					)
+				);
+			} catch ( InvalidArgumentException $e ) {
+				$chunk = array();
+			}
+			foreach ( $chunk as $promotion ) {
+				if ( $promotion instanceof Promotion ) {
+					$catalog[] = $promotion;
+				}
+			}
+		}
+
+		return $catalog;
 	}
 
 	/**
@@ -1592,6 +1707,8 @@ final class PromotionEditPage {
 				return __( 'Excluded category IDs must be a comma-separated list of positive integers.', 'mp-commerce-promotions' );
 			case 'invalid_campaign_metadata':
 				return __( 'Campaign label, admin color (hex), or internal notes are invalid.', 'mp-commerce-promotions' );
+			case 'invalid_budget_metadata':
+				return __( 'Budget amount must be a positive number or empty; budget currency is invalid.', 'mp-commerce-promotions' );
 			case 'invalid_json':
 				return __( 'Conditions, actions, and restrictions must be valid JSON arrays.', 'mp-commerce-promotions' );
 			case 'update_failed':
@@ -1649,6 +1766,37 @@ final class PromotionEditPage {
 		echo '<tr><th scope="row"><label for="mp_cp_internal_notes">' . esc_html__( 'Internal notes', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<textarea class="large-text" rows="4" id="mp_cp_internal_notes" name="promotion_internal_notes">' . esc_textarea( $notes ) . '</textarea>';
 		echo '<p class="description">' . esc_html__( 'Private notes for your team; never shown to shoppers.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		$budget_amount       = $promotion->get_budget_amount();
+		$budget_amount_value = $budget_amount !== null ? (string) $budget_amount : '';
+		echo '<tr><th scope="row"><label for="mp_cp_budget_amount">' . esc_html__( 'Budget amount', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_budget_amount" name="promotion_budget_amount" inputmode="decimal" value="' . esc_attr( $budget_amount_value ) . '" />';
+		echo '<p class="description">' . esc_html__( 'Optional spending cap tracked from recorded redemption discounts. Leave empty for no cap.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		$budget_currency = $promotion->get_budget_currency() ?? '';
+		echo '<tr><th scope="row"><label for="mp_cp_budget_currency">' . esc_html__( 'Budget currency', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_budget_currency" name="promotion_budget_currency" maxlength="10" value="' . esc_attr( $budget_currency ) . '" placeholder="USD" />';
+		echo '<p class="description">' . esc_html__( 'ISO-style currency code for the budget cap (recommended when a budget amount is set).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		if ( $promotion->has_budget_cap() ) {
+			$spent = $promotion->get_budget_spent();
+			$cap   = (float) $promotion->get_budget_amount();
+			$pct   = $promotion->get_budget_utilization_percent();
+			echo '<tr><th scope="row">' . esc_html__( 'Budget progress', 'mp-commerce-promotions' ) . '</th><td>';
+			echo '<p><strong>' . esc_html(
+				sprintf(
+					/* translators: 1: spent amount, 2: cap amount, 3: utilization percent */
+					__( '%1$s spent of %2$s (%3$s%% utilized)', 'mp-commerce-promotions' ),
+					number_format( $spent, 2, '.', '' ),
+					number_format( $cap, 2, '.', '' ),
+					$pct !== null ? number_format( $pct, 1, '.', '' ) : '0'
+				)
+			) . '</strong></p>';
+			if ( $promotion->is_budget_exhausted() ) {
+				echo '<p class="description" style="color:#b32d2e;">' . esc_html__( 'Budget is exhausted; active promotions may be auto-paused by maintenance.', 'mp-commerce-promotions' ) . '</p>';
+			}
+			echo '</td></tr>';
+		}
 
 		echo '</tbody></table></div>';
 	}
@@ -1750,7 +1898,7 @@ final class PromotionEditPage {
 	}
 
 	private function render_rule_validation_section( Promotion $promotion ): void {
-		$issues = $this->rule_validator->validate( $promotion );
+		$issues = $this->rule_validator->validate_with_catalog( $promotion, $this->load_schedulable_catalog() );
 
 		AdminSection::render(
 			__( 'Rule Validation', 'mp-commerce-promotions' ),
@@ -1782,6 +1930,36 @@ final class PromotionEditPage {
 				echo '</ul>';
 			},
 			__( 'Read-only checks against supported condition and action types. Passing validation does not guarantee the promotion will apply to a specific cart.', 'mp-commerce-promotions' ),
+			array(
+				'heading' => 'h2',
+				'width'   => 'narrow',
+			)
+		);
+	}
+
+	private function render_schedule_warnings_section( Promotion $promotion ): void {
+		$analyzer = new PromotionScheduleAnalyzer();
+		$rows     = $analyzer->analyze( $this->load_schedulable_catalog(), $promotion );
+
+		if ( $rows === array() ) {
+			return;
+		}
+
+		AdminSection::render(
+			__( 'Schedule warnings', 'mp-commerce-promotions' ),
+			function () use ( $rows ): void {
+				echo '<ul style="list-style:disc;margin-left:1.5em;">';
+				foreach ( $rows as $row ) {
+					$severity = isset( $row['severity'] ) ? (string) $row['severity'] : 'info';
+					$label    = $severity === 'warning'
+						? __( 'Warning', 'mp-commerce-promotions' )
+						: __( 'Info', 'mp-commerce-promotions' );
+					$message = isset( $row['message'] ) ? (string) $row['message'] : '';
+					echo '<li><strong>' . esc_html( $label ) . ':</strong> ' . esc_html( $message ) . '</li>';
+				}
+				echo '</ul>';
+			},
+			__( 'Overlapping windows and schedule collisions with other draft, paused, or active promotions.', 'mp-commerce-promotions' ),
 			array(
 				'heading' => 'h2',
 				'width'   => 'narrow',
@@ -3115,8 +3293,9 @@ final class PromotionEditPage {
 		echo '<tr><th scope="row"><label for="mp_cp_batch_quantity">' . esc_html__( 'Quantity', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_batch_quantity" name="mp_cp_batch_quantity" min="1" max="' . esc_attr( (string) PromotionCodeBatch::MAX_QUANTITY ) . '" step="1" value="10" required />';
 		echo '<p class="description">' . esc_html__( 'Maximum 1,000 codes per batch.', 'mp-commerce-promotions' ) . '</p></td></tr>';
-		echo '<tr><th scope="row"><label for="mp_cp_batch_prefix">' . esc_html__( 'Prefix (optional)', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<tr><th scope="row"><label for="mp_cp_batch_prefix">' . esc_html__( 'Code prefix (optional)', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="text" class="regular-text" id="mp_cp_batch_prefix" name="mp_cp_batch_prefix" maxlength="32" autocomplete="off" />';
+		echo '<p class="description">' . esc_html__( 'Prepended to each code with a hyphen (A–Z, 0–9). Example: SUMMER produces SUMMER-XXXXXXXXXXXX.', 'mp-commerce-promotions' ) . '</p>';
 		echo '<p class="description">' . esc_html__( 'Codes will be PREFIX-RANDOM when set; otherwise RANDOM only.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 		echo '<tr><th scope="row"><label for="mp_cp_batch_usage_limit">' . esc_html__( 'Usage limit', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_batch_usage_limit" name="mp_cp_batch_usage_limit" min="0" step="1" />';
@@ -3124,6 +3303,9 @@ final class PromotionEditPage {
 		echo '<tr><th scope="row"><label for="mp_cp_batch_expires_at">' . esc_html__( 'Expires at', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="text" class="regular-text" id="mp_cp_batch_expires_at" name="mp_cp_batch_expires_at" placeholder="' . esc_attr__( 'YYYY-MM-DD HH:MM:SS or leave empty', 'mp-commerce-promotions' ) . '" />';
 		echo '</td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_batch_notes">' . esc_html__( 'Batch notes', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<textarea class="large-text" rows="3" id="mp_cp_batch_notes" name="mp_cp_batch_notes"></textarea>';
+		echo '<p class="description">' . esc_html__( 'Optional internal note stored on the batch record.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 		echo '</tbody></table>';
 		echo '<p class="submit"><button type="submit" name="mp_cp_generate_code_batch_submit" value="1" class="button button-primary">' . esc_html__( 'Generate code batch', 'mp-commerce-promotions' ) . '</button></p>';
 		echo '</form>';
@@ -3466,8 +3648,21 @@ final class PromotionEditPage {
 			$this->format_batch_created_by( $batch->get_created_by() )
 		);
 		$this->render_batch_detail_row(
-			__( 'Created at', 'mp-commerce-promotions' ),
+			__( 'Generated at', 'mp-commerce-promotions' ),
 			$batch->get_created_at() ?? '—'
+		);
+		$this->render_batch_detail_row(
+			__( 'Exported at', 'mp-commerce-promotions' ),
+			$batch->get_exported_at() ?? '—'
+		);
+		$this->render_batch_detail_row(
+			__( 'Export count', 'mp-commerce-promotions' ),
+			(string) $batch->get_export_count()
+		);
+		$notes = $batch->get_batch_notes();
+		$this->render_batch_detail_row(
+			__( 'Batch notes', 'mp-commerce-promotions' ),
+			$notes !== null && $notes !== '' ? $notes : '—'
 		);
 		$this->render_batch_detail_row(
 			__( 'Linked code count', 'mp-commerce-promotions' ),
@@ -3518,9 +3713,14 @@ final class PromotionEditPage {
 
 		if ( $active_count > 0 ) {
 			$buttons[] = array(
-				'label'       => __( 'Disable active codes in this batch', 'mp-commerce-promotions' ),
+				'label'       => __( 'Disable entire batch (active → disabled)', 'mp-commerce-promotions' ),
 				'from_status' => PromotionCode::STATUS_ACTIVE,
 				'to_status'   => PromotionCode::STATUS_DISABLED,
+			);
+			$buttons[] = array(
+				'label'       => __( 'Expire entire batch (active → expired)', 'mp-commerce-promotions' ),
+				'from_status' => PromotionCode::STATUS_ACTIVE,
+				'to_status'   => PromotionCode::STATUS_EXPIRED,
 			);
 		}
 

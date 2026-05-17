@@ -32,6 +32,12 @@ final class DiagnosticsPage {
 
 	private const ARCHIVE_DRAFTS_SUBMIT = 'mp_cp_archive_old_drafts_submit';
 
+	private const PAUSE_EXHAUSTED_NONCE_ACTION = 'mp_cp_pause_budget_exhausted';
+
+	private const PAUSE_EXHAUSTED_NONCE_FIELD = 'mp_cp_pause_budget_exhausted_nonce';
+
+	private const PAUSE_EXHAUSTED_SUBMIT = 'mp_cp_pause_budget_exhausted_submit';
+
 	private UsageDiagnostics $diagnostics;
 
 	private ?PromotionService $promotion_service;
@@ -131,6 +137,15 @@ final class DiagnosticsPage {
 		echo '</button></p>';
 		echo '<p class="description">' . esc_html__( 'Draft promotions created before the cutoff are archived (audited).', 'mp-commerce-promotions' ) . '</p>';
 		echo '</form>';
+
+		$confirm_exhausted = esc_js( __( 'Pause all active promotions whose budget cap is exhausted?', 'mp-commerce-promotions' ) );
+		echo '<form method="post" action="" style="margin:0 0 1em;">';
+		wp_nonce_field( self::PAUSE_EXHAUSTED_NONCE_ACTION, self::PAUSE_EXHAUSTED_NONCE_FIELD );
+		echo '<p><button type="submit" name="' . esc_attr( self::PAUSE_EXHAUSTED_SUBMIT ) . '" value="1" class="button button-secondary" onclick="return confirm(\'' . $confirm_exhausted . '\');">';
+		echo esc_html__( 'Deactivate exhausted promotions', 'mp-commerce-promotions' );
+		echo '</button></p>';
+		echo '<p class="description">' . esc_html__( 'Sets active promotions with budget_spent >= budget_amount to paused (audited).', 'mp-commerce-promotions' ) . '</p>';
+		echo '</form>';
 	}
 
 	private function handle_post_archive_hygiene(): void {
@@ -179,6 +194,27 @@ final class DiagnosticsPage {
 			$this->redirect_with_notice(
 				'success',
 				'archive_hygiene_done',
+				array(
+					'promotions' => count( $result['changed'] ),
+					'codes'      => count( $result['skipped'] ),
+					'errors'     => count( $result['errors'] ),
+				)
+			);
+		}
+
+		if ( isset( $_POST[ self::PAUSE_EXHAUSTED_SUBMIT ] ) ) {
+			if ( ! isset( $_POST[ self::PAUSE_EXHAUSTED_NONCE_FIELD ] )
+				|| ! wp_verify_nonce(
+					sanitize_text_field( wp_unslash( (string) $_POST[ self::PAUSE_EXHAUSTED_NONCE_FIELD ] ) ),
+					self::PAUSE_EXHAUSTED_NONCE_ACTION
+				) ) {
+				$this->redirect_with_notice( 'error', 'invalid_nonce' );
+			}
+
+			$result = $this->promotion_service->pause_budget_exhausted_promotions( $actor );
+			$this->redirect_with_notice(
+				'success',
+				'pause_exhausted_done',
 				array(
 					'promotions' => count( $result['changed'] ),
 					'codes'      => count( $result['skipped'] ),
@@ -270,6 +306,14 @@ final class DiagnosticsPage {
 				return sprintf(
 					/* translators: 1: archived count, 2: skipped count, 3: error count */
 					__( 'Archive hygiene: %1$d archived, %2$d skipped, %3$d errors.', 'mp-commerce-promotions' ),
+					$promotions,
+					$codes,
+					$errors
+				);
+			case 'pause_exhausted_done':
+				return sprintf(
+					/* translators: 1: paused count, 2: skipped count, 3: error count */
+					__( 'Budget exhausted maintenance: %1$d paused, %2$d skipped, %3$d errors.', 'mp-commerce-promotions' ),
 					$promotions,
 					$codes,
 					$errors

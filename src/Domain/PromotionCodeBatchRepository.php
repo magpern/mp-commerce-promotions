@@ -30,32 +30,22 @@ final class PromotionCodeBatchRepository {
 		$now = current_time( 'mysql' );
 
 		$data = array(
-			'promotion_id' => $batch->get_promotion_id(),
-			'batch_uuid'   => $batch->get_batch_uuid(),
-			'name'         => $batch->get_name(),
-			'quantity'     => $batch->get_quantity(),
-			'code_prefix'  => $batch->get_code_prefix(),
-			'usage_limit'  => $batch->get_usage_limit(),
-			'expires_at'   => $batch->get_expires_at(),
-			'created_by'   => $batch->get_created_by(),
-			'created_at'   => $batch->get_created_at() ?? $now,
+			'promotion_id'  => $batch->get_promotion_id(),
+			'batch_uuid'    => $batch->get_batch_uuid(),
+			'name'          => $batch->get_name(),
+			'quantity'      => $batch->get_quantity(),
+			'code_prefix'   => $batch->get_code_prefix(),
+			'usage_limit'   => $batch->get_usage_limit(),
+			'expires_at'    => $batch->get_expires_at(),
+			'batch_notes'   => $batch->get_batch_notes(),
+			'exported_at'   => $batch->get_exported_at(),
+			'exported_by'   => $batch->get_exported_by(),
+			'export_count'  => $batch->get_export_count(),
+			'created_by'    => $batch->get_created_by(),
+			'created_at'    => $batch->get_created_at() ?? $now,
 		);
 
-		$usage_limit_format = $data['usage_limit'] === null ? '%s' : '%d';
-		$created_by_format  = $data['created_by'] === null ? '%s' : '%d';
-		$expires_format     = $data['expires_at'] === null ? '%s' : '%s';
-
-		$formats = array(
-			'%d',
-			'%s',
-			'%s',
-			'%d',
-			'%s',
-			$usage_limit_format,
-			$expires_format,
-			$created_by_format,
-			'%s',
-		);
+		$formats = $this->insert_update_formats( $data );
 
 		$inserted = $this->wpdb->insert(
 			$this->code_batches_table(),
@@ -70,6 +60,82 @@ final class PromotionCodeBatchRepository {
 		$new_id = (int) $this->wpdb->insert_id;
 
 		return $new_id > 0 ? $new_id : 0;
+	}
+
+	/**
+	 * Update batch metadata (notes, export fields).
+	 */
+	public function update( PromotionCodeBatch $batch ): bool {
+		$id = $batch->get_id();
+		if ( $id === null || $id <= 0 ) {
+			return false;
+		}
+
+		$data = array(
+			'promotion_id'  => $batch->get_promotion_id(),
+			'batch_uuid'    => $batch->get_batch_uuid(),
+			'name'          => $batch->get_name(),
+			'quantity'      => $batch->get_quantity(),
+			'code_prefix'   => $batch->get_code_prefix(),
+			'usage_limit'   => $batch->get_usage_limit(),
+			'expires_at'    => $batch->get_expires_at(),
+			'batch_notes'   => $batch->get_batch_notes(),
+			'exported_at'   => $batch->get_exported_at(),
+			'exported_by'   => $batch->get_exported_by(),
+			'export_count'  => $batch->get_export_count(),
+			'created_by'    => $batch->get_created_by(),
+			'created_at'    => $batch->get_created_at(),
+		);
+
+		$formats = $this->insert_update_formats( $data );
+
+		$updated = $this->wpdb->update(
+			$this->code_batches_table(),
+			$data,
+			array( 'id' => $id ),
+			$formats,
+			array( '%d' )
+		);
+
+		return false !== $updated;
+	}
+
+	/**
+	 * Record a CSV export for a batch (increments export_count, sets exported_at/by).
+	 */
+	public function record_export( int $batch_id, int $code_count, ?int $exported_by ): bool {
+		if ( $batch_id <= 0 || $code_count < 0 ) {
+			return false;
+		}
+
+		$table = $this->code_batches_table();
+		$now   = current_time( 'mysql' );
+
+		if ( $exported_by !== null && $exported_by <= 0 ) {
+			$exported_by = null;
+		}
+
+		if ( $exported_by === null ) {
+			$sql = "UPDATE {$table}
+				SET export_count = export_count + 1,
+					exported_at = %s,
+					exported_by = NULL
+				WHERE id = %d";
+			$updated = $this->wpdb->query(
+				$this->wpdb->prepare( $sql, $now, $batch_id )
+			);
+		} else {
+			$sql = "UPDATE {$table}
+				SET export_count = export_count + 1,
+					exported_at = %s,
+					exported_by = %d
+				WHERE id = %d";
+			$updated = $this->wpdb->query(
+				$this->wpdb->prepare( $sql, $now, $exported_by, $batch_id )
+			);
+		}
+
+		return false !== $updated && $updated > 0;
 	}
 
 	/**
@@ -134,6 +200,28 @@ final class PromotionCodeBatchRepository {
 
 	private function code_batches_table(): string {
 		return TableName::assert_valid( Schema::code_batches_table( $this->wpdb ) );
+	}
+
+	/**
+	 * @param array<string, mixed> $data
+	 * @return list<string>
+	 */
+	private function insert_update_formats( array $data ): array {
+		return array(
+			'%d',
+			'%s',
+			'%s',
+			'%d',
+			'%s',
+			$data['usage_limit'] === null ? '%s' : '%d',
+			$data['expires_at'] === null ? '%s' : '%s',
+			$data['batch_notes'] === null ? '%s' : '%s',
+			$data['exported_at'] === null ? '%s' : '%s',
+			$data['exported_by'] === null ? '%s' : '%d',
+			'%d',
+			$data['created_by'] === null ? '%s' : '%d',
+			'%s',
+		);
 	}
 
 	/**

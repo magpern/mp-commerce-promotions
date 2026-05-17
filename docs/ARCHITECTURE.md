@@ -363,6 +363,18 @@ Promotion rows store optional **`campaign_label`** (varchar 191), **`internal_no
 
 **Archive hygiene** (Diagnostics tab): `PromotionService::archive_expired_active_promotions()` archives active promotions with `ends_at` in the past; `archive_old_drafts( $days )` archives drafts older than N days by `created_at`. Uses `change_status()` → `archived` with audit; no hard deletes. See [manual-campaign-operations-test.md](manual-campaign-operations-test.md).
 
+### Economics and scheduling (schema 1.10.0)
+
+**Promotion budgets** — optional `budget_amount`, `budget_currency`, and running `budget_spent` on `{prefix}mp_cp_promotions`. Checkout recording increments `budget_spent` via `PromotionBudgetLedger` + `PromotionRepository::adjust_budget_spent()`; reversal subtracts the same discount amount. `PromotionRestrictionEvaluator` blocks exhausted caps with `promotion_budget_exhausted`. Diagnostics can pause exhausted actives via `PromotionService::pause_budget_exhausted_promotions()`.
+
+**Lifecycle** — `PromotionLifecycle::primary_phase()` derives admin badges (Scheduled, Live, Ending soon, Exhausted, etc.). List filter `lifecycle_phase` maps to SQL where clauses on `PromotionRepository::find_filtered()` / `count_filtered()`.
+
+**Schedule analysis** — `PromotionScheduleAnalyzer` scans draft/paused/active peers for overlapping windows, exclusive overlap, high discount overlap, and shared campaign labels. Surfaced on the edit screen (schedule warnings) and folded into `PromotionRuleValidator::validate_with_catalog()`.
+
+**Code batch export metadata** — `{prefix}mp_cp_code_batches` stores `batch_notes`, `exported_at`, `exported_by`, `export_count`. CSV download after generation calls `PromotionCodeBatchRepository::record_export()` and audits `promotion_code.batch_exported`.
+
+**Reports** — `PromotionReports` resolves `date_preset` (`today`, `7d`, `30d`, `this_month`) to `date_from`/`date_to`, adds economics summary fields, joins promotion budget columns in redemption CSV export, and drives economics tables (upcoming, ending soon, budget exhausted). See [manual-economics-and-scheduling-test.md](manual-economics-and-scheduling-test.md). Smoke: `scripts/economics-scheduling-smoke.php`.
+
 ---
 
 ## WooCommerce Integration

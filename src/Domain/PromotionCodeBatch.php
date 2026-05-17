@@ -31,6 +31,14 @@ final class PromotionCodeBatch {
 
 	private ?string $expires_at;
 
+	private ?string $batch_notes;
+
+	private ?string $exported_at;
+
+	private ?int $exported_by;
+
+	private int $export_count;
+
 	private ?int $created_by;
 
 	private ?string $created_at;
@@ -44,6 +52,10 @@ final class PromotionCodeBatch {
 		?string $code_prefix,
 		?int $usage_limit,
 		?string $expires_at,
+		?string $batch_notes,
+		?string $exported_at,
+		?int $exported_by,
+		int $export_count,
 		?int $created_by,
 		?string $created_at
 	) {
@@ -86,6 +98,10 @@ final class PromotionCodeBatch {
 		$this->code_prefix  = $code_prefix;
 		$this->usage_limit  = $usage_limit;
 		$this->expires_at   = $expires_at;
+		$this->batch_notes   = self::normalize_batch_notes( $batch_notes );
+		$this->exported_at   = $exported_at;
+		$this->exported_by   = $exported_by !== null && $exported_by > 0 ? $exported_by : null;
+		$this->export_count  = max( 0, $export_count );
 		$this->created_by   = $created_by;
 		$this->created_at   = $created_at;
 	}
@@ -121,6 +137,10 @@ final class PromotionCodeBatch {
 			$code_prefix,
 			$usage_limit,
 			self::optional_string( $data['expires_at'] ?? null ),
+			self::normalize_batch_notes( self::optional_string( $data['batch_notes'] ?? null ) ),
+			self::optional_string( $data['exported_at'] ?? null ),
+			isset( $data['exported_by'] ) && $data['exported_by'] !== '' && $data['exported_by'] !== null ? (int) $data['exported_by'] : null,
+			(int) ( $data['export_count'] ?? 0 ),
 			$created_by,
 			self::optional_string( $data['created_at'] ?? null )
 		);
@@ -140,6 +160,10 @@ final class PromotionCodeBatch {
 			$this->code_prefix,
 			$this->usage_limit,
 			$this->expires_at,
+			$this->batch_notes,
+			$this->exported_at,
+			$this->exported_by,
+			$this->export_count,
 			$this->created_by,
 			$this->created_at
 		);
@@ -177,6 +201,22 @@ final class PromotionCodeBatch {
 		return $this->expires_at;
 	}
 
+	public function get_batch_notes(): ?string {
+		return $this->batch_notes;
+	}
+
+	public function get_exported_at(): ?string {
+		return $this->exported_at;
+	}
+
+	public function get_exported_by(): ?int {
+		return $this->exported_by;
+	}
+
+	public function get_export_count(): int {
+		return $this->export_count;
+	}
+
 	public function get_created_by(): ?int {
 		return $this->created_by;
 	}
@@ -194,5 +234,18 @@ final class PromotionCodeBatch {
 		}
 
 		return (string) $value;
+	}
+
+	public static function normalize_batch_notes( ?string $notes ): ?string {
+		if ( $notes === null ) {
+			return null;
+		}
+
+		$notes = sanitize_textarea_field( $notes );
+		if ( $notes === '' ) {
+			return null;
+		}
+
+		return $notes;
 	}
 }

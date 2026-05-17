@@ -294,4 +294,66 @@ final class PromotionService {
 
 		return $result;
 	}
+
+	/**
+	 * Pause active promotions whose promotion budget is exhausted.
+	 *
+	 * @return array{changed: list<array{id: int, name: string}>, skipped: list<array{id: int, reason: string}>, errors: list<array{id: int, message: string}>}
+	 */
+	public function pause_budget_exhausted_promotions( ?int $actor_user_id = null ): array {
+		$result = array(
+			'changed' => array(),
+			'skipped' => array(),
+			'errors'  => array(),
+		);
+
+		$candidates = $this->promotions->find_budget_exhausted_active( 500 );
+		foreach ( $candidates as $promotion ) {
+			$id = $promotion->get_id();
+			if ( $id === null || $id <= 0 ) {
+				continue;
+			}
+
+			if ( ! $promotion->is_budget_exhausted() ) {
+				$result['skipped'][] = array(
+					'id'     => $id,
+					'reason' => 'not_exhausted',
+				);
+				continue;
+			}
+
+			if ( $promotion->get_status() !== PromotionStatus::ACTIVE ) {
+				$result['skipped'][] = array(
+					'id'     => $id,
+					'reason' => 'not_active',
+				);
+				continue;
+			}
+
+			try {
+				$this->change_status( $promotion, PromotionStatus::PAUSED, $actor_user_id );
+				$this->audit->log(
+					'promotion.auto_paused_budget_exhausted',
+					$id,
+					array(
+						'promotion_id'  => $id,
+						'budget_amount' => $promotion->get_budget_amount(),
+						'budget_spent'  => $promotion->get_budget_spent(),
+					),
+					$actor_user_id
+				);
+				$result['changed'][] = array(
+					'id'   => $id,
+					'name' => $promotion->get_name(),
+				);
+			} catch ( RuntimeException $e ) {
+				$result['errors'][] = array(
+					'id'      => $id,
+					'message' => $e->getMessage(),
+				);
+			}
+		}
+
+		return $result;
+	}
 }

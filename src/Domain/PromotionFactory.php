@@ -41,6 +41,9 @@ final class PromotionFactory {
 			null,
 			null,
 			null,
+			null,
+			0.0,
+			null,
 			$created_by,
 			null,
 			null
@@ -77,6 +80,9 @@ final class PromotionFactory {
 			$source->get_campaign_label(),
 			$source->get_internal_notes(),
 			$source->get_admin_color(),
+			$source->get_budget_amount(),
+			0.0,
+			$source->get_budget_currency(),
 			$created_by,
 			null,
 			null

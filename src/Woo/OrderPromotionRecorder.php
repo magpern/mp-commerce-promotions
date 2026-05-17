@@ -19,6 +19,7 @@ use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Service\AuditLogger;
+use MP\CommercePromotions\Service\PromotionBudgetLedger;
 use Throwable;
 
 final class OrderPromotionRecorder {
@@ -35,22 +36,27 @@ final class OrderPromotionRecorder {
 
 	private AuditLogger $audit;
 
+	private PromotionBudgetLedger $budget_ledger;
+
 	/**
 	 * @param RedemptionRepository    $redemptions     Redemption persistence.
 	 * @param PromotionRepository     $promotions      Promotion persistence.
 	 * @param PromotionCodeRepository $promotion_codes Code persistence.
 	 * @param AuditLogger             $audit           Audit trail writer.
+	 * @param PromotionBudgetLedger|null $budget_ledger Budget spent adjustments.
 	 */
 	public function __construct(
 		RedemptionRepository $redemptions,
 		PromotionRepository $promotions,
 		PromotionCodeRepository $promotion_codes,
-		AuditLogger $audit
+		AuditLogger $audit,
+		?PromotionBudgetLedger $budget_ledger = null
 	) {
 		$this->redemptions     = $redemptions;
 		$this->promotions      = $promotions;
 		$this->promotion_codes = $promotion_codes;
 		$this->audit           = $audit;
+		$this->budget_ledger   = $budget_ledger ?? new PromotionBudgetLedger( $promotions );
 	}
 
 	/**
@@ -339,6 +345,7 @@ final class OrderPromotionRecorder {
 				$this->promotions->update(
 					$promotion->with_usage_count( $promotion->get_usage_count() + 1 )
 				);
+				$this->budget_ledger->record_redemption_discount( $promotion, $discount );
 			}
 
 			if ( $code_meta['promotion_code_id'] > 0 ) {
@@ -416,6 +423,7 @@ final class OrderPromotionRecorder {
 			$this->promotions->update(
 				$promotion->with_usage_count( $promotion->get_usage_count() + 1 )
 			);
+			$this->budget_ledger->record_redemption_discount( $promotion, $redemption->get_discount_amount() );
 		}
 
 		$code_id = $this->code_id_for_promotion_from_applied_meta( $order, $promotion_id );
@@ -452,6 +460,7 @@ final class OrderPromotionRecorder {
 		if ( $promotion !== null ) {
 			$new_usage = max( 0, $promotion->get_usage_count() - 1 );
 			$this->promotions->update( $promotion->with_usage_count( $new_usage ) );
+			$this->budget_ledger->reverse_redemption_discount( $promotion, $redemption->get_discount_amount() );
 		}
 
 		$promotion_code_id = (int) $order->get_meta( self::META_PROMOTION_CODE_ID, true );

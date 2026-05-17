@@ -13,6 +13,7 @@ use InvalidArgumentException;
 use MP\CommercePromotions\Infrastructure\Database\DbQuery;
 use MP\CommercePromotions\Infrastructure\Database\Schema;
 use MP\CommercePromotions\Infrastructure\Database\TableName;
+use MP\CommercePromotions\Service\PromotionLifecycle;
 use wpdb;
 
 final class PromotionRepository {
@@ -136,6 +137,9 @@ final class PromotionRepository {
 			'campaign_label'         => $promotion->get_campaign_label(),
 			'internal_notes'         => $promotion->get_internal_notes(),
 			'admin_color'            => $promotion->get_admin_color(),
+			'budget_amount'          => $promotion->get_budget_amount(),
+			'budget_spent'           => $promotion->get_budget_spent(),
+			'budget_currency'        => $promotion->get_budget_currency(),
 			'created_by'             => $promotion->get_created_by(),
 			'created_at'             => $promotion->get_created_at() ?? $now,
 			'updated_at'             => $promotion->get_updated_at() ?? $now,
@@ -163,6 +167,9 @@ final class PromotionRepository {
 			'%s',
 			'%s',
 			'%s',
+			'%s',
+			'%f',
+			'%f',
 			'%s',
 			'%d',
 			'%s',
@@ -218,6 +225,9 @@ final class PromotionRepository {
 			'campaign_label'         => $promotion->get_campaign_label(),
 			'internal_notes'         => $promotion->get_internal_notes(),
 			'admin_color'            => $promotion->get_admin_color(),
+			'budget_amount'          => $promotion->get_budget_amount(),
+			'budget_spent'           => $promotion->get_budget_spent(),
+			'budget_currency'        => $promotion->get_budget_currency(),
 			'created_by'             => $promotion->get_created_by(),
 			'updated_at'             => $now,
 		);
@@ -244,6 +254,9 @@ final class PromotionRepository {
 			'%s',
 			'%s',
 			'%s',
+			'%s',
+			'%f',
+			'%f',
 			'%s',
 			'%d',
 			'%s',
@@ -443,6 +456,113 @@ final class PromotionRepository {
 	}
 
 	/**
+	 * Atomically adjust budget_spent (positive to add, negative to subtract).
+	 */
+	public function adjust_budget_spent( int $id, float $delta ): bool {
+		if ( $id <= 0 || $delta === 0.0 ) {
+			return false;
+		}
+
+		$table = $this->promotions_table();
+		$sql   = "UPDATE {$table}
+			SET budget_spent = GREATEST(0, budget_spent + %f), updated_at = %s
+			WHERE id = %d AND budget_amount IS NOT NULL";
+
+		$updated = $this->wpdb->query(
+			$this->wpdb->prepare(
+				$sql,
+				$delta,
+				current_time( 'mysql' ),
+				$id
+			)
+		);
+
+		return false !== $updated && $updated > 0;
+	}
+
+	/**
+	 * Active promotions with budget cap exhausted (budget_spent >= budget_amount).
+	 *
+	 * @return list<Promotion>
+	 */
+	/**
+	 * Sum budget_spent across promotions that have a budget cap.
+	 */
+	public function sum_budget_spent_for_budgeted(): float {
+		$table = $this->promotions_table();
+		$total = DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COALESCE(SUM(budget_spent), 0) FROM {$table}
+				WHERE budget_amount IS NOT NULL AND budget_amount > 0"
+		);
+
+		if ( ! is_numeric( $total ) ) {
+			return 0.0;
+		}
+
+		return (float) $total;
+	}
+
+	/**
+	 * Count active promotions with a budget cap configured.
+	 */
+	public function count_active_budgeted(): int {
+		$table = $this->promotions_table();
+		$count = DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COUNT(*) FROM {$table}
+				WHERE status = %s
+				AND budget_amount IS NOT NULL
+				AND budget_amount > 0",
+			array( PromotionStatus::ACTIVE )
+		);
+
+		return is_numeric( $count ) ? (int) $count : 0;
+	}
+
+	/**
+	 * Count active promotions whose budget cap is exhausted.
+	 */
+	public function count_budget_exhausted_active(): int {
+		$table = $this->promotions_table();
+		$count = DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COUNT(*) FROM {$table}
+				WHERE status = %s
+				AND budget_amount IS NOT NULL
+				AND budget_amount > 0
+				AND budget_spent >= budget_amount",
+			array( PromotionStatus::ACTIVE )
+		);
+
+		return is_numeric( $count ) ? (int) $count : 0;
+	}
+
+	public function find_budget_exhausted_active( int $limit = 500 ): array {
+		$limit = max( 1, min( 500, $limit ) );
+		$table = $this->promotions_table();
+
+		$sql = "SELECT * FROM {$table}
+			WHERE status = %s
+			AND budget_amount IS NOT NULL
+			AND budget_amount > 0
+			AND budget_spent >= budget_amount
+			ORDER BY id ASC
+			LIMIT %d";
+
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			$sql,
+			array(
+				PromotionStatus::ACTIVE,
+				$limit,
+			)
+		);
+
+		return $this->rows_to_promotions( $rows );
+	}
+
+	/**
 	 * Validated promotions table name from Schema.
 	 */
 	private function promotions_table(): string {
@@ -487,10 +607,93 @@ final class PromotionRepository {
 			$params[]  = $like;
 		}
 
+		$lifecycle_phase = isset( $args['lifecycle_phase'] ) ? trim( (string) $args['lifecycle_phase'] ) : '';
+		if ( $lifecycle_phase !== '' ) {
+			$this->append_lifecycle_phase_where( $lifecycle_phase, $clauses, $params );
+		}
+
 		return array(
 			'where'  => implode( ' AND ', $clauses ),
 			'params' => $params,
 		);
+	}
+
+	/**
+	 * @param list<string>       $clauses
+	 * @param list<mixed>        $params
+	 */
+	private function append_lifecycle_phase_where( string $phase, array &$clauses, array &$params ): void {
+		$valid = array(
+			PromotionLifecycle::PHASE_UPCOMING,
+			PromotionLifecycle::PHASE_LIVE,
+			PromotionLifecycle::PHASE_ENDING_SOON,
+			PromotionLifecycle::PHASE_EXPIRED_ACTIVE,
+			PromotionLifecycle::PHASE_BUDGET_EXHAUSTED,
+			PromotionLifecycle::PHASE_ARCHIVED,
+		);
+
+		if ( ! in_array( $phase, $valid, true ) ) {
+			throw new InvalidArgumentException( 'Invalid lifecycle_phase filter.' );
+		}
+
+		$now = current_time( 'mysql' );
+		$ending_cutoff = gmdate(
+			'Y-m-d H:i:s',
+			strtotime( '+' . PromotionLifecycle::ENDING_SOON_DAYS . ' days', strtotime( $now ) )
+		);
+
+		if ( $phase === PromotionLifecycle::PHASE_ARCHIVED ) {
+			$clauses[] = 'status = %s';
+			$params[]  = PromotionStatus::ARCHIVED;
+			return;
+		}
+
+		if ( $phase === PromotionLifecycle::PHASE_BUDGET_EXHAUSTED ) {
+			$clauses[] = 'status = %s';
+			$params[]  = PromotionStatus::ACTIVE;
+			$clauses[] = 'budget_amount IS NOT NULL AND budget_amount > 0 AND budget_spent >= budget_amount';
+			return;
+		}
+
+		if ( $phase === PromotionLifecycle::PHASE_EXPIRED_ACTIVE ) {
+			$clauses[] = 'status = %s';
+			$params[]  = PromotionStatus::ACTIVE;
+			$clauses[] = 'ends_at IS NOT NULL AND ends_at < %s';
+			$params[]  = $now;
+			return;
+		}
+
+		if ( $phase === PromotionLifecycle::PHASE_UPCOMING ) {
+			$clauses[] = 'status IN (%s, %s, %s)';
+			$params[]  = PromotionStatus::ACTIVE;
+			$params[]  = PromotionStatus::PAUSED;
+			$params[]  = PromotionStatus::DRAFT;
+			$clauses[] = 'starts_at IS NOT NULL AND starts_at > %s';
+			$params[]  = $now;
+			return;
+		}
+
+		if ( $phase === PromotionLifecycle::PHASE_ENDING_SOON ) {
+			$clauses[] = 'status = %s';
+			$params[]  = PromotionStatus::ACTIVE;
+			$clauses[] = 'ends_at IS NOT NULL AND ends_at >= %s AND ends_at <= %s';
+			$params[]  = $now;
+			$params[]  = $ending_cutoff;
+			$clauses[] = 'NOT ( budget_amount IS NOT NULL AND budget_amount > 0 AND budget_spent >= budget_amount )';
+			return;
+		}
+
+		if ( $phase === PromotionLifecycle::PHASE_LIVE ) {
+			$clauses[] = 'status = %s';
+			$params[]  = PromotionStatus::ACTIVE;
+			$clauses[] = '( starts_at IS NULL OR starts_at <= %s )';
+			$params[]  = $now;
+			$clauses[] = '( ends_at IS NULL OR ends_at >= %s )';
+			$params[]  = $now;
+			$clauses[] = 'NOT ( budget_amount IS NOT NULL AND budget_amount > 0 AND budget_spent >= budget_amount )';
+			$clauses[] = '( ends_at IS NULL OR ends_at > %s )';
+			$params[]  = $ending_cutoff;
+		}
 	}
 
 	/**

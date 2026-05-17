@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.9.0';
+	public const SCHEMA_VERSION = '1.10.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -71,6 +71,9 @@ excluded_category_ids longtext NULL,
 campaign_label varchar(191) NULL,
 internal_notes longtext NULL,
 admin_color varchar(20) NULL,
+budget_amount decimal(18,2) NULL,
+budget_spent decimal(18,2) NOT NULL default 0,
+budget_currency varchar(10) NULL,
 created_by bigint(20) unsigned NULL,
 created_at datetime NOT NULL default CURRENT_TIMESTAMP,
 updated_at datetime NOT NULL default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -164,6 +167,10 @@ quantity int(10) unsigned NOT NULL,
 code_prefix varchar(32) NULL,
 usage_limit int(10) unsigned NULL,
 expires_at datetime NULL,
+batch_notes longtext NULL,
+exported_at datetime NULL,
+exported_by bigint(20) unsigned NULL,
+export_count int(10) unsigned NOT NULL default 0,
 created_by bigint(20) unsigned NULL,
 created_at datetime NOT NULL default CURRENT_TIMESTAMP,
 PRIMARY KEY  (id),

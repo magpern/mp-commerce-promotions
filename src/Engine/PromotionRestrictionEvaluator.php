@@ -37,6 +37,11 @@ final class PromotionRestrictionEvaluator {
 			return $usage_trace;
 		}
 
+		$budget_trace = $this->evaluate_budget_cap( $promotion );
+		if ( $budget_trace !== null ) {
+			return $budget_trace;
+		}
+
 		return $this->evaluate_customer_usage_limit( $promotion, $context );
 	}
 
@@ -104,6 +109,27 @@ final class PromotionRestrictionEvaluator {
 			array(
 				'usage_count' => $usage_count,
 				'usage_limit' => $limit,
+			)
+		);
+	}
+
+	private function evaluate_budget_cap( Promotion $promotion ): ?ConditionTrace {
+		if ( ! $promotion->is_budget_exhausted() ) {
+			return null;
+		}
+
+		return new ConditionTrace(
+			self::TRACE_TYPE,
+			false,
+			'Promotion budget has been exhausted.',
+			ConditionTrace::REASON_PROMOTION_BUDGET_EXHAUSTED,
+			array(
+				'budget_amount' => $promotion->get_budget_amount(),
+			),
+			array(
+				'budget_spent'    => $promotion->get_budget_spent(),
+				'budget_amount'   => $promotion->get_budget_amount(),
+				'budget_currency' => $promotion->get_budget_currency(),
 			)
 		);
 	}

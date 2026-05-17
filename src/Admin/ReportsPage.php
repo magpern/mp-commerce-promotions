@@ -9,8 +9,10 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Admin;
 
+use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\Redemption;
+use MP\CommercePromotions\Service\PromotionLifecycle;
 use MP\CommercePromotions\Service\PromotionReports;
 
 final class ReportsPage {
@@ -53,6 +55,7 @@ final class ReportsPage {
 
 		$this->render_filter_form( $filters );
 		$this->render_summary_cards( $summary );
+		$this->render_economics_sections( $filters );
 		$this->render_top_promotions_table( $summary['top_promotions'] );
 		$this->render_export_form( $filters );
 
@@ -99,11 +102,13 @@ final class ReportsPage {
 
 		return PromotionReports::sanitize_filters(
 			array(
-				'date_from'    => isset( $source['date_from'] ) ? wp_unslash( (string) $source['date_from'] ) : null,
-				'date_to'      => isset( $source['date_to'] ) ? wp_unslash( (string) $source['date_to'] ) : null,
-				'promotion_id' => isset( $source['promotion_id'] ) ? wp_unslash( (string) $source['promotion_id'] ) : null,
-				'status'         => isset( $source['status'] ) ? wp_unslash( (string) $source['status'] ) : null,
-				'campaign_label' => isset( $source['campaign_label'] ) ? wp_unslash( (string) $source['campaign_label'] ) : null,
+				'date_from'        => isset( $source['date_from'] ) ? wp_unslash( (string) $source['date_from'] ) : null,
+				'date_to'          => isset( $source['date_to'] ) ? wp_unslash( (string) $source['date_to'] ) : null,
+				'date_preset'      => isset( $source['date_preset'] ) ? wp_unslash( (string) $source['date_preset'] ) : null,
+				'promotion_id'     => isset( $source['promotion_id'] ) ? wp_unslash( (string) $source['promotion_id'] ) : null,
+				'status'           => isset( $source['status'] ) ? wp_unslash( (string) $source['status'] ) : null,
+				'campaign_label'   => isset( $source['campaign_label'] ) ? wp_unslash( (string) $source['campaign_label'] ) : null,
+				'budget_exhausted' => isset( $source['budget_exhausted'] ) ? wp_unslash( (string) $source['budget_exhausted'] ) : null,
 			)
 		);
 	}
@@ -124,6 +129,21 @@ final class ReportsPage {
 		echo '<input type="hidden" name="tab" value="' . esc_attr( AdminNavigation::TAB_REPORTS ) . '" />';
 
 		echo '<table class="form-table" role="presentation"><tbody>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_reports_date_preset">' . esc_html__( 'Date preset', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select id="mp_cp_reports_date_preset" name="date_preset">';
+		echo '<option value="">' . esc_html__( 'Custom range', 'mp-commerce-promotions' ) . '</option>';
+		$presets = array(
+			PromotionReports::DATE_PRESET_TODAY      => __( 'Today', 'mp-commerce-promotions' ),
+			PromotionReports::DATE_PRESET_7D         => __( 'Last 7 days', 'mp-commerce-promotions' ),
+			PromotionReports::DATE_PRESET_30D        => __( 'Last 30 days', 'mp-commerce-promotions' ),
+			PromotionReports::DATE_PRESET_THIS_MONTH => __( 'This month', 'mp-commerce-promotions' ),
+		);
+		foreach ( $presets as $key => $label ) {
+			echo '<option value="' . esc_attr( $key ) . '"' . selected( $filters['date_preset'] ?? '', $key, false ) . '>' . esc_html( $label ) . '</option>';
+		}
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Presets override manual date fields when selected.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_reports_date_from">' . esc_html__( 'Date from', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="date" id="mp_cp_reports_date_from" name="date_from" value="' . esc_attr( $filters['date_from'] ?? '' ) . '" />';
@@ -168,6 +188,14 @@ final class ReportsPage {
 		echo '>' . esc_html__( 'Reversed', 'mp-commerce-promotions' ) . '</option>';
 		echo '</select></td></tr>';
 
+		echo '<tr><th scope="row"><label for="mp_cp_reports_budget_exhausted">' . esc_html__( 'Budget exhausted', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select id="mp_cp_reports_budget_exhausted" name="budget_exhausted">';
+		echo '<option value="">' . esc_html__( 'All promotions', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="yes"' . selected( $filters['budget_exhausted'] ?? '', 'yes', false ) . '>' . esc_html__( 'Exhausted only', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="no"' . selected( $filters['budget_exhausted'] ?? '', 'no', false ) . '>' . esc_html__( 'Not exhausted', 'mp-commerce-promotions' ) . '</option>';
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Filters promotion economics tables and top promotions by budget state.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
 		echo '</tbody></table>';
 
 		submit_button( __( 'Apply filters', 'mp-commerce-promotions' ), 'secondary', 'mp_cp_reports_filter', false );
@@ -196,6 +224,11 @@ final class ReportsPage {
 			__( 'Recorded discount total', 'mp-commerce-promotions' ) => function_exists( 'wc_format_localized_price' )
 				? wc_format_localized_price( $summary['recorded_discount_total'] )
 				: number_format( $summary['recorded_discount_total'], 2, '.', '' ),
+			__( 'Total budget spent (budgeted promos)', 'mp-commerce-promotions' ) => function_exists( 'wc_format_localized_price' )
+				? wc_format_localized_price( $summary['total_budget_spent'] )
+				: number_format( $summary['total_budget_spent'], 2, '.', '' ),
+			__( 'Active promotions with budget cap', 'mp-commerce-promotions' ) => (string) $summary['active_budgeted_promotions'],
+			__( 'Active promotions with exhausted budget', 'mp-commerce-promotions' ) => (string) $summary['exhausted_promotions'],
 		);
 
 		foreach ( $rows as $label => $value ) {
@@ -229,6 +262,7 @@ final class ReportsPage {
 		echo '<th scope="col">' . esc_html__( 'Recorded', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Reversed', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Recorded discount', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Budget utilization', 'mp-commerce-promotions' ) . '</th>';
 		echo '</tr></thead><tbody>';
 
 		foreach ( $top as $row ) {
@@ -244,10 +278,87 @@ final class ReportsPage {
 			echo '<td>' . esc_html( (string) $row['recorded_count'] ) . '</td>';
 			echo '<td>' . esc_html( (string) $row['reversed_count'] ) . '</td>';
 			echo '<td>' . esc_html( $discount ) . '</td>';
+			echo '<td>' . esc_html( $this->format_budget_utilization_cell( $row ) ) . '</td>';
 			echo '</tr>';
 		}
 
 		echo '</tbody></table>';
+	}
+
+	/**
+	 * @param array<string, mixed> $filters
+	 */
+	private function render_economics_sections( array $filters ): void {
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Campaign economics', 'mp-commerce-promotions' ) . '</h2>';
+
+		$this->render_economics_promotion_table(
+			__( 'Upcoming (scheduled)', 'mp-commerce-promotions' ),
+			$this->reports->promotions_by_lifecycle_phase( PromotionLifecycle::PHASE_UPCOMING, $filters, 15 )
+		);
+		$this->render_economics_promotion_table(
+			__( 'Ending soon', 'mp-commerce-promotions' ),
+			$this->reports->promotions_by_lifecycle_phase( PromotionLifecycle::PHASE_ENDING_SOON, $filters, 15 )
+		);
+		$this->render_economics_promotion_table(
+			__( 'Budget exhausted (active)', 'mp-commerce-promotions' ),
+			$this->reports->promotions_by_lifecycle_phase( PromotionLifecycle::PHASE_BUDGET_EXHAUSTED, $filters, 15 )
+		);
+	}
+
+	/**
+	 * @param list<Promotion> $promotions
+	 */
+	private function render_economics_promotion_table( string $title, array $promotions ): void {
+		echo '<h3 style="margin-top:1em;">' . esc_html( $title ) . '</h3>';
+		if ( $promotions === array() ) {
+			echo '<p class="description">' . esc_html__( 'None match the current filters.', 'mp-commerce-promotions' ) . '</p>';
+			return;
+		}
+
+		echo '<table class="widefat striped" style="max-width:100%;"><thead><tr>';
+		echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Name', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Campaign', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Budget', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Utilization', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Ends', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $promotions as $promotion ) {
+			if ( ! $promotion instanceof Promotion ) {
+				continue;
+			}
+			$id = $promotion->get_id();
+			echo '<tr>';
+			echo '<td>' . esc_html( $id !== null ? (string) $id : '' ) . '</td>';
+			echo '<td>' . esc_html( $promotion->get_name() ) . '</td>';
+			$label = $promotion->get_campaign_label();
+			echo '<td>' . esc_html( $label !== null && $label !== '' ? $label : '—' ) . '</td>';
+			if ( $promotion->has_budget_cap() ) {
+				echo '<td>' . esc_html(
+					number_format( $promotion->get_budget_spent(), 2, '.', '' ) . ' / ' . number_format( (float) $promotion->get_budget_amount(), 2, '.', '' )
+				) . '</td>';
+				$pct = $promotion->get_budget_utilization_percent();
+				echo '<td>' . esc_html( $pct !== null ? number_format( $pct, 1 ) . '%' : '—' ) . '</td>';
+			} else {
+				echo '<td>—</td><td>—</td>';
+			}
+			echo '<td>' . esc_html( $promotion->get_ends_at() ?? '—' ) . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
+	}
+
+	/**
+	 * @param array<string, mixed> $row
+	 */
+	private function format_budget_utilization_cell( array $row ): string {
+		if ( ! isset( $row['budget_utilization_percent'] ) || $row['budget_utilization_percent'] === null ) {
+			return '—';
+		}
+
+		return number_format( (float) $row['budget_utilization_percent'], 1 ) . '%';
 	}
 
 	/**
@@ -277,6 +388,12 @@ final class ReportsPage {
 		}
 		if ( ! empty( $filters['campaign_label'] ) ) {
 			echo '<input type="hidden" name="campaign_label" value="' . esc_attr( (string) $filters['campaign_label'] ) . '" />';
+		}
+		if ( ! empty( $filters['date_preset'] ) ) {
+			echo '<input type="hidden" name="date_preset" value="' . esc_attr( (string) $filters['date_preset'] ) . '" />';
+		}
+		if ( ! empty( $filters['budget_exhausted'] ) ) {
+			echo '<input type="hidden" name="budget_exhausted" value="' . esc_attr( (string) $filters['budget_exhausted'] ) . '" />';
 		}
 
 		echo '<p class="description">';

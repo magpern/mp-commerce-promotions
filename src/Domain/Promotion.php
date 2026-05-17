@@ -62,6 +62,12 @@ final class Promotion {
 
 	private ?string $admin_color;
 
+	private ?float $budget_amount;
+
+	private float $budget_spent;
+
+	private ?string $budget_currency;
+
 	private ?int $created_by;
 
 	private ?string $created_at;
@@ -92,6 +98,9 @@ final class Promotion {
 		?string $campaign_label,
 		?string $internal_notes,
 		?string $admin_color,
+		?float $budget_amount,
+		float $budget_spent,
+		?string $budget_currency,
 		?int $created_by,
 		?string $created_at,
 		?string $updated_at
@@ -114,6 +123,9 @@ final class Promotion {
 		if ( $usage_count < 0 ) {
 			throw new InvalidArgumentException( 'Promotion usage_count must be >= 0.' );
 		}
+		if ( $budget_spent < 0 ) {
+			throw new InvalidArgumentException( 'Promotion budget_spent must be >= 0.' );
+		}
 		if ( $usage_limit !== null && $usage_limit < 1 ) {
 			throw new InvalidArgumentException( 'Promotion usage_limit must be null or >= 1.' );
 		}
@@ -134,6 +146,9 @@ final class Promotion {
 		$campaign_label         = self::normalize_campaign_label( $campaign_label );
 		$internal_notes         = self::normalize_internal_notes( $internal_notes );
 		$admin_color            = self::normalize_admin_color( $admin_color );
+		$budget_amount          = self::normalize_budget_amount( $budget_amount );
+		$budget_spent           = self::normalize_budget_spent( $budget_spent );
+		$budget_currency        = self::normalize_budget_currency( $budget_currency );
 
 		$this->id           = $id;
 		$this->uuid         = $uuid;
@@ -158,6 +173,9 @@ final class Promotion {
 		$this->campaign_label         = $campaign_label;
 		$this->internal_notes         = $internal_notes;
 		$this->admin_color            = $admin_color;
+		$this->budget_amount          = $budget_amount;
+		$this->budget_spent           = $budget_spent;
+		$this->budget_currency        = $budget_currency;
 		$this->created_by             = $created_by;
 		$this->created_at   = $created_at;
 		$this->updated_at   = $updated_at;
@@ -233,6 +251,9 @@ final class Promotion {
 			self::normalize_campaign_label( self::optional_string( $data['campaign_label'] ?? null ) ),
 			self::normalize_internal_notes( self::optional_string( $data['internal_notes'] ?? null ) ),
 			self::normalize_admin_color( self::optional_string( $data['admin_color'] ?? null ) ),
+			self::normalize_budget_amount( self::optional_float( $data['budget_amount'] ?? null ) ),
+			self::normalize_budget_spent( isset( $data['budget_spent'] ) ? (float) $data['budget_spent'] : 0.0 ),
+			self::normalize_budget_currency( self::optional_string( $data['budget_currency'] ?? null ) ),
 			$created_by,
 			self::optional_string( $data['created_at'] ?? null ),
 			self::optional_string( $data['updated_at'] ?? null )
@@ -267,6 +288,9 @@ final class Promotion {
 			'campaign_label'         => $this->campaign_label,
 			'internal_notes'         => $this->internal_notes,
 			'admin_color'            => $this->admin_color,
+			'budget_amount'          => $this->budget_amount,
+			'budget_spent'           => $this->budget_spent,
+			'budget_currency'        => $this->budget_currency,
 			'created_by'             => $this->created_by,
 			'created_at'   => $this->created_at,
 			'updated_at'   => $this->updated_at,
@@ -383,6 +407,45 @@ final class Promotion {
 		return $this->admin_color;
 	}
 
+	public function get_budget_amount(): ?float {
+		return $this->budget_amount;
+	}
+
+	public function get_budget_spent(): float {
+		return $this->budget_spent;
+	}
+
+	public function get_budget_currency(): ?string {
+		return $this->budget_currency;
+	}
+
+	public function has_budget_cap(): bool {
+		return $this->budget_amount !== null && $this->budget_amount > 0;
+	}
+
+	public function is_budget_exhausted(): bool {
+		if ( ! $this->has_budget_cap() ) {
+			return false;
+		}
+
+		return $this->budget_spent >= (float) $this->budget_amount;
+	}
+
+	public function get_budget_utilization_percent(): ?float {
+		if ( ! $this->has_budget_cap() ) {
+			return null;
+		}
+
+		$amount = (float) $this->budget_amount;
+		if ( $amount <= 0 ) {
+			return null;
+		}
+
+		$pct = ( $this->budget_spent / $amount ) * 100;
+
+		return min( 100.0, max( 0.0, round( $pct, 2 ) ) );
+	}
+
 	public function get_created_by(): ?int {
 		return $this->created_by;
 	}
@@ -420,6 +483,9 @@ final class Promotion {
 			$this->campaign_label,
 			$this->internal_notes,
 			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -451,6 +517,9 @@ final class Promotion {
 			$this->campaign_label,
 			$this->internal_notes,
 			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -482,6 +551,9 @@ final class Promotion {
 			$this->campaign_label,
 			$this->internal_notes,
 			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -513,6 +585,9 @@ final class Promotion {
 			$this->campaign_label,
 			$this->internal_notes,
 			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -544,6 +619,9 @@ final class Promotion {
 			$this->campaign_label,
 			$this->internal_notes,
 			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -553,6 +631,9 @@ final class Promotion {
 	public function with_usage_count( int $usage_count ): self {
 		if ( $usage_count < 0 ) {
 			throw new InvalidArgumentException( 'Promotion usage_count must be >= 0.' );
+		}
+		if ( $budget_spent < 0 ) {
+			throw new InvalidArgumentException( 'Promotion budget_spent must be >= 0.' );
 		}
 
 		return new self(
@@ -579,6 +660,9 @@ final class Promotion {
 			$this->campaign_label,
 			$this->internal_notes,
 			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -610,6 +694,9 @@ final class Promotion {
 			$this->campaign_label,
 			$this->internal_notes,
 			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -646,6 +733,9 @@ final class Promotion {
 			$this->campaign_label,
 			$this->internal_notes,
 			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -680,6 +770,9 @@ final class Promotion {
 			$this->campaign_label,
 			$this->internal_notes,
 			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -715,10 +808,51 @@ final class Promotion {
 			$this->campaign_label,
 			$this->internal_notes,
 			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
 		);
+	}
+
+	public function with_budget( ?float $amount, ?float $spent, ?string $currency ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->customer_usage_limit,
+			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
+			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
+			self::normalize_budget_amount( $amount ),
+			self::normalize_budget_spent( $spent ?? $this->budget_spent ),
+			self::normalize_budget_currency( $currency ),
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	public function with_budget_spent( float $spent ): self {
+		return $this->with_budget( $this->budget_amount, $spent, $this->budget_currency );
 	}
 
 	public function with_campaign_metadata( ?string $label, ?string $notes, ?string $color ): self {
@@ -746,6 +880,9 @@ final class Promotion {
 			self::normalize_campaign_label( $label ),
 			self::normalize_internal_notes( $notes ),
 			self::normalize_admin_color( $color ),
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -781,6 +918,9 @@ final class Promotion {
 			$this->campaign_label,
 			$this->internal_notes,
 			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -817,6 +957,45 @@ final class Promotion {
 		}
 
 		return $notes;
+	}
+
+	public static function normalize_budget_amount( ?float $amount ): ?float {
+		if ( $amount === null ) {
+			return null;
+		}
+
+		if ( $amount <= 0 ) {
+			throw new InvalidArgumentException( 'budget_amount must be null or greater than zero.' );
+		}
+
+		return round( $amount, 2 );
+	}
+
+	public static function normalize_budget_spent( float $spent ): float {
+		if ( $spent < 0 ) {
+			throw new InvalidArgumentException( 'budget_spent must be >= 0.' );
+		}
+
+		return round( $spent, 2 );
+	}
+
+	public static function normalize_budget_currency( ?string $currency ): ?string {
+		if ( $currency === null ) {
+			return null;
+		}
+
+		$currency = strtoupper( sanitize_text_field( $currency ) );
+		if ( $currency === '' ) {
+			return null;
+		}
+
+		if ( function_exists( 'mb_substr' ) ) {
+			$currency = mb_substr( $currency, 0, 10 );
+		} elseif ( strlen( $currency ) > 10 ) {
+			$currency = substr( $currency, 0, 10 );
+		}
+
+		return $currency;
 	}
 
 	public static function normalize_admin_color( ?string $color ): ?string {
@@ -925,6 +1104,21 @@ final class Promotion {
 	/**
 	 * @param mixed $value
 	 */
+	/**
+	 * @param mixed $value
+	 */
+	private static function optional_float( $value ): ?float {
+		if ( $value === null || $value === '' ) {
+			return null;
+		}
+
+		if ( ! is_numeric( $value ) ) {
+			return null;
+		}
+
+		return (float) $value;
+	}
+
 	private static function optional_int( $value ): ?int {
 		if ( $value === null || $value === '' ) {
 			return null;

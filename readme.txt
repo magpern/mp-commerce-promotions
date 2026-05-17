@@ -41,6 +41,7 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * Promotion edit workflow: status actions, duplicate as draft, cart preview with evaluation trace, plan explanation, and conflict analysis (admin/debug)
 * Heuristic conflict analysis across active promotions and lightweight list indicators (Exclusive, exclusions, scoped)
 * Campaign metadata — labels, admin color badges, internal notes (schema 1.9.0); archive hygiene tools on Diagnostics
+* Economics and scheduling — promotion budgets, lifecycle badges/filters, schedule warnings, batch export tracking (schema 1.10.0); Reports date presets and budget summaries
 * Manual promotion codes (hashed at rest)
 * Generated code batches (up to 1,000 per batch) with batch traceability
 * Redemption tracking per order with idempotency and reversal on cancel/refund/trash

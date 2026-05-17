@@ -60,7 +60,8 @@ final class PromotionCodeBatchGenerator {
 		?string $prefix = null,
 		?int $usage_limit = null,
 		?string $expires_at = null,
-		?int $created_by = null
+		?int $created_by = null,
+		?string $batch_notes = null
 	): PromotionCodeBatchGenerationOutcome {
 		if ( $promotion_id <= 0 ) {
 			throw new InvalidArgumentException( 'promotion_id must be > 0.' );
@@ -83,6 +84,7 @@ final class PromotionCodeBatchGenerator {
 
 		$normalized_prefix = self::normalize_prefix( $prefix );
 		$expires_at        = self::normalize_expires_at( $expires_at );
+		$batch_notes       = PromotionCodeBatch::normalize_batch_notes( $batch_notes );
 
 		$batch_uuid = self::generate_batch_uuid();
 
@@ -95,6 +97,10 @@ final class PromotionCodeBatchGenerator {
 			$normalized_prefix,
 			$usage_limit,
 			$expires_at,
+			$batch_notes,
+			null,
+			null,
+			0,
 			$created_by,
 			null
 		);

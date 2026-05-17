@@ -13,6 +13,7 @@ use InvalidArgumentException;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Domain\PromotionStatus;
+use MP\CommercePromotions\Engine\PromotionDateHelper;
 use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
 use MP\CommercePromotions\Engine\Action\FreeGiftProductAction;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
@@ -35,6 +36,10 @@ use MP\CommercePromotions\Engine\RuleTypes;
 
 final class PromotionRuleValidator {
 
+	private ?PromotionScheduleAnalyzer $schedule_analyzer = null;
+
+	private ?PromotionConflictAnalyzer $conflict_analyzer = null;
+
 	/**
 	 * @return list<array{level: string, message: string}>
 	 */
@@ -49,6 +54,144 @@ final class PromotionRuleValidator {
 		$this->append_conflict_heuristic_issues( $promotion, $issues );
 
 		return $issues;
+	}
+
+	/**
+	 * @param list<Promotion> $catalog Peer promotions for schedule/economics checks.
+	 * @return list<array{level: string, message: string}>
+	 */
+	public function validate_with_catalog( Promotion $promotion, array $catalog ): array {
+		$issues = $this->validate( $promotion );
+		$this->append_economics_issues( $promotion, $catalog, $issues );
+
+		return $issues;
+	}
+
+	/**
+	 * @param list<Promotion>                               $catalog
+	 * @param list<array{level: string, message: string}>   $issues
+	 */
+	private function append_economics_issues( Promotion $promotion, array $catalog, array &$issues ): void {
+		if ( $promotion->has_budget_cap() && ( $promotion->get_budget_currency() === null || $promotion->get_budget_currency() === '' ) ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __( 'Budget amount is set without a budget currency.', 'mp-commerce-promotions' ),
+			);
+		}
+
+		if ( $promotion->get_status() === PromotionStatus::ACTIVE ) {
+			$ends = PromotionDateHelper::parse_mysql_datetime( $promotion->get_ends_at() );
+			if ( $ends !== null && PromotionDateHelper::now_timestamp() > $ends ) {
+				$issues[] = array(
+					'level'   => 'warning',
+					'message' => __( 'Promotion is active but the end date is in the past.', 'mp-commerce-promotions' ),
+				);
+			}
+		}
+
+		if ( $promotion->get_ends_at() === null || trim( (string) $promotion->get_ends_at() ) === '' ) {
+			$issues[] = array(
+				'level'   => 'info',
+				'message' => __( 'No end date is configured for this promotion.', 'mp-commerce-promotions' ),
+			);
+		}
+
+		$schedule_rows = $this->schedule_analyzer()->analyze( $catalog, $promotion );
+		foreach ( $schedule_rows as $row ) {
+			$severity = isset( $row['severity'] ) ? (string) $row['severity'] : 'info';
+			$level    = $severity === 'warning' ? 'warning' : 'info';
+			$issues[] = array(
+				'level'   => $level,
+				'message' => isset( $row['message'] ) ? (string) $row['message'] : '',
+			);
+		}
+
+		$subject_id = $promotion->get_id();
+		if ( $subject_id !== null && $subject_id > 0 ) {
+			foreach ( $this->conflict_analyzer()->analyze( $catalog ) as $conflict ) {
+				$type = isset( $conflict['type'] ) ? (string) $conflict['type'] : '';
+				if ( $type !== PromotionConflictAnalyzer::TYPE_FREE_SHIPPING_OVERLAP ) {
+					continue;
+				}
+				$ids = isset( $conflict['promotion_ids'] ) && is_array( $conflict['promotion_ids'] )
+					? $conflict['promotion_ids']
+					: array();
+				if ( ! in_array( $subject_id, $ids, true ) ) {
+					continue;
+				}
+				$issues[] = array(
+					'level'   => 'warning',
+					'message' => isset( $conflict['message'] ) ? (string) $conflict['message'] : '',
+				);
+				break;
+			}
+		}
+
+		$stackable_overlaps = 0;
+		foreach ( $catalog as $peer ) {
+			if ( ! $peer instanceof Promotion ) {
+				continue;
+			}
+			if ( $peer->get_status() !== PromotionStatus::ACTIVE ) {
+				continue;
+			}
+			if ( $peer->get_application_mode() !== PromotionApplicationMode::STACKABLE ) {
+				continue;
+			}
+			$peer_id = $peer->get_id();
+			if ( $peer_id === null || $peer_id <= 0 ) {
+				continue;
+			}
+			if ( $subject_id !== null && $peer_id === $subject_id ) {
+				continue;
+			}
+			if ( $this->promotions_overlap_in_time( $promotion, $peer ) ) {
+				++$stackable_overlaps;
+			}
+		}
+
+		if ( $promotion->get_application_mode() === PromotionApplicationMode::STACKABLE
+			&& $promotion->get_status() === PromotionStatus::ACTIVE
+			&& $stackable_overlaps > 0 ) {
+			$issues[] = array(
+				'level'   => 'info',
+				'message' => sprintf(
+					/* translators: %d: number of overlapping stackable promotions */
+					__( 'This stackable promotion overlaps %d other active stackable promotion(s) in time.', 'mp-commerce-promotions' ),
+					$stackable_overlaps
+				),
+			);
+		}
+	}
+
+	private function promotions_overlap_in_time( Promotion $a, Promotion $b ): bool {
+		$start_a = PromotionDateHelper::parse_mysql_datetime( $a->get_starts_at() );
+		$end_a   = PromotionDateHelper::parse_mysql_datetime( $a->get_ends_at() );
+		$start_b = PromotionDateHelper::parse_mysql_datetime( $b->get_starts_at() );
+		$end_b   = PromotionDateHelper::parse_mysql_datetime( $b->get_ends_at() );
+
+		$range_start_a = $start_a ?? PHP_INT_MIN;
+		$range_end_a   = $end_a ?? PHP_INT_MAX;
+		$range_start_b = $start_b ?? PHP_INT_MIN;
+		$range_end_b   = $end_b ?? PHP_INT_MAX;
+
+		return $range_start_a <= $range_end_b && $range_start_b <= $range_end_a;
+	}
+
+	private function schedule_analyzer(): PromotionScheduleAnalyzer {
+		if ( $this->schedule_analyzer === null ) {
+			$this->schedule_analyzer = new PromotionScheduleAnalyzer();
+		}
+
+		return $this->schedule_analyzer;
+	}
+
+	private function conflict_analyzer(): PromotionConflictAnalyzer {
+		if ( $this->conflict_analyzer === null ) {
+			$this->conflict_analyzer = new PromotionConflictAnalyzer();
+		}
+
+		return $this->conflict_analyzer;
 	}
 
 	/**

@@ -18,6 +18,7 @@ use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\RedemptionRepository;
+use MP\CommercePromotions\Service\PromotionLifecycle;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
 use RuntimeException;
@@ -82,11 +83,12 @@ final class PromotionsPage {
 		$this->handle_post_bulk( $list_query );
 		$this->handle_post_create();
 		$repo_args  = array(
-			'status'         => $list_query['status'],
-			'search'         => $list_query['search'],
-			'campaign_label' => $list_query['campaign_label'],
-			'limit'          => self::PER_PAGE,
-			'offset'         => $list_query['offset'],
+			'status'          => $list_query['status'],
+			'search'          => $list_query['search'],
+			'campaign_label'  => $list_query['campaign_label'],
+			'lifecycle_phase' => $list_query['lifecycle_phase'],
+			'limit'           => self::PER_PAGE,
+			'offset'          => $list_query['offset'],
 		);
 
 		try {
@@ -127,6 +129,7 @@ final class PromotionsPage {
 	 *     status: string|null,
 	 *     search: string|null,
 	 *     campaign_label: string|null,
+	 *     lifecycle_phase: string|null,
 	 *     paged: int,
 	 *     offset: int
 	 * }
@@ -156,17 +159,26 @@ final class PromotionsPage {
 			}
 		}
 
+		$lifecycle_phase = null;
+		if ( isset( $_GET['lifecycle_phase'] ) ) {
+			$raw = sanitize_key( wp_unslash( (string) $_GET['lifecycle_phase'] ) );
+			if ( $raw !== '' ) {
+				$lifecycle_phase = $raw;
+			}
+		}
+
 		$paged = isset( $_GET['paged'] ) ? (int) $_GET['paged'] : 1;
 		if ( $paged < 1 ) {
 			$paged = 1;
 		}
 
 		return array(
-			'status'         => $status,
-			'search'         => $search,
-			'campaign_label' => $campaign_label,
-			'paged'          => $paged,
-			'offset'         => ( $paged - 1 ) * self::PER_PAGE,
+			'status'          => $status,
+			'search'          => $search,
+			'campaign_label'  => $campaign_label,
+			'lifecycle_phase' => $lifecycle_phase,
+			'paged'           => $paged,
+			'offset'          => ( $paged - 1 ) * self::PER_PAGE,
 		);
 	}
 
@@ -218,6 +230,25 @@ final class PromotionsPage {
 		if ( $list_query['campaign_label'] !== null && $list_query['campaign_label'] !== '' ) {
 			echo '<input type="hidden" name="campaign_label" value="' . esc_attr( $list_query['campaign_label'] ) . '" />';
 		}
+		if ( $list_query['lifecycle_phase'] !== null && $list_query['lifecycle_phase'] !== '' ) {
+			echo '<input type="hidden" name="lifecycle_phase" value="' . esc_attr( $list_query['lifecycle_phase'] ) . '" />';
+		}
+
+		echo '<label for="mp_cp_lifecycle_phase_filter" class="screen-reader-text">' . esc_html__( 'Lifecycle', 'mp-commerce-promotions' ) . '</label>';
+		echo '<select name="lifecycle_phase" id="mp_cp_lifecycle_phase_filter" style="margin-right:8px;">';
+		echo '<option value="">' . esc_html__( 'All lifecycles', 'mp-commerce-promotions' ) . '</option>';
+		$lifecycle_options = array(
+			PromotionLifecycle::PHASE_UPCOMING         => PromotionLifecycle::badge_label( PromotionLifecycle::PHASE_UPCOMING ),
+			PromotionLifecycle::PHASE_LIVE             => PromotionLifecycle::badge_label( PromotionLifecycle::PHASE_LIVE ),
+			PromotionLifecycle::PHASE_ENDING_SOON      => PromotionLifecycle::badge_label( PromotionLifecycle::PHASE_ENDING_SOON ),
+			PromotionLifecycle::PHASE_EXPIRED_ACTIVE   => PromotionLifecycle::badge_label( PromotionLifecycle::PHASE_EXPIRED_ACTIVE ),
+			PromotionLifecycle::PHASE_BUDGET_EXHAUSTED => PromotionLifecycle::badge_label( PromotionLifecycle::PHASE_BUDGET_EXHAUSTED ),
+			PromotionLifecycle::PHASE_ARCHIVED         => PromotionLifecycle::badge_label( PromotionLifecycle::PHASE_ARCHIVED ),
+		);
+		foreach ( $lifecycle_options as $phase_key => $phase_label ) {
+			echo '<option value="' . esc_attr( $phase_key ) . '"' . selected( $list_query['lifecycle_phase'] ?? '', $phase_key, false ) . '>' . esc_html( $phase_label ) . '</option>';
+		}
+		echo '</select>';
 
 		$labels = $this->promotions->find_distinct_campaign_labels( 50 );
 		if ( $labels !== array() ) {
@@ -333,7 +364,7 @@ final class PromotionsPage {
 			echo '<td>' . esc_html( (string) ( $pid ?? '' ) ) . '</td>';
 			echo '<td>' . esc_html( $promo->get_name() ) . $edit . '</td>';
 			echo '<td>' . $this->format_campaign_list_cell( $promo ) . '</td>';
-			echo '<td>' . esc_html( $promo->get_status() ) . '</td>';
+			echo '<td>' . $this->format_status_cell( $promo ) . '</td>';
 			echo '<td>' . esc_html( $this->format_codes_summary( $pid ) ) . '</td>';
 			echo '<td>' . esc_html( $this->format_batches_summary( $pid ) ) . '</td>';
 			echo '<td>' . esc_html( $this->format_redemptions_summary( $pid ) ) . '</td>';
@@ -365,6 +396,9 @@ final class PromotionsPage {
 		}
 		if ( $list_query['campaign_label'] !== null && $list_query['campaign_label'] !== '' ) {
 			echo '<input type="hidden" name="campaign_label" value="' . esc_attr( $list_query['campaign_label'] ) . '" />';
+		}
+		if ( $list_query['lifecycle_phase'] !== null && $list_query['lifecycle_phase'] !== '' ) {
+			echo '<input type="hidden" name="lifecycle_phase" value="' . esc_attr( $list_query['lifecycle_phase'] ) . '" />';
 		}
 		if ( $list_query['paged'] > 1 ) {
 			echo '<input type="hidden" name="paged" value="' . esc_attr( (string) $list_query['paged'] ) . '" />';
@@ -537,10 +571,25 @@ final class PromotionsPage {
 		if ( $list_query['campaign_label'] !== null && $list_query['campaign_label'] !== '' ) {
 			$args['campaign_label'] = $list_query['campaign_label'];
 		}
+		if ( $list_query['lifecycle_phase'] !== null && $list_query['lifecycle_phase'] !== '' ) {
+			$args['lifecycle_phase'] = $list_query['lifecycle_phase'];
+		}
 		if ( $list_query['paged'] > 1 ) {
 			$args['paged'] = (string) $list_query['paged'];
 		}
 		return $args;
+	}
+
+	private function format_status_cell( Promotion $promotion ): string {
+		$phase = PromotionLifecycle::primary_phase( $promotion );
+		$badge = PromotionLifecycle::badge_label( $phase );
+
+		$html = esc_html( $promotion->get_status() );
+		if ( $phase !== $promotion->get_status() ) {
+			$html .= ' <span class="description">(' . esc_html( $badge ) . ')</span>';
+		}
+
+		return $html;
 	}
 
 	private function format_campaign_list_cell( Promotion $promotion ): string {
