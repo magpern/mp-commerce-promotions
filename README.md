@@ -28,6 +28,11 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 - [docs/BROWSER_QA_MATRIX.md](docs/BROWSER_QA_MATRIX.md) — reproducible browser QA matrix
 - [docs/BETA_READINESS.md](docs/BETA_READINESS.md) — beta certification status and release criteria
 - [docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md) — blocks investigation (not declared)
+- [docs/BROWSER_QA_RUNBOOK.md](docs/BROWSER_QA_RUNBOOK.md) — browser QA setup (gateways, products, promotions)
+- [docs/CLASSIC_CHECKOUT_CERTIFICATION.md](docs/CLASSIC_CHECKOUT_CERTIFICATION.md) — classic checkout pass/fail matrix
+- [docs/BLOCK_CHECKOUT_INVESTIGATION.md](docs/BLOCK_CHECKOUT_INVESTIGATION.md) — block cart/checkout test pages
+- [docs/RELEASE_EVIDENCE_0.2.0_BETA1.md](docs/RELEASE_EVIDENCE_0.2.0_BETA1.md) — beta release evidence bundle
+- [docs/VERSION_BUMP_PLAN_0.2.0_BETA1.md](docs/VERSION_BUMP_PLAN_0.2.0_BETA1.md) — version bump checklist (pre-tag)
 
 WordPress.org-style [readme.txt](readme.txt) and [LICENSE](LICENSE) are included as distribution scaffolding.
 

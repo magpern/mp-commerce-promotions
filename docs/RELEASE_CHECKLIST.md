@@ -55,6 +55,13 @@ See [CHANGELOG.md](../CHANGELOG.md) for user-facing release notes and [DEVELOPME
 
 ## Browser QA checklist
 
+- [ ] [BROWSER_QA_RUNBOOK.md](BROWSER_QA_RUNBOOK.md) — gateways (COD on local Docker), products, promotions, personas.
+- [ ] [CLASSIC_CHECKOUT_CERTIFICATION.md](CLASSIC_CHECKOUT_CERTIFICATION.md) — browser sign-off table completed.
+- [ ] [BLOCK_CHECKOUT_INVESTIGATION.md](BLOCK_CHECKOUT_INVESTIGATION.md) — block test pages exercised before declaring blocks.
+- [ ] [RELEASE_EVIDENCE_0.2.0_BETA1.md](RELEASE_EVIDENCE_0.2.0_BETA1.md) — evidence bundle updated.
+- [ ] `./wp eval-file .../scripts/beta-release-prep-smoke.php` passes.
+- [ ] [VERSION_BUMP_PLAN_0.2.0_BETA1.md](VERSION_BUMP_PLAN_0.2.0_BETA1.md) — do not tag until browser QA approved.
+
 - [ ] Promotions nav tabs (All, Getting Started, Settings, Diagnostics, Reports).
 - [ ] Promotion edit: cart preview, templates, save.
 - [ ] Reports filters and sections (simulation hidden when disabled).

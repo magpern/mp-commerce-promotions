@@ -73,7 +73,8 @@ for path in \
 	"src/Service/PromotionDataRetentionService.php" \
 	"scripts/performance-hardening-smoke.php" \
 	"scripts/production-hardening-closure-smoke.php" \
-	"scripts/beta-readiness-smoke.php"
+	"scripts/beta-readiness-smoke.php" \
+	"scripts/beta-release-prep-smoke.php"
 do
 	[[ -f "${REPO_ROOT}/${path}" ]] || fail "Missing ${path}"
 done
@@ -88,6 +89,10 @@ echo "    POT: ${POT_LINES} lines"
 
 [[ -f "${REPO_ROOT}/docs/BETA_READINESS.md" ]] || fail "Missing docs/BETA_READINESS.md"
 [[ -f "${REPO_ROOT}/docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md" ]] || fail "Missing docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md"
+[[ -f "${REPO_ROOT}/docs/BROWSER_QA_RUNBOOK.md" ]] || fail "Missing docs/BROWSER_QA_RUNBOOK.md"
+[[ -f "${REPO_ROOT}/docs/CLASSIC_CHECKOUT_CERTIFICATION.md" ]] || fail "Missing docs/CLASSIC_CHECKOUT_CERTIFICATION.md"
+[[ -f "${REPO_ROOT}/docs/BLOCK_CHECKOUT_INVESTIGATION.md" ]] || fail "Missing docs/BLOCK_CHECKOUT_INVESTIGATION.md"
+[[ -f "${REPO_ROOT}/docs/RELEASE_EVIDENCE_0.2.0_BETA1.md" ]] || fail "Missing docs/RELEASE_EVIDENCE_0.2.0_BETA1.md"
 
 ZIP_PATH="${BUILD_ROOT}/${PLUGIN_SLUG}-${VERSION_CONST}.zip"
 if [[ ! -f "${ZIP_PATH}" ]]; then
