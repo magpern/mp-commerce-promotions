@@ -30,7 +30,9 @@ use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\FirstOrderCondition;
 use MP\CommercePromotions\Engine\Condition\LoggedInCondition;
 use MP\CommercePromotions\Engine\Condition\MaximumCartQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\MaximumEligibleSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumCartQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\MinimumEligibleSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\CategoryInCartCondition;
 use MP\CommercePromotions\Engine\Condition\ExcludeSaleItemsCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
@@ -489,6 +491,28 @@ final class PromotionEvaluator {
 			);
 		}
 
+		if ( $type === RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL ) {
+			try {
+				return array(
+					'condition' => MinimumEligibleSubtotalCondition::from_config( $raw ),
+					'error'     => null,
+				);
+			} catch ( \InvalidArgumentException $e ) {
+				return array( 'condition' => null, 'error' => 'invalid' );
+			}
+		}
+
+		if ( $type === RuleTypes::CONDITION_MAXIMUM_ELIGIBLE_SUBTOTAL ) {
+			try {
+				return array(
+					'condition' => MaximumEligibleSubtotalCondition::from_config( $raw ),
+					'error'     => null,
+				);
+			} catch ( \InvalidArgumentException $e ) {
+				return array( 'condition' => null, 'error' => 'invalid' );
+			}
+		}
+
 		if ( $type === '' ) {
 			return array( 'condition' => null, 'error' => 'unknown' );
 		}
@@ -573,7 +597,7 @@ final class PromotionEvaluator {
 			}
 			try {
 				return array(
-					'action' => new PercentageDiscountAction( (float) $raw['percentage'] ),
+					'action' => PercentageDiscountAction::from_config( $raw ),
 					'error'  => null,
 				);
 			} catch ( \InvalidArgumentException $e ) {
@@ -587,7 +611,7 @@ final class PromotionEvaluator {
 			}
 			try {
 				return array(
-					'action' => new FixedAmountDiscountAction( (float) $raw['amount'] ),
+					'action' => FixedAmountDiscountAction::from_config( $raw ),
 					'error'  => null,
 				);
 			} catch ( \InvalidArgumentException $e ) {

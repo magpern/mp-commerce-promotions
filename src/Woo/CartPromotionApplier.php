@@ -580,7 +580,12 @@ final class CartPromotionApplier {
 			return false;
 		}
 
-		$discount = $cart_subtotal * $pct / 100.0;
+		if ( isset( $payload['calculated_discount'] ) && is_numeric( $payload['calculated_discount'] ) ) {
+			$discount = (float) $payload['calculated_discount'];
+		} else {
+			$discount = $cart_subtotal * $pct / 100.0;
+		}
+
 		$discount = DiscountCapAllocator::clamp_to_remaining( $discount, $remaining_allowance );
 		if ( $discount <= 0 ) {
 			return false;
@@ -608,11 +613,18 @@ final class CartPromotionApplier {
 		$cart,
 		?PromotionCode $promotion_code
 	) {
-		if ( ! isset( $payload['amount'] ) || ! is_numeric( $payload['amount'] ) ) {
+		if ( ! empty( $payload['not_applicable'] ) ) {
 			return false;
 		}
 
-		$configured = (float) $payload['amount'];
+		if ( isset( $payload['applied_discount'] ) && is_numeric( $payload['applied_discount'] ) ) {
+			$configured = (float) $payload['applied_discount'];
+		} elseif ( isset( $payload['amount'] ) && is_numeric( $payload['amount'] ) ) {
+			$configured = (float) $payload['amount'];
+		} else {
+			return false;
+		}
+
 		if ( $configured <= 0 ) {
 			return false;
 		}

@@ -33,6 +33,8 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_PRODUCT_IN_CART,
 			RuleTypes::CONDITION_CATEGORY_IN_CART,
 			RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS,
+			RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL,
+			RuleTypes::CONDITION_MAXIMUM_ELIGIBLE_SUBTOTAL,
 		);
 	}
 
@@ -83,6 +85,8 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_PRODUCT_IN_CART          => 'Product in cart',
 			RuleTypes::CONDITION_CATEGORY_IN_CART       => 'Category in cart',
 			RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS      => 'Exclude sale items',
+			RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL => 'Minimum eligible subtotal',
+			RuleTypes::CONDITION_MAXIMUM_ELIGIBLE_SUBTOTAL => 'Maximum eligible subtotal',
 		);
 
 		return $labels[ $type ] ?? $type;

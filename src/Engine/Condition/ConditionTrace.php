@@ -43,6 +43,10 @@ final class ConditionTrace {
 
 	public const REASON_SALE_ITEMS_PRESENT = 'sale_items_present';
 
+	public const REASON_ELIGIBLE_SUBTOTAL_TOO_LOW = 'eligible_subtotal_too_low';
+
+	public const REASON_ELIGIBLE_SUBTOTAL_TOO_HIGH = 'eligible_subtotal_too_high';
+
 	private string $type;
 
 	private bool $passed;

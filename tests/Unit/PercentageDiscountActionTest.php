@@ -47,4 +47,32 @@ final class PercentageDiscountActionTest extends TestCase {
 		$action = new PercentageDiscountAction( 100.0 );
 		$this->assertSame( 100.0, $action->preview( new EvaluationContext( null, null, null, array(), array() ) )->get_payload()['percentage'] );
 	}
+
+	public function test_from_config_scoped_preview_includes_calculated_discount(): void {
+		$action = PercentageDiscountAction::from_config(
+			array(
+				'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'percentage' => 10,
+				'product_ids' => array( 100 ),
+			)
+		);
+
+		$context = new EvaluationContext(
+			null,
+			100.0,
+			'USD',
+			array(
+				array(
+					'product_id'    => 100,
+					'quantity'      => 1.0,
+					'line_subtotal' => 50.0,
+				),
+			),
+			array()
+		);
+
+		$payload = $action->preview( $context )->get_payload();
+		$this->assertSame( 50.0, $payload['eligible_subtotal'] );
+		$this->assertSame( 5.0, $payload['calculated_discount'] );
+	}
 }

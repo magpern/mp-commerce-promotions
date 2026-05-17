@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Engine\Action;
 
 use InvalidArgumentException;
 use MP\CommercePromotions\Engine\CartItemSelector;
+use MP\CommercePromotions\Engine\EligibleCartScope;
 use MP\CommercePromotions\Engine\EvaluationContext;
 use MP\CommercePromotions\Engine\RuleTypes;
 
@@ -74,10 +75,7 @@ final class CheapestItemDiscountAction implements ActionInterface {
 			throw new InvalidArgumentException( 'cheapest_item_discount discounted_quantity must be >= 1 and <= required_quantity.' );
 		}
 
-		$exclude_sale_items = false;
-		if ( isset( $config['exclude_sale_items'] ) ) {
-			$exclude_sale_items = (bool) $config['exclude_sale_items'];
-		}
+		$exclude_sale_items = ! empty( $config['exclude_sale_items'] );
 
 		$category_ids  = array();
 		$product_ids   = array();
@@ -150,66 +148,78 @@ final class CheapestItemDiscountAction implements ActionInterface {
 	}
 
 	public function preview( EvaluationContext $context ): ActionResult {
-		$eligible_items = $this->scope === self::SCOPE_CATEGORY
-			? CartItemSelector::items_matching_categories( $context, $this->category_ids )
-			: CartItemSelector::items_matching_products_and_variations( $context, $this->product_ids, $this->variation_ids );
+		$product_ids   = $this->scope === self::SCOPE_PRODUCTS ? $this->product_ids : array();
+		$variation_ids = $this->scope === self::SCOPE_PRODUCTS ? $this->variation_ids : array();
+		$category_ids  = $this->scope === self::SCOPE_CATEGORY ? $this->category_ids : array();
 
-		$raw_count = count( CartItemSelector::expand_quantities( $eligible_items ) );
+		$items_before_sale = EligibleCartScope::filter_items(
+			$context->get_items(),
+			$product_ids,
+			$variation_ids,
+			$category_ids
+		);
+		$raw_count = count( CartItemSelector::expand_quantities( $items_before_sale ) );
 
+		$sale_excluded_count = 0;
 		if ( $this->exclude_sale_items ) {
-			$eligible_items = CartItemSelector::filter_out_sale_items( $eligible_items );
+			$sale_excluded_count = CartItemSelector::count_sale_items( $items_before_sale );
 		}
 
-		$units = CartItemSelector::expand_quantities( $eligible_items );
-		$eligible_units = count( $units );
-
-		if ( $eligible_units < $this->required_quantity ) {
-			return new ActionResult(
-				$this->get_type(),
-				array(
-					'discount_amount'      => 0.0,
-					'discounted_units'     => 0,
-					'scope'                => $this->scope,
-					'not_applicable'       => true,
-					'reason'               => self::REASON_INSUFFICIENT,
-					'eligible_units'       => $eligible_units,
-					'eligible_units_raw'   => $raw_count,
-					'sale_items_excluded'  => $this->exclude_sale_items,
-					'required_quantity'    => $this->required_quantity,
-				)
-			);
-		}
-
-		usort(
-			$units,
-			static function ( array $a, array $b ): int {
-				$pa = isset( $a['unit_price'] ) ? (float) $a['unit_price'] : 0.0;
-				$pb = isset( $b['unit_price'] ) ? (float) $b['unit_price'] : 0.0;
-				if ( abs( $pa - $pb ) < 0.00001 ) {
-					return 0;
-				}
-
-				return $pa <=> $pb;
-			}
+		$eligible_items = EligibleCartScope::filter_items(
+			$context->get_items(),
+			$product_ids,
+			$variation_ids,
+			$category_ids,
+			array(),
+			array(),
+			$this->exclude_sale_items
 		);
 
-		$discount_total = 0.0;
-		$to_discount    = min( $this->discounted_quantity, count( $units ) );
+		$eligible_units = EligibleCartScope::quantity( $eligible_items );
 
-		for ( $i = 0; $i < $to_discount; ++$i ) {
-			$unit_price = isset( $units[ $i ]['unit_price'] ) ? (float) $units[ $i ]['unit_price'] : 0.0;
+		if ( $eligible_units < $this->required_quantity ) {
+			$payload = array(
+				'discount_amount'     => 0.0,
+				'discounted_units'    => 0,
+				'scope'               => $this->scope,
+				'not_applicable'      => true,
+				'reason'              => self::REASON_INSUFFICIENT,
+				'eligible_units'      => $eligible_units,
+				'eligible_units_raw'  => $raw_count,
+				'sale_items_excluded' => $this->exclude_sale_items,
+				'required_quantity'   => $this->required_quantity,
+				'matched_items_count' => count( $eligible_items ),
+			);
+			if ( $this->exclude_sale_items && $sale_excluded_count > 0 ) {
+				$payload['sale_items_excluded_count'] = $sale_excluded_count;
+			}
+
+			return new ActionResult( $this->get_type(), $payload );
+		}
+
+		$cheapest_units = EligibleCartScope::cheapest_units( $eligible_items, $this->discounted_quantity );
+		$discount_total = 0.0;
+		foreach ( $cheapest_units as $unit ) {
+			$unit_price = isset( $unit['unit_price'] ) ? (float) $unit['unit_price'] : 0.0;
 			$discount_total += $unit_price * $this->discount_percentage / 100.0;
 		}
 
+		$to_discount = count( $cheapest_units );
+
 		$payload = array(
-			'discount_amount'     => round( $discount_total, 4 ),
-			'discounted_units'    => $to_discount,
-			'scope'               => $this->scope,
-			'eligible_units'      => $eligible_units,
-			'sale_items_excluded' => $this->exclude_sale_items,
+			'discount_amount'       => round( $discount_total, 4 ),
+			'discounted_units'      => $to_discount,
+			'scope'                 => $this->scope,
+			'eligible_units'        => $eligible_units,
+			'sale_items_excluded'   => $this->exclude_sale_items,
+			'matched_items_count'   => count( $eligible_items ),
+			'eligible_subtotal'     => EligibleCartScope::subtotal( $eligible_items ),
 		);
 		if ( $this->exclude_sale_items && $raw_count !== $eligible_units ) {
 			$payload['eligible_units_raw'] = $raw_count;
+		}
+		if ( $this->exclude_sale_items && $sale_excluded_count > 0 ) {
+			$payload['sale_items_excluded_count'] = $sale_excluded_count;
 		}
 
 		return new ActionResult( $this->get_type(), $payload );

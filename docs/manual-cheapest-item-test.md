@@ -2,7 +2,7 @@
 
 Use this checklist to verify **cheapest_item_discount** (BOGO groundwork) on a staging or local WooCommerce storefront. The discount is applied as a **negative cart fee** — line item prices are **not** changed and **no free products** are added to the cart.
 
-**Related docs:** [manual-product-targeting-test.md](manual-product-targeting-test.md) (variation IDs, sale exclusion), [manual-checkout-test.md](manual-checkout-test.md), [manual-stacking-test.md](manual-stacking-test.md)
+**Related docs:** [manual-scoped-discount-test.md](manual-scoped-discount-test.md) (`EligibleCartScope`), [manual-product-targeting-test.md](manual-product-targeting-test.md) (variation IDs, sale exclusion), [manual-checkout-test.md](manual-checkout-test.md), [manual-stacking-test.md](manual-stacking-test.md)
 
 **WP-CLI smoke (evaluator only):**
 

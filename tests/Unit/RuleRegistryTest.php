@@ -30,6 +30,8 @@ final class RuleRegistryTest extends TestCase {
 		$this->assertContains( RuleTypes::CONDITION_PRODUCT_IN_CART, $conditions );
 		$this->assertContains( RuleTypes::CONDITION_CATEGORY_IN_CART, $conditions );
 		$this->assertContains( RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS, $conditions );
+		$this->assertContains( RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL, $conditions );
+		$this->assertContains( RuleTypes::CONDITION_MAXIMUM_ELIGIBLE_SUBTOTAL, $conditions );
 	}
 
 	public function test_supported_actions_includes_mvp_types(): void {

@@ -25,6 +25,8 @@ use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\MaximumCartQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumCartQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\MaximumEligibleSubtotalCondition;
+use MP\CommercePromotions\Engine\Condition\MinimumEligibleSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
@@ -265,6 +267,12 @@ final class PromotionRuleValidator {
 		}
 
 		if ( $type === RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS ) {
+			return;
+		}
+
+		if ( $type === RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL
+			|| $type === RuleTypes::CONDITION_MAXIMUM_ELIGIBLE_SUBTOTAL ) {
+			$this->validate_eligible_subtotal_condition( $index, $type, $raw, $issues );
 			return;
 		}
 
@@ -625,12 +633,12 @@ final class PromotionRuleValidator {
 			}
 
 			try {
-				new PercentageDiscountAction( (float) $raw['percentage'] );
+				PercentageDiscountAction::from_config( $raw );
 			} catch ( InvalidArgumentException $e ) {
 				$issues[] = $this->error(
 					sprintf(
 						/* translators: %s: zero-based action index */
-						__( 'percentage_discount at index %s has an invalid percentage.', 'mp-commerce-promotions' ),
+						__( 'percentage_discount at index %s has an invalid percentage or scope.', 'mp-commerce-promotions' ),
 						(string) $index
 					)
 				);
@@ -675,12 +683,91 @@ final class PromotionRuleValidator {
 		}
 
 		try {
-			new FixedAmountDiscountAction( (float) $raw['amount'] );
+			FixedAmountDiscountAction::from_config( $raw );
 		} catch ( InvalidArgumentException $e ) {
 			$issues[] = $this->error(
 				sprintf(
 					/* translators: %s: zero-based action index */
-					__( 'fixed_amount_discount at index %s has an invalid amount.', 'mp-commerce-promotions' ),
+					__( 'fixed_amount_discount at index %s has an invalid amount or scope.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+		}
+	}
+
+	/**
+	 * @param array<string, mixed>                        $raw
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function validate_eligible_subtotal_condition( int $index, string $type, array $raw, array &$issues ): void {
+		if ( ! isset( $raw['amount'] ) || ! is_numeric( $raw['amount'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: condition type, 2: zero-based index */
+					__( '%1$s at index %2$s is missing or has an invalid amount.', 'mp-commerce-promotions' ),
+					$type,
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		if ( (float) $raw['amount'] < 0 ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: condition type, 2: zero-based index */
+					__( '%1$s at index %2$s amount must be >= 0.', 'mp-commerce-promotions' ),
+					$type,
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		foreach ( array( 'product_ids', 'variation_ids', 'category_ids' ) as $key ) {
+			if ( ! isset( $raw[ $key ] ) ) {
+				continue;
+			}
+			if ( ! is_array( $raw[ $key ] ) ) {
+				$issues[] = $this->error(
+					sprintf(
+						/* translators: 1: condition type, 2: field name, 3: index */
+						__( '%1$s at index %3$s has invalid %2$s.', 'mp-commerce-promotions' ),
+						$type,
+						$key,
+						(string) $index
+					)
+				);
+				return;
+			}
+			foreach ( $raw[ $key ] as $raw_id ) {
+				if ( ! is_numeric( $raw_id ) || (int) $raw_id <= 0 ) {
+					$issues[] = $this->error(
+						sprintf(
+							/* translators: 1: condition type, 2: field name, 3: index */
+							__( '%1$s at index %3$s has invalid %2$s (positive integers only).', 'mp-commerce-promotions' ),
+							$type,
+							$key,
+							(string) $index
+						)
+					);
+					return;
+				}
+			}
+		}
+
+		try {
+			if ( $type === RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL ) {
+				MinimumEligibleSubtotalCondition::from_config( $raw );
+			} else {
+				MaximumEligibleSubtotalCondition::from_config( $raw );
+			}
+		} catch ( InvalidArgumentException $e ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: condition type, 2: zero-based index */
+					__( '%1$s at index %2$s has invalid field values.', 'mp-commerce-promotions' ),
+					$type,
 					(string) $index
 				)
 			);

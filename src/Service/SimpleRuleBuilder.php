@@ -22,6 +22,8 @@ use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\MaximumCartQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumCartQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\MaximumEligibleSubtotalCondition;
+use MP\CommercePromotions\Engine\Condition\MinimumEligibleSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
@@ -171,6 +173,11 @@ final class SimpleRuleBuilder {
 			return array( 'type' => RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS );
 		}
 
+		if ( $type === RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL
+			|| $type === RuleTypes::CONDITION_MAXIMUM_ELIGIBLE_SUBTOTAL ) {
+			return self::build_eligible_subtotal_condition( $type, $post );
+		}
+
 		$operator = self::parse_operator( $post );
 		$quantity = self::parse_required_float( $post, 'mp_cp_builder_quantity', 'invalid_quantity' );
 
@@ -204,12 +211,14 @@ final class SimpleRuleBuilder {
 	private static function build_action( string $type, array $post ): array {
 		if ( $type === RuleTypes::ACTION_PERCENTAGE_DISCOUNT ) {
 			$percentage = self::parse_required_float( $post, 'mp_cp_builder_percentage', 'invalid_percentage' );
-			new PercentageDiscountAction( $percentage );
-
-			return array(
+			$config     = array(
 				'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
 				'percentage' => $percentage,
 			);
+			$config = self::append_optional_action_scope( $config, $post, true );
+			PercentageDiscountAction::from_config( $config );
+
+			return $config;
 		}
 
 		if ( $type === RuleTypes::ACTION_FREE_SHIPPING ) {
@@ -227,12 +236,77 @@ final class SimpleRuleBuilder {
 		}
 
 		$amount = self::parse_required_float( $post, 'mp_cp_builder_fixed_amount', 'invalid_fixed_amount' );
-		new FixedAmountDiscountAction( $amount );
-
-		return array(
+		$config = array(
 			'type'   => RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT,
 			'amount' => $amount,
 		);
+		$config = self::append_optional_action_scope( $config, $post, false );
+		FixedAmountDiscountAction::from_config( $config );
+
+		return $config;
+	}
+
+	/**
+	 * @param array<string, mixed> $post
+	 * @return array<string, mixed>
+	 */
+	private static function build_eligible_subtotal_condition( string $type, array $post ): array {
+		$amount = self::parse_required_float( $post, 'mp_cp_builder_eligible_amount', 'invalid_eligible_amount' );
+		$config = array(
+			'type'   => $type,
+			'amount' => $amount,
+		);
+
+		$product_ids = self::parse_optional_comma_int_list( $post, 'mp_cp_builder_eligible_product_ids' );
+		if ( $product_ids !== array() ) {
+			$config['product_ids'] = $product_ids;
+		}
+
+		$variation_ids = self::parse_optional_comma_int_list( $post, 'mp_cp_builder_eligible_variation_ids' );
+		if ( $variation_ids !== array() ) {
+			$config['variation_ids'] = $variation_ids;
+		}
+
+		$category_ids = self::parse_optional_comma_int_list( $post, 'mp_cp_builder_eligible_category_ids' );
+		if ( $category_ids !== array() ) {
+			$config['category_ids'] = $category_ids;
+		}
+
+		if ( $type === RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL ) {
+			MinimumEligibleSubtotalCondition::from_config( $config );
+		} else {
+			MaximumEligibleSubtotalCondition::from_config( $config );
+		}
+
+		return $config;
+	}
+
+	/**
+	 * @param array<string, mixed> $config
+	 * @param array<string, mixed> $post
+	 * @return array<string, mixed>
+	 */
+	private static function append_optional_action_scope( array $config, array $post, bool $allow_sale_exclusion ): array {
+		$product_ids = self::parse_optional_comma_int_list( $post, 'mp_cp_builder_action_product_ids' );
+		if ( $product_ids !== array() ) {
+			$config['product_ids'] = $product_ids;
+		}
+
+		$variation_ids = self::parse_optional_comma_int_list( $post, 'mp_cp_builder_action_variation_ids' );
+		if ( $variation_ids !== array() ) {
+			$config['variation_ids'] = $variation_ids;
+		}
+
+		$category_ids = self::parse_optional_comma_int_list( $post, 'mp_cp_builder_action_category_ids' );
+		if ( $category_ids !== array() ) {
+			$config['category_ids'] = $category_ids;
+		}
+
+		if ( $allow_sale_exclusion && ! empty( $post['mp_cp_builder_action_exclude_sale_items'] ) ) {
+			$config['exclude_sale_items'] = true;
+		}
+
+		return $config;
 	}
 
 	/**

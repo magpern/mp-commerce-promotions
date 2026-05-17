@@ -1940,6 +1940,8 @@ final class PromotionEditPage {
 		echo '<option value="product_in_cart">' . esc_html__( 'Product in cart', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="category_in_cart">' . esc_html__( 'Category in cart', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="exclude_sale_items">' . esc_html__( 'Exclude sale items', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="minimum_eligible_subtotal">' . esc_html__( 'Minimum eligible subtotal', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="maximum_eligible_subtotal">' . esc_html__( 'Maximum eligible subtotal', 'mp-commerce-promotions' ) . '</option>';
 		echo '</select></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_product_ids">' . esc_html__( 'Product IDs (list)', 'mp-commerce-promotions' ) . '</label></th><td>';
@@ -1960,6 +1962,20 @@ final class PromotionEditPage {
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_amount">' . esc_html__( 'Minimum subtotal amount', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_builder_amount" name="mp_cp_builder_amount" min="0" step="0.01" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_eligible_amount">' . esc_html__( 'Eligible subtotal amount', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_eligible_amount" name="mp_cp_builder_eligible_amount" min="0" step="0.01" />';
+		echo '<p class="description">' . esc_html__( 'Threshold for minimum_eligible_subtotal / maximum_eligible_subtotal (scoped line subtotals only).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_eligible_product_ids">' . esc_html__( 'Eligible scope product IDs', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_eligible_product_ids" name="mp_cp_builder_eligible_product_ids" placeholder="100, 101" />';
+		echo '<p class="description">' . esc_html__( 'Optional scope for eligible subtotal conditions; leave empty for all cart lines.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_eligible_variation_ids">' . esc_html__( 'Eligible scope variation IDs', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_eligible_variation_ids" name="mp_cp_builder_eligible_variation_ids" placeholder="3703" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_eligible_category_ids">' . esc_html__( 'Eligible scope category IDs', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_eligible_category_ids" name="mp_cp_builder_eligible_category_ids" placeholder="10, 12" /></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_product_id">' . esc_html__( 'Product ID', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_builder_product_id" name="mp_cp_builder_product_id" min="1" step="1" /></td></tr>';
@@ -2047,6 +2063,20 @@ final class PromotionEditPage {
 		echo '<tr><th scope="row"><label for="mp_cp_builder_cheapest_discount_percentage">' . esc_html__( 'Discount percentage', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_builder_cheapest_discount_percentage" name="mp_cp_builder_cheapest_discount_percentage" min="0.01" max="100" step="0.01" />';
 		echo '<p class="description">' . esc_html__( '100 = free unit; 50 = half off cheapest unit(s). Applied as a cart fee on the storefront.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_action_product_ids">' . esc_html__( 'Discount scope product IDs', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_action_product_ids" name="mp_cp_builder_action_product_ids" placeholder="100, 101" />';
+		echo '<p class="description">' . esc_html__( 'Optional. Scoped percentage/fixed discounts apply only to matching lines (fee-based; does not change line prices).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_action_variation_ids">' . esc_html__( 'Discount scope variation IDs', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_action_variation_ids" name="mp_cp_builder_action_variation_ids" placeholder="3703" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_action_category_ids">' . esc_html__( 'Discount scope category IDs', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_action_category_ids" name="mp_cp_builder_action_category_ids" placeholder="10, 12" /></td></tr>';
+
+		echo '<tr><th scope="row">' . esc_html__( 'Exclude sale from discount scope', 'mp-commerce-promotions' ) . '</th><td>';
+		echo '<label><input type="checkbox" name="mp_cp_builder_action_exclude_sale_items" value="1" /> ';
+		echo esc_html__( 'Percentage discount only: exclude on-sale lines from eligible subtotal.', 'mp-commerce-promotions' ) . '</label></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_percentage">' . esc_html__( 'Percentage', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_builder_percentage" name="mp_cp_builder_percentage" min="0.01" max="100" step="0.01" /></td></tr>';
@@ -2359,6 +2389,14 @@ final class PromotionEditPage {
 					__( 'Exclude sale items', 'mp-commerce-promotions' ),
 					"[\n  {\"type\":\"exclude_sale_items\"}\n]"
 				);
+				$this->render_rule_template_readonly(
+					__( 'Minimum eligible subtotal', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"minimum_eligible_subtotal\",\"amount\":100,\"product_ids\":[123],\"category_ids\":[10]}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'Maximum eligible subtotal', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"maximum_eligible_subtotal\",\"amount\":500,\"category_ids\":[10]}\n]"
+				);
 
 				echo '<h4 style="margin-top:1.5em;">' . esc_html__( 'Actions examples', 'mp-commerce-promotions' ) . '</h4>';
 
@@ -2367,8 +2405,20 @@ final class PromotionEditPage {
 					"[\n  {\"type\":\"percentage_discount\",\"percentage\":10}\n]"
 				);
 				$this->render_rule_template_readonly(
+					__( 'Scoped percentage discount', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"percentage_discount\",\"percentage\":20,\"category_ids\":[10]}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'Scoped percentage (exclude sale)', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"percentage_discount\",\"percentage\":15,\"product_ids\":[100],\"exclude_sale_items\":true}\n]"
+				);
+				$this->render_rule_template_readonly(
 					__( 'Fixed amount discount', 'mp-commerce-promotions' ),
 					"[\n  {\"type\":\"fixed_amount_discount\",\"amount\":25}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'Scoped fixed amount discount', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"fixed_amount_discount\",\"amount\":25,\"product_ids\":[100,101],\"category_ids\":[10]}\n]"
 				);
 				$this->render_rule_template_readonly(
 					__( 'Free shipping', 'mp-commerce-promotions' ),

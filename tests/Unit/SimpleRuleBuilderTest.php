@@ -266,6 +266,39 @@ final class SimpleRuleBuilderTest extends TestCase {
 		$this->assertSame( 100.0, $action['discount_percentage'] );
 	}
 
+	public function test_builds_minimum_eligible_subtotal_condition(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type'        => RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL,
+				'mp_cp_builder_eligible_amount'       => '100',
+				'mp_cp_builder_eligible_category_ids' => '10',
+				'mp_cp_builder_action_type'           => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'mp_cp_builder_percentage'            => '10',
+			)
+		);
+
+		$this->assertSame( RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL, $built['conditions'][0]['type'] );
+		$this->assertSame( 100.0, $built['conditions'][0]['amount'] );
+		$this->assertSame( array( 10 ), $built['conditions'][0]['category_ids'] );
+	}
+
+	public function test_builds_scoped_percentage_action(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type'       => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'mp_cp_builder_amount'               => '1',
+				'mp_cp_builder_action_type'          => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'mp_cp_builder_percentage'           => '20',
+				'mp_cp_builder_action_category_ids'  => '10,12',
+				'mp_cp_builder_action_exclude_sale_items' => '1',
+			)
+		);
+
+		$action = $built['actions'][0];
+		$this->assertSame( array( 10, 12 ), $action['category_ids'] );
+		$this->assertTrue( $action['exclude_sale_items'] );
+	}
+
 	public function test_builds_product_in_cart_condition(): void {
 		$built = SimpleRuleBuilder::build_from_post(
 			array(

@@ -12,6 +12,8 @@ Use this checklist to verify the end-to-end promotion flow on a real WooCommerce
 
 **Product targeting (variations, sale exclusion, promotion exclusions):** see [manual-product-targeting-test.md](manual-product-targeting-test.md) and `scripts/product-targeting-smoke.php`.
 
+**Scoped discounts (eligible subtotal, category/product fees):** see [manual-scoped-discount-test.md](manual-scoped-discount-test.md) and `scripts/scoped-discount-smoke.php`.
+
 **WP-CLI quick checks (optional):**
 
 ```bash

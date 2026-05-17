@@ -39,6 +39,10 @@ final class RuleTypes {
 
 	public const CONDITION_EXCLUDE_SALE_ITEMS = 'exclude_sale_items';
 
+	public const CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL = 'minimum_eligible_subtotal';
+
+	public const CONDITION_MAXIMUM_ELIGIBLE_SUBTOTAL = 'maximum_eligible_subtotal';
+
 	public const ACTION_PERCENTAGE_DISCOUNT = 'percentage_discount';
 
 	public const ACTION_FIXED_AMOUNT_DISCOUNT = 'fixed_amount_discount';

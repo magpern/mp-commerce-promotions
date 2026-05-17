@@ -76,6 +76,8 @@ From the WooCommerce project root:
 
 Expect `Success: product-targeting-smoke completed.`
 
+**Related:** [manual-scoped-discount-test.md](manual-scoped-discount-test.md) for eligible subtotal conditions and scoped percentage/fixed fees.
+
 ## Known limitations
 
 - Sale detection uses cart line `on_sale` from `CartContextBuilder` (`wc_get_product()->is_on_sale()`). Custom pricing plugins may not set this flag.

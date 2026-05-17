@@ -31,9 +31,9 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * Max applications — limits selected promotions per cart evaluation plan (enforced in planner + cart)
 * Declares compatibility with WooCommerce High-Performance Order Storage (HPOS)
 * Rule evaluation pipeline with pluggable condition/action types (MVP set)
-* Conditions: minimum subtotal, product/category quantity, product in cart, category in cart, exclude sale items, min/max cart quantity, logged in, first order, customer role, billing country, customer email domain, customer redemption count (logged-in metadata when available)
+* Conditions: minimum subtotal, minimum/maximum eligible subtotal (scoped line subtotals), product/category quantity, product in cart, category in cart, exclude sale items, min/max cart quantity, logged in, first order, customer role, billing country, customer email domain, customer redemption count (logged-in metadata when available)
 * Promotion-level excluded product/category IDs (schema 1.8.0) — narrow evaluation scope without removing cart lines
-* Actions: percentage discount, fixed amount discount, free shipping (MVP fee offset), cheapest item discount (variation-aware BOGO groundwork via negative fee; optional sale exclusion), free gift product (adds cart line at zero price)
+* Actions: percentage discount and fixed amount discount (optional product/category/variation scope; percentage supports sale exclusion), free shipping (MVP fee offset), cheapest item discount (EligibleCartScope BOGO groundwork via negative fee), free gift product (adds cart line at zero price)
 * Simple Rule Builder (one condition + one action, including cheapest item and free gift) and raw JSON rule editing
 * Rule validation panel in admin
 * WooCommerce admin: Promotions list with search, filters, and pagination
