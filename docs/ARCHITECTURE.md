@@ -375,6 +375,16 @@ Promotion rows store optional **`campaign_label`** (varchar 191), **`internal_no
 - **Diagnostics** — manual triggers for `activate_scheduled_promotions`, `archive_expired_paused_promotions`, `normalize_invalid_promotion_states`.
 - **Manual QA** — [manual-orchestration-and-segmentation-test.md](manual-orchestration-and-segmentation-test.md); smoke: `scripts/orchestration-segmentation-smoke.php`.
 
+### Automation and observability (schema 1.12.0)
+
+- **`PromotionAutomationRunner`** — manual `run_all()` / per-step lifecycle wrappers; structured summary (`started_at`, `actions`, `warnings`, `errors`); persists to `{prefix}mp_cp_automation_runs`. No WP-Cron hook yet.
+- **`PromotionHealthMonitor`** — read-only checks (invalid dates/budgets, orphaned exclusions, orchestration congestion, zero actions, JSON shapes, free-shipping overload, etc.) with severities info/warning/critical.
+- **`PlannerTelemetryRecorder`** — increments `{prefix}mp_cp_planner_telemetry` during cart planner runs (selected/skipped/blocked counters; no customer PII).
+- **`PromotionOperationalRecovery`** — Diagnostics POST tools: recalculate `budget_spent`, rebuild telemetry from redemptions, validate snapshots, repair orchestration group normalization (dry-run by default).
+- **Snapshots** — `snapshot_label`, `snapshot_source`; restore validates payload before apply.
+- **Admin** — Diagnostics: run all automation, health table, automation history (latest 20), recovery forms. Reports: telemetry cards, health summary, automation history. Promotions list: quick filters, compact mode, recently modified.
+- **Manual QA** — [manual-automation-and-observability-test.md](manual-automation-and-observability-test.md); smoke: `scripts/automation-observability-smoke.php`.
+
 ### Economics and scheduling (schema 1.10.0)
 
 **Promotion budgets** — optional `budget_amount`, `budget_currency`, and running `budget_spent` on `{prefix}mp_cp_promotions`. Checkout recording increments `budget_spent` via `PromotionBudgetLedger` + `PromotionRepository::adjust_budget_spent()`; reversal subtracts the same discount amount. `PromotionRestrictionEvaluator` blocks exhausted caps with `promotion_budget_exhausted`. Diagnostics can pause exhausted actives via `PromotionService::pause_budget_exhausted_promotions()`.
