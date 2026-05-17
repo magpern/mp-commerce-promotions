@@ -1,7 +1,10 @@
 # Beta release decision — 0.2.0-beta.1
 
 **Decision date:** 2026-05-17  
-**Commit baseline:** `808a261` + classic QA commit (this milestone)  
+**Commit baseline:** `43d8b63` (classic checkout browser QA + recording fix)  
+**Release commit:** *(set after `chore: release 0.2.0-beta.1`)*  
+**Release artifact:** `/home/magpern/mp-commerce-promotions-staging/build/mp-commerce-promotions-0.2.0-beta.1.zip`  
+**Product owner approved:** **pending**
 **Environment:** Local Docker WooCommerce at https://www.biopentra.eu (bind-mounted plugin)  
 **Gateway:** Cash on delivery (COD) enabled for QA  
 
@@ -89,10 +92,10 @@ None for a **limited beta** after this milestone’s recording fix is deployed.
 
 ## Required approval checklist
 
-- [ ] Product owner approves **ready with caveats**
-- [ ] Classic browser sign-off accepted (stacked + COD order + reversal)
-- [ ] Version bump to `0.2.0-beta.1` explicitly approved
-- [ ] `cart_checkout_blocks` remains **undeclared**
+- [ ] Product owner approves **ready with caveats** — **pending**
+- [x] Classic browser sign-off accepted (stacked + COD order + reversal)
+- [x] Version bump to `0.2.0-beta.1` in release commit (tag **pending** owner approval)
+- [x] `cart_checkout_blocks` remains **undeclared**
 - [ ] Pilot merchants informed of fee-based discounts and block limitation
 
 ---

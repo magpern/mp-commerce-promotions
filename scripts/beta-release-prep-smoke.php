@@ -34,7 +34,7 @@ $schema = get_option( 'mp_cp_schema_version', '' );
 mp_cp_prep_assert( $schema === '1.14.0', 'schema version 1.14.0' );
 
 $version = defined( 'MP_COMMERCE_PROMOTIONS_VERSION' ) ? MP_COMMERCE_PROMOTIONS_VERSION : '';
-mp_cp_prep_assert( $version === '0.1.0', 'plugin version still 0.1.0 (pre-bump)' );
+mp_cp_prep_assert( $version === '0.2.0-beta.1', 'plugin version 0.2.0-beta.1' );
 
 $pot = $root . '/languages/mp-commerce-promotions.pot';
 mp_cp_prep_assert( is_readable( $pot ) && count( file( $pot ) ) > 100, 'POT file exists' );

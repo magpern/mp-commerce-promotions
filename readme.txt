@@ -8,7 +8,7 @@ Stable tag: trunk
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. Early MVP — not production-complete.
+Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Beta release 0.2.0-beta.1** — classic shortcode checkout pilot; not production-complete.
 
 == Description ==
 
@@ -113,6 +113,13 @@ No. Full codes are displayed once after generation. Download the CSV before leav
 3. Generated code batch show-once screen (placeholder).
 
 == Changelog ==
+
+= 0.2.0-beta.1 =
+* Public beta for technical pilots on classic shortcode cart/checkout with HPOS.
+* Checkout recording fallback when session is empty at order creation (fee-line rebuild).
+* Browser QA certification docs, beta release evidence, and local QA promotion setup script.
+* Production hardening, simulation, orchestration, economics, and commercial readiness milestones since 0.1.0 (see repository CHANGELOG.md).
+* Cart/Checkout Blocks compatibility is not declared. PHPCS baseline is informational only.
 
 = 0.1.0 =
 * Initial MVP: promotion engine, admin UI, cart fees, promotion codes, batches, redemptions, audit log, diagnostics.

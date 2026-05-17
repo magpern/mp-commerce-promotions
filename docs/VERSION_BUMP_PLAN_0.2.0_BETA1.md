@@ -1,8 +1,6 @@
 # Version bump plan — 0.2.0-beta.1
 
-**Do not bump version in code until product owner approves [BETA_RELEASE_DECISION.md](BETA_RELEASE_DECISION.md) and confirms the tag.**
-
-Classic browser QA completed 2026-05-17 — recommendation **ready with caveats** (see decision doc). Recording fix must be included in the release commit.
+Classic browser QA completed 2026-05-17 — recommendation **ready with caveats**. Version **0.2.0-beta.1** bumped in release commit; **git tag pending** product owner approval.
 
 ---
 
@@ -22,12 +20,12 @@ Classic browser QA completed 2026-05-17 — recommendation **ready with caveats*
 
 | File | What to change |
 |------|----------------|
-| `mp-commerce-promotions.php` | Header `Version:` and `MP_COMMERCE_PROMOTIONS_VERSION` |
-| `readme.txt` | `Stable tag:` and changelog section |
-| `README.md` | Version mentions if any |
-| `CHANGELOG.md` | New `## [0.2.0-beta.1] - YYYY-MM-DD` section |
-| `languages/mp-commerce-promotions.pot` | `Project-Id-Version` in header (regenerate via `wp i18n make-pot`) |
-| `docs/RELEASE_EVIDENCE_0.2.0_BETA1.md` | Final commit hash |
+| `mp-commerce-promotions.php` | [x] Header `Version:` and `MP_COMMERCE_PROMOTIONS_VERSION` |
+| `readme.txt` | [x] `Stable tag: trunk` + `= 0.2.0-beta.1 =` changelog |
+| `README.md` | [x] Version and zip path |
+| `CHANGELOG.md` | [x] `## [0.2.0-beta.1] - 2026-05-17` |
+| `languages/mp-commerce-promotions.pot` | Optional — regenerate post-tag if needed |
+| `docs/RELEASE_EVIDENCE_0.2.0_BETA1.md` | [x] Updated; release commit hash after push |
 
 ---
 
@@ -49,9 +47,11 @@ cd /home/magpern/woocommerce
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/beta-release-prep-smoke.php
 
 git add -A
-git commit -m "chore: release version 0.2.0-beta.1"
-git tag -a v0.2.0-beta.1 -m "0.2.0-beta.1 — public beta"
+git commit -m "chore: release 0.2.0-beta.1"
 git push origin main
+
+# After product owner approval:
+git tag -a v0.2.0-beta.1 -m "Release 0.2.0-beta.1"
 git push origin v0.2.0-beta.1
 
 # Attach ../build/mp-commerce-promotions-0.2.0-beta.1.zip to GitHub Release
@@ -61,11 +61,12 @@ git push origin v0.2.0-beta.1
 
 ## Preconditions (do not tag until done)
 
-- [x] [CLASSIC_CHECKOUT_CERTIFICATION.md](CLASSIC_CHECKOUT_CERTIFICATION.md) browser sign-off (stacked + COD + reversal) — 2026-05-17
-- [ ] Product owner approves [BETA_RELEASE_DECISION.md](BETA_RELEASE_DECISION.md)
-- [ ] [RELEASE_EVIDENCE_0.2.0_BETA1.md](RELEASE_EVIDENCE_0.2.0_BETA1.md) blockers cleared or waived in writing
-- [ ] Block compatibility decision documented (declare or explicit waiver)
-- [ ] CI green on release commit (PHPUnit + zip; PHPCS may warn)
+- [x] [CLASSIC_CHECKOUT_CERTIFICATION.md](CLASSIC_CHECKOUT_CERTIFICATION.md) browser sign-off — 2026-05-17
+- [ ] Product owner approves [BETA_RELEASE_DECISION.md](BETA_RELEASE_DECISION.md) — **pending**
+- [x] [RELEASE_EVIDENCE_0.2.0_BETA1.md](RELEASE_EVIDENCE_0.2.0_BETA1.md) updated for release
+- [x] Block compatibility — **no** declaration (explicit waiver for beta)
+- [ ] CI green on release commit (PHPUnit + zip; PHPCS may warn) — verify at release
+- [ ] Git tag `v0.2.0-beta.1` — **pending** owner approval
 
 ---
 

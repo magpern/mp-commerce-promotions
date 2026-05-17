@@ -9,22 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0-beta.1] - TBD (draft — not released)
+## [0.2.0-beta.1] - 2026-05-17
 
-> Do not tag until product owner approves [docs/BETA_RELEASE_DECISION.md](docs/BETA_RELEASE_DECISION.md).
-
-### Fixed
-
-- Checkout recording when cart session is empty at order creation (fee-line fallback).
-
-### Added
-
-- Classic shortcode cart/checkout browser QA certification (COD).
-- `scripts/classic-browser-qa-setup.php` for local QA promotion seeds.
-
----
-
-## [Unreleased]
+First **public beta** for technical pilot users on **classic shortcode** cart and checkout with **WooCommerce HPOS** declared compatible.
 
 ### Fixed
 
@@ -32,8 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Classic browser QA** — Certification run on `/cart-2/` + `/checkout-2/` with COD; docs `BETA_RELEASE_DECISION.md`, updated certification matrix; `scripts/classic-browser-qa-setup.php` for seeded promotions.
-
+- **Classic browser QA** — Certification on `/cart-2/` + `/checkout-2/` with COD (stacked fees, order recording, reversal); `BETA_RELEASE_DECISION.md`, `CLASSIC_CHECKOUT_CERTIFICATION.md`, `scripts/classic-browser-qa-setup.php`.
 - **Browser QA beta release prep** — `BROWSER_QA_RUNBOOK.md`, `CLASSIC_CHECKOUT_CERTIFICATION.md`, `BLOCK_CHECKOUT_INVESTIGATION.md` (draft block QA pages), `RELEASE_EVIDENCE_0.2.0_BETA1.md`, `VERSION_BUMP_PLAN_0.2.0_BETA1.md`, `scripts/beta-release-prep-smoke.php`; local COD enabled for QA documentation.
 - **Beta readiness certification** — `docs/BETA_READINESS.md`, `docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md` (blocks not declared); browser QA matrix and evidence updates; real `languages/mp-commerce-promotions.pot` via WP-CLI; CI PHPCS step (continue-on-error); PHPCBF persistence on Service/Admin/Woo target paths; `scripts/beta-readiness-smoke.php`.
 - **Production hardening closure** — Reports production hardening dashboard (profiler, safe mode, cron, degraded state, compatibility confidence, slow runs); checkout recording transient lock; cart redemption count memoization; simulation request cache reuse; expanded `scripts/release-audit.sh` (zip + doc checks); `scripts/production-hardening-closure-smoke.php`; PHPUnit `ProductionHardeningClosureTest`; documentation pass for cron/safe/degraded/retention/release-audit.
@@ -74,6 +60,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Conditions **`logged_in`** and **`first_order`**; expanded PHPUnit coverage for evaluator, validator, builder, and domain.
 - Release packaging workflow (`scripts/build-zip.sh`, `docs/RELEASE_CHECKLIST.md`, this changelog).
 
+### Beta release notes (caveats)
+
+- **Audience:** Technical pilot stores on **classic shortcode** cart/checkout — not a general-availability production release.
+- **HPOS:** Declared compatible (`custom_order_tables`). **Cart/Checkout Blocks:** **Not** declared; use classic pages or accept unverified block behavior.
+- **Browser QA:** Stacked checkout, COD order placement, recording, and reversal **passed**; scoped %, free gift line, free shipping with paid shipping, budget/cooldown, and CSV export are **partial** or **not run** (see `docs/CLASSIC_CHECKOUT_CERTIFICATION.md`).
+- **Discount model:** Negative cart fees (and free gift lines); not native line-item or coupon discounts.
+- **PHPCS:** Non-gating in CI (`continue-on-error`); baseline not clean.
+- **Schema:** Database schema remains **1.14.0** (no migration in this release).
+
 ## [0.1.0] - 2026-05-16
 
 ### Added
@@ -96,5 +91,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Database schema version is tracked separately (`mp_cp_schema_version`; see `Schema::SCHEMA_VERSION` in code).
 - PHPCS baseline is not clean; automated tests and CI are not yet in place.
 
-[Unreleased]: https://github.com/magpern/mp-commerce-promotions/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/magpern/mp-commerce-promotions/compare/v0.2.0-beta.1...HEAD
+[0.2.0-beta.1]: https://github.com/magpern/mp-commerce-promotions/compare/v0.1.0...v0.2.0-beta.1
 [0.1.0]: https://github.com/magpern/mp-commerce-promotions/releases/tag/v0.1.0

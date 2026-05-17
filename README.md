@@ -164,7 +164,7 @@ bash scripts/sync-to-live.sh
 bash scripts/verify-plugin.sh
 ```
 
-**Plugin version:** `0.1.0` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). Database schema version is separate (`mp_cp_schema_version`).
+**Plugin version:** `0.2.0-beta.1` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). Database schema version is separate (`mp_cp_schema_version`, currently **1.14.0**).
 
 **Release zip** (no `.git` / `vendor`):
 
@@ -172,7 +172,7 @@ bash scripts/verify-plugin.sh
 bash scripts/build-zip.sh
 ```
 
-Output: `/home/magpern/mp-commerce-promotions-staging/build/mp-commerce-promotions-0.1.0.zip`. See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) before tagging a release.
+Output: `/home/magpern/mp-commerce-promotions-staging/build/mp-commerce-promotions-0.2.0-beta.1.zip`. See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) and [docs/RELEASE_EVIDENCE_0.2.0_BETA1.md](docs/RELEASE_EVIDENCE_0.2.0_BETA1.md).
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for paths, exclusions (never copy `.git` or `vendor` to live), Composer lint/test commands (`composer run test` — pure PHP unit tests only; WordPress integration tests are future work).
 
