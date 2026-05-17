@@ -18,6 +18,7 @@ use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\RedemptionRepository;
+use MP\CommercePromotions\Service\PromotionBulkCampaignWorkflow;
 use MP\CommercePromotions\Service\PromotionHealthMonitor;
 use MP\CommercePromotions\Service\PromotionLifecycle;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
@@ -31,6 +32,10 @@ final class PromotionsPage {
 	private const BULK_NONCE_ACTION = 'mp_cp_bulk_promotions';
 
 	private const BULK_NONCE_FIELD = 'mp_cp_bulk_promotions_nonce';
+
+	private const CAMPAIGN_BULK_NONCE_ACTION = 'mp_cp_campaign_bulk';
+
+	private const CAMPAIGN_BULK_NONCE_FIELD = 'mp_cp_campaign_bulk_nonce';
 
 	private const PER_PAGE = 20;
 
@@ -50,6 +55,8 @@ final class PromotionsPage {
 
 	private ?PromotionHealthMonitor $health_monitor;
 
+	private ?PromotionBulkCampaignWorkflow $campaign_bulk;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionService $promotion_service,
@@ -58,7 +65,8 @@ final class PromotionsPage {
 		?PromotionCodeBatchRepository $code_batches = null,
 		?RedemptionRepository $redemptions = null,
 		?PromotionRuleValidator $rule_validator = null,
-		?PromotionHealthMonitor $health_monitor = null
+		?PromotionHealthMonitor $health_monitor = null,
+		?PromotionBulkCampaignWorkflow $campaign_bulk = null
 	) {
 		$this->promotions        = $promotions;
 		$this->promotion_service = $promotion_service;
@@ -68,6 +76,7 @@ final class PromotionsPage {
 		$this->redemptions       = $redemptions;
 		$this->rule_validator    = $rule_validator ?? new PromotionRuleValidator();
 		$this->health_monitor    = $health_monitor;
+		$this->campaign_bulk     = $campaign_bulk;
 	}
 
 	public function render(): void {
@@ -86,6 +95,7 @@ final class PromotionsPage {
 		$list_query = $this->parse_list_query_args();
 
 		$this->handle_post_bulk( $list_query );
+		$this->handle_post_campaign_bulk( $list_query );
 		$this->handle_post_create();
 		$repo_args  = array(
 			'status'              => $list_query['status'],
@@ -422,9 +432,10 @@ final class PromotionsPage {
 			return;
 		}
 
-		echo '<form method="post" action="' . esc_url( $this->list_url( $this->list_query_to_url_args( $list_query ) ) ) . '">';
+		echo '<form id="mp-cp-promotions-list-form" method="post" action="' . esc_url( $this->list_url( $this->list_query_to_url_args( $list_query ) ) ) . '">';
 		wp_nonce_field( self::BULK_NONCE_ACTION, self::BULK_NONCE_FIELD );
 		$this->render_bulk_hidden_fields( $list_query );
+		$this->render_campaign_bulk_panel();
 		$this->render_bulk_actions_bar( 'top' );
 
 		echo '<table class="widefat striped" style="max-width:100%;">';
@@ -645,6 +656,154 @@ final class PromotionsPage {
 			default:
 				return null;
 		}
+	}
+
+	private function render_campaign_bulk_panel(): void {
+		if ( $this->campaign_bulk === null ) {
+			return;
+		}
+
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:0 0 16px;">';
+		echo '<h2 style="margin-top:0;">' . esc_html__( 'Campaign bulk updates', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="description">' . esc_html__(
+			'Select promotions in the list below, then set schedule, orchestration, label, budget, or cooldown fields. Uses the same checkboxes as status bulk actions.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<p><label>' . esc_html__( 'Workflow', 'mp-commerce-promotions' ) . ' ';
+		echo '<select name="mp_cp_campaign_workflow">';
+		echo '<option value="schedule">' . esc_html__( 'Mass scheduling', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="orchestration">' . esc_html__( 'Orchestration group + cooldown', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="label">' . esc_html__( 'Campaign label', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="budget">' . esc_html__( 'Budget amount', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="cooldown">' . esc_html__( 'Cooldown hours', 'mp-commerce-promotions' ) . '</option>';
+		echo '</select></label></p>';
+		echo '<p><label>' . esc_html__( 'Starts at (Y-m-d H:i:s)', 'mp-commerce-promotions' ) . ' <input type="text" name="mp_cp_bulk_starts_at" class="regular-text" /></label></p>';
+		echo '<p><label>' . esc_html__( 'Ends at', 'mp-commerce-promotions' ) . ' <input type="text" name="mp_cp_bulk_ends_at" class="regular-text" /></label></p>';
+		echo '<p><label>' . esc_html__( 'Orchestration group', 'mp-commerce-promotions' ) . ' <input type="text" name="mp_cp_bulk_orchestration_group" class="regular-text" /></label></p>';
+		echo '<p><label>' . esc_html__( 'Campaign label', 'mp-commerce-promotions' ) . ' <input type="text" name="mp_cp_bulk_campaign_label" class="regular-text" /></label></p>';
+		echo '<p><label>' . esc_html__( 'Budget amount', 'mp-commerce-promotions' ) . ' <input type="number" step="0.01" name="mp_cp_bulk_budget_amount" class="small-text" /></label></p>';
+		echo '<p><label>' . esc_html__( 'Cooldown (hours)', 'mp-commerce-promotions' ) . ' <input type="number" name="mp_cp_bulk_cooldown_hours" class="small-text" /></label></p>';
+		wp_nonce_field( self::CAMPAIGN_BULK_NONCE_ACTION, self::CAMPAIGN_BULK_NONCE_FIELD );
+		echo '<button type="submit" name="mp_cp_campaign_bulk_submit" value="1" class="button button-secondary">';
+		echo esc_html__( 'Apply campaign bulk update', 'mp-commerce-promotions' );
+		echo '</button>';
+		echo '</div>';
+	}
+
+	/**
+	 * @param array{status: string|null, search: string|null, paged: int, offset: int} $list_query
+	 */
+	private function handle_post_campaign_bulk( array $list_query ): void {
+		if ( $this->campaign_bulk === null || ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_campaign_bulk_submit'] ) ) {
+			return;
+		}
+
+		$redirect = $this->list_url( $this->list_query_to_url_args( $list_query ) );
+
+		if ( ! isset( $_POST[ self::CAMPAIGN_BULK_NONCE_FIELD ] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST[ self::CAMPAIGN_BULK_NONCE_FIELD ] ) ), self::CAMPAIGN_BULK_NONCE_ACTION ) ) {
+			wp_safe_redirect( add_query_arg( 'mp_cp_error', 'invalid_nonce', $redirect ) );
+			exit;
+		}
+
+		$ids = $this->parse_bulk_promotion_ids();
+		if ( $ids === array() ) {
+			wp_safe_redirect( add_query_arg( array( 'mp_cp_bulk_changed' => '0', 'mp_cp_bulk_skipped' => '0' ), $redirect ) );
+			exit;
+		}
+
+		$workflow = isset( $_POST['mp_cp_campaign_workflow'] )
+			? sanitize_key( wp_unslash( (string) $_POST['mp_cp_campaign_workflow'] ) )
+			: 'schedule';
+		$actor    = (int) get_current_user_id();
+
+		$result = match ( $workflow ) {
+			'orchestration' => $this->campaign_bulk->bulk_assign_orchestration(
+				$ids,
+				$this->optional_post_string( 'mp_cp_bulk_orchestration_group' ),
+				$this->optional_post_int( 'mp_cp_bulk_cooldown_hours' ),
+				$actor
+			),
+			'label' => $this->campaign_bulk->bulk_assign_campaign_label(
+				$ids,
+				$this->optional_post_string( 'mp_cp_bulk_campaign_label' ),
+				$actor
+			),
+			'budget' => $this->campaign_bulk->bulk_adjust_budget(
+				$ids,
+				$this->optional_post_float( 'mp_cp_bulk_budget_amount' ),
+				null,
+				$actor
+			),
+			'cooldown' => $this->campaign_bulk->bulk_assign_cooldown(
+				$ids,
+				$this->optional_post_int( 'mp_cp_bulk_cooldown_hours' ),
+				$actor
+			),
+			default => $this->campaign_bulk->bulk_update_schedule(
+				$ids,
+				$this->optional_post_string( 'mp_cp_bulk_starts_at' ),
+				$this->optional_post_string( 'mp_cp_bulk_ends_at' ),
+				$actor
+			),
+		};
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'mp_cp_bulk_changed' => (string) (int) ( $result['changed'] ?? 0 ),
+					'mp_cp_bulk_skipped' => (string) (int) ( $result['skipped'] ?? 0 ),
+				),
+				$redirect
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * @return list<int>
+	 */
+	private function parse_bulk_promotion_ids(): array {
+		$raw_ids = isset( $_POST['mp_cp_promotion_ids'] ) && is_array( $_POST['mp_cp_promotion_ids'] )
+			? $_POST['mp_cp_promotion_ids']
+			: array();
+		$ids     = array();
+		foreach ( $raw_ids as $raw ) {
+			if ( is_scalar( $raw ) ) {
+				$id = (int) $raw;
+				if ( $id > 0 ) {
+					$ids[ $id ] = $id;
+				}
+			}
+		}
+
+		return array_values( $ids );
+	}
+
+	private function optional_post_string( string $key ): ?string {
+		if ( ! isset( $_POST[ $key ] ) ) {
+			return null;
+		}
+		$val = sanitize_text_field( wp_unslash( (string) $_POST[ $key ] ) );
+		return $val === '' ? null : $val;
+	}
+
+	private function optional_post_int( string $key ): ?int {
+		if ( ! isset( $_POST[ $key ] ) || $_POST[ $key ] === '' ) {
+			return null;
+		}
+		return (int) $_POST[ $key ];
+	}
+
+	private function optional_post_float( string $key ): ?float {
+		if ( ! isset( $_POST[ $key ] ) || $_POST[ $key ] === '' ) {
+			return null;
+		}
+		return (float) $_POST[ $key ];
 	}
 
 	/**

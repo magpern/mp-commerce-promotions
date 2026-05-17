@@ -12,8 +12,12 @@ namespace MP\CommercePromotions\Admin;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\Redemption;
+use MP\CommercePromotions\Domain\SimulationScenarioRecord;
+use MP\CommercePromotions\Domain\SimulationScenarioRepository;
 use MP\CommercePromotions\Service\PromotionLifecycle;
 use MP\CommercePromotions\Service\PromotionReports;
+use MP\CommercePromotions\Service\PromotionSimulationEngine;
+use MP\CommercePromotions\Service\SimulationScenario;
 
 final class ReportsPage {
 
@@ -29,9 +33,16 @@ final class ReportsPage {
 
 	private PromotionRepository $promotions;
 
-	public function __construct( PromotionReports $reports, PromotionRepository $promotions ) {
+	private ?SimulationScenarioRepository $scenarios;
+
+	public function __construct(
+		PromotionReports $reports,
+		PromotionRepository $promotions,
+		?SimulationScenarioRepository $scenarios = null
+	) {
 		$this->reports    = $reports;
 		$this->promotions = $promotions;
+		$this->scenarios  = $scenarios;
 		$this->picker     = new PromotionPicker( $promotions );
 	}
 
@@ -41,6 +52,7 @@ final class ReportsPage {
 		}
 
 		$this->maybe_send_csv_export();
+		$this->handle_post_simulation_scenarios();
 
 		$filters = $this->filters_from_request();
 		$summary = $this->reports->summary( $filters );
@@ -58,6 +70,12 @@ final class ReportsPage {
 		$this->render_telemetry_section();
 		$this->render_automation_history_section();
 		$this->render_health_summary_section();
+		$this->render_planner_performance_section();
+		$this->render_forecasting_section();
+		$this->render_promotion_calendar_section();
+		$this->render_recommendations_section();
+		$this->render_intelligence_analytics_section();
+		$this->render_simulation_section();
 		$this->render_orchestration_section( $summary );
 		$this->render_economics_sections( $filters );
 		$this->render_top_promotions_table( $summary['top_promotions'] );
@@ -548,5 +566,195 @@ final class ReportsPage {
 			(int) $health['info']
 		);
 		echo '</p>';
+	}
+
+	private function render_planner_performance_section(): void {
+		$perf = $this->reports->planner_performance();
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Planner performance', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p>' . esc_html__(
+			'In-request cache counters for simulations and cart planning (no Redis).',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<ul>';
+		printf(
+			'<li>%s</li>',
+			esc_html(
+				sprintf(
+					/* translators: 1: simulated runs, 2: hits, 3: misses */
+					__( 'This request — simulated: %1$d, cache hits: %2$d, misses: %3$d', 'mp-commerce-promotions' ),
+					(int) ( $perf['request']['simulated_runs'] ?? 0 ),
+					(int) ( $perf['request']['cache_hits'] ?? 0 ),
+					(int) ( $perf['request']['cache_misses'] ?? 0 )
+				)
+			)
+		);
+		printf(
+			'<li>%s</li>',
+			esc_html(
+				sprintf(
+					__( 'Persisted totals — simulated: %1$d, hits: %2$d, misses: %3$d', 'mp-commerce-promotions' ),
+					(int) ( $perf['persisted']['simulated_runs'] ?? 0 ),
+					(int) ( $perf['persisted']['cache_hits'] ?? 0 ),
+					(int) ( $perf['persisted']['cache_misses'] ?? 0 )
+				)
+			)
+		);
+		echo '</ul>';
+	}
+
+	private function render_forecasting_section(): void {
+		$forecast = $this->reports->forecast_summary();
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Forecasting (heuristic)', 'mp-commerce-promotions' ) . '</h2>';
+		if ( $forecast === array() ) {
+			echo '<p>' . esc_html__( 'Telemetry required for forecasts.', 'mp-commerce-promotions' ) . '</p>';
+			return;
+		}
+		echo '<p>';
+		printf(
+			esc_html__( 'Estimated catalog discount exposure: %1$s — projected redemptions: %2$d (generated %3$s).', 'mp-commerce-promotions' ),
+			esc_html( number_format( (float) ( $forecast['estimated_discount_exposure'] ?? 0 ), 2 ) ),
+			(int) ( $forecast['projected_redemption_volume'] ?? 0 ),
+			esc_html( (string) ( $forecast['generated_at'] ?? '' ) )
+		);
+		echo '</p>';
+	}
+
+	private function render_promotion_calendar_section(): void {
+		$calendar = $this->reports->promotion_calendar();
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Promotion calendar', 'mp-commerce-promotions' ) . '</h2>';
+		foreach ( array( 'upcoming', 'active', 'ending_soon', 'exhausted', 'archived' ) as $bucket ) {
+			$rows = $calendar[ $bucket ] ?? array();
+			echo '<h3>' . esc_html( ucfirst( str_replace( '_', ' ', $bucket ) ) ) . '</h3>';
+			if ( $rows === array() ) {
+				echo '<p>' . esc_html__( 'None', 'mp-commerce-promotions' ) . '</p>';
+				continue;
+			}
+			echo '<table class="widefat striped" style="max-width:100%;margin-bottom:1em;"><thead><tr>';
+			echo '<th>ID</th><th>' . esc_html__( 'Name', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th>' . esc_html__( 'Campaign', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th>' . esc_html__( 'Orchestration', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th>' . esc_html__( 'Phase', 'mp-commerce-promotions' ) . '</th>';
+			echo '</tr></thead><tbody>';
+			foreach ( array_slice( $rows, 0, 15 ) as $row ) {
+				echo '<tr><td>' . esc_html( (string) ( $row['promotion_id'] ?? '' ) ) . '</td>';
+				echo '<td>' . esc_html( (string) ( $row['name'] ?? '' ) ) . '</td>';
+				echo '<td>' . esc_html( (string) ( $row['campaign_label'] ?? '—' ) ) . '</td>';
+				echo '<td>' . esc_html( (string) ( $row['orchestration_group'] ?? '—' ) ) . '</td>';
+				echo '<td>' . esc_html( (string) ( $row['lifecycle_phase'] ?? '' ) ) . '</td></tr>';
+			}
+			echo '</tbody></table>';
+		}
+	}
+
+	private function render_recommendations_section(): void {
+		$recs = $this->reports->recommendations();
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Intelligent recommendations', 'mp-commerce-promotions' ) . '</h2>';
+		if ( $recs === array() ) {
+			echo '<p>' . esc_html__( 'No recommendations.', 'mp-commerce-promotions' ) . '</p>';
+			return;
+		}
+		echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Severity', 'mp-commerce-promotions' ) . '</th><th>' . esc_html__( 'Code', 'mp-commerce-promotions' ) . '</th><th>' . esc_html__( 'Message', 'mp-commerce-promotions' ) . '</th></tr></thead><tbody>';
+		foreach ( array_slice( $recs, 0, 25 ) as $rec ) {
+			echo '<tr><td>' . esc_html( (string) ( $rec['severity'] ?? '' ) ) . '</td>';
+			echo '<td><code>' . esc_html( (string) ( $rec['code'] ?? '' ) ) . '</code></td>';
+			echo '<td>' . esc_html( (string) ( $rec['message'] ?? '' ) ) . '</td></tr>';
+		}
+		echo '</tbody></table>';
+	}
+
+	private function render_intelligence_analytics_section(): void {
+		$analytics = $this->reports->intelligence_analytics();
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Campaign intelligence analytics', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Highest ROI (discount per redemption heuristic):', 'mp-commerce-promotions' ) . '</p>';
+		if ( ( $analytics['highest_roi_campaigns'] ?? array() ) === array() ) {
+			echo '<p>' . esc_html__( 'No ROI data yet.', 'mp-commerce-promotions' ) . '</p>';
+		} else {
+			echo '<ul>';
+			foreach ( $analytics['highest_roi_campaigns'] as $row ) {
+				echo '<li>' . esc_html( (string) ( $row['name'] ?? '' ) ) . ' — ROI ' . esc_html( (string) ( $row['roi_score'] ?? 0 ) ) . '</li>';
+			}
+			echo '</ul>';
+		}
+		echo '<p>' . esc_html__( 'Scenario run count (saved scenarios):', 'mp-commerce-promotions' ) . ' ';
+		echo esc_html( (string) (int) ( $analytics['most_simulated_scenarios_runs'] ?? 0 ) ) . '</p>';
+	}
+
+	private function render_simulation_section(): void {
+		if ( $this->scenarios === null ) {
+			return;
+		}
+
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Promotion simulation', 'mp-commerce-promotions' ) . '</h2>';
+		$engine = new PromotionSimulationEngine( $this->promotions );
+		$result = $engine->simulate( SimulationScenario::from_preset( SimulationScenario::PRESET_WHOLE_CART ) );
+		echo '<p class="description">' . esc_html__( 'Quick whole-cart simulation against active promotions (synthetic cart).', 'mp-commerce-promotions' ) . '</p>';
+		echo '<p><strong>' . esc_html__( 'Estimated discount:', 'mp-commerce-promotions' ) . '</strong> ';
+		echo esc_html( number_format( $result->get_total_discount(), 2 ) ) . '</p>';
+
+		echo '<h3>' . esc_html__( 'Saved scenarios (latest 20)', 'mp-commerce-promotions' ) . '</h3>';
+		$list = $this->scenarios->find_latest( 20 );
+		if ( $list === array() ) {
+			echo '<p>' . esc_html__( 'No saved scenarios yet.', 'mp-commerce-promotions' ) . '</p>';
+		} else {
+			echo '<table class="widefat striped"><thead><tr><th>ID</th><th>Name</th><th>Runs</th><th>Last run</th></tr></thead><tbody>';
+			foreach ( $list as $scenario ) {
+				echo '<tr><td>' . esc_html( (string) ( $scenario->get_id() ?? 0 ) ) . '</td>';
+				echo '<td>' . esc_html( $scenario->get_name() ) . '</td>';
+				echo '<td>' . esc_html( (string) $scenario->get_run_count() ) . '</td>';
+				echo '<td>' . esc_html( $scenario->get_last_run_at() ?? '—' ) . '</td></tr>';
+			}
+			echo '</tbody></table>';
+		}
+
+		echo '<form method="post" style="margin-top:1em;">';
+		wp_nonce_field( 'mp_cp_save_simulation_scenario', 'mp_cp_save_simulation_scenario_nonce' );
+		echo '<p><label>' . esc_html__( 'Save preset scenario', 'mp-commerce-promotions' ) . '</label> ';
+		echo '<select name="mp_cp_simulation_preset">';
+		foreach (
+			array(
+				SimulationScenario::PRESET_WHOLE_CART,
+				SimulationScenario::PRESET_VIP_CUSTOMER,
+				SimulationScenario::PRESET_GUEST_CUSTOMER,
+			) as $preset
+		) {
+			echo '<option value="' . esc_attr( $preset ) . '">' . esc_html( $preset ) . '</option>';
+		}
+		echo '</select> ';
+		echo '<input type="text" name="mp_cp_simulation_name" placeholder="' . esc_attr__( 'Scenario name', 'mp-commerce-promotions' ) . '" required /> ';
+		echo '<button type="submit" name="mp_cp_save_simulation_scenario" value="1" class="button">' . esc_html__( 'Save scenario', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form>';
+	}
+
+	private function handle_post_simulation_scenarios(): void {
+		if ( $this->scenarios === null || ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_save_simulation_scenario'] ) ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_save_simulation_scenario_nonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_save_simulation_scenario_nonce'] ) ), 'mp_cp_save_simulation_scenario' ) ) {
+			return;
+		}
+
+		$name   = isset( $_POST['mp_cp_simulation_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_simulation_name'] ) ) : '';
+		$preset = isset( $_POST['mp_cp_simulation_preset'] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_simulation_preset'] ) ) : SimulationScenario::PRESET_WHOLE_CART;
+		if ( $name === '' ) {
+			return;
+		}
+
+		$record = new SimulationScenarioRecord(
+			null,
+			$name,
+			SimulationScenario::from_preset( $preset )->to_array(),
+			SimulationScenarioRecord::STATUS_ACTIVE,
+			(int) get_current_user_id(),
+			current_time( 'mysql' ),
+			null,
+			0
+		);
+		$this->scenarios->insert( $record );
 	}
 }

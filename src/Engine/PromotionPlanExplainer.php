@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Engine;
 
+use MP\CommercePromotions\Engine\RuleTypes;
+
 final class PromotionPlanExplainer {
 
 	/**
@@ -298,6 +300,76 @@ final class PromotionPlanExplainer {
 		}
 
 		return null;
+	}
+
+	/**
+	 * @param array<string, mixed> $explained
+	 * @return array<string, mixed>
+	 */
+	public static function enrich_explanation(
+		array $explained,
+		PromotionEvaluationPlan $plan,
+		EvaluationContext $context
+	): array {
+		$subtotal = $context->get_cart_subtotal() ?? 0.0;
+		$selected = $plan->get_selected_decisions();
+		$estimated_savings = 0.0;
+
+		foreach ( $selected as $decision ) {
+			foreach ( $decision->get_promotion()->get_actions() as $action ) {
+				if ( ! is_array( $action ) ) {
+					continue;
+				}
+				$type = isset( $action['type'] ) ? (string) $action['type'] : '';
+				if ( $type === RuleTypes::ACTION_PERCENTAGE_DISCOUNT && isset( $action['percentage'] ) ) {
+					$estimated_savings += $subtotal * ( (float) $action['percentage'] / 100 );
+				} elseif ( $type === RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT && isset( $action['amount'] ) ) {
+					$estimated_savings += (float) $action['amount'];
+				}
+			}
+		}
+
+		$explained['estimated_savings'] = round( $estimated_savings, 2 );
+		$explained['orchestration_chain'] = $explained['orchestration_group_blocked'] ?? array();
+		$explained['cooldown_chain']      = $explained['blocked_by_cooldown'] ?? array();
+		$explained['overlap_warnings']    = array();
+		$explained['recommendation_hints'] = array();
+		if ( count( $explained['orchestration_group_blocked'] ?? array() ) > 0 ) {
+			$explained['recommendation_hints'][] = __(
+				'Review orchestration groups: multiple promotions competed for the same lane.',
+				'mp-commerce-promotions'
+			);
+		}
+		if ( count( $explained['blocked_by_cooldown'] ?? array() ) > 0 ) {
+			$explained['recommendation_hints'][] = __(
+				'Cooldown blocked one or more promotions for this customer context.',
+				'mp-commerce-promotions'
+			);
+		}
+		$explained['forecast_impact_hints'] = array(
+			sprintf(
+				/* translators: %s: formatted subtotal */
+				__( 'Simulated cart subtotal: %s', 'mp-commerce-promotions' ),
+				number_format( $subtotal, 2, '.', '' )
+			),
+		);
+
+		foreach ( $explained['skipped'] ?? array() as $row ) {
+			if ( isset( $row['reason_code'] ) && $row['reason_code'] !== 'selected' ) {
+				$explained['why_lost_summaries'][] = sprintf(
+					/* translators: 1: promotion name, 2: reason */
+					__( '%1$s lost: %2$s', 'mp-commerce-promotions' ),
+					(string) ( $row['promotion_name'] ?? '' ),
+					(string) ( $row['summary'] ?? $row['reason_code'] )
+				);
+			}
+		}
+
+		if ( ! isset( $explained['why_lost_summaries'] ) ) {
+			$explained['why_lost_summaries'] = array();
+		}
+
+		return $explained;
 	}
 
 	private function __construct() {

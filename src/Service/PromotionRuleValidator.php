@@ -58,6 +58,7 @@ final class PromotionRuleValidator {
 		$this->append_action_issues( $promotion->get_actions(), $issues );
 		$this->append_conflict_heuristic_issues( $promotion, $issues );
 		$this->append_operational_maturity_issues( $promotion, $issues );
+		$this->append_intelligence_issues( $promotion, $issues );
 
 		return $issues;
 	}
@@ -313,6 +314,117 @@ final class PromotionRuleValidator {
 				);
 			}
 		}
+	}
+
+	/**
+	 * Simulation, forecasting, and campaign intelligence warnings (heuristic).
+	 *
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function append_intelligence_issues( Promotion $promotion, array &$issues ): void {
+		$cooldown = $promotion->get_cooldown_hours();
+		$starts   = PromotionDateHelper::parse_mysql_datetime( $promotion->get_starts_at() );
+		$ends     = PromotionDateHelper::parse_mysql_datetime( $promotion->get_ends_at() );
+		if (
+			$cooldown !== null
+			&& $cooldown > 0
+			&& $starts !== null
+			&& $ends !== null
+			&& $ends > $starts
+		) {
+			$duration_hours = ( $ends - $starts ) / 3600;
+			if ( $cooldown > $duration_hours ) {
+				$issues[] = array(
+					'level'   => 'warning',
+					'message' => __( 'Cooldown duration exceeds campaign window (customers may never redeem twice).', 'mp-commerce-promotions' ),
+				);
+			}
+		}
+
+		$budget = $promotion->get_budget_amount();
+		if ( $budget !== null && $budget > 0 ) {
+			$max_discount = $this->estimate_max_action_discount( $promotion->get_actions() );
+			if ( $max_discount > $budget ) {
+				$issues[] = array(
+					'level'   => 'warning',
+					'message' => __( 'Configured discount may exceed budget before usage limits are reached.', 'mp-commerce-promotions' ),
+				);
+			}
+		}
+
+		$free_shipping_count = 0;
+		foreach ( $promotion->get_actions() as $action ) {
+			if ( is_array( $action ) && ( $action['type'] ?? '' ) === RuleTypes::ACTION_FREE_SHIPPING ) {
+				++$free_shipping_count;
+			}
+		}
+		if ( $free_shipping_count > 0 && $promotion->get_application_mode() === PromotionApplicationMode::STACKABLE ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __( 'Stackable promotion includes free shipping; overlapping stackable shipping may overload checkout.', 'mp-commerce-promotions' ),
+			);
+		}
+
+		$scoped_discounts = 0;
+		foreach ( $promotion->get_actions() as $action ) {
+			if ( ! is_array( $action ) ) {
+				continue;
+			}
+			$type = (string) ( $action['type'] ?? '' );
+			if ( in_array( $type, array( RuleTypes::ACTION_PERCENTAGE_DISCOUNT, RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT, RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT ), true )
+				&& isset( $action['product_ids'], $action['category_ids'] )
+				&& ( $action['product_ids'] !== array() || $action['category_ids'] !== array() ) ) {
+				++$scoped_discounts;
+			}
+		}
+		if ( $scoped_discounts > 2 ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __( 'Many scoped discount actions on one promotion may overlap and confuse planner selection.', 'mp-commerce-promotions' ),
+			);
+		}
+
+		$group = $promotion->get_orchestration_group();
+		if ( $group !== null && $group !== '' && $promotion->get_priority() > 1000 ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __( 'Very high priority with orchestration group may block peer promotions unexpectedly.', 'mp-commerce-promotions' ),
+			);
+		}
+
+		if ( $promotion->get_status() === PromotionStatus::ACTIVE && count( $promotion->get_conditions() ) === 0 && count( $promotion->get_actions() ) === 0 ) {
+			$issues[] = $this->error(
+				__( 'Active promotion has no eligible products or actions (empty rules).', 'mp-commerce-promotions' )
+			);
+		}
+
+		$forecast_cache = get_option( PromotionForecastEngine::OPTION_CACHE, null );
+		if ( is_array( $forecast_cache ) && isset( $forecast_cache['promotions'] ) && ! is_array( $forecast_cache['promotions'] ) ) {
+			$issues[] = $this->error(
+				__( 'Forecast cache is corrupted; reset via Diagnostics → Intelligence recovery.', 'mp-commerce-promotions' )
+			);
+		}
+	}
+
+	/**
+	 * @param list<array<string, mixed>> $actions
+	 */
+	private function estimate_max_action_discount( array $actions ): float {
+		$max = 0.0;
+		foreach ( $actions as $action ) {
+			if ( ! is_array( $action ) ) {
+				continue;
+			}
+			$type = (string) ( $action['type'] ?? '' );
+			if ( $type === RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT ) {
+				$max = max( $max, (float) ( $action['amount'] ?? 0 ) );
+			}
+			if ( $type === RuleTypes::ACTION_PERCENTAGE_DISCOUNT ) {
+				$max = max( $max, 9999.0 );
+			}
+		}
+
+		return $max;
 	}
 
 	/**

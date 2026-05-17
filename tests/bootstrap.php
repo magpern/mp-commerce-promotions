@@ -110,6 +110,38 @@ if ( ! function_exists( 'wp_json_encode' ) ) {
 	}
 }
 
+if ( ! isset( $GLOBALS['mp_cp_test_options'] ) || ! is_array( $GLOBALS['mp_cp_test_options'] ) ) {
+	$GLOBALS['mp_cp_test_options'] = array();
+}
+
+if ( ! function_exists( 'get_option' ) ) {
+	/**
+	 * @param mixed $default
+	 * @return mixed
+	 */
+	function get_option( $option, $default = false ) {
+		return $GLOBALS['mp_cp_test_options'][ $option ] ?? $default;
+	}
+}
+
+if ( ! function_exists( 'update_option' ) ) {
+	/**
+	 * @param mixed $value
+	 */
+	function update_option( $option, $value, $autoload = null ) {
+		unset( $autoload );
+		$GLOBALS['mp_cp_test_options'][ $option ] = $value;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'delete_option' ) ) {
+	function delete_option( $option ) {
+		unset( $GLOBALS['mp_cp_test_options'][ $option ] );
+		return true;
+	}
+}
+
 if ( ! function_exists( 'current_time' ) ) {
 	/**
 	 * @param string $type

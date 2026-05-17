@@ -13,7 +13,9 @@ use MP\CommercePromotions\Domain\AutomationRun;
 use MP\CommercePromotions\Domain\AutomationRunRepository;
 use MP\CommercePromotions\Service\PromotionAutomationRunner;
 use MP\CommercePromotions\Service\PromotionHealthMonitor;
+use MP\CommercePromotions\Service\PromotionIntelligenceRecovery;
 use MP\CommercePromotions\Service\PromotionOperationalRecovery;
+use MP\CommercePromotions\Service\PromotionRecommendationEngine;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Service\UsageDiagnostics;
 
@@ -91,6 +93,36 @@ final class DiagnosticsPage {
 
 	private const RECOVERY_ORCH_SUBMIT = 'mp_cp_repair_orchestration_groups_submit';
 
+	private const INTEL_RESET_TELEMETRY_SUBMIT = 'mp_cp_reset_planner_telemetry_submit';
+
+	private const INTEL_RESET_TELEMETRY_NONCE_ACTION = 'mp_cp_reset_planner_telemetry';
+
+	private const INTEL_RESET_TELEMETRY_NONCE_FIELD = 'mp_cp_reset_planner_telemetry_nonce';
+
+	private const INTEL_RESET_FORECAST_SUBMIT = 'mp_cp_reset_forecast_cache_submit';
+
+	private const INTEL_RESET_FORECAST_NONCE_ACTION = 'mp_cp_reset_forecast_cache';
+
+	private const INTEL_RESET_FORECAST_NONCE_FIELD = 'mp_cp_reset_forecast_cache_nonce';
+
+	private const INTEL_RECALC_METRICS_SUBMIT = 'mp_cp_recalc_simulation_metrics_submit';
+
+	private const INTEL_RECALC_METRICS_NONCE_ACTION = 'mp_cp_recalc_simulation_metrics';
+
+	private const INTEL_RECALC_METRICS_NONCE_FIELD = 'mp_cp_recalc_simulation_metrics_nonce';
+
+	private const INTEL_VALIDATE_SCENARIOS_SUBMIT = 'mp_cp_validate_simulation_scenarios_submit';
+
+	private const INTEL_VALIDATE_SCENARIOS_NONCE_ACTION = 'mp_cp_validate_simulation_scenarios';
+
+	private const INTEL_VALIDATE_SCENARIOS_NONCE_FIELD = 'mp_cp_validate_simulation_scenarios_nonce';
+
+	private const INTEL_REPAIR_SCENARIOS_SUBMIT = 'mp_cp_repair_simulation_scenarios_submit';
+
+	private const INTEL_REPAIR_SCENARIOS_NONCE_ACTION = 'mp_cp_repair_simulation_scenarios';
+
+	private const INTEL_REPAIR_SCENARIOS_NONCE_FIELD = 'mp_cp_repair_simulation_scenarios_nonce';
+
 	private UsageDiagnostics $diagnostics;
 
 	private ?PromotionService $promotion_service;
@@ -103,13 +135,19 @@ final class DiagnosticsPage {
 
 	private ?AutomationRunRepository $automation_runs;
 
+	private ?PromotionIntelligenceRecovery $intelligence_recovery;
+
+	private ?PromotionRecommendationEngine $recommendations;
+
 	public function __construct(
 		UsageDiagnostics $diagnostics,
 		?PromotionService $promotion_service = null,
 		?PromotionAutomationRunner $automation_runner = null,
 		?PromotionHealthMonitor $health_monitor = null,
 		?PromotionOperationalRecovery $operational_recovery = null,
-		?AutomationRunRepository $automation_runs = null
+		?AutomationRunRepository $automation_runs = null,
+		?PromotionIntelligenceRecovery $intelligence_recovery = null,
+		?PromotionRecommendationEngine $recommendations = null
 	) {
 		$this->diagnostics           = $diagnostics;
 		$this->promotion_service     = $promotion_service;
@@ -117,6 +155,8 @@ final class DiagnosticsPage {
 		$this->health_monitor        = $health_monitor;
 		$this->operational_recovery  = $operational_recovery;
 		$this->automation_runs       = $automation_runs;
+		$this->intelligence_recovery = $intelligence_recovery;
+		$this->recommendations       = $recommendations;
 	}
 
 	public function render(): void {
@@ -128,6 +168,7 @@ final class DiagnosticsPage {
 		$this->handle_post_archive_hygiene();
 		$this->handle_post_automation();
 		$this->handle_post_operational_recovery();
+		$this->handle_post_intelligence_recovery();
 
 		$report = $this->diagnostics->analyze();
 
@@ -141,6 +182,8 @@ final class DiagnosticsPage {
 		$this->render_automation_runner_section();
 		$this->render_promotion_health_section();
 		$this->render_operational_recovery_section();
+		$this->render_intelligence_recovery_section();
+		$this->render_recommendations_section();
 		$this->render_automation_history_section();
 		$this->render_archive_hygiene_section();
 		$this->render_scheduler_automation_section();
@@ -552,6 +595,27 @@ final class DiagnosticsPage {
 					$promotions,
 					$codes
 				);
+			case 'intel_reset_telemetry_done':
+				return sprintf(
+					__( 'Planner telemetry reset: %1$d row(s) affected (dry-run when apply unchecked).', 'mp-commerce-promotions' ),
+					$promotions
+				);
+			case 'intel_reset_forecast_done':
+				return __( 'Forecast cache reset completed (or previewed in dry-run).', 'mp-commerce-promotions' );
+			case 'intel_recalc_metrics_done':
+				return __( 'Simulation / planner performance counters recalculated.', 'mp-commerce-promotions' );
+			case 'intel_validate_scenarios_done':
+				return sprintf(
+					__( 'Scenario validation: %1$d valid, %2$d invalid.', 'mp-commerce-promotions' ),
+					$promotions,
+					$codes
+				);
+			case 'intel_repair_scenarios_done':
+				return sprintf(
+					__( 'Scenario repair: %1$d valid kept, %2$d archived.', 'mp-commerce-promotions' ),
+					$promotions,
+					$codes
+				);
 			case 'repair_done':
 				return sprintf(
 					/* translators: 1: promotions repaired count, 2: codes repaired count */
@@ -796,6 +860,72 @@ final class DiagnosticsPage {
 		}
 	}
 
+	private function handle_post_intelligence_recovery(): void {
+		if ( $this->intelligence_recovery === null || ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		$dry_run = ! isset( $_POST['mp_cp_intel_recovery_apply'] ) || sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_intel_recovery_apply'] ) ) !== '1';
+
+		if ( isset( $_POST[ self::INTEL_RESET_TELEMETRY_SUBMIT ] ) ) {
+			$this->verify_recovery_nonce( self::INTEL_RESET_TELEMETRY_NONCE_FIELD, self::INTEL_RESET_TELEMETRY_NONCE_ACTION );
+			$result = $this->intelligence_recovery->reset_telemetry( $dry_run );
+			$this->redirect_with_notice(
+				'success',
+				'intel_reset_telemetry_done',
+				array(
+					'promotions' => (int) ( $result['deleted_rows'] ?? 0 ),
+					'codes'      => $dry_run ? 1 : 0,
+					'errors'     => 0,
+				)
+			);
+		}
+
+		if ( isset( $_POST[ self::INTEL_RESET_FORECAST_SUBMIT ] ) ) {
+			$this->verify_recovery_nonce( self::INTEL_RESET_FORECAST_NONCE_FIELD, self::INTEL_RESET_FORECAST_NONCE_ACTION );
+			if ( ! $dry_run ) {
+				$this->intelligence_recovery->reset_forecast_cache();
+			}
+			$this->redirect_with_notice( 'success', 'intel_reset_forecast_done', array( 'promotions' => 1, 'codes' => 0, 'errors' => 0 ) );
+		}
+
+		if ( isset( $_POST[ self::INTEL_RECALC_METRICS_SUBMIT ] ) ) {
+			$this->verify_recovery_nonce( self::INTEL_RECALC_METRICS_NONCE_FIELD, self::INTEL_RECALC_METRICS_NONCE_ACTION );
+			if ( ! $dry_run ) {
+				$this->intelligence_recovery->recalculate_simulation_metrics();
+			}
+			$this->redirect_with_notice( 'success', 'intel_recalc_metrics_done', array( 'promotions' => 1, 'codes' => 0, 'errors' => 0 ) );
+		}
+
+		if ( isset( $_POST[ self::INTEL_VALIDATE_SCENARIOS_SUBMIT ] ) ) {
+			$this->verify_recovery_nonce( self::INTEL_VALIDATE_SCENARIOS_NONCE_FIELD, self::INTEL_VALIDATE_SCENARIOS_NONCE_ACTION );
+			$result = $this->intelligence_recovery->validate_scenario_payloads( $dry_run );
+			$this->redirect_with_notice(
+				'success',
+				'intel_validate_scenarios_done',
+				array(
+					'promotions' => (int) ( $result['valid'] ?? 0 ),
+					'codes'      => count( $result['invalid'] ?? array() ),
+					'errors'     => 0,
+				)
+			);
+		}
+
+		if ( isset( $_POST[ self::INTEL_REPAIR_SCENARIOS_SUBMIT ] ) ) {
+			$this->verify_recovery_nonce( self::INTEL_REPAIR_SCENARIOS_NONCE_FIELD, self::INTEL_REPAIR_SCENARIOS_NONCE_ACTION );
+			$result = $this->intelligence_recovery->repair_malformed_simulation_rows( $dry_run );
+			$this->redirect_with_notice(
+				'success',
+				'intel_repair_scenarios_done',
+				array(
+					'promotions' => (int) ( $result['repaired'] ?? 0 ),
+					'codes'      => (int) ( $result['archived'] ?? 0 ),
+					'errors'     => 0,
+				)
+			);
+		}
+	}
+
 	private function verify_recovery_nonce( string $field, string $action ): void {
 		if ( ! isset( $_POST[ $field ] )
 			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST[ $field ] ) ), $action ) ) {
@@ -908,6 +1038,81 @@ final class DiagnosticsPage {
 			__( 'Repair invalid orchestration groups', 'mp-commerce-promotions' ),
 			'mp-cp-recovery-orch'
 		);
+	}
+
+	private function render_intelligence_recovery_section(): void {
+		if ( $this->intelligence_recovery === null ) {
+			return;
+		}
+
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Simulation & forecasting recovery', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="description">' . esc_html__(
+			'Dry-run by default. Check “Apply intelligence recovery” on any form to persist. Heuristic forecasts only (no ML).',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<p><label><input type="checkbox" name="mp_cp_intel_recovery_apply" value="1" form="mp-cp-intel-telemetry" /> ';
+		echo esc_html__( 'Apply intelligence recovery (telemetry reset form)', 'mp-commerce-promotions' ) . '</label></p>';
+
+		$this->render_recovery_form(
+			self::INTEL_RESET_TELEMETRY_SUBMIT,
+			self::INTEL_RESET_TELEMETRY_NONCE_ACTION,
+			self::INTEL_RESET_TELEMETRY_NONCE_FIELD,
+			__( 'Reset planner telemetry', 'mp-commerce-promotions' ),
+			'mp-cp-intel-telemetry'
+		);
+		$this->render_recovery_form(
+			self::INTEL_RESET_FORECAST_SUBMIT,
+			self::INTEL_RESET_FORECAST_NONCE_ACTION,
+			self::INTEL_RESET_FORECAST_NONCE_FIELD,
+			__( 'Reset forecast cache', 'mp-commerce-promotions' ),
+			'mp-cp-intel-forecast'
+		);
+		$this->render_recovery_form(
+			self::INTEL_RECALC_METRICS_SUBMIT,
+			self::INTEL_RECALC_METRICS_NONCE_ACTION,
+			self::INTEL_RECALC_METRICS_NONCE_FIELD,
+			__( 'Recalculate simulation / planner metrics', 'mp-commerce-promotions' ),
+			'mp-cp-intel-metrics'
+		);
+		$this->render_recovery_form(
+			self::INTEL_VALIDATE_SCENARIOS_SUBMIT,
+			self::INTEL_VALIDATE_SCENARIOS_NONCE_ACTION,
+			self::INTEL_VALIDATE_SCENARIOS_NONCE_FIELD,
+			__( 'Validate saved simulation scenario payloads', 'mp-commerce-promotions' ),
+			'mp-cp-intel-validate'
+		);
+		$this->render_recovery_form(
+			self::INTEL_REPAIR_SCENARIOS_SUBMIT,
+			self::INTEL_REPAIR_SCENARIOS_NONCE_ACTION,
+			self::INTEL_REPAIR_SCENARIOS_NONCE_FIELD,
+			__( 'Repair malformed simulation rows (soft-archive)', 'mp-commerce-promotions' ),
+			'mp-cp-intel-repair'
+		);
+	}
+
+	private function render_recommendations_section(): void {
+		if ( $this->recommendations === null ) {
+			return;
+		}
+
+		$recs = $this->recommendations->recommend( 100 );
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Campaign recommendations', 'mp-commerce-promotions' ) . '</h2>';
+		if ( $recs === array() ) {
+			echo '<p>' . esc_html__( 'No recommendations.', 'mp-commerce-promotions' ) . '</p>';
+			return;
+		}
+
+		echo '<table class="widefat striped" style="max-width:100%;"><thead><tr>';
+		echo '<th>' . esc_html__( 'Severity', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th>' . esc_html__( 'Code', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th>' . esc_html__( 'Message', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+		foreach ( array_slice( $recs, 0, 30 ) as $rec ) {
+			echo '<tr><td>' . esc_html( (string) ( $rec['severity'] ?? '' ) ) . '</td>';
+			echo '<td><code>' . esc_html( (string) ( $rec['code'] ?? '' ) ) . '</code></td>';
+			echo '<td>' . esc_html( (string) ( $rec['message'] ?? '' ) ) . '</td></tr>';
+		}
+		echo '</tbody></table>';
 	}
 
 	private function render_recovery_form(

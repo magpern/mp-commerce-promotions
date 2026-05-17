@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.12.0';
+	public const SCHEMA_VERSION = '1.13.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -53,6 +53,10 @@ final class Schema {
 
 	public static function planner_telemetry_table( wpdb $wpdb ): string {
 		return $wpdb->prefix . 'mp_cp_planner_telemetry';
+	}
+
+	public static function simulation_scenarios_table( wpdb $wpdb ): string {
+		return $wpdb->prefix . 'mp_cp_simulation_scenarios';
 	}
 
 	public static function promotions_create_sql( wpdb $wpdb ): string {
@@ -250,6 +254,26 @@ blocked_by_exclusion_count bigint(20) unsigned NOT NULL default 0,
 last_seen_at datetime NOT NULL default CURRENT_TIMESTAMP,
 PRIMARY KEY  (promotion_id),
 KEY last_seen_at (last_seen_at)
+) {$collate};";
+	}
+
+	public static function simulation_scenarios_create_sql( wpdb $wpdb ): string {
+		$table   = self::simulation_scenarios_table( $wpdb );
+		$collate = $wpdb->get_charset_collate();
+
+		return "CREATE TABLE {$table} (
+id bigint(20) unsigned NOT NULL auto_increment,
+name varchar(191) NOT NULL,
+scenario_json longtext NOT NULL,
+status varchar(32) NOT NULL default 'active',
+created_by bigint(20) unsigned NULL,
+created_at datetime NOT NULL default CURRENT_TIMESTAMP,
+last_run_at datetime NULL,
+run_count int(10) unsigned NOT NULL default 0,
+PRIMARY KEY  (id),
+KEY status (status),
+KEY created_at (created_at),
+KEY last_run_at (last_run_at)
 ) {$collate};";
 	}
 }

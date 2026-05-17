@@ -43,7 +43,9 @@ use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Domain\PromotionSnapshot;
 use MP\CommercePromotions\Service\PromotionService;
+use MP\CommercePromotions\Service\PromotionSimulationEngine;
 use MP\CommercePromotions\Service\PromotionSnapshotService;
+use MP\CommercePromotions\Service\SimulationScenario;
 use MP\CommercePromotions\Service\SimpleRuleBuilder;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use RuntimeException;
@@ -158,6 +160,7 @@ final class PromotionEditPage {
 		$this->handle_post_change_status( $promotion );
 		$this->handle_post_duplicate_promotion( $promotion );
 		$this->handle_post_restore_snapshot( $promotion );
+		$this->handle_post_simulate_snapshot( $promotion );
 		$this->handle_post_apply_promotion_template( $promotion );
 		$this->handle_post_apply_rule_builder( $promotion );
 		$this->handle_post_update( $promotion );
@@ -1108,6 +1111,66 @@ final class PromotionEditPage {
 		$this->redirect_to_edit( $pid, array( 'mp_cp_snapshot_restored' => '1' ) );
 	}
 
+	private function handle_post_simulate_snapshot( Promotion $promotion ): void {
+		if ( $this->snapshot_service === null || ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		$action = isset( $_POST['mp_cp_action'] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_action'] ) ) : '';
+		if ( $action !== 'simulate_snapshot' ) {
+			return;
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$nonce_action = 'mp_cp_simulate_snapshot_' . $pid;
+		if ( ! isset( $_POST['mp_cp_simulate_snapshot_nonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_simulate_snapshot_nonce'] ) ), $nonce_action ) ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_snapshot_error' => 'invalid_nonce' ) );
+		}
+
+		$snapshot_id = isset( $_POST['mp_cp_snapshot_id'] ) ? (int) $_POST['mp_cp_snapshot_id'] : 0;
+		if ( $snapshot_id <= 0 ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_snapshot_error' => 'invalid_snapshot' ) );
+		}
+
+		$snapshots = $this->snapshot_service->list_recent( $pid, 50 );
+		$target    = null;
+		foreach ( $snapshots as $snapshot ) {
+			if ( $snapshot->get_id() === $snapshot_id ) {
+				$target = $snapshot;
+				break;
+			}
+		}
+
+		if ( $target === null ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_snapshot_error' => 'invalid_snapshot' ) );
+		}
+
+		try {
+			$from_snapshot = Promotion::from_array( $target->get_snapshot_data() );
+			$engine        = new PromotionSimulationEngine( $this->promotions );
+			$scenario      = SimulationScenario::from_preset( SimulationScenario::PRESET_WHOLE_CART );
+			$result        = $engine->simulate( $scenario, array( (int) ( $from_snapshot->get_id() ?? $pid ) ) );
+			set_transient(
+				'mp_cp_snapshot_sim_' . $pid,
+				array(
+					'snapshot_id'      => $snapshot_id,
+					'total_discount'   => $result->get_total_discount(),
+					'selected_count'   => count( $result->to_array()['selected_promotions'] ?? array() ),
+				),
+				300
+			);
+		} catch ( \Throwable $e ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_snapshot_error' => 'simulate_failed' ) );
+		}
+
+		$this->redirect_to_edit( $pid, array( 'mp_cp_snapshot_simulated' => '1' ) );
+	}
+
 	private function capture_rules_snapshot( Promotion $promotion, string $snapshot_type ): void {
 		if ( $this->snapshot_service === null ) {
 			return;
@@ -2024,8 +2087,24 @@ final class PromotionEditPage {
 		echo '<th scope="col">' . esc_html__( 'Label', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Source', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Created', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Intelligence', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Action', 'mp-commerce-promotions' ) . '</th>';
 		echo '</tr></thead><tbody>';
+
+		$sim_notice = get_transient( 'mp_cp_snapshot_sim_' . $id );
+		if ( is_array( $sim_notice ) ) {
+			echo '<p class="notice notice-info"><strong>' . esc_html__( 'Snapshot simulation (read-only):', 'mp-commerce-promotions' ) . '</strong> ';
+			echo esc_html(
+				sprintf(
+					/* translators: 1: discount, 2: selected count */
+					__( 'Estimated discount %1$s with %2$d selected promotion(s) under current rules.', 'mp-commerce-promotions' ),
+					number_format( (float) ( $sim_notice['total_discount'] ?? 0 ), 2 ),
+					(int) ( $sim_notice['selected_count'] ?? 0 )
+				)
+			);
+			echo '</p>';
+			delete_transient( 'mp_cp_snapshot_sim_' . $id );
+		}
 
 		$nonce_action = 'mp_cp_restore_snapshot_' . $id;
 		foreach ( $display as $snapshot ) {
@@ -2043,6 +2122,17 @@ final class PromotionEditPage {
 			echo '<td>' . esc_html( $snapshot->get_snapshot_label() ?? '—' ) . '</td>';
 			echo '<td>' . esc_html( $snapshot->get_snapshot_source() ?? '—' ) . '</td>';
 			echo '<td>' . esc_html( $snapshot->get_created_at() ?? '—' ) . '</td>';
+			$intel = PromotionSnapshotService::parse_intelligence_metadata( $snapshot->get_notes() );
+			echo '<td><small>';
+			if ( $intel !== array() ) {
+				echo esc_html( (string) ( $intel['lifecycle_phase'] ?? '' ) );
+				if ( isset( $intel['simulation_label'] ) && $intel['simulation_label'] !== null && $intel['simulation_label'] !== '' ) {
+					echo ' / ' . esc_html( (string) $intel['simulation_label'] );
+				}
+			} else {
+				echo '—';
+			}
+			echo '</small></td>';
 			echo '<td>';
 			$restore_warning = __( 'Restore this snapshot? Current promotion data will be overwritten. This cannot be undone from the UI except by restoring another snapshot.', 'mp-commerce-promotions' );
 			echo '<form method="post" action="" style="display:inline;" onsubmit="return confirm(\'' . esc_js( $restore_warning ) . '\');">';
@@ -2050,6 +2140,13 @@ final class PromotionEditPage {
 			echo '<input type="hidden" name="mp_cp_action" value="restore_snapshot" />';
 			echo '<input type="hidden" name="mp_cp_snapshot_id" value="' . esc_attr( (string) $snapshot_id ) . '" />';
 			echo '<button type="submit" class="button button-secondary">' . esc_html__( 'Restore', 'mp-commerce-promotions' ) . '</button>';
+			echo '</form> ';
+			$simulate_nonce = 'mp_cp_simulate_snapshot_' . $id;
+			echo '<form method="post" action="" style="display:inline;">';
+			wp_nonce_field( $simulate_nonce, 'mp_cp_simulate_snapshot_nonce' );
+			echo '<input type="hidden" name="mp_cp_action" value="simulate_snapshot" />';
+			echo '<input type="hidden" name="mp_cp_snapshot_id" value="' . esc_attr( (string) $snapshot_id ) . '" />';
+			echo '<button type="submit" class="button button-small">' . esc_html__( 'Simulate (read-only)', 'mp-commerce-promotions' ) . '</button>';
 			echo '</form>';
 			echo '</td>';
 			echo '</tr>';

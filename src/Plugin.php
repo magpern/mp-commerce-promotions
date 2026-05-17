@@ -19,6 +19,7 @@ use MP\CommercePromotions\Admin\SettingsPage;
 use MP\CommercePromotions\Domain\AuditLogRepository;
 use MP\CommercePromotions\Domain\AutomationRunRepository;
 use MP\CommercePromotions\Domain\PlannerTelemetryRepository;
+use MP\CommercePromotions\Domain\SimulationScenarioRepository;
 use MP\CommercePromotions\Domain\PromotionCodeBatchRepository;
 use MP\CommercePromotions\Domain\PromotionSnapshotRepository;
 use MP\CommercePromotions\Domain\PromotionCodeFactory;
@@ -33,7 +34,9 @@ use MP\CommercePromotions\Service\PromotionAutomationRunner;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
 use MP\CommercePromotions\Service\PromotionConflictAnalyzer;
 use MP\CommercePromotions\Service\PromotionHealthMonitor;
+use MP\CommercePromotions\Service\PromotionIntelligenceRecovery;
 use MP\CommercePromotions\Service\PromotionOperationalRecovery;
+use MP\CommercePromotions\Service\PromotionRecommendationEngine;
 use MP\CommercePromotions\Service\PromotionReports;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
@@ -190,6 +193,14 @@ final class Plugin {
 				new PromotionConflictAnalyzer()
 			);
 
+			$campaign_bulk = null;
+			if ( $wpdb instanceof wpdb && $this->audit_logger !== null ) {
+				$campaign_bulk = new \MP\CommercePromotions\Service\PromotionBulkCampaignWorkflow(
+					$this->promotion_repository,
+					$this->audit_logger
+				);
+			}
+
 			$promotions_page = new PromotionsPage(
 				$this->promotion_repository,
 				$this->promotion_service,
@@ -198,7 +209,8 @@ final class Plugin {
 				$batch_repository,
 				$this->redemption_repository,
 				$rule_validator,
-				$health_monitor
+				$health_monitor,
+				$campaign_bulk
 			);
 		}
 
@@ -240,13 +252,28 @@ final class Plugin {
 				);
 			}
 
+			$intelligence_recovery = null;
+			$recommendation_engine = null;
+			if ( $wpdb instanceof wpdb ) {
+				$scenario_repo_intel = new SimulationScenarioRepository( $wpdb );
+				$telemetry_intel     = new PlannerTelemetryRepository( $wpdb );
+				$intelligence_recovery = new PromotionIntelligenceRecovery( $telemetry_intel, $scenario_repo_intel );
+				$recommendation_engine = new PromotionRecommendationEngine(
+					$this->promotion_repository,
+					$this->redemption_repository,
+					$telemetry_intel
+				);
+			}
+
 			$diagnostics_page = new DiagnosticsPage(
 				$usage_diagnostics,
 				$this->promotion_service,
 				$automation_runner,
 				$health_monitor,
 				$operational_recovery,
-				$automation_runs_repo
+				$automation_runs_repo,
+				$intelligence_recovery,
+				$recommendation_engine
 			);
 		}
 
@@ -260,14 +287,17 @@ final class Plugin {
 				new PromotionConflictAnalyzer()
 			);
 
+			$scenario_repo = ( $wpdb instanceof wpdb ) ? new SimulationScenarioRepository( $wpdb ) : null;
+
 			$promotion_reports = new PromotionReports(
 				$this->promotion_repository,
 				$this->redemption_repository,
 				$telemetry_repo,
 				$automation_runs_repo,
-				$health_monitor
+				$health_monitor,
+				$scenario_repo
 			);
-			$reports_page = new ReportsPage( $promotion_reports, $this->promotion_repository );
+			$reports_page = new ReportsPage( $promotion_reports, $this->promotion_repository, $scenario_repo );
 		}
 
 		$admin_router = new AdminRouter( $promotions_page, $settings_page, $diagnostics_page, $reports_page );

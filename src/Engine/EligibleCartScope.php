@@ -29,6 +29,21 @@ final class EligibleCartScope {
 		array $exclude_category_ids = array(),
 		bool $exclude_sale_items = false
 	): array {
+		$cache_key = hash(
+			'sha256',
+			wp_json_encode(
+				array(
+					'items' => $items,
+					'product_ids' => $product_ids,
+					'variation_ids' => $variation_ids,
+					'category_ids' => $category_ids,
+					'exclude_product_ids' => $exclude_product_ids,
+					'exclude_category_ids' => $exclude_category_ids,
+					'exclude_sale_items' => $exclude_sale_items,
+				)
+			) ?? ''
+		);
+
 		$product_ids           = CartItemSelector::normalize_positive_int_list( $product_ids );
 		$variation_ids         = CartItemSelector::normalize_positive_int_list( $variation_ids );
 		$category_ids          = CartItemSelector::normalize_positive_int_list( $category_ids );
@@ -36,6 +51,11 @@ final class EligibleCartScope {
 		$exclude_category_ids  = CartItemSelector::normalize_positive_int_list( $exclude_category_ids );
 
 		$has_include = $product_ids !== array() || $variation_ids !== array() || $category_ids !== array();
+
+		$cached = PlannerContextCache::get_scope_items( $cache_key );
+		if ( $cached !== null ) {
+			return $cached;
+		}
 
 		$filtered = array();
 		foreach ( $items as $item ) {
@@ -57,6 +77,8 @@ final class EligibleCartScope {
 
 			$filtered[] = $item;
 		}
+
+		PlannerContextCache::store_scope_items( $cache_key, $filtered );
 
 		return $filtered;
 	}

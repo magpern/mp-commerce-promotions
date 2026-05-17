@@ -13,6 +13,7 @@ use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionSnapshot;
 use MP\CommercePromotions\Domain\PromotionSnapshotRepository;
+use MP\CommercePromotions\Service\PromotionLifecycle;
 use RuntimeException;
 
 final class PromotionSnapshotService {
@@ -57,10 +58,10 @@ final class PromotionSnapshotService {
 			$promotion_id,
 			$snapshot_type,
 			$promotion->to_array(),
-			$notes,
+			self::merge_intelligence_notes( $notes, $promotion, $snapshot_label ),
 			$actor_user_id,
 			null,
-			$snapshot_label,
+			$snapshot_label ?? PromotionLifecycle::badge_label( PromotionLifecycle::primary_phase( $promotion ) ),
 			$snapshot_source
 		);
 
@@ -142,5 +143,48 @@ final class PromotionSnapshotService {
 	 */
 	public function list_recent( int $promotion_id, int $limit = 10 ): array {
 		return $this->snapshots->find_latest_for_promotion( $promotion_id, $limit );
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public static function parse_intelligence_metadata( ?string $notes ): array {
+		if ( $notes === null || trim( $notes ) === '' ) {
+			return array();
+		}
+
+		$decoded = json_decode( $notes, true );
+		if ( ! is_array( $decoded ) || ! isset( $decoded['mp_cp_intel'] ) || ! is_array( $decoded['mp_cp_intel'] ) ) {
+			return array();
+		}
+
+		return $decoded['mp_cp_intel'];
+	}
+
+	public static function merge_intelligence_notes(
+		?string $notes,
+		Promotion $promotion,
+		?string $simulation_label = null
+	): ?string {
+		$meta = array(
+			'lifecycle_phase' => PromotionLifecycle::primary_phase( $promotion ),
+			'campaign_label'  => $promotion->get_campaign_label(),
+			'orchestration'   => $promotion->get_orchestration_group(),
+			'simulation_label' => $simulation_label,
+		);
+
+		$decoded = array();
+		if ( $notes !== null && trim( $notes ) !== '' ) {
+			$parsed = json_decode( $notes, true );
+			if ( is_array( $parsed ) ) {
+				$decoded = $parsed;
+			} else {
+				$decoded['merchant_note'] = $notes;
+			}
+		}
+
+		$decoded['mp_cp_intel'] = array_merge( (array) ( $decoded['mp_cp_intel'] ?? array() ), $meta );
+
+		return wp_json_encode( $decoded ) ?: null;
 	}
 }

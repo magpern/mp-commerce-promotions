@@ -18,6 +18,8 @@ use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\RedemptionRepository;
+use MP\CommercePromotions\Domain\SimulationScenarioRepository;
+use MP\CommercePromotions\Engine\PlannerContextCache;
 
 final class PromotionReports {
 
@@ -41,18 +43,188 @@ final class PromotionReports {
 
 	private ?PromotionHealthMonitor $health_monitor;
 
+	private ?SimulationScenarioRepository $scenarios;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		RedemptionRepository $redemptions,
 		?PlannerTelemetryRepository $telemetry = null,
 		?AutomationRunRepository $automation_runs = null,
-		?PromotionHealthMonitor $health_monitor = null
+		?PromotionHealthMonitor $health_monitor = null,
+		?SimulationScenarioRepository $scenarios = null
 	) {
 		$this->promotions       = $promotions;
 		$this->redemptions      = $redemptions;
 		$this->telemetry        = $telemetry;
 		$this->automation_runs  = $automation_runs;
 		$this->health_monitor   = $health_monitor;
+		$this->scenarios        = $scenarios;
+	}
+
+	public function forecast_summary(): array {
+		if ( $this->telemetry === null ) {
+			return array();
+		}
+
+		return ( new PromotionForecastEngine( $this->promotions, $this->redemptions, $this->telemetry ) )->forecast_catalog();
+	}
+
+	/**
+	 * @return array{upcoming: list<array<string, mixed>>, active: list<array<string, mixed>>, ending_soon: list<array<string, mixed>>, exhausted: list<array<string, mixed>>, archived: list<array<string, mixed>>}
+	 */
+	public function promotion_calendar(): array {
+		return array(
+			'upcoming'     => $this->calendar_phase( PromotionLifecycle::PHASE_UPCOMING ),
+			'active'       => $this->calendar_phase( PromotionLifecycle::PHASE_LIVE ),
+			'ending_soon'  => $this->calendar_phase( PromotionLifecycle::PHASE_ENDING_SOON ),
+			'exhausted'    => $this->calendar_phase( PromotionLifecycle::PHASE_BUDGET_EXHAUSTED ),
+			'archived'     => $this->calendar_phase( PromotionLifecycle::PHASE_ARCHIVED ),
+		);
+	}
+
+	/**
+	 * @return list<array<string, mixed>>
+	 */
+	private function calendar_phase( string $phase ): array {
+		try {
+			$list = $this->promotions->find_filtered(
+				array(
+					'lifecycle_phase' => $phase,
+					'limit'           => 50,
+				)
+			);
+		} catch ( \InvalidArgumentException $e ) {
+			return array();
+		}
+
+		$rows = array();
+		foreach ( $list as $promotion ) {
+			$id = $promotion->get_id();
+			if ( $id === null ) {
+				continue;
+			}
+			$rows[] = array(
+				'promotion_id'              => $id,
+				'name'                      => $promotion->get_name(),
+				'campaign_label'            => $promotion->get_campaign_label(),
+				'orchestration_group'       => $promotion->get_orchestration_group(),
+				'budget_utilization_percent'=> $promotion->get_budget_utilization_percent(),
+				'lifecycle_phase'           => PromotionLifecycle::primary_phase( $promotion ),
+				'starts_at'                 => $promotion->get_starts_at(),
+				'ends_at'                   => $promotion->get_ends_at(),
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * @return list<array{severity: string, code: string, promotion_ids: list<int>, message: string}>
+	 */
+	public function recommendations(): array {
+		if ( $this->telemetry === null ) {
+			return array();
+		}
+
+		return ( new PromotionRecommendationEngine(
+			$this->promotions,
+			$this->redemptions,
+			$this->telemetry
+		) )->recommend();
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function intelligence_analytics(): array {
+		$telemetry = $this->telemetry;
+		$top_selected = $telemetry !== null ? $telemetry->top_by_column( 'selected_count', 10 ) : array();
+		$top_group    = $telemetry !== null ? $telemetry->top_by_column( 'blocked_by_group_count', 10 ) : array();
+		$top_cooldown = $telemetry !== null ? $telemetry->top_by_column( 'blocked_by_cooldown_count', 10 ) : array();
+
+		$low_usage = array();
+		$promotions = $this->promotions->find_filtered( array( 'limit' => 100 ) );
+		foreach ( $promotions as $promotion ) {
+			$id = $promotion->get_id();
+			if ( $id === null ) {
+				continue;
+			}
+			$count = $this->redemptions->count_recorded_for_promotion( $id );
+			if ( $count === 0 ) {
+				$low_usage[] = array(
+					'promotion_id' => $id,
+					'name'         => $promotion->get_name(),
+					'usage'        => 0,
+				);
+			}
+		}
+
+		$highest_roi = array();
+		foreach ( $promotions as $promotion ) {
+			$id = $promotion->get_id();
+			if ( $id === null ) {
+				continue;
+			}
+			$count = $this->redemptions->count_recorded_for_promotion( $id );
+			if ( $count <= 0 ) {
+				continue;
+			}
+			$total_discount = $this->redemptions->sum_recorded_discount_amount( array( 'promotion_id' => $id ) );
+			$highest_roi[] = array(
+				'promotion_id'   => $id,
+				'name'           => $promotion->get_name(),
+				'redemptions'    => $count,
+				'total_discount' => $total_discount,
+				'roi_score'      => $count > 0 ? round( $total_discount / $count, 2 ) : 0.0,
+			);
+		}
+		usort(
+			$highest_roi,
+			static fn ( array $a, array $b ): int => ( $b['roi_score'] ?? 0 ) <=> ( $a['roi_score'] ?? 0 )
+		);
+		$highest_roi = array_slice( $highest_roi, 0, 10 );
+
+		$scenario_runs = 0;
+		if ( $this->scenarios !== null ) {
+			foreach ( $this->scenarios->find_latest( 20 ) as $scenario ) {
+				$scenario_runs += $scenario->get_run_count();
+			}
+		}
+
+		$burn_velocity = array();
+		foreach ( $this->promotions->find_highest_budget_burn( 10 ) as $promotion ) {
+			$id = $promotion->get_id();
+			if ( $id === null ) {
+				continue;
+			}
+			$spent = $promotion->get_budget_spent();
+			$burn_velocity[] = array(
+				'promotion_id' => $id,
+				'name'         => $promotion->get_name(),
+				'budget_spent' => $spent,
+				'velocity'     => $spent > 0 ? 'high' : 'low',
+			);
+		}
+
+		return array(
+			'highest_roi_campaigns'        => $highest_roi,
+			'lowest_usage_promotions'      => array_slice( $low_usage, 0, 10 ),
+			'most_simulated_scenarios_runs'  => $scenario_runs,
+			'highest_blocked_by_group'     => $top_group,
+			'highest_blocked_by_cooldown'  => $top_cooldown,
+			'most_selected'                => $top_selected,
+			'budget_burn_velocity'         => $burn_velocity,
+		);
+	}
+
+	/**
+	 * @return array{request: array<string, int>, persisted: array<string, int>}
+	 */
+	public function planner_performance(): array {
+		return array(
+			'request'   => PlannerContextCache::request_counters(),
+			'persisted' => PlannerContextCache::get_persisted_counters(),
+		);
 	}
 
 	/**
@@ -296,8 +468,22 @@ final class PromotionReports {
 				'orchestration_group',
 				'cooldown_hours',
 				'budget_utilization_percent',
+				'forecast_estimated_exposure',
+				'planner_simulated_runs',
+				'planner_cache_hits',
+				'planner_cache_misses',
 			)
 		);
+
+		$forecast_exposure = '';
+		$forecast          = $this->forecast_summary();
+		if ( $forecast !== array() ) {
+			$forecast_exposure = (string) ( $forecast['estimated_discount_exposure'] ?? '' );
+		}
+		$planner = $this->planner_performance();
+		$sim_runs = (string) (int) ( $planner['persisted']['simulated_runs'] ?? 0 );
+		$hits     = (string) (int) ( $planner['persisted']['cache_hits'] ?? 0 );
+		$misses   = (string) (int) ( $planner['persisted']['cache_misses'] ?? 0 );
 
 		foreach ( $rows as $row ) {
 			$lines[] = implode(
@@ -319,6 +505,10 @@ final class PromotionReports {
 					self::escape_csv_cell( (string) ( $row['orchestration_group'] ?? '' ) ),
 					self::escape_csv_cell( (string) ( $row['cooldown_hours'] ?? '' ) ),
 					self::escape_csv_cell( self::format_budget_utilization_percent_for_csv( $row ) ),
+					self::escape_csv_cell( $forecast_exposure ),
+					self::escape_csv_cell( $sim_runs ),
+					self::escape_csv_cell( $hits ),
+					self::escape_csv_cell( $misses ),
 				)
 			);
 		}

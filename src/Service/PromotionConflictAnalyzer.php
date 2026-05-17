@@ -54,6 +54,24 @@ final class PromotionConflictAnalyzer {
 	}
 
 	/**
+	 * Simulate overlap mode — same heuristics as analyze(), with overlap impact emphasis.
+	 *
+	 * @param list<Promotion> $promotions
+	 * @return list<array{type: string, severity: string, promotion_ids: list<int>, message: string}>
+	 */
+	public function simulate_overlap( array $promotions ): array {
+		$conflicts = $this->analyze( $promotions );
+		foreach ( $conflicts as &$conflict ) {
+			if ( isset( $conflict['type'] ) && $conflict['type'] === self::TYPE_ORCHESTRATION_CONGESTION ) {
+				$conflict['severity'] = 'warning';
+			}
+		}
+		unset( $conflict );
+
+		return $conflicts;
+	}
+
+	/**
 	 * @param list<Promotion> $promotions
 	 * @return array<int, Promotion>
 	 */
