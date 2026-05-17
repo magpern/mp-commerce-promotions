@@ -92,6 +92,10 @@ From WooCommerce project root:
 - No customer-facing messaging, REST, or AJAX in this milestone.
 - Usage-limit conflicts warn when limits are set; they do not read live redemption counts during analysis.
 
+## Related: orchestration groups (schema 1.11.0)
+
+`PromotionConflictAnalyzer` also reports `orchestration_congestion` when many promotions share an `orchestration_group` with overlapping schedules. Planner blocking uses `orchestration_group_blocked` (highest priority eligible wins). See **[manual-orchestration-and-segmentation-test.md](manual-orchestration-and-segmentation-test.md)**.
+
 ## Related: schedule overlap forecasting (schema 1.10.0)
 
 `PromotionScheduleAnalyzer` complements conflict analysis with schedule-window overlap, exclusive overlap, high scoped-percentage overlap, and shared campaign-label warnings. Edit screen **Schedule warnings** and Reports lifecycle sections use the same read-only heuristics. See **[manual-economics-and-scheduling-test.md](manual-economics-and-scheduling-test.md)**.

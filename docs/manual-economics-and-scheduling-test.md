@@ -75,6 +75,12 @@ On batch detail, when codes exist:
 
 **Pass:** Schema 1.10.0, budget adjust, lifecycle filter, batch export, reports preset, schedule analyzer, pause exhausted.
 
+## Related: orchestration and segmentation (schema 1.11.0)
+
+Orchestration groups, per-customer cooldowns, segmentation conditions, rollback snapshots, and scheduler automation are documented in **[manual-orchestration-and-segmentation-test.md](manual-orchestration-and-segmentation-test.md)**.
+
+---
+
 ## Limitations
 
 - Budget tracking uses recorded redemption discount amounts (not a separate ledger table).
