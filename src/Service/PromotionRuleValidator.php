@@ -254,6 +254,20 @@ final class PromotionRuleValidator {
 			return;
 		}
 
+		if ( $type === RuleTypes::CONDITION_PRODUCT_IN_CART ) {
+			$this->validate_id_list_condition( $index, $type, $raw, 'product_ids', $issues );
+			return;
+		}
+
+		if ( $type === RuleTypes::CONDITION_CATEGORY_IN_CART ) {
+			$this->validate_id_list_condition( $index, $type, $raw, 'category_ids', $issues );
+			return;
+		}
+
+		if ( $type === RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS ) {
+			return;
+		}
+
 		$issues[] = $this->error(
 			sprintf(
 				/* translators: %s: condition type string */
@@ -261,6 +275,40 @@ final class PromotionRuleValidator {
 				$type
 			)
 		);
+	}
+
+	/**
+	 * @param array<string, mixed>                        $raw
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function validate_id_list_condition( int $index, string $type, array $raw, string $key, array &$issues ): void {
+		if ( ! isset( $raw[ $key ] ) || ! is_array( $raw[ $key ] ) || $raw[ $key ] === array() ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: condition type, 2: field name, 3: index */
+					__( '%1$s at index %3$s is missing %2$s.', 'mp-commerce-promotions' ),
+					$type,
+					$key,
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		foreach ( $raw[ $key ] as $raw_id ) {
+			if ( ! is_numeric( $raw_id ) || (int) $raw_id <= 0 ) {
+				$issues[] = $this->error(
+					sprintf(
+						/* translators: 1: condition type, 2: field name, 3: index */
+						__( '%1$s at index %3$s has invalid %2$s (positive integers only).', 'mp-commerce-promotions' ),
+						$type,
+						$key,
+						(string) $index
+					)
+				);
+				return;
+			}
+		}
 	}
 
 	/**

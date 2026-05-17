@@ -1063,6 +1063,34 @@ final class PromotionEditPage {
 			exit;
 		}
 
+		$excluded_products = $this->parse_excluded_product_ids_from_post();
+		if ( $excluded_products === null ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_excluded_product_ids',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
+			exit;
+		}
+
+		$excluded_categories = $this->parse_excluded_category_ids_from_post();
+		if ( $excluded_categories === null ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_excluded_category_ids',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
+			exit;
+		}
+
 		try {
 			$updated = $promotion
 				->with_name( $name )
@@ -1073,6 +1101,7 @@ final class PromotionEditPage {
 				->with_usage_limits( $usage_limit, $customer_usage_limit )
 				->with_application_rules( $application_mode, $stop_processing, $max_apps )
 				->with_excluded_promotion_ids( $excluded_ids )
+				->with_excluded_product_targeting( $excluded_products, $excluded_categories )
 				->with_rules( $conditions, $actions, $restrictions );
 
 			$this->promotion_service->update_promotion( $updated, (int) get_current_user_id() );
@@ -1350,6 +1379,10 @@ final class PromotionEditPage {
 				return __( 'Max applications must be empty or at least 1.', 'mp-commerce-promotions' );
 			case 'invalid_excluded_promotion_ids':
 				return __( 'Excluded promotion IDs must be a comma-separated list of positive integers and cannot include this promotion.', 'mp-commerce-promotions' );
+			case 'invalid_excluded_product_ids':
+				return __( 'Excluded product IDs must be a comma-separated list of positive integers.', 'mp-commerce-promotions' );
+			case 'invalid_excluded_category_ids':
+				return __( 'Excluded category IDs must be a comma-separated list of positive integers.', 'mp-commerce-promotions' );
 			case 'invalid_json':
 				return __( 'Conditions, actions, and restrictions must be valid JSON arrays.', 'mp-commerce-promotions' );
 			case 'update_failed':
@@ -1904,7 +1937,22 @@ final class PromotionEditPage {
 		echo '<option value="customer_redemption_count">' . esc_html__( 'Customer redemption count', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="minimum_cart_quantity">' . esc_html__( 'Minimum cart quantity', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="maximum_cart_quantity">' . esc_html__( 'Maximum cart quantity', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="product_in_cart">' . esc_html__( 'Product in cart', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="category_in_cart">' . esc_html__( 'Category in cart', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="exclude_sale_items">' . esc_html__( 'Exclude sale items', 'mp-commerce-promotions' ) . '</option>';
 		echo '</select></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_product_ids">' . esc_html__( 'Product IDs (list)', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_product_ids" name="mp_cp_builder_product_ids" placeholder="100, 3703" />';
+		echo '<p class="description">' . esc_html__( 'Comma-separated product or variation IDs (product_in_cart).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_category_ids">' . esc_html__( 'Category IDs (list)', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_category_ids" name="mp_cp_builder_category_ids" placeholder="10, 12" />';
+		echo '<p class="description">' . esc_html__( 'Comma-separated product category term IDs (category_in_cart).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row">' . esc_html__( 'Exclude sale items', 'mp-commerce-promotions' ) . '</th><td>';
+		echo '<label><input type="checkbox" name="mp_cp_builder_exclude_sale_items" value="1" /> ';
+		echo esc_html__( 'Fail when any cart line is on sale (exclude_sale_items condition).', 'mp-commerce-promotions' ) . '</label></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_cart_quantity">' . esc_html__( 'Cart quantity', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_builder_cart_quantity" name="mp_cp_builder_cart_quantity" min="1" step="1" />';
@@ -1972,13 +2020,21 @@ final class PromotionEditPage {
 		echo '<option value="category">' . esc_html__( 'Category', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="products">' . esc_html__( 'Products', 'mp-commerce-promotions' ) . '</option>';
 		echo '</select>';
-		echo '<p class="description">' . esc_html__( 'Category scope matches product category term IDs; products scope matches product post IDs. Variation-specific targeting is not supported yet.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+		echo '<p class="description">' . esc_html__( 'Category scope matches category term IDs. Products scope matches parent product IDs and optional variation IDs.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_cheapest_category_ids">' . esc_html__( 'Cheapest item category IDs', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="text" class="regular-text" id="mp_cp_builder_cheapest_category_ids" name="mp_cp_builder_cheapest_category_ids" placeholder="10, 15" /></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_cheapest_product_ids">' . esc_html__( 'Cheapest item product IDs', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="text" class="regular-text" id="mp_cp_builder_cheapest_product_ids" name="mp_cp_builder_cheapest_product_ids" placeholder="100, 101" /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_cheapest_variation_ids">' . esc_html__( 'Cheapest item variation IDs', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_cheapest_variation_ids" name="mp_cp_builder_cheapest_variation_ids" placeholder="3703, 3704" />';
+		echo '<p class="description">' . esc_html__( 'Optional. Products scope only; matches variation post IDs in addition to product IDs.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row">' . esc_html__( 'Exclude sale from pool', 'mp-commerce-promotions' ) . '</th><td>';
+		echo '<label><input type="checkbox" name="mp_cp_builder_cheapest_exclude_sale_items" value="1" /> ';
+		echo esc_html__( 'Remove on-sale units from cheapest-item eligible pool.', 'mp-commerce-promotions' ) . '</label></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_cheapest_required_quantity">' . esc_html__( 'Required quantity', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_builder_cheapest_required_quantity" name="mp_cp_builder_cheapest_required_quantity" min="1" step="1" />';
@@ -2017,7 +2073,7 @@ final class PromotionEditPage {
 				$this->render_recent_categories_id_helper_table();
 			},
 			__(
-				'The product_quantity condition uses WooCommerce product post IDs. The category_quantity condition uses product category term IDs (taxonomy product_cat). For cheapest_item_discount: category scope uses product category term IDs; products scope uses product post IDs. Variation-specific targeting is not implemented yet.',
+				'Product and variation post IDs are interchangeable in product_in_cart and product_quantity matching. Category conditions use product_cat term IDs. Promotion-level excluded product/category IDs remove matching lines from this promotion’s evaluation scope only.',
 				'mp-commerce-promotions'
 			),
 			array(
@@ -2291,6 +2347,18 @@ final class PromotionEditPage {
 					__( 'Maximum cart quantity', 'mp-commerce-promotions' ),
 					"[\n  {\"type\":\"maximum_cart_quantity\",\"quantity\":10}\n]"
 				);
+				$this->render_rule_template_readonly(
+					__( 'Product in cart', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"product_in_cart\",\"product_ids\":[100,3703]}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'Category in cart', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"category_in_cart\",\"category_ids\":[10,12]}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'Exclude sale items', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"exclude_sale_items\"}\n]"
+				);
 
 				echo '<h4 style="margin-top:1.5em;">' . esc_html__( 'Actions examples', 'mp-commerce-promotions' ) . '</h4>';
 
@@ -2312,7 +2380,7 @@ final class PromotionEditPage {
 				);
 				$this->render_rule_template_readonly(
 					__( 'Cheapest item discount (products)', 'mp-commerce-promotions' ),
-					"[\n  {\"type\":\"cheapest_item_discount\",\"scope\":\"products\",\"product_ids\":[100,101],\"discount_percentage\":50,\"required_quantity\":2,\"discounted_quantity\":1}\n]"
+					"[\n  {\"type\":\"cheapest_item_discount\",\"scope\":\"products\",\"product_ids\":[100],\"variation_ids\":[101,102],\"discount_percentage\":100,\"required_quantity\":3,\"discounted_quantity\":1,\"exclude_sale_items\":true}\n]"
 				);
 				$this->render_rule_template_readonly(
 					__( 'Free gift product', 'mp-commerce-promotions' ),
@@ -2426,6 +2494,8 @@ final class PromotionEditPage {
 		echo '</td></tr>';
 
 		echo '</tbody></table></div>';
+
+		$this->render_product_targeting_exclusions_section( $promotion );
 
 		echo '<h2 class="mp-cp-edit-section-title" style="margin:1.5em 0 0.5em;">' . esc_html__( 'Rules', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p class="description">' . esc_html__(
@@ -3248,6 +3318,125 @@ final class PromotionEditPage {
 
 		if ( $ids === array() ) {
 			return array();
+		}
+
+		$result = array_values( $ids );
+		sort( $result, SORT_NUMERIC );
+
+		return $result;
+	}
+
+	private function render_product_targeting_exclusions_section( Promotion $promotion ): void {
+		$excluded_products   = $promotion->get_excluded_product_ids();
+		$excluded_categories = $promotion->get_excluded_category_ids();
+		$product_map         = array();
+		foreach ( $excluded_products as $id ) {
+			$product_map[ (int) $id ] = true;
+		}
+		$category_map = array();
+		foreach ( $excluded_categories as $id ) {
+			$category_map[ (int) $id ] = true;
+		}
+
+		echo '<h2 class="mp-cp-edit-section-title" style="margin:1.5em 0 0.5em;">' . esc_html__( 'Product targeting exclusions', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:0 0 16px;">';
+		echo '<p class="description">' . esc_html__(
+			'Cart lines matching excluded products or categories are ignored for this promotion’s conditions, cheapest-item pool, and cart quantity helpers. Lines are not removed from the customer cart.',
+			'mp-commerce-promotions'
+		) . '</p>';
+
+		$products = $this->fetch_recent_products_for_id_helper();
+		if ( $products !== array() ) {
+			echo '<h4 style="margin:12px 0 6px;">' . esc_html__( 'Exclude products', 'mp-commerce-promotions' ) . '</h4>';
+			echo '<table class="widefat striped" style="max-width:640px;"><thead><tr><th></th><th>ID</th><th>Name</th></tr></thead><tbody>';
+			foreach ( $products as $row ) {
+				$pid = (int) $row['id'];
+				echo '<tr><td><input type="checkbox" name="promotion_excluded_product_check[]" value="' . esc_attr( (string) $pid ) . '"';
+				checked( isset( $product_map[ $pid ] ), true, false );
+				echo ' /></td><td>' . esc_html( (string) $pid ) . '</td><td>' . esc_html( $row['name'] ) . '</td></tr>';
+			}
+			echo '</tbody></table>';
+		}
+
+		$product_value = $excluded_products !== array() ? implode( ',', array_map( 'strval', $excluded_products ) ) : '';
+		echo '<p style="margin-top:8px;"><label for="mp_cp_excluded_product_ids">' . esc_html__( 'Additional product/variation IDs', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<input type="text" class="regular-text" id="mp_cp_excluded_product_ids" name="promotion_excluded_product_ids" value="' . esc_attr( $product_value ) . '" placeholder="100,3703" /></p>';
+
+		$categories = $this->fetch_recent_categories_for_id_helper();
+		if ( $categories !== array() ) {
+			echo '<h4 style="margin:16px 0 6px;">' . esc_html__( 'Exclude categories', 'mp-commerce-promotions' ) . '</h4>';
+			echo '<table class="widefat striped" style="max-width:640px;"><thead><tr><th></th><th>ID</th><th>Name</th></tr></thead><tbody>';
+			foreach ( $categories as $row ) {
+				$cid = (int) $row['id'];
+				echo '<tr><td><input type="checkbox" name="promotion_excluded_category_check[]" value="' . esc_attr( (string) $cid ) . '"';
+				checked( isset( $category_map[ $cid ] ), true, false );
+				echo ' /></td><td>' . esc_html( (string) $cid ) . '</td><td>' . esc_html( $row['name'] ) . '</td></tr>';
+			}
+			echo '</tbody></table>';
+		}
+
+		$category_value = $excluded_categories !== array() ? implode( ',', array_map( 'strval', $excluded_categories ) ) : '';
+		echo '<p style="margin-top:8px;"><label for="mp_cp_excluded_category_ids">' . esc_html__( 'Additional category IDs', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<input type="text" class="regular-text" id="mp_cp_excluded_category_ids" name="promotion_excluded_category_ids" value="' . esc_attr( $category_value ) . '" placeholder="10,12" /></p>';
+		echo '</div>';
+	}
+
+	/**
+	 * @return list<int>|null
+	 */
+	private function parse_excluded_product_ids_from_post(): ?array {
+		return $this->parse_positive_id_list_from_post( 'promotion_excluded_product_check', 'promotion_excluded_product_ids' );
+	}
+
+	/**
+	 * @return list<int>|null
+	 */
+	private function parse_excluded_category_ids_from_post(): ?array {
+		return $this->parse_positive_id_list_from_post( 'promotion_excluded_category_check', 'promotion_excluded_category_ids' );
+	}
+
+	/**
+	 * @return list<int>|null
+	 */
+	private function parse_positive_id_list_from_post( string $checkbox_field, string $text_field ): ?array {
+		$ids = array();
+
+		if ( isset( $_POST[ $checkbox_field ] ) && is_array( $_POST[ $checkbox_field ] ) ) {
+			foreach ( $_POST[ $checkbox_field ] as $raw_id ) {
+				if ( ! is_scalar( $raw_id ) ) {
+					continue;
+				}
+				$id = (int) $raw_id;
+				if ( $id <= 0 ) {
+					continue;
+				}
+				$ids[ $id ] = $id;
+			}
+		}
+
+		$raw = isset( $_POST[ $text_field ] )
+			? sanitize_text_field( wp_unslash( (string) $_POST[ $text_field ] ) )
+			: '';
+		$raw = trim( $raw );
+		if ( $raw !== '' ) {
+			$parts = preg_split( '/[\s,]+/', $raw );
+			if ( ! is_array( $parts ) ) {
+				return null;
+			}
+			foreach ( $parts as $part ) {
+				$part = trim( (string) $part );
+				if ( $part === '' ) {
+					continue;
+				}
+				if ( ! ctype_digit( $part ) ) {
+					return null;
+				}
+				$id = (int) $part;
+				if ( $id <= 0 ) {
+					return null;
+				}
+				$ids[ $id ] = $id;
+			}
 		}
 
 		$result = array_values( $ids );

@@ -37,6 +37,12 @@ final class ConditionTrace {
 
 	public const REASON_PROMOTION_EXPIRED = 'promotion_expired';
 
+	public const REASON_REQUIRED_PRODUCT_MISSING = 'required_product_missing';
+
+	public const REASON_REQUIRED_CATEGORY_MISSING = 'required_category_missing';
+
+	public const REASON_SALE_ITEMS_PRESENT = 'sale_items_present';
+
 	private string $type;
 
 	private bool $passed;

@@ -27,6 +27,9 @@ final class RuleRegistryTest extends TestCase {
 		$this->assertContains( RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT, $conditions );
 		$this->assertContains( RuleTypes::CONDITION_MINIMUM_CART_QUANTITY, $conditions );
 		$this->assertContains( RuleTypes::CONDITION_MAXIMUM_CART_QUANTITY, $conditions );
+		$this->assertContains( RuleTypes::CONDITION_PRODUCT_IN_CART, $conditions );
+		$this->assertContains( RuleTypes::CONDITION_CATEGORY_IN_CART, $conditions );
+		$this->assertContains( RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS, $conditions );
 	}
 
 	public function test_supported_actions_includes_mvp_types(): void {

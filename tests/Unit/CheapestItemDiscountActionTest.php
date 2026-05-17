@@ -153,6 +153,39 @@ final class CheapestItemDiscountActionTest extends TestCase {
 		);
 	}
 
+	public function test_product_scope_with_variation_ids(): void {
+		$action = CheapestItemDiscountAction::from_config(
+			array(
+				'type'                => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+				'scope'               => CheapestItemDiscountAction::SCOPE_PRODUCTS,
+				'product_ids'         => array( 100 ),
+				'variation_ids'       => array( 101 ),
+				'discount_percentage' => 100,
+				'required_quantity'   => 2,
+				'discounted_quantity' => 1,
+			)
+		);
+
+		$context = new EvaluationContext(
+			null,
+			60.0,
+			'USD',
+			array(
+				array(
+					'product_id'    => 100,
+					'variation_id'  => 101,
+					'quantity'      => 2.0,
+					'line_subtotal' => 60.0,
+					'unit_price'    => 30.0,
+				),
+			),
+			array()
+		);
+
+		$result = $action->preview( $context );
+		$this->assertSame( 30.0, $result->get_payload()['discount_amount'] );
+	}
+
 	public function test_invalid_discount_percentage_throws(): void {
 		$this->expectException( InvalidArgumentException::class );
 

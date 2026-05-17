@@ -145,6 +145,32 @@ final class SimpleRuleBuilder {
 			);
 		}
 
+		if ( $type === RuleTypes::CONDITION_PRODUCT_IN_CART ) {
+			$product_ids = self::parse_comma_int_list( $post, 'mp_cp_builder_product_ids', 'invalid_product_ids' );
+
+			return array(
+				'type'        => RuleTypes::CONDITION_PRODUCT_IN_CART,
+				'product_ids' => $product_ids,
+			);
+		}
+
+		if ( $type === RuleTypes::CONDITION_CATEGORY_IN_CART ) {
+			$category_ids = self::parse_comma_int_list( $post, 'mp_cp_builder_category_ids', 'invalid_category_ids' );
+
+			return array(
+				'type'         => RuleTypes::CONDITION_CATEGORY_IN_CART,
+				'category_ids' => $category_ids,
+			);
+		}
+
+		if ( $type === RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS ) {
+			if ( empty( $post['mp_cp_builder_exclude_sale_items'] ) ) {
+				throw new InvalidArgumentException( 'exclude_sale_items_not_checked' );
+			}
+
+			return array( 'type' => RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS );
+		}
+
 		$operator = self::parse_operator( $post );
 		$quantity = self::parse_required_float( $post, 'mp_cp_builder_quantity', 'invalid_quantity' );
 
@@ -245,6 +271,14 @@ final class SimpleRuleBuilder {
 			$config['category_ids'] = self::parse_comma_int_list( $post, 'mp_cp_builder_cheapest_category_ids', 'invalid_cheapest_category_ids' );
 		} else {
 			$config['product_ids'] = self::parse_comma_int_list( $post, 'mp_cp_builder_cheapest_product_ids', 'invalid_cheapest_product_ids' );
+			$variation_ids         = self::parse_optional_comma_int_list( $post, 'mp_cp_builder_cheapest_variation_ids' );
+			if ( $variation_ids !== array() ) {
+				$config['variation_ids'] = $variation_ids;
+			}
+		}
+
+		if ( ! empty( $post['mp_cp_builder_cheapest_exclude_sale_items'] ) ) {
+			$config['exclude_sale_items'] = true;
 		}
 
 		CheapestItemDiscountAction::from_config( $config );
@@ -393,5 +427,28 @@ final class SimpleRuleBuilder {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * @param array<string, mixed> $post
+	 * @return list<int>
+	 */
+	private static function parse_optional_comma_int_list( array $post, string $key ): array {
+		if ( ! isset( $post[ $key ] ) || ! is_string( $post[ $key ] ) ) {
+			return array();
+		}
+
+		$raw = trim( $post[ $key ] );
+		if ( $raw === '' ) {
+			return array();
+		}
+
+		$post_with_key = array( $key => $raw );
+
+		try {
+			return self::parse_comma_int_list( $post_with_key, $key, 'invalid_optional_ids' );
+		} catch ( InvalidArgumentException $e ) {
+			throw new InvalidArgumentException( 'invalid_optional_ids' );
+		}
 	}
 }

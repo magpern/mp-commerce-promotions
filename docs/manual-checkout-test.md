@@ -10,6 +10,8 @@ Use this checklist to verify the end-to-end promotion flow on a real WooCommerce
 
 **Integrity (idempotency, gift sync, restore):** see [manual-checkout-integrity-test.md](manual-checkout-integrity-test.md) and `scripts/checkout-integrity-smoke.php`.
 
+**Product targeting (variations, sale exclusion, promotion exclusions):** see [manual-product-targeting-test.md](manual-product-targeting-test.md) and `scripts/product-targeting-smoke.php`.
+
 **WP-CLI quick checks (optional):**
 
 ```bash

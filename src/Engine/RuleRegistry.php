@@ -30,6 +30,9 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT,
 			RuleTypes::CONDITION_MINIMUM_CART_QUANTITY,
 			RuleTypes::CONDITION_MAXIMUM_CART_QUANTITY,
+			RuleTypes::CONDITION_PRODUCT_IN_CART,
+			RuleTypes::CONDITION_CATEGORY_IN_CART,
+			RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS,
 		);
 	}
 
@@ -77,6 +80,9 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_CUSTOMER_REDEMPTION_COUNT => 'Customer redemption count',
 			RuleTypes::CONDITION_MINIMUM_CART_QUANTITY   => 'Minimum cart quantity',
 			RuleTypes::CONDITION_MAXIMUM_CART_QUANTITY   => 'Maximum cart quantity',
+			RuleTypes::CONDITION_PRODUCT_IN_CART          => 'Product in cart',
+			RuleTypes::CONDITION_CATEGORY_IN_CART       => 'Category in cart',
+			RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS      => 'Exclude sale items',
 		);
 
 		return $labels[ $type ] ?? $type;

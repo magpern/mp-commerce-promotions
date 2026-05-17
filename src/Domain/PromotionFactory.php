@@ -36,6 +36,8 @@ final class PromotionFactory {
 			true,
 			null,
 			array(),
+			array(),
+			array(),
 			$created_by,
 			null,
 			null
@@ -67,6 +69,8 @@ final class PromotionFactory {
 			$source->should_stop_processing(),
 			$source->get_max_applications(),
 			$source->get_excluded_promotion_ids(),
+			$source->get_excluded_product_ids(),
+			$source->get_excluded_category_ids(),
 			$created_by,
 			null,
 			null

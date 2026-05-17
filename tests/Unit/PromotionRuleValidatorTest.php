@@ -586,6 +586,56 @@ final class PromotionRuleValidatorTest extends TestCase {
 		return false;
 	}
 
+	public function test_validates_product_in_cart_condition(): void {
+		$promotion = Promotion::from_array(
+			array(
+				'uuid'       => '11111111-1111-4111-8111-111111111111',
+				'name'       => 'Product cart',
+				'status'     => PromotionStatus::ACTIVE,
+				'conditions' => array(
+					array(
+						'type'        => RuleTypes::CONDITION_PRODUCT_IN_CART,
+						'product_ids' => array( 1, 2 ),
+					),
+				),
+				'actions'    => array(
+					array(
+						'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+						'percentage' => 10,
+					),
+				),
+			)
+		);
+
+		$issues = $this->validator->validate( $promotion );
+		$this->assertNotContains( 'error', $this->levels( $issues ) );
+	}
+
+	public function test_rejects_product_in_cart_without_ids(): void {
+		$promotion = Promotion::from_array(
+			array(
+				'uuid'       => '11111111-1111-4111-8111-111111111111',
+				'name'       => 'Bad product cart',
+				'status'     => PromotionStatus::ACTIVE,
+				'conditions' => array(
+					array(
+						'type'        => RuleTypes::CONDITION_PRODUCT_IN_CART,
+						'product_ids' => array(),
+					),
+				),
+				'actions'    => array(
+					array(
+						'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+						'percentage' => 10,
+					),
+				),
+			)
+		);
+
+		$issues = $this->validator->validate( $promotion );
+		$this->assertContains( 'error', $this->levels( $issues ) );
+	}
+
 	public function test_exclusion_list_emits_info(): void {
 		$promotion = Promotion::from_array(
 			array(

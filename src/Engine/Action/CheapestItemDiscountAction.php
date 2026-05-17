@@ -30,11 +30,16 @@ final class CheapestItemDiscountAction implements ActionInterface {
 	/** @var list<int> */
 	private array $product_ids;
 
+	/** @var list<int> */
+	private array $variation_ids;
+
 	private float $discount_percentage;
 
 	private int $required_quantity;
 
 	private int $discounted_quantity;
+
+	private bool $exclude_sale_items;
 
 	/**
 	 * @param array<string, mixed> $config Promotion action JSON object.
@@ -69,19 +74,20 @@ final class CheapestItemDiscountAction implements ActionInterface {
 			throw new InvalidArgumentException( 'cheapest_item_discount discounted_quantity must be >= 1 and <= required_quantity.' );
 		}
 
-		$category_ids = array();
-		$product_ids  = array();
+		$exclude_sale_items = false;
+		if ( isset( $config['exclude_sale_items'] ) ) {
+			$exclude_sale_items = (bool) $config['exclude_sale_items'];
+		}
+
+		$category_ids  = array();
+		$product_ids   = array();
+		$variation_ids = array();
 
 		if ( $scope === self::SCOPE_CATEGORY ) {
 			if ( ! isset( $config['category_ids'] ) || ! is_array( $config['category_ids'] ) ) {
 				throw new InvalidArgumentException( 'cheapest_item_discount category_ids must be a non-empty array.' );
 			}
-			foreach ( $config['category_ids'] as $raw_id ) {
-				if ( is_numeric( $raw_id ) && (int) $raw_id > 0 ) {
-					$category_ids[] = (int) $raw_id;
-				}
-			}
-			$category_ids = array_values( array_unique( $category_ids, SORT_NUMERIC ) );
+			$category_ids = CartItemSelector::normalize_positive_int_list( $config['category_ids'] );
 			if ( $category_ids === array() ) {
 				throw new InvalidArgumentException( 'cheapest_item_discount category_ids must contain positive integers.' );
 			}
@@ -89,14 +95,12 @@ final class CheapestItemDiscountAction implements ActionInterface {
 			if ( ! isset( $config['product_ids'] ) || ! is_array( $config['product_ids'] ) ) {
 				throw new InvalidArgumentException( 'cheapest_item_discount product_ids must be a non-empty array.' );
 			}
-			foreach ( $config['product_ids'] as $raw_id ) {
-				if ( is_numeric( $raw_id ) && (int) $raw_id > 0 ) {
-					$product_ids[] = (int) $raw_id;
-				}
-			}
-			$product_ids = array_values( array_unique( $product_ids, SORT_NUMERIC ) );
+			$product_ids = CartItemSelector::normalize_positive_int_list( $config['product_ids'] );
 			if ( $product_ids === array() ) {
 				throw new InvalidArgumentException( 'cheapest_item_discount product_ids must contain positive integers.' );
+			}
+			if ( isset( $config['variation_ids'] ) && is_array( $config['variation_ids'] ) ) {
+				$variation_ids = CartItemSelector::normalize_positive_int_list( $config['variation_ids'] );
 			}
 		}
 
@@ -104,30 +108,37 @@ final class CheapestItemDiscountAction implements ActionInterface {
 			$scope,
 			$category_ids,
 			$product_ids,
+			$variation_ids,
 			$discount_percentage,
 			$required_quantity,
-			$discounted_quantity
+			$discounted_quantity,
+			$exclude_sale_items
 		);
 	}
 
 	/**
 	 * @param list<int> $category_ids
 	 * @param list<int> $product_ids
+	 * @param list<int> $variation_ids
 	 */
 	private function __construct(
 		string $scope,
 		array $category_ids,
 		array $product_ids,
+		array $variation_ids,
 		float $discount_percentage,
 		int $required_quantity,
-		int $discounted_quantity
+		int $discounted_quantity,
+		bool $exclude_sale_items
 	) {
 		$this->scope               = $scope;
 		$this->category_ids        = $category_ids;
 		$this->product_ids         = $product_ids;
+		$this->variation_ids       = $variation_ids;
 		$this->discount_percentage = $discount_percentage;
 		$this->required_quantity   = $required_quantity;
 		$this->discounted_quantity = $discounted_quantity;
+		$this->exclude_sale_items  = $exclude_sale_items;
 	}
 
 	public function get_type(): string {
@@ -141,21 +152,30 @@ final class CheapestItemDiscountAction implements ActionInterface {
 	public function preview( EvaluationContext $context ): ActionResult {
 		$eligible_items = $this->scope === self::SCOPE_CATEGORY
 			? CartItemSelector::items_matching_categories( $context, $this->category_ids )
-			: CartItemSelector::items_matching_products( $context, $this->product_ids );
+			: CartItemSelector::items_matching_products_and_variations( $context, $this->product_ids, $this->variation_ids );
+
+		$raw_count = count( CartItemSelector::expand_quantities( $eligible_items ) );
+
+		if ( $this->exclude_sale_items ) {
+			$eligible_items = CartItemSelector::filter_out_sale_items( $eligible_items );
+		}
 
 		$units = CartItemSelector::expand_quantities( $eligible_items );
+		$eligible_units = count( $units );
 
-		if ( count( $units ) < $this->required_quantity ) {
+		if ( $eligible_units < $this->required_quantity ) {
 			return new ActionResult(
 				$this->get_type(),
 				array(
-					'discount_amount'   => 0.0,
-					'discounted_units'  => 0,
-					'scope'             => $this->scope,
-					'not_applicable'    => true,
-					'reason'            => self::REASON_INSUFFICIENT,
-					'eligible_units'    => count( $units ),
-					'required_quantity' => $this->required_quantity,
+					'discount_amount'      => 0.0,
+					'discounted_units'     => 0,
+					'scope'                => $this->scope,
+					'not_applicable'       => true,
+					'reason'               => self::REASON_INSUFFICIENT,
+					'eligible_units'       => $eligible_units,
+					'eligible_units_raw'   => $raw_count,
+					'sale_items_excluded'  => $this->exclude_sale_items,
+					'required_quantity'    => $this->required_quantity,
 				)
 			);
 		}
@@ -181,13 +201,17 @@ final class CheapestItemDiscountAction implements ActionInterface {
 			$discount_total += $unit_price * $this->discount_percentage / 100.0;
 		}
 
-		return new ActionResult(
-			$this->get_type(),
-			array(
-				'discount_amount'  => round( $discount_total, 4 ),
-				'discounted_units' => $to_discount,
-				'scope'            => $this->scope,
-			)
+		$payload = array(
+			'discount_amount'     => round( $discount_total, 4 ),
+			'discounted_units'    => $to_discount,
+			'scope'               => $this->scope,
+			'eligible_units'      => $eligible_units,
+			'sale_items_excluded' => $this->exclude_sale_items,
 		);
+		if ( $this->exclude_sale_items && $raw_count !== $eligible_units ) {
+			$payload['eligible_units_raw'] = $raw_count;
+		}
+
+		return new ActionResult( $this->get_type(), $payload );
 	}
 }

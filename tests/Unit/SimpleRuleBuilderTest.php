@@ -266,6 +266,47 @@ final class SimpleRuleBuilderTest extends TestCase {
 		$this->assertSame( 100.0, $action['discount_percentage'] );
 	}
 
+	public function test_builds_product_in_cart_condition(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type' => RuleTypes::CONDITION_PRODUCT_IN_CART,
+				'mp_cp_builder_product_ids'    => '100, 101',
+				'mp_cp_builder_action_type'    => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'mp_cp_builder_percentage'     => '10',
+			)
+		);
+
+		$this->assertSame( RuleTypes::CONDITION_PRODUCT_IN_CART, $built['conditions'][0]['type'] );
+		$this->assertSame( array( 100, 101 ), $built['conditions'][0]['product_ids'] );
+	}
+
+	public function test_builds_category_in_cart_condition(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type' => RuleTypes::CONDITION_CATEGORY_IN_CART,
+				'mp_cp_builder_category_ids'   => '10,12',
+				'mp_cp_builder_action_type'    => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'mp_cp_builder_percentage'     => '10',
+			)
+		);
+
+		$this->assertSame( RuleTypes::CONDITION_CATEGORY_IN_CART, $built['conditions'][0]['type'] );
+		$this->assertSame( array( 10, 12 ), $built['conditions'][0]['category_ids'] );
+	}
+
+	public function test_builds_exclude_sale_items_condition(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type'     => RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS,
+				'mp_cp_builder_exclude_sale_items' => '1',
+				'mp_cp_builder_action_type'        => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'mp_cp_builder_percentage'         => '10',
+			)
+		);
+
+		$this->assertSame( RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS, $built['conditions'][0]['type'] );
+	}
+
 	public function test_builds_cheapest_item_discount_products_config(): void {
 		$built = SimpleRuleBuilder::build_from_post(
 			array(
@@ -284,6 +325,28 @@ final class SimpleRuleBuilderTest extends TestCase {
 		$this->assertSame( CheapestItemDiscountAction::SCOPE_PRODUCTS, $action['scope'] );
 		$this->assertSame( array( 100, 101 ), $action['product_ids'] );
 		$this->assertSame( 50.0, $action['discount_percentage'] );
+	}
+
+	public function test_builds_cheapest_item_with_variation_ids_and_sale_exclusion(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type'                 => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+				'mp_cp_builder_amount'                         => '1',
+				'mp_cp_builder_action_type'                    => RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT,
+				'mp_cp_builder_cheapest_scope'                 => CheapestItemDiscountAction::SCOPE_PRODUCTS,
+				'mp_cp_builder_cheapest_product_ids'           => '100',
+				'mp_cp_builder_cheapest_variation_ids'       => '101,102',
+				'mp_cp_builder_cheapest_required_quantity'     => '2',
+				'mp_cp_builder_cheapest_discounted_quantity'   => '1',
+				'mp_cp_builder_cheapest_discount_percentage'   => '100',
+				'mp_cp_builder_cheapest_exclude_sale_items'  => '1',
+			)
+		);
+
+		$action = $built['actions'][0];
+		$this->assertSame( array( 100 ), $action['product_ids'] );
+		$this->assertSame( array( 101, 102 ), $action['variation_ids'] );
+		$this->assertTrue( $action['exclude_sale_items'] );
 	}
 
 	public function test_rejects_invalid_cheapest_scope(): void {

@@ -50,6 +50,12 @@ final class Promotion {
 	/** @var list<int> */
 	private array $excluded_promotion_ids;
 
+	/** @var list<int> */
+	private array $excluded_product_ids;
+
+	/** @var list<int> */
+	private array $excluded_category_ids;
+
 	private ?int $created_by;
 
 	private ?string $created_at;
@@ -75,6 +81,8 @@ final class Promotion {
 		bool $stop_processing,
 		?int $max_applications,
 		array $excluded_promotion_ids,
+		array $excluded_product_ids,
+		array $excluded_category_ids,
 		?int $created_by,
 		?string $created_at,
 		?string $updated_at
@@ -112,6 +120,8 @@ final class Promotion {
 		}
 
 		$excluded_promotion_ids = self::normalize_excluded_promotion_ids( $excluded_promotion_ids, $id );
+		$excluded_product_ids   = self::normalize_positive_id_list( $excluded_product_ids );
+		$excluded_category_ids  = self::normalize_positive_id_list( $excluded_category_ids );
 
 		$this->id           = $id;
 		$this->uuid         = $uuid;
@@ -131,6 +141,8 @@ final class Promotion {
 		$this->stop_processing    = $stop_processing;
 		$this->max_applications       = $max_applications;
 		$this->excluded_promotion_ids = $excluded_promotion_ids;
+		$this->excluded_product_ids   = $excluded_product_ids;
+		$this->excluded_category_ids  = $excluded_category_ids;
 		$this->created_by             = $created_by;
 		$this->created_at   = $created_at;
 		$this->updated_at   = $updated_at;
@@ -164,6 +176,24 @@ final class Promotion {
 			$excluded_raw = array();
 		}
 
+		$excluded_products_raw = $data['excluded_product_ids'] ?? null;
+		if ( is_string( $excluded_products_raw ) && $excluded_products_raw !== '' ) {
+			$decoded_products = json_decode( $excluded_products_raw, true );
+			$excluded_products_raw = is_array( $decoded_products ) ? $decoded_products : array();
+		}
+		if ( ! is_array( $excluded_products_raw ) ) {
+			$excluded_products_raw = array();
+		}
+
+		$excluded_categories_raw = $data['excluded_category_ids'] ?? null;
+		if ( is_string( $excluded_categories_raw ) && $excluded_categories_raw !== '' ) {
+			$decoded_categories = json_decode( $excluded_categories_raw, true );
+			$excluded_categories_raw = is_array( $decoded_categories ) ? $decoded_categories : array();
+		}
+		if ( ! is_array( $excluded_categories_raw ) ) {
+			$excluded_categories_raw = array();
+		}
+
 		return new self(
 			$id,
 			(string) ( $data['uuid'] ?? '' ),
@@ -183,6 +213,8 @@ final class Promotion {
 			self::normalize_stop_processing( $data['stop_processing'] ?? true ),
 			$max_apps,
 			$excluded_raw,
+			$excluded_products_raw,
+			$excluded_categories_raw,
 			$created_by,
 			self::optional_string( $data['created_at'] ?? null ),
 			self::optional_string( $data['updated_at'] ?? null )
@@ -212,6 +244,8 @@ final class Promotion {
 			'stop_processing'    => $this->stop_processing,
 			'max_applications'       => $this->max_applications,
 			'excluded_promotion_ids' => $this->excluded_promotion_ids,
+			'excluded_product_ids'   => $this->excluded_product_ids,
+			'excluded_category_ids'  => $this->excluded_category_ids,
 			'created_by'             => $this->created_by,
 			'created_at'   => $this->created_at,
 			'updated_at'   => $this->updated_at,
@@ -302,6 +336,20 @@ final class Promotion {
 		return $this->excluded_promotion_ids;
 	}
 
+	/**
+	 * @return list<int>
+	 */
+	public function get_excluded_product_ids(): array {
+		return $this->excluded_product_ids;
+	}
+
+	/**
+	 * @return list<int>
+	 */
+	public function get_excluded_category_ids(): array {
+		return $this->excluded_category_ids;
+	}
+
 	public function get_created_by(): ?int {
 		return $this->created_by;
 	}
@@ -334,6 +382,8 @@ final class Promotion {
 			$this->stop_processing,
 			$this->max_applications,
 			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -360,6 +410,8 @@ final class Promotion {
 			$this->stop_processing,
 			$this->max_applications,
 			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -386,6 +438,8 @@ final class Promotion {
 			$this->stop_processing,
 			$this->max_applications,
 			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -412,6 +466,8 @@ final class Promotion {
 			$this->stop_processing,
 			$this->max_applications,
 			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -438,6 +494,8 @@ final class Promotion {
 			$this->stop_processing,
 			$this->max_applications,
 			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -468,6 +526,8 @@ final class Promotion {
 			$this->stop_processing,
 			$this->max_applications,
 			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -494,6 +554,8 @@ final class Promotion {
 			$this->stop_processing,
 			$this->max_applications,
 			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -525,6 +587,8 @@ final class Promotion {
 			$this->stop_processing,
 			$this->max_applications,
 			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -554,6 +618,40 @@ final class Promotion {
 			$this->stop_processing,
 			$this->max_applications,
 			$ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	/**
+	 * @param array<mixed> $product_ids
+	 * @param array<mixed> $category_ids
+	 */
+	public function with_excluded_product_targeting( array $product_ids, array $category_ids ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->customer_usage_limit,
+			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
+			$this->excluded_promotion_ids,
+			self::normalize_positive_id_list( $product_ids ),
+			self::normalize_positive_id_list( $category_ids ),
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -584,10 +682,38 @@ final class Promotion {
 			$stop_processing,
 			$max_applications,
 			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
 		);
+	}
+
+	/**
+	 * @param array<mixed> $ids
+	 * @return list<int>
+	 */
+	private static function normalize_positive_id_list( array $ids ): array {
+		$normalized = array();
+		foreach ( $ids as $raw ) {
+			if ( ! is_int( $raw ) && ! is_string( $raw ) && ! is_float( $raw ) ) {
+				throw new InvalidArgumentException( 'ID lists must be arrays of positive integers.' );
+			}
+			if ( is_string( $raw ) && $raw !== '' && ! ctype_digit( $raw ) ) {
+				throw new InvalidArgumentException( 'ID lists must be arrays of positive integers.' );
+			}
+			$id = (int) $raw;
+			if ( $id <= 0 ) {
+				throw new InvalidArgumentException( 'ID lists must be arrays of positive integers.' );
+			}
+			$normalized[ $id ] = $id;
+		}
+
+		$result = array_values( $normalized );
+		sort( $result, SORT_NUMERIC );
+
+		return $result;
 	}
 
 	/**

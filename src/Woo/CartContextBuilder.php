@@ -103,6 +103,7 @@ final class CartContextBuilder {
 					'line_subtotal' => $line_subtotal,
 					'unit_price'    => $unit_price,
 					'categories'    => $categories,
+					'on_sale'       => $this->cart_item_is_on_sale( $cart_item, $product_id, $variation ),
 				);
 
 				if ( is_string( $cart_item_key ) && $cart_item_key !== '' ) {
@@ -352,6 +353,34 @@ final class CartContextBuilder {
 		$name = $product->get_name();
 
 		return is_string( $name ) && $name !== '' ? $name : null;
+	}
+
+	/**
+	 * @return list<int>
+	 */
+	/**
+	 * @param array<string, mixed> $cart_item
+	 */
+	private function cart_item_is_on_sale( array $cart_item, int $product_id, ?int $variation_id ): bool {
+		if ( isset( $cart_item['data'] ) && is_object( $cart_item['data'] ) && method_exists( $cart_item['data'], 'is_on_sale' ) ) {
+			return (bool) $cart_item['data']->is_on_sale();
+		}
+
+		if ( ! function_exists( 'wc_get_product' ) ) {
+			return false;
+		}
+
+		$lookup_id = ( $variation_id !== null && $variation_id > 0 ) ? $variation_id : $product_id;
+		if ( $lookup_id <= 0 ) {
+			return false;
+		}
+
+		$product = wc_get_product( $lookup_id );
+		if ( ! is_object( $product ) || ! method_exists( $product, 'is_on_sale' ) ) {
+			return false;
+		}
+
+		return (bool) $product->is_on_sale();
 	}
 
 	/**

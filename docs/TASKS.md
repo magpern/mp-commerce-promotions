@@ -15,6 +15,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Product targeting (schema 1.8.0)** — variation-aware `CartItemSelector`, `product_in_cart` / `category_in_cart` / `exclude_sale_items`, promotion product/category exclusions, cheapest item `variation_ids` + sale pool exclusion, admin/builder, `scripts/product-targeting-smoke.php`, `docs/manual-product-targeting-test.md`
 - **Manual WooCommerce QA evidence** — `docs/MANUAL_QA_EVIDENCE.md`, README/TASKS QA status, smoke + composer verification on staging
 
 - **Admin UX polish** — PromotionPicker, bulk status actions, exclusion checklist

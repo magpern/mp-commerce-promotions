@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Engine\Condition;
 
 use InvalidArgumentException;
+use MP\CommercePromotions\Engine\CartItemSelector;
 use MP\CommercePromotions\Engine\EvaluationContext;
 use MP\CommercePromotions\Engine\RuleTypes;
 
@@ -71,14 +72,7 @@ final class ProductQuantityCondition implements ConditionInterface {
 
 	private function sum_quantity_for_product( EvaluationContext $context ): float {
 		$sum = 0.0;
-		foreach ( $context->get_items() as $item ) {
-			if ( ! is_array( $item ) ) {
-				continue;
-			}
-			$pid = isset( $item['product_id'] ) ? (int) $item['product_id'] : 0;
-			if ( $pid !== $this->product_id ) {
-				continue;
-			}
+		foreach ( CartItemSelector::items_matching_products( $context, array( $this->product_id ) ) as $item ) {
 			if ( isset( $item['quantity'] ) && is_numeric( $item['quantity'] ) ) {
 				$sum += (float) $item['quantity'];
 			}

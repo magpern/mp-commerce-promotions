@@ -19,6 +19,7 @@ use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\FreeGiftProductAction;
 use MP\CommercePromotions\Engine\Action\FreeShippingAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
+use MP\CommercePromotions\Engine\CartItemSelector;
 use MP\CommercePromotions\Engine\Condition\BillingCountryCondition;
 use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\ConditionInterface;
@@ -30,7 +31,10 @@ use MP\CommercePromotions\Engine\Condition\FirstOrderCondition;
 use MP\CommercePromotions\Engine\Condition\LoggedInCondition;
 use MP\CommercePromotions\Engine\Condition\MaximumCartQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumCartQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\CategoryInCartCondition;
+use MP\CommercePromotions\Engine\Condition\ExcludeSaleItemsCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
+use MP\CommercePromotions\Engine\Condition\ProductInCartCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
 
@@ -456,6 +460,35 @@ final class PromotionEvaluator {
 			}
 		}
 
+		if ( $type === RuleTypes::CONDITION_PRODUCT_IN_CART ) {
+			try {
+				return array(
+					'condition' => ProductInCartCondition::from_config( $raw ),
+					'error'     => null,
+				);
+			} catch ( \InvalidArgumentException $e ) {
+				return array( 'condition' => null, 'error' => 'invalid' );
+			}
+		}
+
+		if ( $type === RuleTypes::CONDITION_CATEGORY_IN_CART ) {
+			try {
+				return array(
+					'condition' => CategoryInCartCondition::from_config( $raw ),
+					'error'     => null,
+				);
+			} catch ( \InvalidArgumentException $e ) {
+				return array( 'condition' => null, 'error' => 'invalid' );
+			}
+		}
+
+		if ( $type === RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS ) {
+			return array(
+				'condition' => new ExcludeSaleItemsCondition(),
+				'error'     => null,
+			);
+		}
+
 		if ( $type === '' ) {
 			return array( 'condition' => null, 'error' => 'unknown' );
 		}
@@ -464,8 +497,10 @@ final class PromotionEvaluator {
 	}
 
 	private function enrich_context_for_promotion( EvaluationContext $context, Promotion $promotion ): EvaluationContext {
+		$items = CartItemSelector::filter_items_for_promotion( $context->get_items(), $promotion );
+
 		$metadata                        = $context->get_metadata();
-		$metadata['cart_total_quantity'] = CartQuantityHelper::total_quantity_from_items( $context->get_items() );
+		$metadata['cart_total_quantity'] = CartQuantityHelper::total_quantity_from_items( $items );
 
 		$customer_id  = $context->get_customer_id();
 		$promotion_id = $promotion->get_id();
@@ -486,7 +521,7 @@ final class PromotionEvaluator {
 			$context->get_customer_id(),
 			$context->get_cart_subtotal(),
 			$context->get_currency(),
-			$context->get_items(),
+			$items,
 			$metadata
 		);
 	}
