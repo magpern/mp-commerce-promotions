@@ -43,6 +43,25 @@ final class PromotionRepository {
 	}
 
 	/**
+	 * Find a promotion by exact name (most recent row if duplicates exist).
+	 */
+	public function find_by_name( string $name ): ?Promotion {
+		$name = trim( $name );
+		if ( $name === '' ) {
+			return null;
+		}
+
+		$table = $this->promotions_table();
+		$row   = DbQuery::get_row(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE name = %s ORDER BY id DESC LIMIT 1",
+			array( $name )
+		);
+
+		return $this->row_to_promotion( $row );
+	}
+
+	/**
 	 * Find a promotion by UUID.
 	 */
 	public function find_by_uuid( string $uuid ): ?Promotion {

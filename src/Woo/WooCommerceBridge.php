@@ -158,6 +158,12 @@ final class WooCommerceBridge {
 			10,
 			2
 		);
+		add_action(
+			'woocommerce_checkout_order_processed',
+			array( $this->order_promotion_recorder, 'record_on_checkout_processed' ),
+			20,
+			2
+		);
 		$this->order_checkout_hook_registered = true;
 	}
 

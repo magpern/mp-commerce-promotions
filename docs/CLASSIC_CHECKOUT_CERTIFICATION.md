@@ -1,10 +1,12 @@
 # Classic checkout certification
 
-**Environment:** Local Docker WooCommerce + prior `biopentra.eu` evidence  
+**Environment:** Local Docker — https://www.biopentra.eu  
 **Certification date:** 2026-05-17  
-**Commit baseline:** `a012221` (browser QA beta release prep adds this doc)  
-**Cart page:** ID 82 (`cart-2`) — `[woocommerce_cart]` shortcode  
-**Checkout page:** ID 83 (`checkout-2`) — `[woocommerce_checkout]` shortcode  
+**Commit baseline:** `808a261` + classic QA milestone (checkout recording fix)  
+**Cart page:** ID 82 (`/cart-2/`) — `[woocommerce_cart]`  
+**Checkout page:** ID 83 (`/checkout-2/`) — `[woocommerce_checkout]`  
+**Gateway:** COD (`woocommerce_cod_settings[enabled]=yes`)  
+**HPOS:** Enabled  
 
 **Legend:** Pass | Fail | Partial | Blocked | Not run
 
@@ -14,9 +16,29 @@
 
 | Area | Status |
 |------|--------|
-| **Engine / WP-CLI smokes** | **Pass** (checkout integrity, stacking, free shipping, etc.) |
-| **Browser E2E checkout** | **Partial** — COD enabled locally; full browser pass not recorded in this doc run |
+| **Engine / WP-CLI smokes** | **Pass** |
+| **Browser E2E (classic + COD)** | **Pass** with caveats — stacked checkout, recording fix, reversal; several scenarios partial/not run |
 | **Production browser** | **Blocked** — BTCPay-only |
+
+---
+
+## Test assets (2026-05-17)
+
+| Asset | ID / value |
+|-------|------------|
+| Qualifying product | **3703** (MOTS-C 10mg, €46) |
+| Gift product | **4338** (Browser QA Gift SKU) |
+| Stacked promos | **154**, **155** |
+| Scoped % | **156** |
+| Cheapest item | **157** |
+| Free shipping | **158** |
+| Free gift | **159** |
+| Code promo | **160** — code `BROWSERQA15` |
+| Budget | **161** |
+| Cooldown | **162** |
+| Orchestration | **163**, **164** — group `browser-qa-lane` |
+| Exclusion pair | **165**, **166** |
+| Browser COD order | **4339** (cancelled after reversal test) |
 
 ---
 
@@ -24,66 +46,50 @@
 
 | Scenario | WP-CLI / smoke | Browser (classic) | Notes |
 |----------|----------------|-------------------|--------|
-| **Stacked fees** | **Pass** | **Not run** | `stacking-smoke.php` — dual fees, reversal, meta |
-| **Scoped discounts** | **Pass** | **Not run** | `scoped-discount-smoke.php` |
-| **Cheapest item BOGO** | **Pass** | **Not run** | `cheapest-item-smoke.php` |
-| **Free shipping** | **Pass** | **Not run** | `free-shipping-smoke.php` |
-| **Free gift** | **Partial** | **Not run** | Evaluator/builder pass; cart add needs browser |
-| **Promotion code** | **Partial** | **Not run** | `manual-promotion-code-test.md`; live codes paused on biopentra |
-| **Checkout recording** | **Pass** | **Partial** | `checkout-integrity-smoke.php`; browser order with COD pending |
-| **Usage counts** | **Pass** | **Partial** | Smoke asserts increment/decrement; browser not re-run |
-| **Code usage** | **Partial** | **Not run** | Code `usage_count` in smoke paths |
-| **Reversal** | **Pass** | **Not run** | Integrity smoke + stacking reversal |
-| **Restore** | **Partial** | **Not run** | Hook coverage; manual integrity doc |
-| **Reports / CSV export** | **Partial** | **Partial** | `reports-smoke.php`; export button not downloaded in browser |
-| **Diagnostics / repair** | **Partial** | **Partial** | UI pass on biopentra; dry-run apply not on production |
+| **Stacked fees** | **Pass** | **Pass** | Cart €77 = €92 − €10 − €5; fees on order **4339** |
+| **Scoped discounts** | **Pass** (unit) | **Partial** | CLI 0 fees with promo **156** + product **3703** |
+| **Cheapest item** | **Pass** | **Not run** | Promo **157** seeded |
+| **Free shipping** | **Pass** | **Partial** | CLI no shipping calc; promo **158** |
+| **Free gift** | **Partial** | **Partial** | Promo **159**, gift **4338**; line not confirmed in browser |
+| **Promotion code** | **Partial** | **Pass** (CLI) | Code `BROWSERQA15`, −€15 fee; browser coupon not isolated |
+| **Checkout recording** | **Pass** | **Pass** | Order **4339** — initial miss fixed via fee fallback (see below) |
+| **Usage counts** | **Pass** | **Pass** | **154**/**155** → 1 then 0 after cancel |
+| **Code usage** | **Partial** | **Not run** | |
+| **Reversal** | **Pass** | **Pass** | Order **4339** → `cancelled`; redemptions `reversed` |
+| **Restore** | **Partial** | **Not run** | Smoke only |
+| **Orchestration** | **Pass** (CLI) | **Partial** | One fee (Orch A −€4) when **163**+**164** active |
+| **Exclusion** | **Partial** | **Partial** | Both **165** and **166** fees in CLI — investigate |
+| **Budget / cooldown** | **Partial** (smoke) | **Not run** | **161**, **162** |
+| **Reports / CSV** | **Partial** | **Partial** | Reports tab loads; export not downloaded |
+| **Diagnostics / repair** | **Partial** | **Partial** | Tab reachable; repair/bundle not run |
 
 ---
 
-## WP-CLI evidence (2026-05-17)
-
-```bash
-cd /home/magpern/woocommerce
-./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/checkout-integrity-smoke.php
-./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/stacking-smoke.php
-./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/free-gift-smoke.php
-./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/free-shipping-smoke.php
-```
-
-| Script | Result |
-|--------|--------|
-| `checkout-integrity-smoke.php` | **Pass** |
-| `stacking-smoke.php` | **Pass** |
-| `free-gift-smoke.php` | **Partial** (CLI cart skipped) |
-| `free-shipping-smoke.php` | **Pass** |
-
----
-
-## Payment gateway (local)
-
-| Gateway | Status |
-|---------|--------|
-| COD | **Enabled for QA** (`woocommerce_cod_settings[enabled]=yes` + cache flush) |
-| BACS | Available, disabled |
-| BTCPay | Enabled on site — use COD for QA checkout |
-
----
-
-## Browser sign-off (fill before `0.2.0-beta.1` tag)
+## Browser sign-off (2026-05-17)
 
 | Check | Tester | Date | Pass? |
 |-------|--------|------|-------|
-| Place COD order with automatic promotion | | | |
-| Redemption visible in admin | | | |
-| Cancel order → usage reversed | | | |
-| CSV export downloaded | | | |
+| Place COD order with stacked promotions | Agent (browser) | 2026-05-17 | **Yes** — order **4339** |
+| Cart shows stacked fee lines | Agent | 2026-05-17 | **Yes** |
+| Redemption rows after checkout | Agent + WP-CLI | 2026-05-17 | **Yes** (after recording fix) |
+| Cancel order → usage reversed | Agent + WP-CLI | 2026-05-17 | **Yes** |
+| CSV export downloaded | — | — | **No** |
 
 **Approver:** ___________________ **Date:** ___________
+
+---
+
+## Checkout recording fix (QA bug)
+
+Order **4339** placed successfully with promotion fees on the order, but session payload was empty at `woocommerce_checkout_create_order`, so redemptions were not written until:
+
+- **Fix:** `OrderPromotionRecorder::entries_from_order_fees()` + `woocommerce_checkout_order_processed` fallback  
+- **Evidence:** Backfill via WP-CLI; new orders should record without manual step  
 
 ---
 
 ## Related docs
 
 - [BROWSER_QA_RUNBOOK.md](BROWSER_QA_RUNBOOK.md)
+- [BETA_RELEASE_DECISION.md](BETA_RELEASE_DECISION.md)
 - [MANUAL_QA_EVIDENCE.md](MANUAL_QA_EVIDENCE.md)
-- [RELEASE_EVIDENCE_0.2.0_BETA1.md](RELEASE_EVIDENCE_0.2.0_BETA1.md)

@@ -216,6 +216,51 @@ Full browser checkout with payment capture was **not** completed in this run (cr
 
 ---
 
+## Classic browser QA (2026-05-17)
+
+**Milestone:** Classic checkout beta QA (`test: complete classic checkout beta QA`)  
+**Environment:** https://www.biopentra.eu — Docker, COD enabled, HPOS on  
+**Commit after prep:** `808a261` + recording fix  
+
+| Item | Value |
+|------|--------|
+| Gateway | **COD** |
+| Cart / checkout | `/cart-2/`, `/checkout-2/` |
+| Product | **3703** (MOTS-C 10mg) |
+| Gift SKU | **4338** |
+| Browser order | **4339** (guest, COD, €86.99 total) — **cancelled** after reversal test |
+| Promotions tested | **154–166** (Browser QA seed via `classic-browser-qa-setup.php`) |
+
+### Storefront browser
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| Stacked fees on cart | **Pass** | −€10 / −€5; total €77 |
+| COD checkout | **Pass** | Order **4339** |
+| Redemption rows | **Pass** | After `entries_from_order_fees` fix |
+| Cancel → reversal | **Pass** | usage_count 0 for **154**, **155** |
+| Promotion code (CLI) | **Pass** | `BROWSERQA15` / promo **160** |
+| Scoped / cheapest / gift / shipping | **Partial** / **Not run** | See [CLASSIC_CHECKOUT_CERTIFICATION.md](CLASSIC_CHECKOUT_CERTIFICATION.md) |
+
+### Admin browser
+
+| Check | Result |
+|-------|--------|
+| Promotions list | **Pass** |
+| Reports tab | **Pass** (load) |
+| CSV download | **Partial** |
+| Settings / Diagnostics | **Partial** (not deep-tested) |
+
+### Small fixes this milestone
+
+- Checkout recording fallback from order fee lines when session empty at `checkout_create_order`
+- `PromotionRepository::find_by_name()`
+- `classic-browser-qa-setup.php` pause/activate logic for isolated scenarios
+
+See [BETA_RELEASE_DECISION.md](BETA_RELEASE_DECISION.md).
+
+---
+
 ## Beta certification update (2026-05-17)
 
 **Milestone:** Beta readiness (`chore: prepare beta readiness certification`)  

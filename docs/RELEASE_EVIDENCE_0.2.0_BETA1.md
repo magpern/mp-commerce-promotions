@@ -11,7 +11,7 @@
 
 | Item | Value |
 |------|--------|
-| **Latest commit (prep milestone)** | `a012221` (beta readiness); browser QA prep commit follows on `main` |
+| **Latest commit** | `808a261` (browser QA prep); classic QA + recording fix on `main` after this doc |
 | **Repository** | https://github.com/magpern/mp-commerce-promotions |
 | **Branch** | `main` |
 
@@ -54,7 +54,7 @@ Not gating releases. See [BETA_READINESS.md](BETA_READINESS.md).
 | Area | Status |
 |------|--------|
 | Classic checkout (WP-CLI) | **Pass** — integrity, stacking, shipping smokes |
-| Classic checkout (browser) | **Partial** — COD enabled locally; sign-off table open |
+| Classic checkout (browser) | **Pass** with caveats — order **4339**, stacked fees, reversal; [BETA_RELEASE_DECISION.md](BETA_RELEASE_DECISION.md) |
 | Cart/Checkout Blocks | **Not declared**; draft QA pages 4333/4334 |
 | HPOS | **Declared** compatible |
 | Production biopentra checkout | **Blocked** — BTCPay |
@@ -75,11 +75,12 @@ Docs: [CLASSIC_CHECKOUT_CERTIFICATION.md](CLASSIC_CHECKOUT_CERTIFICATION.md), [B
 
 ## Release blockers (before tag)
 
-1. [ ] **Browser sign-off** on classic checkout with COD ([CLASSIC_CHECKOUT_CERTIFICATION.md](CLASSIC_CHECKOUT_CERTIFICATION.md))
-2. [ ] **Product owner** approves version bump ([VERSION_BUMP_PLAN_0.2.0_BETA1.md](VERSION_BUMP_PLAN_0.2.0_BETA1.md))
-3. [ ] **Block decision** — declare blocks only if investigation passes; else document waiver for beta
-4. [ ] **CHANGELOG** section for `0.2.0-beta.1`
-5. [ ] **Git tag** `v0.2.0-beta.1` + GitHub release asset (zip)
+1. [x] **Browser sign-off** on classic checkout with COD — 2026-05-17 ([CLASSIC_CHECKOUT_CERTIFICATION.md](CLASSIC_CHECKOUT_CERTIFICATION.md))
+2. [ ] **Product owner** approves **ready with caveats** ([BETA_RELEASE_DECISION.md](BETA_RELEASE_DECISION.md))
+3. [ ] **Version bump** in code + tag ([VERSION_BUMP_PLAN_0.2.0_BETA1.md](VERSION_BUMP_PLAN_0.2.0_BETA1.md))
+4. [ ] **Block decision** — declare blocks only if investigation passes; else document waiver for beta
+5. [ ] **CHANGELOG** section for `0.2.0-beta.1` finalized
+6. [ ] **Git tag** `v0.2.0-beta.1` + GitHub release asset (zip)
 
 ---
 

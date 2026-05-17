@@ -9,7 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-beta.1] - TBD (draft — not released)
+
+> Do not tag until product owner approves [docs/BETA_RELEASE_DECISION.md](docs/BETA_RELEASE_DECISION.md).
+
+### Fixed
+
+- Checkout recording when cart session is empty at order creation (fee-line fallback).
+
 ### Added
+
+- Classic shortcode cart/checkout browser QA certification (COD).
+- `scripts/classic-browser-qa-setup.php` for local QA promotion seeds.
+
+---
+
+## [Unreleased]
+
+### Fixed
+
+- **Checkout recording** — When the cart session payload is empty at `woocommerce_checkout_create_order`, rebuild redemption entries from order fee lines and retry on `woocommerce_checkout_order_processed` (classic COD guest checkout).
+
+### Added
+
+- **Classic browser QA** — Certification run on `/cart-2/` + `/checkout-2/` with COD; docs `BETA_RELEASE_DECISION.md`, updated certification matrix; `scripts/classic-browser-qa-setup.php` for seeded promotions.
 
 - **Browser QA beta release prep** — `BROWSER_QA_RUNBOOK.md`, `CLASSIC_CHECKOUT_CERTIFICATION.md`, `BLOCK_CHECKOUT_INVESTIGATION.md` (draft block QA pages), `RELEASE_EVIDENCE_0.2.0_BETA1.md`, `VERSION_BUMP_PLAN_0.2.0_BETA1.md`, `scripts/beta-release-prep-smoke.php`; local COD enabled for QA documentation.
 - **Beta readiness certification** — `docs/BETA_READINESS.md`, `docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md` (blocks not declared); browser QA matrix and evidence updates; real `languages/mp-commerce-promotions.pot` via WP-CLI; CI PHPCS step (continue-on-error); PHPCBF persistence on Service/Admin/Woo target paths; `scripts/beta-readiness-smoke.php`.

@@ -1,6 +1,8 @@
 # Version bump plan — 0.2.0-beta.1
 
-**Do not bump version in code until browser QA is approved and product owner confirms the tag.**
+**Do not bump version in code until product owner approves [BETA_RELEASE_DECISION.md](BETA_RELEASE_DECISION.md) and confirms the tag.**
+
+Classic browser QA completed 2026-05-17 — recommendation **ready with caveats** (see decision doc). Recording fix must be included in the release commit.
 
 ---
 
@@ -59,7 +61,8 @@ git push origin v0.2.0-beta.1
 
 ## Preconditions (do not tag until done)
 
-- [ ] [CLASSIC_CHECKOUT_CERTIFICATION.md](CLASSIC_CHECKOUT_CERTIFICATION.md) browser sign-off completed
+- [x] [CLASSIC_CHECKOUT_CERTIFICATION.md](CLASSIC_CHECKOUT_CERTIFICATION.md) browser sign-off (stacked + COD + reversal) — 2026-05-17
+- [ ] Product owner approves [BETA_RELEASE_DECISION.md](BETA_RELEASE_DECISION.md)
 - [ ] [RELEASE_EVIDENCE_0.2.0_BETA1.md](RELEASE_EVIDENCE_0.2.0_BETA1.md) blockers cleared or waived in writing
 - [ ] Block compatibility decision documented (declare or explicit waiver)
 - [ ] CI green on release commit (PHPUnit + zip; PHPCS may warn)

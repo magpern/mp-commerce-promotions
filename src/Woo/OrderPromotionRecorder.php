@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Woo;
 
+use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\Redemption;
@@ -130,6 +131,9 @@ final class OrderPromotionRecorder {
 			$entries = AppliedPromotionSession::entries_from_session(
 				CartSessionHelper::get_applied_promotion()
 			);
+		if ( $entries === array() ) {
+			$entries = $this->entries_from_order_fees( $order );
+		}
 		if ( $entries === array() ) {
 			return;
 		}
@@ -772,5 +776,126 @@ final class OrderPromotionRecorder {
 
 	private function clear_applied_promotion_session(): void {
 		CartSessionHelper::clear_applied_promotion();
+	}
+
+	/**
+	 * Fallback when checkout session payload is unavailable: rebuild entries from order fee lines.
+	 *
+	 * @param \WC_Order $order WooCommerce order.
+	 * @return list<array<string, mixed>>
+	 */
+	private function entries_from_order_fees( $order ): array {
+		if ( ! is_object( $order ) || ! is_a( $order, 'WC_Order', false ) ) {
+			return array();
+		}
+
+		$entries = array();
+		foreach ( $order->get_items( 'fee' ) as $fee_item ) {
+			if ( ! is_object( $fee_item ) || ! method_exists( $fee_item, 'get_name' ) ) {
+				continue;
+			}
+
+			$promotion_name = $this->promotion_name_from_fee_label( (string) $fee_item->get_name() );
+			if ( $promotion_name === null ) {
+				continue;
+			}
+
+			$promotion = $this->promotions->find_by_name( $promotion_name );
+			if ( $promotion === null ) {
+				continue;
+			}
+
+			$pid = $promotion->get_id();
+			if ( $pid === null || $pid <= 0 ) {
+				continue;
+			}
+
+			$discount = abs( (float) $fee_item->get_total() );
+			if ( $discount <= 0 ) {
+				continue;
+			}
+
+			$action_type = $this->primary_action_type_for_promotion( $promotion );
+			if ( $action_type === '' ) {
+				continue;
+			}
+
+			$entry = array(
+				'promotion_id'    => (int) $pid,
+				'promotion_uuid'  => $promotion->get_uuid(),
+				'promotion_name'  => $promotion->get_name(),
+				'discount_amount' => $discount,
+				'action_type'     => $action_type,
+			);
+
+			if ( $action_type === CartPromotionApplier::ACTION_PERCENTAGE_DISCOUNT ) {
+				$actions = $promotion->get_actions();
+				if ( isset( $actions[0]['percentage'] ) && is_numeric( $actions[0]['percentage'] ) ) {
+					$entry['percentage'] = (float) $actions[0]['percentage'];
+				}
+			} elseif ( $action_type === CartPromotionApplier::ACTION_FIXED_AMOUNT_DISCOUNT ) {
+				$actions = $promotion->get_actions();
+				if ( isset( $actions[0]['amount'] ) && is_numeric( $actions[0]['amount'] ) ) {
+					$entry['fixed_amount'] = (float) $actions[0]['amount'];
+				} else {
+					$entry['fixed_amount'] = $discount;
+				}
+			}
+
+			$entries[] = $entry;
+		}
+
+		return $entries;
+	}
+
+	private function promotion_name_from_fee_label( string $label ): ?string {
+		$label = trim( $label );
+		if ( $label === '' ) {
+			return null;
+		}
+
+		$prefixes = array(
+			'Commerce promotion: Free shipping - ',
+			'Commerce promotion: Cheapest item discount - ',
+			'Commerce promotion: ',
+		);
+
+		foreach ( $prefixes as $prefix ) {
+			if ( strncmp( $label, $prefix, strlen( $prefix ) ) === 0 ) {
+				$name = trim( substr( $label, strlen( $prefix ) ) );
+				return $name !== '' ? $name : null;
+			}
+		}
+
+		return null;
+	}
+
+	private function primary_action_type_for_promotion( Promotion $promotion ): string {
+		$actions = $promotion->get_actions();
+		if ( $actions === array() || ! isset( $actions[0]['type'] ) ) {
+			return '';
+		}
+
+		return (string) $actions[0]['type'];
+	}
+
+	/**
+	 * Late checkout hook when session was empty during order create.
+	 *
+	 * @param int|\WC_Order $order_id Order ID or object.
+	 * @param mixed         $data     Posted checkout data.
+	 */
+	public function record_on_checkout_processed( $order_id, $data = null ): void {
+		if ( is_object( $order_id ) && is_a( $order_id, 'WC_Order', false ) ) {
+			$this->record_on_order_create( $order_id, $data );
+			return;
+		}
+
+		if ( function_exists( 'wc_get_order' ) ) {
+			$order = wc_get_order( $order_id );
+			if ( is_object( $order ) ) {
+				$this->record_on_order_create( $order, $data );
+			}
+		}
 	}
 }

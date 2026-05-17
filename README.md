@@ -33,6 +33,7 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 - [docs/BLOCK_CHECKOUT_INVESTIGATION.md](docs/BLOCK_CHECKOUT_INVESTIGATION.md) — block cart/checkout test pages
 - [docs/RELEASE_EVIDENCE_0.2.0_BETA1.md](docs/RELEASE_EVIDENCE_0.2.0_BETA1.md) — beta release evidence bundle
 - [docs/VERSION_BUMP_PLAN_0.2.0_BETA1.md](docs/VERSION_BUMP_PLAN_0.2.0_BETA1.md) — version bump checklist (pre-tag)
+- [docs/BETA_RELEASE_DECISION.md](docs/BETA_RELEASE_DECISION.md) — classic QA outcome and beta recommendation
 
 WordPress.org-style [readme.txt](readme.txt) and [LICENSE](LICENSE) are included as distribution scaffolding.
 
