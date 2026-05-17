@@ -93,9 +93,58 @@ final class SettingsPage {
 		$this->checkbox_row(
 			'mp_cp_automation_manual_only',
 			__( 'Automation runner: manual only', 'mp-commerce-promotions' ),
-			__( 'Lifecycle automation runs only from Diagnostics (no WP-Cron integration in this release).', 'mp-commerce-promotions' ),
+			__( 'When enabled, WP-Cron hourly automation is skipped (manual Diagnostics runs still work).', 'mp-commerce-promotions' ),
 			$this->settings->automation_manual_only()
 		);
+		$this->checkbox_row(
+			'mp_cp_cron_automation_enabled',
+			__( 'Enable WP-Cron automation', 'mp-commerce-promotions' ),
+			__( 'Schedules hourly maintenance and daily cleanup hooks. Disabled by default.', 'mp-commerce-promotions' ),
+			$this->settings->cron_automation_enabled()
+		);
+		$this->checkbox_row(
+			'mp_cp_automation_emergency_stop',
+			__( 'Automation emergency stop', 'mp-commerce-promotions' ),
+			__( 'Blocks all automation runs until disabled.', 'mp-commerce-promotions' ),
+			$this->settings->automation_emergency_stop()
+		);
+		echo '</tbody></table>';
+
+		echo '<h2 class="title">' . esc_html__( 'Production safety', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<table class="form-table" role="presentation"><tbody>';
+		$this->checkbox_row(
+			'mp_cp_safe_mode',
+			__( 'Safe mode (disable automatic promotions)', 'mp-commerce-promotions' ),
+			__( 'Skips automatic cart promotions. Promotion codes may still apply when allowed below.', 'mp-commerce-promotions' ),
+			$this->settings->safe_mode_enabled()
+		);
+		$this->checkbox_row(
+			'mp_cp_allow_codes_in_safe_mode',
+			__( 'Allow promotion codes in safe mode', 'mp-commerce-promotions' ),
+			__( 'When safe mode is on, coupon-field promotion codes can still apply.', 'mp-commerce-promotions' ),
+			$this->settings->allow_codes_in_safe_mode()
+		);
+		$this->checkbox_row(
+			'mp_cp_telemetry_paused',
+			__( 'Pause planner telemetry writes', 'mp-commerce-promotions' ),
+			__( 'Stops aggregate telemetry persistence while leaving other features enabled.', 'mp-commerce-promotions' ),
+			$this->settings->telemetry_paused()
+		);
+		$this->checkbox_row(
+			'mp_cp_simulation_paused',
+			__( 'Pause simulations', 'mp-commerce-promotions' ),
+			__( 'Blocks simulation runs until disabled.', 'mp-commerce-promotions' ),
+			$this->settings->simulation_paused()
+		);
+		echo '<tr><th scope="row"><label for="mp_cp_telemetry_retention_days">';
+		echo esc_html__( 'Telemetry retention (days)', 'mp-commerce-promotions' );
+		echo '</label></th><td>';
+		printf(
+			'<input type="number" min="7" max="3650" id="mp_cp_telemetry_retention_days" name="mp_cp_telemetry_retention_days" value="%d" class="small-text" />',
+			(int) $this->settings->telemetry_retention_days()
+		);
+		echo '<p class="description">' . esc_html__( 'Used by daily cleanup for automation runs and archived scenarios.', 'mp-commerce-promotions' ) . '</p>';
+		echo '</td></tr>';
 		echo '</tbody></table>';
 
 		echo '<h2 class="title">' . esc_html__( 'Data retention', 'mp-commerce-promotions' ) . '</h2>';
@@ -169,8 +218,26 @@ final class SettingsPage {
 		$this->settings->set_simulations_enabled( $this->post_yes( 'mp_cp_simulations_enabled' ) );
 		$this->settings->set_pricing_explainability_enabled( $this->post_yes( 'mp_cp_pricing_explainability_enabled' ) );
 		$this->settings->set_automation_manual_only( $this->post_yes( 'mp_cp_automation_manual_only' ) );
+		$this->settings->set_cron_automation_enabled( $this->post_yes( 'mp_cp_cron_automation_enabled' ) );
+		$this->settings->set_automation_emergency_stop( $this->post_yes( 'mp_cp_automation_emergency_stop' ) );
+		$this->settings->set_safe_mode_enabled( $this->post_yes( 'mp_cp_safe_mode' ) );
+		$this->settings->set_allow_codes_in_safe_mode( $this->post_yes( 'mp_cp_allow_codes_in_safe_mode' ) );
+		$this->settings->set_telemetry_paused( $this->post_yes( 'mp_cp_telemetry_paused' ) );
+		$this->settings->set_simulation_paused( $this->post_yes( 'mp_cp_simulation_paused' ) );
+		if ( isset( $_POST['mp_cp_telemetry_retention_days'] ) ) {
+			$this->settings->set_telemetry_retention_days(
+				(int) sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_telemetry_retention_days'] ) )
+			);
+		}
 		$this->settings->set_retain_data_on_uninstall( $this->post_yes( 'mp_cp_retain_data_on_uninstall' ) );
 		$this->settings->set_delete_data_on_uninstall( $this->post_yes( 'mp_cp_delete_data_on_uninstall' ) );
+
+		if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
+			\MP\CommercePromotions\Service\PromotionCronScheduler::clear_scheduled_events();
+			if ( $this->settings->cron_automation_enabled() ) {
+				( new \MP\CommercePromotions\Service\PromotionCronScheduler( $this->settings ) )->reschedule();
+			}
+		}
 
 		$this->redirect_with_notice( 'success', 'saved' );
 	}

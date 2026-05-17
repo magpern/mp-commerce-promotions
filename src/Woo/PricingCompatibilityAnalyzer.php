@@ -52,8 +52,68 @@ final class PricingCompatibilityAnalyzer {
 		return $issues;
 	}
 
+	public const CONFIDENCE_HIGH = 'high';
+
+	public const CONFIDENCE_MEDIUM = 'medium';
+
+	public const CONFIDENCE_LOW = 'low';
+
+	public const CONFIDENCE_UNKNOWN = 'unknown';
+
 	public static function reset_cache(): void {
 		delete_option( self::OPTION_CACHE );
+	}
+
+	/**
+	 * @return array{confidence: string, score: int, issues: list<array{severity: string, code: string, message: string}>, recommendations: list<string>}
+	 */
+	public function audit_with_confidence( bool $use_cache = true ): array {
+		try {
+			$issues = $this->analyze( $use_cache );
+		} catch ( \Throwable $e ) {
+			return array(
+				'confidence'      => self::CONFIDENCE_UNKNOWN,
+				'score'           => 0,
+				'issues'          => array(),
+				'recommendations' => array(
+					__( 'Compatibility analyzer failed; see debug log.', 'mp-commerce-promotions' ),
+				),
+			);
+		}
+
+		$issues = array_merge( $issues, $this->detect_subscriptions_plugin() );
+		$issues = array_merge( $issues, $this->detect_checkout_blocks() );
+		$issues = array_merge( $issues, $this->detect_object_cache() );
+		$issues = array_merge( $issues, $this->detect_aggressive_coupon_plugins() );
+		$issues = array_merge( $issues, $this->detect_tax_plugins() );
+
+		$score = 100;
+		foreach ( $issues as $issue ) {
+			$severity = (string) ( $issue['severity'] ?? '' );
+			if ( $severity === self::SEVERITY_CRITICAL ) {
+				$score -= 25;
+			} elseif ( $severity === self::SEVERITY_WARNING ) {
+				$score -= 10;
+			} else {
+				$score -= 3;
+			}
+		}
+		$score = max( 0, min( 100, $score ) );
+
+		$confidence = self::CONFIDENCE_HIGH;
+		if ( $score < 70 ) {
+			$confidence = self::CONFIDENCE_MEDIUM;
+		}
+		if ( $score < 45 ) {
+			$confidence = self::CONFIDENCE_LOW;
+		}
+
+		return array(
+			'confidence'      => $confidence,
+			'score'           => $score,
+			'issues'          => $issues,
+			'recommendations' => $this->build_recommendations( $issues ),
+		);
 	}
 
 	/**
@@ -141,5 +201,113 @@ final class PricingCompatibilityAnalyzer {
 		}
 
 		return array();
+	}
+
+	/**
+	 * @return list<array{severity: string, code: string, message: string}>
+	 */
+	private function detect_subscriptions_plugin(): array {
+		if ( class_exists( 'WC_Subscriptions' ) ) {
+			return array(
+				array(
+					'severity' => self::SEVERITY_WARNING,
+					'code'     => 'woocommerce_subscriptions',
+					'message'  => __( 'WooCommerce Subscriptions detected; renewal carts may need separate QA.', 'mp-commerce-promotions' ),
+				),
+			);
+		}
+
+		return array();
+	}
+
+	/**
+	 * @return list<array{severity: string, code: string, message: string}>
+	 */
+	private function detect_checkout_blocks(): array {
+		if ( class_exists( '\Automattic\WooCommerce\Blocks\Package' ) ) {
+			return array(
+				array(
+					'severity' => self::SEVERITY_WARNING,
+					'code'     => 'checkout_blocks_active',
+					'message'  => __( 'Cart/Checkout Blocks may be active; plugin does not declare block compatibility yet.', 'mp-commerce-promotions' ),
+				),
+			);
+		}
+
+		return array();
+	}
+
+	/**
+	 * @return list<array{severity: string, code: string, message: string}>
+	 */
+	private function detect_object_cache(): array {
+		if ( wp_using_ext_object_cache() ) {
+			return array(
+				array(
+					'severity' => self::SEVERITY_INFO,
+					'code'     => 'external_object_cache',
+					'message'  => __( 'External object cache detected; planner transients rely on cache flush policies.', 'mp-commerce-promotions' ),
+				),
+			);
+		}
+
+		return array();
+	}
+
+	/**
+	 * @return list<array{severity: string, code: string, message: string}>
+	 */
+	private function detect_aggressive_coupon_plugins(): array {
+		if ( class_exists( 'WC_Smart_Coupons' ) || defined( 'WOO_DISCOUNT_RULES_VERSION' ) ) {
+			return array(
+				array(
+					'severity' => self::SEVERITY_WARNING,
+					'code'     => 'advanced_coupon_plugin',
+					'message'  => __( 'Advanced coupon/discount plugin detected; verify stacking with promotion fees.', 'mp-commerce-promotions' ),
+				),
+			);
+		}
+
+		return array();
+	}
+
+	/**
+	 * @return list<array{severity: string, code: string, message: string}>
+	 */
+	private function detect_tax_plugins(): array {
+		if ( class_exists( 'WC_Taxjar' ) || class_exists( 'WC_AvaTax' ) ) {
+			return array(
+				array(
+					'severity' => self::SEVERITY_INFO,
+					'code'     => 'external_tax_service',
+					'message'  => __( 'External tax service plugin detected; allocation tax estimates remain heuristic.', 'mp-commerce-promotions' ),
+				),
+			);
+		}
+
+		return array();
+	}
+
+	/**
+	 * @param list<array{severity: string, code: string, message: string}> $issues
+	 * @return list<string>
+	 */
+	private function build_recommendations( array $issues ): array {
+		$codes = array_column( $issues, 'code' );
+		$recs  = array();
+		if ( in_array( 'checkout_blocks_active', $codes, true ) ) {
+			$recs[] = __( 'Test classic checkout or document block-checkout limitations for merchants.', 'mp-commerce-promotions' );
+		}
+		if ( in_array( 'multi_currency_plugin', $codes, true ) ) {
+			$recs[] = __( 'Validate promotion amounts in each currency before high-traffic campaigns.', 'mp-commerce-promotions' );
+		}
+		if ( in_array( 'advanced_coupon_plugin', $codes, true ) ) {
+			$recs[] = __( 'Review coupon coexistence settings on promotions when native coupons stack.', 'mp-commerce-promotions' );
+		}
+		if ( $recs === array() ) {
+			$recs[] = __( 'No critical compatibility blockers detected by heuristics.', 'mp-commerce-promotions' );
+		}
+
+		return $recs;
 	}
 }

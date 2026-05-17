@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Engine;
 
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
+use MP\CommercePromotions\Service\PromotionPerformanceProfiler;
 use MP\CommercePromotions\Woo\CouponCoexistenceEvaluator;
 
 final class PromotionPlanner {
@@ -19,12 +20,16 @@ final class PromotionPlanner {
 
 	private ?CouponCoexistenceEvaluator $coupon_evaluator;
 
+	private ?PromotionPerformanceProfiler $profiler;
+
 	public function __construct(
 		?PromotionEvaluator $evaluator = null,
-		?CouponCoexistenceEvaluator $coupon_evaluator = null
+		?CouponCoexistenceEvaluator $coupon_evaluator = null,
+		?PromotionPerformanceProfiler $profiler = null
 	) {
 		$this->evaluator        = $evaluator ?? new PromotionEvaluator();
 		$this->coupon_evaluator = $coupon_evaluator ?? new CouponCoexistenceEvaluator();
+		$this->profiler         = $profiler;
 	}
 
 	/**
@@ -47,7 +52,13 @@ final class PromotionPlanner {
 		/** @var array<string, int> $orchestration_group_winner */
 		$orchestration_group_winner = array();
 
-		$started = microtime( true );
+		$started           = microtime( true );
+		$evaluator_calls     = 0;
+		$condition_checks    = 0;
+		$action_count        = 0;
+		$considered          = count( $promotions );
+		$promotions          = $this->prefilter_promotions( $promotions );
+		$prefiltered_skipped = $considered - count( $promotions );
 
 		foreach ( $promotions as $promotion ) {
 			if ( $stop_further_selection ) {
@@ -58,7 +69,11 @@ final class PromotionPlanner {
 				continue;
 			}
 
+			++$evaluator_calls;
+			$action_count += count( $promotion->get_actions() );
+
 			$result = $this->evaluator->evaluate( $promotion, $context );
+			$condition_checks += count( $result->get_condition_traces() );
 			if ( ! $result->is_eligible() ) {
 				$skip_reason = $this->resolve_ineligibility_reason( $result );
 				if ( $skip_reason === 'promotion_cooldown_active' ) {
@@ -169,7 +184,22 @@ final class PromotionPlanner {
 			}
 		}
 
-		AllocationContextCache::record_planner_timing( (int) round( ( microtime( true ) - $started ) * 1000 ) );
+		$duration_ms = (int) round( ( microtime( true ) - $started ) * 1000 );
+		AllocationContextCache::record_planner_timing( $duration_ms );
+
+		if ( $this->profiler !== null ) {
+			$this->profiler->record_planner_run(
+				array(
+					'duration_ms'            => $duration_ms,
+					'evaluator_calls'        => $evaluator_calls,
+					'condition_checks'       => $condition_checks,
+					'action_count'           => $action_count,
+					'promotions_considered'  => $considered,
+					'promotions_prefiltered' => $prefiltered_skipped,
+					'selected_count'         => $selected_count,
+				)
+			);
+		}
 
 		return new PromotionEvaluationPlan(
 			$decisions,
@@ -183,6 +213,22 @@ final class PromotionPlanner {
 				'blocked_by_coupon_count'     => $blocked_by_coupon_count,
 			)
 		);
+	}
+
+	/**
+	 * @param list<Promotion> $promotions
+	 * @return list<Promotion>
+	 */
+	private function prefilter_promotions( array $promotions ): array {
+		$filtered = array();
+		foreach ( $promotions as $promotion ) {
+			if ( $promotion->get_actions() === array() ) {
+				continue;
+			}
+			$filtered[] = $promotion;
+		}
+
+		return $filtered;
 	}
 
 	private function resolve_ineligibility_reason( EvaluationResult $result ): string {

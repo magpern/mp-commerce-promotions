@@ -18,8 +18,12 @@ use MP\CommercePromotions\Engine\EvaluationContext;
 use MP\CommercePromotions\Engine\PromotionEvaluationDecision;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Engine\PromotionPlanner;
+use MP\CommercePromotions\Engine\PromotionEvaluationPlan;
 use MP\CommercePromotions\Service\PlannerTelemetryRecorder;
+use MP\CommercePromotions\Service\PromotionConcurrencyGuard;
+use MP\CommercePromotions\Service\PromotionPerformanceProfiler;
 use MP\CommercePromotions\Service\Settings;
+use Throwable;
 
 final class CartPromotionApplier {
 
@@ -53,6 +57,8 @@ final class CartPromotionApplier {
 
 	private ?PlannerTelemetryRecorder $telemetry_recorder;
 
+	private ?PromotionPerformanceProfiler $profiler;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionCodeRepository $promotion_codes,
@@ -62,7 +68,8 @@ final class CartPromotionApplier {
 		?PromotionPlanner $planner = null,
 		?FreeGiftCartHandler $free_gift_handler = null,
 		?FreeGiftCartSynchronizer $gift_synchronizer = null,
-		?PlannerTelemetryRecorder $telemetry_recorder = null
+		?PlannerTelemetryRecorder $telemetry_recorder = null,
+		?PromotionPerformanceProfiler $profiler = null
 	) {
 		$this->promotions         = $promotions;
 		$this->promotion_codes    = $promotion_codes;
@@ -73,6 +80,7 @@ final class CartPromotionApplier {
 		$this->free_gift_handler  = $free_gift_handler ?? new FreeGiftCartHandler();
 		$this->gift_synchronizer   = $gift_synchronizer ?? new FreeGiftCartSynchronizer( $promotions );
 		$this->telemetry_recorder  = $telemetry_recorder;
+		$this->profiler            = $profiler;
 	}
 
 	/**
@@ -117,6 +125,14 @@ final class CartPromotionApplier {
 			return;
 		}
 
+		if ( $this->settings->safe_mode_enabled() && ! $this->settings->allow_codes_in_safe_mode() ) {
+			$this->clear_applied_promotion_session();
+			if ( function_exists( 'WC' ) && is_object( WC()->cart ?? null ) ) {
+				$this->gift_synchronizer->sync( WC()->cart, array() );
+			}
+			return;
+		}
+
 		if ( is_admin() && ! wp_doing_ajax() ) {
 			return;
 		}
@@ -145,6 +161,12 @@ final class CartPromotionApplier {
 		}
 
 		if ( $this->try_apply_via_applied_coupon_codes( $cart, $context, $subtotal ) ) {
+			return;
+		}
+
+		if ( ! $this->settings->automatic_promotions_enabled() ) {
+			$this->clear_applied_promotion_session();
+			$this->gift_synchronizer->sync( $cart, array() );
 			return;
 		}
 
@@ -188,7 +210,11 @@ final class CartPromotionApplier {
 				return true;
 			}
 
-			$plan     = $this->planner->plan( array( $promotion ), $context );
+			$plan = $this->plan_with_resilience( array( $promotion ), $context );
+			if ( $plan === null ) {
+				$this->clear_applied_promotion_session();
+				return true;
+			}
 			$this->record_plan_telemetry( $plan );
 			$decisions = $plan->get_selected_decisions();
 			$entries  = $this->apply_selected_decisions(
@@ -220,8 +246,13 @@ final class CartPromotionApplier {
 	 * @param object $cart WooCommerce cart.
 	 */
 	private function apply_automatic_promotions( $cart, EvaluationContext $context, float $subtotal ): void {
-		$active    = PromotionPriorityTier::sort_promotions( $this->promotions->find_active( 50 ) );
-		$plan      = $this->planner->plan( $active, $context );
+		$active = PromotionPriorityTier::sort_promotions( $this->promotions->find_active_for_planner( 200 ) );
+		$plan   = $this->plan_with_resilience( $active, $context );
+		if ( $plan === null ) {
+			$this->clear_applied_promotion_session();
+			$this->gift_synchronizer->sync( $cart, array() );
+			return;
+		}
 		$this->record_plan_telemetry( $plan );
 		$decisions = $plan->get_selected_decisions();
 		$entries   = $this->apply_selected_decisions(
@@ -814,7 +845,33 @@ final class CartPromotionApplier {
 		$cart->add_fee( $label, -$discount, false );
 	}
 
-	private function record_plan_telemetry( \MP\CommercePromotions\Engine\PromotionEvaluationPlan $plan ): void {
+	/**
+	 * @param list<Promotion> $promotions
+	 */
+	private function plan_with_resilience( array $promotions, EvaluationContext $context ): PromotionEvaluationPlan {
+		$guard = new PromotionConcurrencyGuard();
+		if ( ! $guard->acquire_planner_lock() ) {
+			return new PromotionEvaluationPlan( array(), array( 'planner_lock_contention' => true ) );
+		}
+
+		try {
+			return $this->planner->plan( $promotions, $context );
+		} catch ( Throwable $e ) {
+			if ( $this->profiler !== null ) {
+				$this->profiler->record_planner_failure( $e->getMessage() );
+			}
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log( '[mp-commerce-promotions] Planner failed safely: ' . $e->getMessage() );
+			}
+
+			return new PromotionEvaluationPlan( array(), array( 'planner_failed' => true ) );
+		} finally {
+			$guard->release_planner_lock();
+		}
+	}
+
+	private function record_plan_telemetry( PromotionEvaluationPlan $plan ): void {
 		if ( $this->telemetry_recorder === null ) {
 			return;
 		}

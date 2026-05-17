@@ -96,6 +96,19 @@ final class PromotionSnapshotService {
 	}
 
 	public function restore( int $snapshot_id, ?int $actor_user_id = null ): Promotion {
+		$guard = new PromotionConcurrencyGuard();
+		if ( ! $guard->acquire_snapshot_restore_lock() ) {
+			throw new RuntimeException( 'Snapshot restore already in progress.' );
+		}
+
+		try {
+			return $this->restore_locked( $snapshot_id, $actor_user_id );
+		} finally {
+			$guard->release_snapshot_restore_lock();
+		}
+	}
+
+	private function restore_locked( int $snapshot_id, ?int $actor_user_id = null ): Promotion {
 		$snapshot = $this->snapshots->find( $snapshot_id );
 		if ( $snapshot === null ) {
 			throw new RuntimeException( 'Snapshot not found.' );

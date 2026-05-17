@@ -42,4 +42,10 @@ else
 	echo "    mp_cp_schema_version = ${SCHEMA_VERSION}"
 fi
 
+PLUGIN_DIR="${WOOCOMMERCE_ROOT}/wp-content/plugins/${PLUGIN_SLUG}"
+if [[ -d "${PLUGIN_DIR}" ]]; then
+	echo "==> Release audit (plugin tree)"
+	bash "${PLUGIN_DIR}/scripts/release-audit.sh"
+fi
+
 echo "==> Verification complete."

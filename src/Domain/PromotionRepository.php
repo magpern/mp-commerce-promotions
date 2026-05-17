@@ -83,7 +83,23 @@ final class PromotionRepository {
 	 * @return list<Promotion>
 	 */
 	public function find_active( int $limit = 50 ): array {
-		$limit = max( 1, min( 100, $limit ) );
+		return $this->find_active_internal( max( 1, min( 100, $limit ) ) );
+	}
+
+	/**
+	 * Wider cap for cart planner (high-volume stores).
+	 *
+	 * @return list<Promotion>
+	 */
+	public function find_active_for_planner( int $limit = 200 ): array {
+		return $this->find_active_internal( max( 1, min( 200, $limit ) ) );
+	}
+
+	/**
+	 * @return list<Promotion>
+	 */
+	private function find_active_internal( int $limit ): array {
+		$limit = max( 1, $limit );
 		$table = $this->promotions_table();
 		$now   = current_time( 'mysql' );
 
@@ -488,17 +504,32 @@ final class PromotionRepository {
 		}
 
 		$table = $this->promotions_table();
-		$sql   = "UPDATE {$table}
-			SET budget_spent = GREATEST(0, budget_spent + %f), updated_at = %s
-			WHERE id = %d AND budget_amount IS NOT NULL";
+		if ( $delta > 0 ) {
+			$sql = "UPDATE {$table}
+				SET budget_spent = GREATEST(0, budget_spent + %f), updated_at = %s
+				WHERE id = %d AND budget_amount IS NOT NULL
+				AND (budget_spent + %f) <= budget_amount";
+		} else {
+			$sql = "UPDATE {$table}
+				SET budget_spent = GREATEST(0, budget_spent + %f), updated_at = %s
+				WHERE id = %d AND budget_amount IS NOT NULL";
+		}
 
 		$updated = $this->wpdb->query(
-			$this->wpdb->prepare(
-				$sql,
-				$delta,
-				current_time( 'mysql' ),
-				$id
-			)
+			$delta > 0
+				? $this->wpdb->prepare(
+					$sql,
+					$delta,
+					current_time( 'mysql' ),
+					$id,
+					$delta
+				)
+				: $this->wpdb->prepare(
+					$sql,
+					$delta,
+					current_time( 'mysql' ),
+					$id
+				)
 		);
 
 		return false !== $updated && $updated > 0;

@@ -175,6 +175,66 @@ if ( ! function_exists( 'wc_get_order' ) ) {
 	}
 }
 
+if ( ! function_exists( 'get_transient' ) ) {
+	/** @var array<string, mixed> $mp_cp_test_transients */
+	global $mp_cp_test_transients;
+	$mp_cp_test_transients = array();
+
+	/**
+	 * @param string $transient
+	 * @return mixed
+	 */
+	function get_transient( $transient ) {
+		global $mp_cp_test_transients;
+		return $mp_cp_test_transients[ (string) $transient ] ?? false;
+	}
+}
+
+if ( ! function_exists( 'set_transient' ) ) {
+	/**
+	 * @param string $transient
+	 * @param mixed  $value
+	 * @param int    $expiration
+	 * @return bool
+	 */
+	function set_transient( $transient, $value, $expiration = 0 ) {
+		unset( $expiration );
+		global $mp_cp_test_transients;
+		$mp_cp_test_transients[ (string) $transient ] = $value;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'delete_transient' ) ) {
+	/**
+	 * @param string $transient
+	 * @return bool
+	 */
+	function delete_transient( $transient ) {
+		global $mp_cp_test_transients;
+		unset( $mp_cp_test_transients[ (string) $transient ] );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_generate_password' ) ) {
+	/**
+	 * @param int  $length
+	 * @param bool $special_chars
+	 * @return string
+	 */
+	function wp_generate_password( $length = 12, $special_chars = true ) {
+		unset( $special_chars );
+		return str_repeat( 'x', max( 1, (int) $length ) );
+	}
+}
+
+if ( ! function_exists( 'wp_using_ext_object_cache' ) ) {
+	function wp_using_ext_object_cache(): bool {
+		return false;
+	}
+}
+
 if ( ! function_exists( 'wp_strip_all_tags' ) ) {
 	/**
 	 * @param string $text

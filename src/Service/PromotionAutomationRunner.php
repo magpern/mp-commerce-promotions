@@ -113,6 +113,33 @@ final class PromotionAutomationRunner {
 	 * @return array<string, mixed>
 	 */
 	private function execute( string $run_type, callable $runner ): array {
+		$guard = new PromotionConcurrencyGuard();
+		if ( ! $guard->acquire_automation_lock() ) {
+			return array(
+				'started_at'  => current_time( 'mysql' ),
+				'finished_at' => current_time( 'mysql' ),
+				'actions'     => array(),
+				'warnings'    => array(
+					array(
+						'message' => __( 'Automation skipped: another run is in progress.', 'mp-commerce-promotions' ),
+					),
+				),
+				'errors'      => array(),
+			);
+		}
+
+		try {
+			return $this->execute_locked( $run_type, $runner );
+		} finally {
+			$guard->release_automation_lock();
+		}
+	}
+
+	/**
+	 * @param callable(): array<string, mixed> $runner
+	 * @return array<string, mixed>
+	 */
+	private function execute_locked( string $run_type, callable $runner ): array {
 		$started = current_time( 'mysql' );
 		$summary = array(
 			'started_at'  => $started,

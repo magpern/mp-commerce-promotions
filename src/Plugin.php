@@ -29,9 +29,17 @@ use MP\CommercePromotions\Domain\PromotionFactory;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
+use MP\CommercePromotions\Admin\AdminProductionNotices;
+use MP\CommercePromotions\Engine\AllocationContextCache;
+use MP\CommercePromotions\Engine\PromotionPlanner;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PlannerTelemetryRecorder;
 use MP\CommercePromotions\Service\PromotionAutomationRunner;
+use MP\CommercePromotions\Service\PromotionConcurrencyGuard;
+use MP\CommercePromotions\Service\PromotionCronScheduler;
+use MP\CommercePromotions\Service\PromotionDataRetentionService;
+use MP\CommercePromotions\Service\PromotionPerformanceProfiler;
+use MP\CommercePromotions\Service\PromotionSubsystemRecovery;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
 use MP\CommercePromotions\Service\PromotionConflictAnalyzer;
 use MP\CommercePromotions\Service\PromotionHealthMonitor;
@@ -116,11 +124,15 @@ final class Plugin {
 				$this->audit_logger
 			);
 
+			$profiler = new PromotionPerformanceProfiler();
+			$planner  = new PromotionPlanner( $this->promotion_evaluator, null, $profiler );
+
 			$telemetry_recorder = null;
 			global $wpdb;
 			if ( $wpdb instanceof wpdb && $this->settings->planner_telemetry_enabled() ) {
 				$telemetry_recorder = new PlannerTelemetryRecorder(
-					new PlannerTelemetryRepository( $wpdb )
+					new PlannerTelemetryRepository( $wpdb ),
+					$profiler
 				);
 			}
 
@@ -130,12 +142,35 @@ final class Plugin {
 				$this->promotion_evaluator,
 				$cart_builder,
 				$this->settings,
-				null,
+				$planner,
 				null,
 				$gift_sync,
-				$telemetry_recorder
+				$telemetry_recorder,
+				$profiler
 			);
 			$this->woo_bridge->set_cart_promotion_applier( $cart_applier );
+
+			add_action(
+				'shutdown',
+				static function (): void {
+					AllocationContextCache::persist_metrics();
+				}
+			);
+
+			AdminProductionNotices::register( $this->settings, $profiler );
+
+			add_action(
+				'woocommerce_before_cart',
+				static function () use ( $profiler ): void {
+					if ( ! $profiler->is_storefront_degraded() || ! function_exists( 'wc_add_notice' ) ) {
+						return;
+					}
+					wc_add_notice(
+						__( 'Some promotions may be temporarily unavailable. Your cart totals are still calculated normally.', 'mp-commerce-promotions' ),
+						'notice'
+					);
+				}
+			);
 
 			if ( $this->redemption_repository !== null && $this->audit_logger !== null ) {
 				$order_recorder = new OrderPromotionRecorder(
@@ -226,6 +261,26 @@ final class Plugin {
 		$settings_page        = new SettingsPage( $this->settings );
 		$getting_started_page = new GettingStartedPage( $this->settings );
 
+		$profiler_global     = new PromotionPerformanceProfiler();
+		$concurrency_global  = new PromotionConcurrencyGuard();
+		$retention_global    = null;
+		$cron_scheduler      = null;
+		$subsystem_recovery  = null;
+		global $wpdb;
+		if ( $wpdb instanceof wpdb ) {
+			$retention_global = new PromotionDataRetentionService(
+				$wpdb,
+				$this->settings,
+				new AutomationRunRepository( $wpdb ),
+				new PlannerTelemetryRepository( $wpdb ),
+				new SimulationScenarioRepository( $wpdb )
+			);
+			$subsystem_recovery = new PromotionSubsystemRecovery(
+				new PlannerTelemetryRepository( $wpdb ),
+				new SimulationScenarioRepository( $wpdb )
+			);
+		}
+
 		$diagnostics_page = null;
 		if (
 			$this->promotion_repository !== null
@@ -294,6 +349,16 @@ final class Plugin {
 				);
 			}
 
+			if ( $wpdb instanceof wpdb && $automation_runner !== null && $retention_global !== null ) {
+				$cron_scheduler = new PromotionCronScheduler(
+					$this->settings,
+					$automation_runner,
+					$retention_global,
+					$this->audit_logger
+				);
+				$cron_scheduler->register();
+			}
+
 			$diagnostics_page = new DiagnosticsPage(
 				$usage_diagnostics,
 				$this->settings,
@@ -305,7 +370,12 @@ final class Plugin {
 				$intelligence_recovery,
 				$recommendation_engine,
 				$pricing_recovery,
-				$support_exporter
+				$support_exporter,
+				$profiler_global,
+				$concurrency_global,
+				$cron_scheduler,
+				$retention_global,
+				$subsystem_recovery
 			);
 		}
 

@@ -148,6 +148,16 @@ final class DiagnosticsPage {
 
 	private ?SupportBundleExporter $support_exporter;
 
+	private ?\MP\CommercePromotions\Service\PromotionPerformanceProfiler $profiler;
+
+	private ?\MP\CommercePromotions\Service\PromotionConcurrencyGuard $concurrency;
+
+	private ?\MP\CommercePromotions\Service\PromotionCronScheduler $cron_scheduler;
+
+	private ?\MP\CommercePromotions\Service\PromotionDataRetentionService $retention;
+
+	private ?\MP\CommercePromotions\Service\PromotionSubsystemRecovery $subsystem_recovery;
+
 	public function __construct(
 		UsageDiagnostics $diagnostics,
 		Settings $settings,
@@ -159,7 +169,12 @@ final class DiagnosticsPage {
 		?PromotionIntelligenceRecovery $intelligence_recovery = null,
 		?PromotionRecommendationEngine $recommendations = null,
 		?PromotionPricingRecovery $pricing_recovery = null,
-		?SupportBundleExporter $support_exporter = null
+		?SupportBundleExporter $support_exporter = null,
+		?\MP\CommercePromotions\Service\PromotionPerformanceProfiler $profiler = null,
+		?\MP\CommercePromotions\Service\PromotionConcurrencyGuard $concurrency = null,
+		?\MP\CommercePromotions\Service\PromotionCronScheduler $cron_scheduler = null,
+		?\MP\CommercePromotions\Service\PromotionDataRetentionService $retention = null,
+		?\MP\CommercePromotions\Service\PromotionSubsystemRecovery $subsystem_recovery = null
 	) {
 		$this->diagnostics           = $diagnostics;
 		$this->settings              = $settings;
@@ -172,6 +187,11 @@ final class DiagnosticsPage {
 		$this->intelligence_recovery = $intelligence_recovery;
 		$this->recommendations       = $recommendations;
 		$this->pricing_recovery      = $pricing_recovery;
+		$this->profiler              = $profiler;
+		$this->concurrency           = $concurrency;
+		$this->cron_scheduler        = $cron_scheduler;
+		$this->retention             = $retention;
+		$this->subsystem_recovery    = $subsystem_recovery;
 	}
 
 	public function render(): void {
@@ -186,6 +206,12 @@ final class DiagnosticsPage {
 		$this->handle_post_intelligence_recovery();
 		$this->handle_post_pricing_recovery();
 		$this->handle_post_support_export();
+		AdminPerformanceHardeningPanel::handle_post(
+			$this->settings,
+			$this->retention,
+			$this->profiler,
+			$this->cron_scheduler
+		);
 
 		$report = $this->diagnostics->analyze();
 
@@ -207,6 +233,14 @@ final class DiagnosticsPage {
 		$this->render_automation_history_section();
 		$this->render_archive_hygiene_section();
 		$this->render_scheduler_automation_section();
+		AdminPerformanceHardeningPanel::render(
+			$this->settings,
+			$this->profiler,
+			$this->concurrency,
+			$this->cron_scheduler,
+			$this->retention,
+			$this->subsystem_recovery
+		);
 		$this->render_integrity_notes();
 		$this->render_promotions_table( $report['promotions'] );
 		$this->render_codes_table( $report['codes'] );

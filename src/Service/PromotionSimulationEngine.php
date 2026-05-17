@@ -32,19 +32,41 @@ final class PromotionSimulationEngine {
 
 	private DiscountAllocationEngine $allocator;
 
+	private ?Settings $settings;
+
+	private ?PromotionPerformanceProfiler $profiler;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		?PromotionPlanner $planner = null,
 		?PromotionEvaluator $evaluator = null,
-		?DiscountAllocationEngine $allocator = null
+		?DiscountAllocationEngine $allocator = null,
+		?Settings $settings = null,
+		?PromotionPerformanceProfiler $profiler = null
 	) {
 		$this->promotions = $promotions;
 		$this->evaluator  = $evaluator ?? new PromotionEvaluator();
-		$this->planner    = $planner ?? new PromotionPlanner( $this->evaluator );
+		$this->planner    = $planner ?? new PromotionPlanner( $this->evaluator, null, $profiler );
 		$this->allocator  = $allocator ?? new DiscountAllocationEngine();
+		$this->settings   = $settings;
+		$this->profiler   = $profiler;
 	}
 
 	public function simulate( SimulationScenario $scenario, ?array $promotion_filter_ids = null ): SimulationResult {
+		if ( $this->settings !== null && ! $this->settings->simulations_enabled() ) {
+			return new SimulationResult(
+				array(),
+				array(),
+				array(),
+				0.0,
+				array(),
+				array(),
+				array(),
+				array( __( 'Simulations are paused.', 'mp-commerce-promotions' ) )
+			);
+		}
+
+		$started = microtime( true );
 		PlannerContextCache::reset_request_cache();
 		PlannerContextCache::record_simulated_run();
 
@@ -101,6 +123,10 @@ final class PromotionSimulationEngine {
 		}
 
 		PlannerContextCache::persist_counters();
+
+		if ( $this->profiler !== null ) {
+			$this->profiler->record_simulation_run( ( microtime( true ) - $started ) * 1000 );
+		}
 
 		return new SimulationResult(
 			$eligible,

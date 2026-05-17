@@ -18,11 +18,18 @@ final class PlannerTelemetryRecorder {
 
 	private PlannerTelemetryRepository $telemetry;
 
-	public function __construct( PlannerTelemetryRepository $telemetry ) {
+	private ?PromotionPerformanceProfiler $profiler;
+
+	public function __construct(
+		PlannerTelemetryRepository $telemetry,
+		?PromotionPerformanceProfiler $profiler = null
+	) {
 		$this->telemetry = $telemetry;
+		$this->profiler  = $profiler;
 	}
 
 	public function record_plan( PromotionEvaluationPlan $plan ): void {
+		$started = microtime( true );
 		foreach ( $plan->get_decisions() as $decision ) {
 			$promotion_id = $decision->get_promotion_id();
 			if ( $promotion_id === null || $promotion_id <= 0 ) {
@@ -56,6 +63,10 @@ final class PlannerTelemetryRecorder {
 			}
 
 			$this->telemetry->increment( $promotion_id, $deltas );
+		}
+
+		if ( $this->profiler !== null ) {
+			$this->profiler->record_telemetry_write( ( microtime( true ) - $started ) * 1000 );
 		}
 	}
 }

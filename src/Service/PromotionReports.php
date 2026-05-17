@@ -233,10 +233,15 @@ final class PromotionReports {
 	public function planner_performance(): array {
 		$allocation = AllocationContextCache::request_metrics();
 		$persisted  = AllocationContextCache::get_persisted_metrics();
+		$profiler   = new PromotionPerformanceProfiler();
+		$compat     = ( new PricingCompatibilityAnalyzer() )->audit_with_confidence();
 
 		return array(
-			'request'   => array_merge( PlannerContextCache::request_counters(), $allocation ),
-			'persisted' => array_merge( PlannerContextCache::get_persisted_counters(), $persisted ),
+			'request'                  => array_merge( PlannerContextCache::request_counters(), $allocation ),
+			'persisted'                => array_merge( PlannerContextCache::get_persisted_counters(), $persisted ),
+			'profiler'                 => $profiler->get_report_summary(),
+			'compatibility_confidence' => (string) ( $compat['confidence'] ?? PricingCompatibilityAnalyzer::CONFIDENCE_UNKNOWN ),
+			'slow_runs'                => (array) ( $profiler->get_aggregates()['slow_runs'] ?? array() ),
 		);
 	}
 
