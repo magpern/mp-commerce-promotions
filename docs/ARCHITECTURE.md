@@ -385,6 +385,19 @@ Promotion rows store optional **`campaign_label`** (varchar 191), **`internal_no
 - **Admin** — Diagnostics: run all automation, health table, automation history (latest 20), recovery forms. Reports: telemetry cards, health summary, automation history. Promotions list: quick filters, compact mode, recently modified.
 - **Manual QA** — [manual-automation-and-observability-test.md](manual-automation-and-observability-test.md); smoke: `scripts/automation-observability-smoke.php`.
 
+### Simulation and forecasting (schema 1.13.0)
+
+- **`PromotionSimulationEngine`** — synthetic cart scenarios (presets: whole cart, scoped, category, high quantity, VIP/guest, cooldown-active); planner output with eligible/selected/skipped, discount estimate, traces, and `PromotionPlanExplainer::enrich_explanation()`.
+- **`{prefix}mp_cp_simulation_scenarios`** — saved scenario JSON, soft-archive via `status`, run counters; Reports UI save/list (latest 20).
+- **`PromotionForecastEngine`** — heuristic exposure/redemption/cooldown/orchestration projections from telemetry + redemptions; option cache `mp_cp_forecast_cache` (no ML).
+- **`PromotionReplayEngine`** — read-only “what would happen today” replays per promotion.
+- **`PromotionOverlapSimulator`** / conflict analyzer overlap mode — scheduled/stackable/budget/shipping overlap severity.
+- **`PromotionRecommendationEngine`** — merchant hints (missing end dates, zero redemptions, excessive cooldowns, etc.).
+- **`PlannerContextCache`** — request-scoped evaluation/scope memo + counters (`mp_cp_planner_performance_counters`); no Redis.
+- **`PromotionBulkCampaignWorkflow`** — POST bulk schedule, orchestration, label, budget, cooldown; audits `promotion.bulk_updated`.
+- **Admin** — Reports: forecasting, calendar, recommendations, intelligence analytics, planner performance, simulation. Diagnostics: intelligence recovery + recommendations. Snapshots: intelligence metadata + simulate (read-only).
+- **Manual QA** — [manual-simulation-and-forecasting-test.md](manual-simulation-and-forecasting-test.md); smoke: `scripts/simulation-forecasting-smoke.php`.
+
 ### Economics and scheduling (schema 1.10.0)
 
 **Promotion budgets** — optional `budget_amount`, `budget_currency`, and running `budget_spent` on `{prefix}mp_cp_promotions`. Checkout recording increments `budget_spent` via `PromotionBudgetLedger` + `PromotionRepository::adjust_budget_spent()`; reversal subtracts the same discount amount. `PromotionRestrictionEvaluator` blocks exhausted caps with `promotion_budget_exhausted`. Diagnostics can pause exhausted actives via `PromotionService::pause_budget_exhausted_promotions()`.
