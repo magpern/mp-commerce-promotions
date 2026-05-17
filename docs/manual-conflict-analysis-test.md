@@ -91,3 +91,7 @@ From WooCommerce project root:
 - List page **Conflicts: N** counts exclusion IDs only, not full analyzer results.
 - No customer-facing messaging, REST, or AJAX in this milestone.
 - Usage-limit conflicts warn when limits are set; they do not read live redemption counts during analysis.
+
+## Related: schedule overlap forecasting (schema 1.10.0)
+
+`PromotionScheduleAnalyzer` complements conflict analysis with schedule-window overlap, exclusive overlap, high scoped-percentage overlap, and shared campaign-label warnings. Edit screen **Schedule warnings** and Reports lifecycle sections use the same read-only heuristics. See **[manual-economics-and-scheduling-test.md](manual-economics-and-scheduling-test.md)**.

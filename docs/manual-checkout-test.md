@@ -318,6 +318,12 @@ WP-CLI smoke (evaluator + optional cart):
 
 ---
 
+## Related: economics and budgets (schema 1.10.0)
+
+Checkout recording updates `budget_spent` from `discount_amount` on new redemptions; reversals subtract and restores re-add. Exhausted budgets block eligibility with `promotion_budget_exhausted`. See **[manual-economics-and-scheduling-test.md](manual-economics-and-scheduling-test.md)**.
+
+---
+
 ## Pass criteria
 
 All checked items in sections **1–8** pass, and behavior matches **Known limitations** in section **9**.

@@ -62,3 +62,7 @@ Schema **1.9.0** adds campaign metadata columns and archive hygiene tools. No st
 - No REST/AJAX; standard form POST.
 - `admin_color` must be `#RRGGBB` hex or empty.
 - Archive helpers process up to 500 rows per run.
+
+## Related: economics and lifecycle (schema 1.10.0)
+
+Campaign labels also feed **seasonal overlap** schedule warnings and Reports filters. Budget fields (`budget_amount`, `budget_currency`, utilization on Reports) extend campaign metadata on the edit screen. Lifecycle badges (Scheduled, Ending soon, Exhausted) and Diagnostics **Deactivate exhausted promotions** build on campaign list filters. See **[manual-economics-and-scheduling-test.md](manual-economics-and-scheduling-test.md)**.
