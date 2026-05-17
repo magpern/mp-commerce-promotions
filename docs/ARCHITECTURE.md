@@ -421,7 +421,8 @@ Promotion rows store optional **`campaign_label`** (varchar 191), **`internal_no
 
 ### Advanced pricing engine groundwork (schema 1.14.0)
 
-- **`DiscountAllocationEngine`** — proportional line/shipping allocation metadata (`AllocatedDiscount`, `AllocationResult`); no cart line mutation; storefront still fee-based.
+- **`DiscountAllocationEngine`** — proportional line/shipping allocation metadata (`AllocatedDiscount`, `AllocationResult`).
+- **`PromotionDiscountApplicationMode`** (schema **1.15.0**) — `fee_based` (default), `line_item`, `hybrid`. Storefront: `LineItemDiscountApplier` mutates cart line unit prices on `woocommerce_before_calculate_totals` (priority 15) for `percentage_discount` / `fixed_amount_discount`; free shipping, cheapest item, and free gift remain fee/gift mechanics. `hybrid` falls back to negative cart fees when line mutation fails (`LineDiscountFallbackTelemetry`). Session key `mp_cp_line_allocations`; order meta `_mp_cp_line_allocations`. **Experimental** — tax tables are not edited; blocks checkout uncertified.
 - **Promotion columns** — `priority_tier`, `coupon_behavior`, `allocation_mode`; planner sorts by tier then numeric priority.
 - **`TaxAwareDiscountCalculator`**, **`CouponCoexistenceEvaluator`**, **`PricingCompatibilityAnalyzer`** — admin/report heuristics only (no checkout tax mutation).
 - **`AllocationContextCache`** — request allocation memo + option metrics `mp_cp_allocation_performance_metrics`.

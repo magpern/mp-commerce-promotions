@@ -17,6 +17,8 @@ final class OrderPromotionState {
 
 	public const META_APPLIED_PROMOTIONS = '_mp_cp_applied_promotions';
 
+	public const META_LINE_ALLOCATIONS = '_mp_cp_line_allocations';
+
 	public const META_VALUE_YES = 'yes';
 
 	/**
@@ -116,6 +118,21 @@ final class OrderPromotionState {
 		$json = wp_json_encode( $summaries, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( is_string( $json ) ) {
 			$order->update_meta_data( self::META_APPLIED_PROMOTIONS, $json );
+		}
+	}
+
+	/**
+	 * @param \WC_Order              $order
+	 * @param array<string, mixed>   $allocation_summary
+	 */
+	public static function save_line_allocations( $order, array $allocation_summary ): void {
+		if ( $allocation_summary === array() || ! method_exists( $order, 'update_meta_data' ) ) {
+			return;
+		}
+
+		$json = wp_json_encode( $allocation_summary, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		if ( is_string( $json ) ) {
+			$order->update_meta_data( self::META_LINE_ALLOCATIONS, $json );
 		}
 	}
 

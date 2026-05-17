@@ -4,7 +4,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Current milestone
 
-**0.2.0-beta.1 tag prep** — browser QA runbook, classic certification doc, block investigation pages (draft), release evidence, version bump plan. Next: browser sign-off on classic COD checkout, tag when approved.
+**Line discount engine groundwork (schema 1.15.0)** — `fee_based` / `line_item` / `hybrid` application modes; MVP line price mutation for % and fixed actions; hybrid fee fallback; session/order allocation JSON. Fee-based remains default. Cart/Checkout Blocks still not declared.
 
 ## Manual QA (2026-05-17)
 

@@ -12,6 +12,7 @@ namespace MP\CommercePromotions\Domain;
 use InvalidArgumentException;
 use MP\CommercePromotions\Domain\PromotionAllocationMode;
 use MP\CommercePromotions\Domain\PromotionCouponBehavior;
+use MP\CommercePromotions\Domain\PromotionDiscountApplicationMode;
 use MP\CommercePromotions\Domain\PromotionPriorityTier;
 
 final class Promotion {
@@ -81,6 +82,8 @@ final class Promotion {
 
 	private string $allocation_mode;
 
+	private string $discount_application_mode;
+
 	private ?int $created_by;
 
 	private ?string $created_at;
@@ -119,6 +122,7 @@ final class Promotion {
 		string $priority_tier = PromotionPriorityTier::DEFAULT_TIER,
 		string $coupon_behavior = PromotionCouponBehavior::DEFAULT_BEHAVIOR,
 		string $allocation_mode = PromotionAllocationMode::DEFAULT_MODE,
+		string $discount_application_mode = PromotionDiscountApplicationMode::DEFAULT_MODE,
 		?int $created_by = null,
 		?string $created_at = null,
 		?string $updated_at = null
@@ -171,7 +175,8 @@ final class Promotion {
 		$orchestration_group    = self::normalize_orchestration_group( $orchestration_group );
 		$priority_tier          = PromotionPriorityTier::normalize( $priority_tier );
 		$coupon_behavior        = PromotionCouponBehavior::normalize( $coupon_behavior );
-		$allocation_mode        = PromotionAllocationMode::normalize( $allocation_mode );
+		$allocation_mode             = PromotionAllocationMode::normalize( $allocation_mode );
+		$discount_application_mode   = PromotionDiscountApplicationMode::normalize( $discount_application_mode );
 
 		$this->id           = $id;
 		$this->uuid         = $uuid;
@@ -203,8 +208,9 @@ final class Promotion {
 		$this->orchestration_group    = $orchestration_group;
 		$this->priority_tier          = $priority_tier;
 		$this->coupon_behavior        = $coupon_behavior;
-		$this->allocation_mode        = $allocation_mode;
-		$this->created_by             = $created_by;
+		$this->allocation_mode              = $allocation_mode;
+		$this->discount_application_mode    = $discount_application_mode;
+		$this->created_by                   = $created_by;
 		$this->created_at   = $created_at;
 		$this->updated_at   = $updated_at;
 	}
@@ -287,6 +293,7 @@ final class Promotion {
 			PromotionPriorityTier::normalize( self::optional_string( $data['priority_tier'] ?? null ) ),
 			PromotionCouponBehavior::normalize( self::optional_string( $data['coupon_behavior'] ?? null ) ),
 			PromotionAllocationMode::normalize( self::optional_string( $data['allocation_mode'] ?? null ) ),
+			PromotionDiscountApplicationMode::normalize( self::optional_string( $data['discount_application_mode'] ?? null ) ),
 			$created_by,
 			self::optional_string( $data['created_at'] ?? null ),
 			self::optional_string( $data['updated_at'] ?? null )
@@ -328,8 +335,9 @@ final class Promotion {
 			'orchestration_group'    => $this->orchestration_group,
 			'priority_tier'          => $this->priority_tier,
 			'coupon_behavior'        => $this->coupon_behavior,
-			'allocation_mode'        => $this->allocation_mode,
-			'created_by'             => $this->created_by,
+			'allocation_mode'             => $this->allocation_mode,
+			'discount_application_mode'   => $this->discount_application_mode,
+			'created_by'                  => $this->created_by,
 			'created_at'   => $this->created_at,
 			'updated_at'   => $this->updated_at,
 		);
@@ -477,7 +485,16 @@ final class Promotion {
 		return $this->allocation_mode;
 	}
 
-	public function with_pricing_fields( ?string $priority_tier, ?string $coupon_behavior, ?string $allocation_mode ): self {
+	public function get_discount_application_mode(): string {
+		return $this->discount_application_mode;
+	}
+
+	public function with_pricing_fields(
+		?string $priority_tier,
+		?string $coupon_behavior,
+		?string $allocation_mode,
+		?string $discount_application_mode = null
+	): self {
 		return new self(
 			$this->id,
 			$this->uuid,
@@ -510,6 +527,9 @@ final class Promotion {
 			$priority_tier !== null ? PromotionPriorityTier::normalize( $priority_tier ) : $this->priority_tier,
 			$coupon_behavior !== null ? PromotionCouponBehavior::normalize( $coupon_behavior ) : $this->coupon_behavior,
 			$allocation_mode !== null ? PromotionAllocationMode::normalize( $allocation_mode ) : $this->allocation_mode,
+			$discount_application_mode !== null
+				? PromotionDiscountApplicationMode::normalize( $discount_application_mode )
+				: $this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -588,6 +608,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -627,6 +648,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -666,6 +688,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -705,6 +728,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -744,6 +768,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -790,6 +815,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -829,6 +855,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -873,6 +900,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -915,6 +943,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -958,6 +987,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -997,6 +1027,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -1036,6 +1067,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -1079,6 +1111,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -1122,6 +1155,7 @@ final class Promotion {
 			$this->priority_tier,
 			$this->coupon_behavior,
 			$this->allocation_mode,
+			$this->discount_application_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at

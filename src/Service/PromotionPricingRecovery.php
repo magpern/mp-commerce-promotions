@@ -16,6 +16,9 @@ use MP\CommercePromotions\Domain\PromotionPriorityTier;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionSnapshotRepository;
 use MP\CommercePromotions\Engine\AllocationContextCache;
+use MP\CommercePromotions\Woo\CartSessionHelper;
+use MP\CommercePromotions\Woo\LineDiscountPlanCache;
+use MP\CommercePromotions\Woo\LinePriceMutationGuard;
 use MP\CommercePromotions\Woo\PricingCompatibilityAnalyzer;
 
 final class PromotionPricingRecovery {
@@ -153,5 +156,23 @@ final class PromotionPricingRecovery {
 			'valid'   => $valid,
 			'invalid' => $invalid,
 		);
+	}
+
+	/**
+	 * Clear stuck line allocation session/cache (storefront recovery).
+	 *
+	 * @return array{cleared: bool}
+	 */
+	public function repair_stuck_line_discount_sessions(): array {
+		AllocationContextCache::reset_request_cache();
+		LineDiscountPlanCache::reset();
+		LinePriceMutationGuard::reset_cycle();
+		CartSessionHelper::clear_line_allocations();
+
+		if ( function_exists( 'WC' ) && is_object( WC()->cart ?? null ) ) {
+			LinePriceMutationGuard::restore_all_line_prices( WC()->cart );
+		}
+
+		return array( 'cleared' => true );
 	}
 }

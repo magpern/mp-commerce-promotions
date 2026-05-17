@@ -186,7 +186,8 @@ final class PromotionSnapshotService {
 			'simulation_label' => $simulation_label,
 			'priority_tier'    => $promotion->get_priority_tier(),
 			'coupon_behavior'  => $promotion->get_coupon_behavior(),
-			'allocation_mode'  => $promotion->get_allocation_mode(),
+			'allocation_mode'             => $promotion->get_allocation_mode(),
+			'discount_application_mode'   => $promotion->get_discount_application_mode(),
 		);
 
 		$decoded = array();

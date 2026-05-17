@@ -46,6 +46,8 @@ final class WooCommerceBridge {
 
 	private bool $cart_gift_price_hook_registered = false;
 
+	private bool $cart_line_discount_hook_registered = false;
+
 	private ?OrderPromotionRecorder $order_promotion_recorder = null;
 
 	private bool $order_checkout_hook_registered = false;
@@ -133,6 +135,15 @@ final class WooCommerceBridge {
 			20
 		);
 		$this->cart_fee_hook_registered = true;
+
+		if ( ! $this->cart_line_discount_hook_registered ) {
+			add_action(
+				'woocommerce_before_calculate_totals',
+				array( $this->cart_promotion_applier, 'prepare_line_discount_cycle' ),
+				15
+			);
+			$this->cart_line_discount_hook_registered = true;
+		}
 
 		if ( ! $this->cart_gift_price_hook_registered ) {
 			add_action(

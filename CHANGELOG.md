@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Native line discount groundwork (schema 1.15.0)** — `PromotionDiscountApplicationMode` (`fee_based`, `line_item`, `hybrid`); `LineItemDiscountApplier` + `LinePriceMutationGuard` on `woocommerce_before_calculate_totals`; line allocation persistence (`AppliedLineDiscount`, session/order meta); hybrid fee fallback with telemetry; admin **Discount application** field; compatibility audit for line mode. **Fee-based remains the default**; line mode is experimental.
+
 ## [0.2.0-beta.1] - 2026-05-17
 
 First **public beta** for technical pilot users on **classic shortcode** cart and checkout with **WooCommerce HPOS** declared compatible.

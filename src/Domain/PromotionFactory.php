@@ -97,6 +97,7 @@ final class PromotionFactory {
 			$source->get_priority_tier(),
 			$source->get_coupon_behavior(),
 			$source->get_allocation_mode(),
+			$source->get_discount_application_mode(),
 			$created_by,
 			null,
 			null

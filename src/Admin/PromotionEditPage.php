@@ -21,6 +21,7 @@ use MP\CommercePromotions\Domain\PromotionCodeFactory;
 use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionAllocationMode;
 use MP\CommercePromotions\Domain\PromotionCouponBehavior;
+use MP\CommercePromotions\Domain\PromotionDiscountApplicationMode;
 use MP\CommercePromotions\Domain\PromotionPriorityTier;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Engine\DiscountAllocationEngine;
@@ -1506,6 +1507,22 @@ final class PromotionEditPage {
 			exit;
 		}
 
+		$discount_application_mode = isset( $_POST['promotion_discount_application_mode'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['promotion_discount_application_mode'] ) )
+			: PromotionDiscountApplicationMode::DEFAULT_MODE;
+		if ( ! PromotionDiscountApplicationMode::is_valid( $discount_application_mode ) ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_discount_application_mode',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
+			exit;
+		}
+
 		$orchestration_meta = $this->parse_orchestration_metadata_from_post();
 		if ( $orchestration_meta === null ) {
 			wp_safe_redirect(
@@ -1545,7 +1562,7 @@ final class PromotionEditPage {
 					$orchestration_meta['cooldown_hours'],
 					$orchestration_meta['orchestration_group']
 				)
-				->with_pricing_fields( $priority_tier, $coupon_behavior, $allocation_mode )
+				->with_pricing_fields( $priority_tier, $coupon_behavior, $allocation_mode, $discount_application_mode )
 				->with_rules( $conditions, $actions, $restrictions );
 
 			$this->promotion_service->update_promotion( $updated, (int) get_current_user_id() );
@@ -3599,7 +3616,22 @@ final class PromotionEditPage {
 			echo '<option value="' . esc_attr( $value ) . '"' . selected( $allocation_mode, $value, false ) . '>' . esc_html( $label ) . '</option>';
 		}
 		echo '</select>';
-		echo '<p class="description">' . esc_html__( 'Metadata for allocation explainability; storefront discounts still apply as cart fees.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+		echo '<p class="description">' . esc_html__( 'Metadata for allocation explainability across cart lines.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		$discount_application_mode = $promotion->get_discount_application_mode();
+		echo '<tr><th scope="row"><label for="mp_cp_discount_application_mode">' . esc_html__( 'Discount application', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select id="mp_cp_discount_application_mode" name="promotion_discount_application_mode">';
+		foreach (
+			array(
+				PromotionDiscountApplicationMode::FEE_BASED  => __( 'Fee-based (default) — negative cart fees', 'mp-commerce-promotions' ),
+				PromotionDiscountApplicationMode::LINE_ITEM  => __( 'Line item (beta) — mutate cart line prices for % / fixed actions', 'mp-commerce-promotions' ),
+				PromotionDiscountApplicationMode::HYBRID     => __( 'Hybrid — line item first, fee fallback when mutation fails', 'mp-commerce-promotions' ),
+			) as $value => $label
+		) {
+			echo '<option value="' . esc_attr( $value ) . '"' . selected( $discount_application_mode, $value, false ) . '>' . esc_html( $label ) . '</option>';
+		}
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Free shipping, cheapest item, and free gift actions always use fees or gift lines. Line mode is experimental; tax-inclusive stores and native coupons need extra review.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_starts">' . esc_html__( 'Starts at', 'mp-commerce-promotions' ) . '</label></th><td>';
 		$starts = $promotion->get_starts_at() ?? '';

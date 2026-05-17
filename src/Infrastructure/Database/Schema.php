@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.14.0';
+	public const SCHEMA_VERSION = '1.15.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -95,6 +95,7 @@ orchestration_group varchar(191) NULL,
 priority_tier varchar(32) NOT NULL default 'storefront',
 coupon_behavior varchar(32) NOT NULL default 'coexist',
 allocation_mode varchar(32) NOT NULL default 'proportional',
+discount_application_mode varchar(32) NOT NULL default 'fee_based',
 created_by bigint(20) unsigned NULL,
 created_at datetime NOT NULL default CURRENT_TIMESTAMP,
 updated_at datetime NOT NULL default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Woo;
 
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionCode;
+use MP\CommercePromotions\Domain\PromotionDiscountApplicationMode;
 use MP\CommercePromotions\Domain\PromotionPriorityTier;
 use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionRepository;
@@ -59,6 +60,8 @@ final class CartPromotionApplier {
 
 	private ?PromotionPerformanceProfiler $profiler;
 
+	private LineItemDiscountApplier $line_discount_applier;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionCodeRepository $promotion_codes,
@@ -69,7 +72,8 @@ final class CartPromotionApplier {
 		?FreeGiftCartHandler $free_gift_handler = null,
 		?FreeGiftCartSynchronizer $gift_synchronizer = null,
 		?PlannerTelemetryRecorder $telemetry_recorder = null,
-		?PromotionPerformanceProfiler $profiler = null
+		?PromotionPerformanceProfiler $profiler = null,
+		?LineItemDiscountApplier $line_discount_applier = null
 	) {
 		$this->promotions         = $promotions;
 		$this->promotion_codes    = $promotion_codes;
@@ -80,7 +84,62 @@ final class CartPromotionApplier {
 		$this->free_gift_handler  = $free_gift_handler ?? new FreeGiftCartHandler();
 		$this->gift_synchronizer   = $gift_synchronizer ?? new FreeGiftCartSynchronizer( $promotions );
 		$this->telemetry_recorder  = $telemetry_recorder;
-		$this->profiler            = $profiler;
+		$this->profiler              = $profiler;
+		$this->line_discount_applier = $line_discount_applier ?? new LineItemDiscountApplier();
+	}
+
+	/**
+	 * Prepare line-level discounts before Woo totals (priority 15).
+	 */
+	public function prepare_line_discount_cycle(): void {
+		if ( ! apply_filters( 'mp_cp_enable_cart_discounts', $this->settings->cart_discounts_enabled() ) ) {
+			return;
+		}
+
+		if ( $this->settings->safe_mode_enabled() ) {
+			LinePriceMutationGuard::restore_all_line_prices( function_exists( 'WC' ) ? WC()->cart : null );
+			return;
+		}
+
+		if ( is_admin() && ! wp_doing_ajax() ) {
+			return;
+		}
+
+		if ( ! function_exists( 'WC' ) || ! is_object( WC()->cart ?? null ) ) {
+			return;
+		}
+
+		$cart = WC()->cart;
+		LinePriceMutationGuard::restore_all_line_prices( $cart );
+		LineDiscountPlanCache::reset();
+		LinePriceMutationGuard::begin_cycle();
+
+		if ( ! $this->settings->automatic_promotions_enabled() ) {
+			CartSessionHelper::clear_line_allocations();
+			return;
+		}
+
+		$context    = $this->context_builder->build_from_cart();
+		$paid_subtotal = FreeGiftCartHandler::paid_cart_subtotal( $cart );
+		$subtotal   = $paid_subtotal > 0 ? $paid_subtotal : ( $context->get_cart_subtotal() ?? 0.0 );
+		if ( $subtotal <= 0 ) {
+			CartSessionHelper::clear_line_allocations();
+			return;
+		}
+
+		$active = PromotionPriorityTier::sort_promotions( $this->promotions->find_active_for_planner( 200 ) );
+		$plan   = $this->plan_with_resilience( $active, $context );
+		if ( $plan === null ) {
+			CartSessionHelper::clear_line_allocations();
+			return;
+		}
+
+		$signature = LineDiscountPlanCache::signature_for_cart( $cart );
+		LineDiscountPlanCache::store( $plan, $context, null, $signature );
+
+		$allocation = $this->line_discount_applier->apply_for_plan( $cart, $plan, $context );
+		LineDiscountPlanCache::store( $plan, $context, $allocation, $signature );
+		CartSessionHelper::set_line_allocations( $allocation->to_array() );
 	}
 
 	/**
@@ -116,6 +175,7 @@ final class CartPromotionApplier {
 		 */
 		if ( ! apply_filters( 'mp_cp_enable_cart_discounts', $this->settings->cart_discounts_enabled() ) ) {
 			$this->clear_applied_promotion_session();
+			CartSessionHelper::clear_line_allocations();
 			if ( function_exists( 'WC' ) ) {
 				$wc_disabled = WC();
 				if ( is_object( $wc_disabled ) && isset( $wc_disabled->cart ) && is_object( $wc_disabled->cart ) ) {
@@ -360,6 +420,28 @@ final class CartPromotionApplier {
 		$session_entries     = array();
 
 		foreach ( $decisions as $decision ) {
+			$promotion = $decision->get_promotion();
+			$pid       = (int) ( $promotion->get_id() ?? 0 );
+			$mode      = $promotion->get_discount_application_mode();
+
+			if ( PromotionDiscountApplicationMode::uses_line_mutation( $mode ) && $pid > 0 ) {
+				$line_total = LineDiscountPlanCache::get_line_applied_total( $pid );
+				if ( $line_total > 0 ) {
+					$entry = $this->build_line_applied_session_entry( $decision, $line_total, $promotion_code );
+					if ( $entry !== null ) {
+						$session_entries[] = $entry;
+						$remaining_allowance -= $line_total;
+						continue;
+					}
+				}
+
+				if ( $mode === PromotionDiscountApplicationMode::LINE_ITEM ) {
+					continue;
+				}
+
+				LineDiscountPlanCache::mark_fee_fallback( $pid );
+			}
+
 			$applied = $this->apply_first_discount_fee_for_decision(
 				$decision,
 				$context,
@@ -371,6 +453,10 @@ final class CartPromotionApplier {
 
 			if ( ! is_array( $applied ) ) {
 				continue;
+			}
+
+			if ( $pid > 0 && LineDiscountPlanCache::should_fee_fallback( $pid ) ) {
+				$applied['fee_fallback'] = true;
 			}
 
 			$entry = $this->build_session_entry_from_applied( $applied, $promotion_code );
@@ -440,6 +526,53 @@ final class CartPromotionApplier {
 	}
 
 	/**
+	 * @return array<string, mixed>|null
+	 */
+	private function build_line_applied_session_entry(
+		PromotionEvaluationDecision $decision,
+		float $line_total,
+		?PromotionCode $promotion_code
+	): ?array {
+		$promotion = $decision->get_promotion();
+		$pid       = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 || $line_total <= 0 ) {
+			return null;
+		}
+
+		$action_type = self::ACTION_PERCENTAGE_DISCOUNT;
+		foreach ( $promotion->get_actions() as $action ) {
+			if ( ! is_array( $action ) ) {
+				continue;
+			}
+			$type = isset( $action['type'] ) ? (string) $action['type'] : '';
+			if ( PromotionDiscountApplicationMode::is_line_capable_action( $type ) ) {
+				$action_type = $type;
+				break;
+			}
+		}
+
+		$applied = array(
+			'promotion'   => $promotion,
+			'discount'    => $line_total,
+			'action_type' => $action_type,
+		);
+
+		$entry = $this->build_session_entry_from_applied( $applied, $promotion_code );
+		if ( $entry === null ) {
+			return null;
+		}
+
+		$entry['application_strategy'] = $promotion->get_discount_application_mode();
+		$entry['line_discount_applied'] = true;
+		$line_payload = CartSessionHelper::get_line_allocations();
+		if ( is_array( $line_payload ) ) {
+			$entry['line_allocation_summary'] = $line_payload;
+		}
+
+		return $entry;
+	}
+
+	/**
 	 * @param list<array<string, mixed>> $entries
 	 */
 	private function store_applied_promotions_session( array $entries ): void {
@@ -457,6 +590,7 @@ final class CartPromotionApplier {
 
 	private function clear_applied_promotion_session(): void {
 		CartSessionHelper::clear_applied_promotion();
+		CartSessionHelper::clear_line_allocations();
 	}
 
 	/**

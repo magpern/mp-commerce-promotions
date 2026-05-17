@@ -13,6 +13,7 @@ use InvalidArgumentException;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Domain\PromotionCouponBehavior;
+use MP\CommercePromotions\Domain\PromotionDiscountApplicationMode;
 use MP\CommercePromotions\Domain\PromotionPriorityTier;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\PromotionDateHelper;
@@ -461,6 +462,48 @@ final class PromotionRuleValidator {
 				'level'   => 'warning',
 				'message' => __( 'Coupon coexistence with free shipping may overload checkout discounts.', 'mp-commerce-promotions' ),
 			);
+		}
+
+		$app_mode = $promotion->get_discount_application_mode();
+		if ( ! PromotionDiscountApplicationMode::is_valid( $app_mode ) ) {
+			$issues[] = $this->error(
+				__( 'Invalid discount_application_mode; repair via Diagnostics.', 'mp-commerce-promotions' )
+			);
+		}
+
+		if ( PromotionDiscountApplicationMode::uses_line_mutation( $app_mode ) ) {
+			$has_line_action = false;
+			$has_fee_only      = false;
+			foreach ( $promotion->get_actions() as $action ) {
+				if ( ! is_array( $action ) ) {
+					continue;
+				}
+				$type = (string) ( $action['type'] ?? '' );
+				if ( PromotionDiscountApplicationMode::is_line_capable_action( $type ) ) {
+					$has_line_action = true;
+				}
+				if ( in_array( $type, array( RuleTypes::ACTION_FREE_SHIPPING, RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT, RuleTypes::ACTION_FREE_GIFT_PRODUCT ), true ) ) {
+					$has_fee_only = true;
+				}
+			}
+			if ( ! $has_line_action ) {
+				$issues[] = array(
+					'level'   => 'warning',
+					'message' => __( 'Line-item discount mode is enabled but no percentage or fixed amount actions are configured; storefront may apply no discount.', 'mp-commerce-promotions' ),
+				);
+			}
+			if ( $has_fee_only ) {
+				$issues[] = array(
+					'level'   => 'warning',
+					'message' => __( 'Line-item mode: free shipping, cheapest item, and free gift actions still use fee/gift mechanics only.', 'mp-commerce-promotions' ),
+				);
+			}
+			if ( function_exists( 'wc_prices_include_tax' ) && wc_prices_include_tax() ) {
+				$issues[] = array(
+					'level'   => 'warning',
+					'message' => __( 'Tax-inclusive catalog: line price mutation does not adjust tax tables; verify totals on staging.', 'mp-commerce-promotions' ),
+				);
+			}
 		}
 	}
 

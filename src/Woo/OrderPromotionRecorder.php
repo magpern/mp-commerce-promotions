@@ -183,6 +183,11 @@ final class OrderPromotionRecorder {
 
 			OrderPromotionState::save_applied_promotions( $order, $recorded_meta );
 
+			$line_allocations = CartSessionHelper::get_line_allocations();
+			if ( is_array( $line_allocations ) && $line_allocations !== array() ) {
+				OrderPromotionState::save_line_allocations( $order, $line_allocations );
+			}
+
 			$first = $entries[0];
 			$this->apply_legacy_primary_meta_from_entry( $order, $first );
 

@@ -179,9 +179,10 @@ final class PromotionRepository {
 			'orchestration_group'    => $promotion->get_orchestration_group(),
 			'priority_tier'          => $promotion->get_priority_tier(),
 			'coupon_behavior'        => $promotion->get_coupon_behavior(),
-			'allocation_mode'        => $promotion->get_allocation_mode(),
-			'created_by'             => $promotion->get_created_by(),
-			'created_at'             => $promotion->get_created_at() ?? $now,
+			'allocation_mode'             => $promotion->get_allocation_mode(),
+			'discount_application_mode'   => $promotion->get_discount_application_mode(),
+			'created_by'                    => $promotion->get_created_by(),
+			'created_at'                    => $promotion->get_created_at() ?? $now,
 			'updated_at'             => $promotion->get_updated_at() ?? $now,
 		);
 
@@ -214,6 +215,7 @@ final class PromotionRepository {
 			'%f',
 			'%s',
 			$cooldown_format,
+			'%s',
 			'%s',
 			'%s',
 			'%s',
@@ -279,9 +281,10 @@ final class PromotionRepository {
 			'orchestration_group'    => $promotion->get_orchestration_group(),
 			'priority_tier'          => $promotion->get_priority_tier(),
 			'coupon_behavior'        => $promotion->get_coupon_behavior(),
-			'allocation_mode'        => $promotion->get_allocation_mode(),
-			'created_by'             => $promotion->get_created_by(),
-			'updated_at'             => $now,
+			'allocation_mode'             => $promotion->get_allocation_mode(),
+			'discount_application_mode'   => $promotion->get_discount_application_mode(),
+			'created_by'                    => $promotion->get_created_by(),
+			'updated_at'                    => $now,
 		);
 
 		$cooldown_format = $data['cooldown_hours'] === null ? '%s' : '%d';
@@ -313,6 +316,7 @@ final class PromotionRepository {
 			'%f',
 			'%s',
 			$cooldown_format,
+			'%s',
 			'%s',
 			'%s',
 			'%s',

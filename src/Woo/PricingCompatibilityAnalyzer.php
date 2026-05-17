@@ -310,4 +310,70 @@ final class PricingCompatibilityAnalyzer {
 
 		return $recs;
 	}
+
+	/**
+	 * Line-item discount mode confidence for a single promotion.
+	 *
+	 * @return array{confidence: string, score: int, issues: list<array{severity: string, code: string, message: string}>}
+	 */
+	public function audit_line_discount_mode( string $discount_application_mode, array $promotion_actions = array() ): array {
+		$issues = array();
+		$score  = 90;
+
+		if ( ! \MP\CommercePromotions\Domain\PromotionDiscountApplicationMode::uses_line_mutation( $discount_application_mode ) ) {
+			return array(
+				'confidence' => self::CONFIDENCE_HIGH,
+				'score'      => 100,
+				'issues'     => array(),
+			);
+		}
+
+		$score -= 15;
+		$issues[] = array(
+			'severity' => self::SEVERITY_INFO,
+			'code'     => 'line_discount_mode_beta',
+			'message'  => __( 'Line-item discount mode is experimental; fee-based mode remains the default.', 'mp-commerce-promotions' ),
+		);
+
+		if ( function_exists( 'wc_prices_include_tax' ) && wc_prices_include_tax() ) {
+			$score -= 20;
+			$issues[] = array(
+				'severity' => self::SEVERITY_WARNING,
+				'code'     => 'line_mode_tax_inclusive',
+				'message'  => __( 'Tax-inclusive pricing may mismatch displayed line savings.', 'mp-commerce-promotions' ),
+			);
+		}
+
+		$issues = array_merge( $issues, $this->detect_sale_price_mode() );
+		$issues = array_merge( $issues, $this->detect_bundle_plugins() );
+		$issues = array_merge( $issues, $this->detect_coupon_stacking() );
+
+		foreach ( $promotion_actions as $action ) {
+			if ( ! is_array( $action ) ) {
+				continue;
+			}
+			if ( ! empty( $action['product_ids'] ) || ! empty( $action['category_ids'] ) ) {
+				$score -= 5;
+				$issues[] = array(
+					'severity' => self::SEVERITY_INFO,
+					'code'     => 'line_mode_scoped_action',
+					'message'  => __( 'Scoped line actions rely on cart context product matching.', 'mp-commerce-promotions' ),
+				);
+				break;
+			}
+		}
+
+		$confidence = self::CONFIDENCE_HIGH;
+		if ( $score < 70 ) {
+			$confidence = self::CONFIDENCE_LOW;
+		} elseif ( $score < 85 ) {
+			$confidence = self::CONFIDENCE_MEDIUM;
+		}
+
+		return array(
+			'confidence' => $confidence,
+			'score'      => max( 0, min( 100, $score ) ),
+			'issues'     => $issues,
+		);
+	}
 }
