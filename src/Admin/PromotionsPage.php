@@ -11,6 +11,8 @@ namespace MP\CommercePromotions\Admin;
 
 use InvalidArgumentException;
 use MP\CommercePromotions\Domain\Promotion;
+use MP\CommercePromotions\Domain\PromotionApplicationMode;
+use MP\CommercePromotions\Engine\RuleTypes;
 use MP\CommercePromotions\Domain\PromotionCodeBatchRepository;
 use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionRepository;
@@ -658,20 +660,61 @@ final class PromotionsPage {
 	}
 
 	private function format_application_summary( Promotion $promotion ): string {
-		$mode = $promotion->get_application_mode();
-		$stop = $promotion->should_stop_processing()
-			? __( 'stop', 'mp-commerce-promotions' )
-			: __( 'continue', 'mp-commerce-promotions' );
+		$parts = array();
 
-		$exclude_count = count( $promotion->get_excluded_promotion_ids() );
+		if ( $promotion->get_application_mode() === PromotionApplicationMode::EXCLUSIVE ) {
+			$parts[] = __( 'Exclusive', 'mp-commerce-promotions' );
+		} else {
+			$parts[] = __( 'Stackable', 'mp-commerce-promotions' );
+		}
 
-		return sprintf(
-			/* translators: 1: application mode, 2: stop or continue, 3: number of excluded promotion IDs */
-			__( '%1$s / %2$s / Excludes: %3$d', 'mp-commerce-promotions' ),
-			$mode,
-			$stop,
-			$exclude_count
-		);
+		$excluded_count = count( $promotion->get_excluded_promotion_ids() );
+		if ( $excluded_count > 0 ) {
+			$parts[] = __( 'Has exclusions', 'mp-commerce-promotions' );
+			$parts[] = sprintf(
+				/* translators: %d: number of excluded promotion IDs */
+				__( 'Conflicts: %d', 'mp-commerce-promotions' ),
+				$excluded_count
+			);
+		}
+
+		if ( $this->promotion_has_scoped_rules( $promotion ) ) {
+			$parts[] = __( 'Scoped', 'mp-commerce-promotions' );
+		}
+
+		if ( $promotion->should_stop_processing() ) {
+			$parts[] = __( 'Stop', 'mp-commerce-promotions' );
+		}
+
+		return implode( ' · ', $parts );
+	}
+
+	private function promotion_has_scoped_rules( Promotion $promotion ): bool {
+		foreach ( $promotion->get_actions() as $action ) {
+			if ( ! is_array( $action ) ) {
+				continue;
+			}
+			$type = isset( $action['type'] ) ? (string) $action['type'] : '';
+			if ( $type === RuleTypes::ACTION_PERCENTAGE_DISCOUNT || $type === RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT ) {
+				if ( ! empty( $action['category_ids'] ) || ! empty( $action['product_ids'] ) || ! empty( $action['variation_ids'] ) ) {
+					return true;
+				}
+			}
+			if ( $type === RuleTypes::ACTION_CHEAPEST_ITEM_DISCOUNT ) {
+				return true;
+			}
+		}
+
+		foreach ( $promotion->get_conditions() as $condition ) {
+			if ( ! is_array( $condition ) ) {
+				continue;
+			}
+			if ( ( $condition['type'] ?? '' ) === RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private function format_validation_summary( Promotion $promotion ): string {

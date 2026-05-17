@@ -38,7 +38,8 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * Simple Rule Builder (one condition + one action, including cheapest item and free gift) and raw JSON rule editing
 * Rule validation panel in admin
 * WooCommerce admin: Promotions list with search, filters, and pagination
-* Promotion edit workflow: status actions, duplicate as draft, cart preview with evaluation trace (admin/debug)
+* Promotion edit workflow: status actions, duplicate as draft, cart preview with evaluation trace, plan explanation, and conflict analysis (admin/debug)
+* Heuristic conflict analysis across active promotions and lightweight list indicators (Exclusive, exclusions, scoped)
 * Manual promotion codes (hashed at rest)
 * Generated code batches (up to 1,000 per batch) with batch traceability
 * Redemption tracking per order with idempotency and reversal on cancel/refund/trash

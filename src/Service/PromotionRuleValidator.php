@@ -46,6 +46,7 @@ final class PromotionRuleValidator {
 		$this->append_application_rules_issues( $promotion, $issues );
 		$this->append_condition_issues( $promotion->get_conditions(), $issues );
 		$this->append_action_issues( $promotion->get_actions(), $issues );
+		$this->append_conflict_heuristic_issues( $promotion, $issues );
 
 		return $issues;
 	}
@@ -611,6 +612,140 @@ final class PromotionRuleValidator {
 			$issues[] = array(
 				'level'   => 'warning',
 				'message' => __( 'Only the first supported action per promotion is applied on the storefront.', 'mp-commerce-promotions' ),
+			);
+		}
+	}
+
+	/**
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function append_conflict_heuristic_issues( Promotion $promotion, array &$issues ): void {
+		$mode = $promotion->get_application_mode();
+		$excluded = $promotion->get_excluded_promotion_ids();
+
+		if ( $mode === PromotionApplicationMode::EXCLUSIVE && $excluded !== array() ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __(
+					'Exclusive promotion with excluded_promotion_ids: exclusions apply only after this promotion is selected; redundant if stop processing is enabled.',
+					'mp-commerce-promotions'
+				),
+			);
+		}
+
+		$max = $promotion->get_max_applications();
+		if ( $max !== null && $max === 1 && $mode === PromotionApplicationMode::STACKABLE && ! $promotion->should_stop_processing() ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __(
+					'max_applications is 1 on a stackable promotion without stop processing; additional stackable promotions may still be selected unless planner cap applies.',
+					'mp-commerce-promotions'
+				),
+			);
+		}
+
+		if ( $max !== null && $mode === PromotionApplicationMode::EXCLUSIVE && $promotion->should_stop_processing() ) {
+			$issues[] = array(
+				'level'   => 'info',
+				'message' => __(
+					'max_applications may be unreachable when exclusive stop processing prevents further selections.',
+					'mp-commerce-promotions'
+				),
+			);
+		}
+
+		$this->append_action_scope_overlap_issues( $promotion->get_actions(), $issues );
+		$this->append_duplicate_gift_action_issues( $promotion->get_actions(), $issues );
+		$this->append_multiple_free_shipping_action_issues( $promotion->get_actions(), $issues );
+	}
+
+	/**
+	 * @param array<mixed>                                $actions
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function append_action_scope_overlap_issues( array $actions, array &$issues ): void {
+		$category_sets = array();
+		$product_sets  = array();
+
+		foreach ( $actions as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+			$type = isset( $raw['type'] ) ? (string) $raw['type'] : '';
+			if ( $type !== RuleTypes::ACTION_PERCENTAGE_DISCOUNT && $type !== RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT ) {
+				continue;
+			}
+
+			$categories = isset( $raw['category_ids'] ) && is_array( $raw['category_ids'] )
+				? $raw['category_ids']
+				: array();
+			$products = isset( $raw['product_ids'] ) && is_array( $raw['product_ids'] )
+				? $raw['product_ids']
+				: array();
+
+			if ( $categories !== array() ) {
+				$category_sets[] = $categories;
+			}
+			if ( $products !== array() ) {
+				$product_sets[] = $products;
+			}
+		}
+
+		if ( count( $category_sets ) > 1 || count( $product_sets ) > 1 ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __( 'Multiple scoped discount actions on this promotion may overlap; only the first action applies on the storefront.', 'mp-commerce-promotions' ),
+			);
+		}
+
+		if ( $category_sets !== array() || $product_sets !== array() ) {
+			$issues[] = array(
+				'level'   => 'info',
+				'message' => __( 'Scoped percentage/fixed discounts on this promotion only affect matching cart lines (fee-based).', 'mp-commerce-promotions' ),
+			);
+		}
+	}
+
+	/**
+	 * @param array<mixed>                                $actions
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function append_duplicate_gift_action_issues( array $actions, array &$issues ): void {
+		$gift_products = array();
+		foreach ( $actions as $raw ) {
+			if ( ! is_array( $raw ) || ( $raw['type'] ?? '' ) !== RuleTypes::ACTION_FREE_GIFT_PRODUCT ) {
+				continue;
+			}
+			$pid = isset( $raw['product_id'] ) ? (int) $raw['product_id'] : 0;
+			if ( $pid > 0 ) {
+				$gift_products[] = $pid;
+			}
+		}
+
+		if ( count( $gift_products ) !== count( array_unique( $gift_products ) ) ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __( 'Duplicate free_gift_product actions for the same product_id; only the first action applies.', 'mp-commerce-promotions' ),
+			);
+		}
+	}
+
+	/**
+	 * @param array<mixed>                                $actions
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function append_multiple_free_shipping_action_issues( array $actions, array &$issues ): void {
+		$count = 0;
+		foreach ( $actions as $raw ) {
+			if ( is_array( $raw ) && ( $raw['type'] ?? '' ) === RuleTypes::ACTION_FREE_SHIPPING ) {
+				++$count;
+			}
+		}
+
+		if ( $count > 1 ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __( 'Multiple free_shipping actions defined; only the first applies on the storefront.', 'mp-commerce-promotions' ),
 			);
 		}
 	}

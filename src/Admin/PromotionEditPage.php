@@ -28,7 +28,9 @@ use MP\CommercePromotions\Engine\Condition\ConditionTrace;
 use MP\CommercePromotions\Engine\PromotionEvaluationDecision;
 use MP\CommercePromotions\Engine\PromotionEvaluationPlan;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
+use MP\CommercePromotions\Engine\PromotionPlanExplainer;
 use MP\CommercePromotions\Engine\PromotionPlanner;
+use MP\CommercePromotions\Service\PromotionConflictAnalyzer;
 use MP\CommercePromotions\Engine\RuleRegistry;
 use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
 use MP\CommercePromotions\Engine\RuleTypes;
@@ -57,6 +59,9 @@ final class PromotionEditPage {
 	private ?EvaluationResult $cart_preview_result = null;
 
 	private ?PromotionEvaluationPlan $cart_preview_plan = null;
+
+	/** @var list<array{type: string, severity: string, promotion_ids: list<int>, message: string}>|null */
+	private ?array $cart_preview_conflicts = null;
 
 	private ?string $cart_preview_error = null;
 
@@ -132,6 +137,7 @@ final class PromotionEditPage {
 
 		$this->cart_preview_result      = null;
 		$this->cart_preview_plan        = null;
+		$this->cart_preview_conflicts   = null;
 		$this->cart_preview_error       = null;
 		$this->batch_generation_outcome = null;
 		$this->batch_generation_error   = null;
@@ -644,7 +650,8 @@ final class PromotionEditPage {
 			$this->cart_preview_result = $this->promotion_evaluator->evaluate( $promotion, $context );
 
 			$active = $this->promotions->find_active( 50 );
-			$this->cart_preview_plan   = $this->promotion_planner->plan( $active, $context );
+			$this->cart_preview_plan      = $this->promotion_planner->plan( $active, $context );
+			$this->cart_preview_conflicts = ( new PromotionConflictAnalyzer() )->analyze( $active );
 		} catch ( Throwable $e ) {
 			$this->cart_preview_error = __( 'Preview failed.', 'mp-commerce-promotions' );
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
@@ -1948,6 +1955,66 @@ final class PromotionEditPage {
 		echo '</tbody></table>';
 	}
 
+	private function render_plan_explanation_summary( PromotionEvaluationPlan $plan ): void {
+		$explanation = PromotionPlanExplainer::explain( $plan );
+		$lines       = $explanation['summary_lines'] ?? array();
+
+		if ( $lines === array() ) {
+			return;
+		}
+
+		echo '<hr style="margin:16px 0;" />';
+		echo '<p><strong>' . esc_html__( 'Plan explanation', 'mp-commerce-promotions' ) . '</strong></p>';
+		echo '<p class="description">' . esc_html__(
+			'Deterministic summary of why promotions were selected or skipped for this cart preview.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<ul style="list-style:disc;margin-left:1.5em;">';
+		foreach ( $lines as $line ) {
+			echo '<li>' . esc_html( (string) $line ) . '</li>';
+		}
+		echo '</ul>';
+	}
+
+	/**
+	 * @param list<array{type: string, severity: string, promotion_ids: list<int>, message: string}> $conflicts
+	 */
+	private function render_conflict_analysis_table( array $conflicts ): void {
+		echo '<hr style="margin:16px 0;" />';
+		echo '<p><strong>' . esc_html__( 'Conflict analysis (active promotions)', 'mp-commerce-promotions' ) . '</strong></p>';
+		echo '<p class="description">' . esc_html__(
+			'Heuristic warnings across all active promotions. Does not guarantee runtime cart behavior.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<table class="widefat striped" style="max-width:100%;"><thead><tr>';
+		echo '<th scope="col">' . esc_html__( 'Severity', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Type', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Promotions', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Message', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $conflicts as $conflict ) {
+			if ( ! is_array( $conflict ) ) {
+				continue;
+			}
+			$severity = isset( $conflict['severity'] ) ? (string) $conflict['severity'] : 'info';
+			$type     = isset( $conflict['type'] ) ? (string) $conflict['type'] : '';
+			$message  = isset( $conflict['message'] ) ? (string) $conflict['message'] : '';
+			$ids      = isset( $conflict['promotion_ids'] ) && is_array( $conflict['promotion_ids'] )
+				? implode( ', ', array_map( 'strval', $conflict['promotion_ids'] ) )
+				: '';
+
+			echo '<tr>';
+			echo '<td>' . esc_html( $severity ) . '</td>';
+			echo '<td><code>' . esc_html( $type ) . '</code></td>';
+			echo '<td>' . esc_html( $ids ) . '</td>';
+			echo '<td>' . esc_html( $message ) . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
+	}
+
 	private function format_plan_skipped_reason_label( string $reason ): string {
 		$labels = array(
 			PromotionEvaluationDecision::REASON_NOT_ELIGIBLE => 'not_eligible',
@@ -2037,6 +2104,11 @@ final class PromotionEditPage {
 
 					if ( $this->cart_preview_plan instanceof PromotionEvaluationPlan ) {
 						$this->render_promotion_plan_table( $this->cart_preview_plan );
+						$this->render_plan_explanation_summary( $this->cart_preview_plan );
+					}
+
+					if ( $this->cart_preview_conflicts !== null && $this->cart_preview_conflicts !== array() ) {
+						$this->render_conflict_analysis_table( $this->cart_preview_conflicts );
 					}
 
 					$action_results = $result->get_action_results();

@@ -15,6 +15,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Conflict analysis and planner explainability** — `PromotionConflictAnalyzer`, `PromotionPlanExplainer`, admin preview + list indicators, validator heuristics, PHPUnit + `scripts/conflict-analysis-smoke.php`, `docs/manual-conflict-analysis-test.md`
 - **Promotion templates** — `PromotionTemplate` presets, admin apply flow, smoke/docs (no new engine types)
 - **Scoped discount calculations** — `EligibleCartScope`, eligible subtotal conditions, scoped percentage/fixed previews, cheapest item refactor, smoke/docs
 - **Product targeting (schema 1.8.0)** — variation-aware `CartItemSelector`, `product_in_cart` / `category_in_cart` / `exclude_sale_items`, promotion product/category exclusions, cheapest item `variation_ids` + sale pool exclusion, admin/builder, `scripts/product-targeting-smoke.php`, `docs/manual-product-targeting-test.md`

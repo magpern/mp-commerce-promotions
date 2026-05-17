@@ -76,7 +76,7 @@ From the WooCommerce project root:
 
 Expect `Success: product-targeting-smoke completed.`
 
-**Related:** [manual-scoped-discount-test.md](manual-scoped-discount-test.md) for eligible subtotal conditions and scoped percentage/fixed fees.
+**Related:** [manual-scoped-discount-test.md](manual-scoped-discount-test.md) for eligible subtotal conditions and scoped percentage/fixed fees. [manual-conflict-analysis-test.md](manual-conflict-analysis-test.md) for scoped overlap warnings in validation/conflict analysis.
 
 ## Known limitations
 

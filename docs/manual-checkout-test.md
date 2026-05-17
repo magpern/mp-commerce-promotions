@@ -254,7 +254,7 @@ Use when verifying multiple fees and multi-redemption recording.
 
 **Exclusion note:** Promotion A with **Excluded promotion IDs** `B` should select A and skip B when A is evaluated before B (priority/order). Cart fees should match planner selection.
 
-**Max applications note:** First stackable promotion with **Max applications** `2` should allow two fees; a third eligible promotion should be skipped (`max_applications_reached` in cart preview plan table).
+**Max applications note:** First stackable promotion with **Max applications** `2` should allow two fees; a third eligible promotion should be skipped (`max_applications_reached` in cart preview plan table). The **Plan explanation** section should state the max-applications skip in plain language; see [manual-conflict-analysis-test.md](manual-conflict-analysis-test.md).
 
 WP-CLI: `./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/stacking-limits-smoke.php`
 

@@ -676,6 +676,59 @@ final class PromotionRuleValidatorTest extends TestCase {
 		);
 	}
 
+	public function test_exclusive_with_exclusions_emits_conflict_warning(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array( array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 1 ) ),
+			array( array( 'type' => RuleTypes::ACTION_PERCENTAGE_DISCOUNT, 'percentage' => 10 ) )
+		)->with_application_rules( PromotionApplicationMode::EXCLUSIVE, true, null )
+			->with_excluded_promotion_ids( array( 99 ) );
+
+		$messages = $this->messages( $this->validator->validate( $promotion ) );
+		$this->assertTrue( $this->has_error_containing( $messages, 'Exclusive promotion with excluded_promotion_ids' ) );
+	}
+
+	public function test_duplicate_free_gift_actions_emit_warning(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array( array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 1 ) ),
+			array(
+				array( 'type' => RuleTypes::ACTION_FREE_GIFT_PRODUCT, 'product_id' => 42, 'quantity' => 1 ),
+				array( 'type' => RuleTypes::ACTION_FREE_GIFT_PRODUCT, 'product_id' => 42, 'quantity' => 1 ),
+			)
+		);
+
+		$messages = $this->messages( $this->validator->validate( $promotion ) );
+		$this->assertTrue( $this->has_error_containing( $messages, 'Duplicate free_gift_product' ) );
+	}
+
+	public function test_multiple_free_shipping_actions_emit_warning(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array( array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 1 ) ),
+			array(
+				array( 'type' => RuleTypes::ACTION_FREE_SHIPPING ),
+				array( 'type' => RuleTypes::ACTION_FREE_SHIPPING ),
+			)
+		);
+
+		$messages = $this->messages( $this->validator->validate( $promotion ) );
+		$this->assertTrue( $this->has_error_containing( $messages, 'Multiple free_shipping actions' ) );
+	}
+
+	public function test_scoped_discount_overlap_emits_info(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array( array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 1 ) ),
+			array(
+				array(
+					'type'          => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage'    => 10,
+					'category_ids'  => array( 5 ),
+				),
+			)
+		);
+
+		$messages = $this->messages( $this->validator->validate( $promotion ) );
+		$this->assertTrue( $this->has_error_containing( $messages, 'Scoped percentage/fixed discounts' ) );
+	}
+
 	public function test_invalid_application_mode_in_domain_prevents_validator_path(): void {
 		$this->expectException( \InvalidArgumentException::class );
 		Promotion::from_array(

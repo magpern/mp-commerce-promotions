@@ -106,3 +106,5 @@ Use this checklist to verify **stackable** promotion fees, **subtotal cap**, **e
 ## Pass criteria
 
 Sections **1–7** match expected behavior; admin **Promotion plan** table in cart preview aligns with storefront fees where the browser cart is available.
+
+For **plan explanation** bullets and **conflict analysis** across active promotions, see [manual-conflict-analysis-test.md](manual-conflict-analysis-test.md).
