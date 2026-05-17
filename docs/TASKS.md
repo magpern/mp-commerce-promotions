@@ -4,9 +4,18 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Current milestone
 
-**Quality & ops** — repository unit tests, remaining PHPCS batches, PHPCS gating in CI.
+**Quality & ops** — repository unit tests, remaining PHPCS batches, PHPCS gating in CI; follow-up browser checkout with non-crypto payment or manual order tools.
+
+## Manual QA (2026-05-17)
+
+- **Evidence:** [MANUAL_QA_EVIDENCE.md](MANUAL_QA_EVIDENCE.md)
+- **Browser:** Admin list/tabs/edit **pass**; storefront stacking/fees/checkout **partial** (see blockers in evidence doc).
+- **Smokes:** All pass except `stacking-smoke.php` order assertions (integrity smoke covers stacked rows).
+- **Blockers:** BTCPay checkout, CLI cart limits, variable gift product on live cart.
 
 ## Recently completed
+
+- **Manual WooCommerce QA evidence** — `docs/MANUAL_QA_EVIDENCE.md`, README/TASKS QA status, smoke + composer verification on staging
 
 - **Admin UX polish** — PromotionPicker, bulk status actions, exclusion checklist
 - **Promotion reports** — Reports admin tab, `PromotionReports` service, redemption CSV export (5k cap), `scripts/reports-smoke.php`

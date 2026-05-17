@@ -20,6 +20,7 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 - [docs/manual-free-gift-test.md](docs/manual-free-gift-test.md) — free gift product cart line storefront verification
 - [docs/manual-redemption-limits-test.md](docs/manual-redemption-limits-test.md) — usage limits, per-customer caps, dates, cart quantity conditions
 - [docs/manual-promotion-code-test.md](docs/manual-promotion-code-test.md) — promotion codes and coupon-field behavior
+- [docs/MANUAL_QA_EVIDENCE.md](docs/MANUAL_QA_EVIDENCE.md) — manual/browser QA evidence (latest verification bundle)
 
 WordPress.org-style [readme.txt](readme.txt) and [LICENSE](LICENSE) are included as distribution scaffolding.
 
@@ -31,6 +32,14 @@ Provide a structured foundation for commerce promotions using:
 - **Actions** — what the promotion does  
 - **Restrictions** — limits and guardrails  
 - **Evaluation pipeline** — how rules are resolved at runtime (planned)
+
+## Manual QA status (2026-05-17)
+
+- **Evidence doc:** [docs/MANUAL_QA_EVIDENCE.md](docs/MANUAL_QA_EVIDENCE.md)
+- **Browser/admin:** Promotions list, tabs (Settings, Diagnostics, Reports), edit screen, and storefront cart **partially** verified on https://www.biopentra.eu (logged-in admin; BTCPay blocks full checkout).
+- **WP-CLI smokes:** 8/9 scripts pass; `stacking-smoke.php` order-row assertions fail while `checkout-integrity-smoke.php` passes stacked recording.
+- **Unit tests:** 197 tests, 407 assertions.
+- **Known blockers:** BTCPay-only payment, CLI cart vs browser session, variable-product gift cart noise, admin session overlay during bulk/export automation.
 
 ## Status
 
@@ -44,7 +53,7 @@ Provide a structured foundation for commerce promotions using:
 
 ## Database
 
-- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.6.0`** (see `Schema::SCHEMA_VERSION`).
+- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.7.0`** (see `Schema::SCHEMA_VERSION`).
 - **Tables** (after activation / migration), using the site table prefix (e.g. `wp_`):
   - `{prefix}mp_cp_promotions` — promotion definitions (JSON-like rules in `LONGTEXT` columns).
   - `{prefix}mp_cp_redemptions` — usage against orders; **unique** `(order_id, promotion_id)` as **`order_promotion_unique`** (MySQL allows multiple `NULL` `order_id` rows; real checkouts use non-null `order_id`). Migration to **1.1.0** **refuses** `dbDelta` / version bump if duplicate non-null `(order_id, promotion_id)` pairs already exist (see `MigrationRunner`).
