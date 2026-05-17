@@ -12,6 +12,7 @@ namespace MP\CommercePromotions\Service;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Engine\CartItemSelector;
+use MP\CommercePromotions\Engine\PromotionDateHelper;
 use MP\CommercePromotions\Engine\RuleTypes;
 
 final class PromotionConflictAnalyzer {
@@ -25,6 +26,8 @@ final class PromotionConflictAnalyzer {
 	public const TYPE_GIFT_OVERLAP              = 'gift_overlap';
 	public const TYPE_USAGE_LIMIT_CONFLICT      = 'usage_limit_conflict';
 	public const TYPE_PRIORITY_SHADOWING        = 'priority_shadowing';
+
+	public const TYPE_ORCHESTRATION_CONGESTION  = 'orchestration_congestion';
 
 	/**
 	 * @param list<Promotion> $promotions
@@ -45,6 +48,7 @@ final class PromotionConflictAnalyzer {
 		$conflicts = array_merge( $conflicts, $this->detect_gift_overlap( $indexed ) );
 		$conflicts = array_merge( $conflicts, $this->detect_usage_limit_conflict( $indexed ) );
 		$conflicts = array_merge( $conflicts, $this->detect_priority_shadowing( $indexed ) );
+		$conflicts = array_merge( $conflicts, $this->detect_orchestration_congestion( $indexed ) );
 
 		return $conflicts;
 	}
@@ -487,6 +491,96 @@ final class PromotionConflictAnalyzer {
 				)
 			),
 		);
+	}
+
+	/**
+	 * @param array<int, Promotion> $indexed
+	 * @return list<array{type: string, severity: string, promotion_ids: list<int>, message: string}>
+	 */
+	private function detect_orchestration_congestion( array $indexed ): array {
+		/** @var array<string, list<Promotion>> $group_to_promotions */
+		$group_to_promotions = array();
+
+		foreach ( $indexed as $promotion ) {
+			$group = $promotion->get_orchestration_group();
+			if ( $group === null || $group === '' ) {
+				continue;
+			}
+			if ( ! isset( $group_to_promotions[ $group ] ) ) {
+				$group_to_promotions[ $group ] = array();
+			}
+			$group_to_promotions[ $group ][] = $promotion;
+		}
+
+		$conflicts = array();
+		foreach ( $group_to_promotions as $group => $promotions ) {
+			if ( count( $promotions ) < 2 ) {
+				continue;
+			}
+
+			$overlapping_ids = $this->promotion_ids_with_overlapping_windows( $promotions );
+			if ( count( $overlapping_ids ) < 2 ) {
+				continue;
+			}
+
+			$conflicts[] = $this->row(
+				self::TYPE_ORCHESTRATION_CONGESTION,
+				'warning',
+				$overlapping_ids,
+				sprintf(
+					/* translators: 1: orchestration group, 2: promotion IDs, 3: count */
+					__( 'Orchestration group "%1$s" has %3$d active promotions with overlapping schedules (%2$s); only one can be selected per cart plan.', 'mp-commerce-promotions' ),
+					$group,
+					implode( ', ', array_map( 'strval', $overlapping_ids ) ),
+					count( $overlapping_ids )
+				)
+			);
+		}
+
+		return $conflicts;
+	}
+
+	/**
+	 * @param list<Promotion> $promotions
+	 * @return list<int>
+	 */
+	private function promotion_ids_with_overlapping_windows( array $promotions ): array {
+		$count = count( $promotions );
+		if ( $count < 2 ) {
+			return array();
+		}
+
+		for ( $i = 0; $i < $count; ++$i ) {
+			for ( $j = $i + 1; $j < $count; ++$j ) {
+				if ( $this->promotions_overlap_in_time( $promotions[ $i ], $promotions[ $j ] ) ) {
+					$ids = array();
+					foreach ( $promotions as $promotion ) {
+						$id = $promotion->get_id();
+						if ( $id !== null && $id > 0 ) {
+							$ids[] = $id;
+						}
+					}
+
+					return array_values( array_unique( $ids, SORT_NUMERIC ) );
+				}
+			}
+		}
+
+		return array();
+	}
+
+	private function promotions_overlap_in_time( Promotion $a, Promotion $b ): bool {
+		$start_a = PromotionDateHelper::parse_mysql_datetime( $a->get_starts_at() );
+		$end_a   = PromotionDateHelper::parse_mysql_datetime( $a->get_ends_at() );
+		$start_b = PromotionDateHelper::parse_mysql_datetime( $b->get_starts_at() );
+		$end_b   = PromotionDateHelper::parse_mysql_datetime( $b->get_ends_at() );
+
+		$range_start_a = $start_a ?? PHP_INT_MIN;
+		$range_end_a   = $end_a ?? PHP_INT_MAX;
+		$range_start_b = $start_b ?? PHP_INT_MIN;
+		$range_end_b   = $end_b ?? PHP_INT_MAX;
+
+		return $range_start_a <= $range_end_b && $range_start_b <= $range_end_a;
 	}
 
 	private function first_action_type( Promotion $promotion ): ?string {

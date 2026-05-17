@@ -43,6 +43,12 @@ final class RuleTypes {
 
 	public const CONDITION_MAXIMUM_ELIGIBLE_SUBTOTAL = 'maximum_eligible_subtotal';
 
+	public const CONDITION_CUSTOMER_LIFETIME_SPEND = 'customer_lifetime_spend';
+
+	public const CONDITION_CUSTOMER_ORDER_COUNT = 'customer_order_count';
+
+	public const CONDITION_CUSTOMER_AVERAGE_ORDER_VALUE = 'customer_average_order_value';
+
 	public const ACTION_PERCENTAGE_DISCOUNT = 'percentage_discount';
 
 	public const ACTION_FIXED_AMOUNT_DISCOUNT = 'fixed_amount_discount';

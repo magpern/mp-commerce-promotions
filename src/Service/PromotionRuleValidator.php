@@ -20,6 +20,9 @@ use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\FreeShippingAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
 use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerAverageOrderValueCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerLifetimeSpendCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerOrderCountCondition;
 use MP\CommercePromotions\Engine\Condition\BillingCountryCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerEmailDomainCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
@@ -49,7 +52,9 @@ final class PromotionRuleValidator {
 		$this->append_status_issues( $promotion, $issues );
 		$this->append_usage_limit_issues( $promotion, $issues );
 		$this->append_application_rules_issues( $promotion, $issues );
+		$this->append_orchestration_issues( $promotion, $issues );
 		$this->append_condition_issues( $promotion->get_conditions(), $issues );
+		$this->append_segmentation_condition_warnings( $promotion->get_conditions(), $issues );
 		$this->append_action_issues( $promotion->get_actions(), $issues );
 		$this->append_conflict_heuristic_issues( $promotion, $issues );
 
@@ -219,6 +224,77 @@ final class PromotionRuleValidator {
 	/**
 	 * @param list<array{level: string, message: string}> $issues
 	 */
+	/**
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function append_orchestration_issues( Promotion $promotion, array &$issues ): void {
+		$cooldown = $promotion->get_cooldown_hours();
+		if ( $cooldown !== null && $cooldown < 1 ) {
+			$issues[] = $this->error(
+				__( 'cooldown_hours must be null or at least 1.', 'mp-commerce-promotions' )
+			);
+		}
+
+		if ( $cooldown !== null ) {
+			$issues[] = array(
+				'level'   => 'info',
+				'message' => __(
+					'Cooldown blocks repeat redemptions for the same logged-in customer until the configured hours pass after the last recorded redemption.',
+					'mp-commerce-promotions'
+				),
+			);
+		}
+
+		$group = $promotion->get_orchestration_group();
+		if ( $group !== null && $group !== '' ) {
+			$issues[] = array(
+				'level'   => 'info',
+				'message' => __(
+					'Orchestration group allows only one selected promotion per group in a cart evaluation plan (first eligible by priority wins).',
+					'mp-commerce-promotions'
+				),
+			);
+		}
+	}
+
+	/**
+	 * @param array<mixed>                                $conditions
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function append_segmentation_condition_warnings( array $conditions, array &$issues ): void {
+		$segmentation_types = array(
+			RuleTypes::CONDITION_CUSTOMER_LIFETIME_SPEND,
+			RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT,
+			RuleTypes::CONDITION_CUSTOMER_AVERAGE_ORDER_VALUE,
+		);
+
+		$has_segmentation = false;
+		$has_logged_in    = false;
+
+		foreach ( $conditions as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+			$type = isset( $raw['type'] ) ? (string) $raw['type'] : '';
+			if ( in_array( $type, $segmentation_types, true ) ) {
+				$has_segmentation = true;
+			}
+			if ( $type === RuleTypes::CONDITION_LOGGED_IN ) {
+				$has_logged_in = true;
+			}
+		}
+
+		if ( $has_segmentation && ! $has_logged_in ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __(
+					'Customer segmentation conditions require a logged-in customer; add a logged_in condition or expect guests to fail eligibility.',
+					'mp-commerce-promotions'
+				),
+			);
+		}
+	}
+
 	private function append_application_rules_issues( Promotion $promotion, array &$issues ): void {
 		$mode = $promotion->get_application_mode();
 		if ( ! PromotionApplicationMode::is_valid( $mode ) ) {
@@ -417,6 +493,13 @@ final class PromotionRuleValidator {
 		if ( $type === RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL
 			|| $type === RuleTypes::CONDITION_MAXIMUM_ELIGIBLE_SUBTOTAL ) {
 			$this->validate_eligible_subtotal_condition( $index, $type, $raw, $issues );
+			return;
+		}
+
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_LIFETIME_SPEND
+			|| $type === RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT
+			|| $type === RuleTypes::CONDITION_CUSTOMER_AVERAGE_ORDER_VALUE ) {
+			$this->validate_customer_numeric_segmentation( $index, $type, $raw, $issues );
 			return;
 		}
 
@@ -1289,6 +1372,71 @@ final class PromotionRuleValidator {
 	 * @param array<string, mixed>                        $raw
 	 * @param list<array{level: string, message: string}> $issues
 	 */
+	/**
+	 * @param array<string, mixed>                        $raw
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function validate_customer_numeric_segmentation( int $index, string $type, array $raw, array &$issues ): void {
+		if ( ! isset( $raw['operator'] ) || ! is_string( $raw['operator'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: condition type, 2: index */
+					__( '%1$s at index %2$s is missing or has an invalid operator.', 'mp-commerce-promotions' ),
+					$type,
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		$operator = trim( $raw['operator'] );
+		if ( ! QuantityComparator::supports( $operator ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: condition type, 2: index */
+					__( '%1$s at index %2$s has an unsupported operator.', 'mp-commerce-promotions' ),
+					$type,
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		$amount_key = $type === RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT ? 'count' : 'amount';
+		if ( ! isset( $raw[ $amount_key ] ) || ! is_numeric( $raw[ $amount_key ] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: condition type, 2: field name, 3: index */
+					__( '%1$s at index %3$s is missing or has an invalid %2$s.', 'mp-commerce-promotions' ),
+					$type,
+					$amount_key,
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		try {
+			$value = (float) $raw[ $amount_key ];
+			if ( $type === RuleTypes::CONDITION_CUSTOMER_LIFETIME_SPEND ) {
+				new CustomerLifetimeSpendCondition( $operator, $value );
+			} elseif ( $type === RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT ) {
+				new CustomerOrderCountCondition( $operator, $value );
+			} else {
+				new CustomerAverageOrderValueCondition( $operator, $value );
+			}
+		} catch ( InvalidArgumentException $e ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: 1: condition type, 2: index */
+					__( '%1$s at index %2$s has invalid field values.', 'mp-commerce-promotions' ),
+					$type,
+					(string) $index
+				)
+			);
+		}
+	}
+
 	private function validate_customer_redemption_count( int $index, array $raw, array &$issues ): void {
 		if ( ! isset( $raw['operator'] ) || ! is_string( $raw['operator'] ) ) {
 			$issues[] = $this->error(

@@ -39,6 +39,18 @@ final class ConditionTrace {
 
 	public const REASON_PROMOTION_BUDGET_EXHAUSTED = 'promotion_budget_exhausted';
 
+	public const REASON_PROMOTION_COOLDOWN_ACTIVE = 'promotion_cooldown_active';
+
+	public const REASON_CUSTOMER_REQUIRED = 'customer_required';
+
+	public const REASON_LIFETIME_SPEND_TOO_LOW = 'lifetime_spend_too_low';
+
+	public const REASON_LIFETIME_SPEND_TOO_HIGH = 'lifetime_spend_too_high';
+
+	public const REASON_ORDER_COUNT_NOT_MET = 'order_count_not_met';
+
+	public const REASON_AVERAGE_ORDER_VALUE_NOT_MET = 'average_order_value_not_met';
+
 	public const REASON_REQUIRED_PRODUCT_MISSING = 'required_product_missing';
 
 	public const REASON_REQUIRED_CATEGORY_MISSING = 'required_category_missing';

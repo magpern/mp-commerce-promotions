@@ -55,6 +55,7 @@ final class ReportsPage {
 
 		$this->render_filter_form( $filters );
 		$this->render_summary_cards( $summary );
+		$this->render_orchestration_section( $summary );
 		$this->render_economics_sections( $filters );
 		$this->render_top_promotions_table( $summary['top_promotions'] );
 		$this->render_export_form( $filters );
@@ -229,12 +230,71 @@ final class ReportsPage {
 				: number_format( $summary['total_budget_spent'], 2, '.', '' ),
 			__( 'Active promotions with budget cap', 'mp-commerce-promotions' ) => (string) $summary['active_budgeted_promotions'],
 			__( 'Active promotions with exhausted budget', 'mp-commerce-promotions' ) => (string) $summary['exhausted_promotions'],
+			__( 'Active promotions with cooldown configured', 'mp-commerce-promotions' ) => (string) $summary['cooldown_active_promotions'],
+			__( 'Avg discount per recorded redemption', 'mp-commerce-promotions' ) => function_exists( 'wc_format_localized_price' )
+				? wc_format_localized_price( $summary['avg_recorded_discount_per_redemption'] )
+				: number_format( $summary['avg_recorded_discount_per_redemption'], 2, '.', '' ),
 		);
 
 		foreach ( $rows as $label => $value ) {
 			echo '<tr><th scope="row" style="width:50%;">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';
 		}
 
+		echo '</tbody></table>';
+	}
+
+	/**
+	 * @param array<string, mixed> $summary
+	 */
+	private function render_orchestration_section( array $summary ): void {
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Orchestration', 'mp-commerce-promotions' ) . '</h2>';
+
+		$groups = $summary['top_orchestration_groups'] ?? array();
+		echo '<h3>' . esc_html__( 'Top orchestration groups (active)', 'mp-commerce-promotions' ) . '</h3>';
+		if ( $groups === array() ) {
+			echo '<p>' . esc_html__( 'No active promotions use orchestration groups.', 'mp-commerce-promotions' ) . '</p>';
+		} else {
+			echo '<table class="widefat striped" style="max-width:480px;"><thead><tr>';
+			echo '<th scope="col">' . esc_html__( 'Group', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Promotions', 'mp-commerce-promotions' ) . '</th>';
+			echo '</tr></thead><tbody>';
+			foreach ( $groups as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				echo '<tr><td>' . esc_html( (string) ( $row['orchestration_group'] ?? '' ) ) . '</td>';
+				echo '<td>' . esc_html( (string) ( $row['promotion_count'] ?? '0' ) ) . '</td></tr>';
+			}
+			echo '</tbody></table>';
+		}
+
+		$burn = $summary['highest_budget_burn'] ?? array();
+		echo '<h3 style="margin-top:1.25em;">' . esc_html__( 'Highest budget burn (active)', 'mp-commerce-promotions' ) . '</h3>';
+		if ( $burn === array() ) {
+			echo '<p>' . esc_html__( 'No active budgeted promotions.', 'mp-commerce-promotions' ) . '</p>';
+			return;
+		}
+
+		echo '<table class="widefat striped"><thead><tr>';
+		echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Name', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Spent', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Budget utilization', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+		foreach ( $burn as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$spent = function_exists( 'wc_format_localized_price' )
+				? wc_format_localized_price( (float) ( $row['budget_spent'] ?? 0 ) )
+				: number_format( (float) ( $row['budget_spent'] ?? 0 ), 2, '.', '' );
+			echo '<tr>';
+			echo '<td>' . esc_html( (string) ( $row['promotion_id'] ?? '' ) ) . '</td>';
+			echo '<td>' . esc_html( (string) ( $row['name'] ?? '' ) ) . '</td>';
+			echo '<td>' . esc_html( $spent ) . '</td>';
+			echo '<td>' . esc_html( $this->format_budget_utilization_cell( $row ) ) . '</td>';
+			echo '</tr>';
+		}
 		echo '</tbody></table>';
 	}
 

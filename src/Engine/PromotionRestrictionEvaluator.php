@@ -42,6 +42,11 @@ final class PromotionRestrictionEvaluator {
 			return $budget_trace;
 		}
 
+		$cooldown_trace = $this->evaluate_cooldown( $promotion, $context );
+		if ( $cooldown_trace !== null ) {
+			return $cooldown_trace;
+		}
+
 		return $this->evaluate_customer_usage_limit( $promotion, $context );
 	}
 
@@ -130,6 +135,70 @@ final class PromotionRestrictionEvaluator {
 				'budget_spent'    => $promotion->get_budget_spent(),
 				'budget_amount'   => $promotion->get_budget_amount(),
 				'budget_currency' => $promotion->get_budget_currency(),
+			)
+		);
+	}
+
+	private function evaluate_cooldown( Promotion $promotion, EvaluationContext $context ): ?ConditionTrace {
+		$hours = $promotion->get_cooldown_hours();
+		if ( $hours === null || $hours < 1 ) {
+			return null;
+		}
+
+		$customer_id  = $context->get_customer_id();
+		$promotion_id = $promotion->get_id();
+
+		if ( $customer_id === null || $customer_id <= 0 ) {
+			return new ConditionTrace(
+				self::TRACE_TYPE,
+				false,
+				'Customer account is required when a promotion cooldown is configured.',
+				ConditionTrace::REASON_CUSTOMER_REQUIRED,
+				array(
+					'cooldown_hours' => $hours,
+				),
+				array(
+					'customer_id' => $customer_id,
+				)
+			);
+		}
+
+		if ( $this->redemptions === null || $promotion_id === null || $promotion_id <= 0 ) {
+			return null;
+		}
+
+		$last_redeemed = $this->redemptions->find_latest_recorded_redeemed_at_for_customer_and_promotion(
+			$customer_id,
+			$promotion_id
+		);
+		if ( $last_redeemed === null ) {
+			return null;
+		}
+
+		$last_ts = PromotionDateHelper::parse_mysql_datetime( $last_redeemed );
+		if ( $last_ts === null ) {
+			return null;
+		}
+
+		$cooldown_until_ts = $last_ts + ( $hours * HOUR_IN_SECONDS );
+		$now               = PromotionDateHelper::now_timestamp();
+		if ( $now >= $cooldown_until_ts ) {
+			return null;
+		}
+
+		$cooldown_until = gmdate( 'Y-m-d H:i:s', $cooldown_until_ts );
+
+		return new ConditionTrace(
+			self::TRACE_TYPE,
+			false,
+			'Promotion is in cooldown for this customer.',
+			ConditionTrace::REASON_PROMOTION_COOLDOWN_ACTIVE,
+			array(
+				'cooldown_hours' => $hours,
+			),
+			array(
+				'last_redeemed_at' => $last_redeemed,
+				'cooldown_until'   => $cooldown_until,
 			)
 		);
 	}

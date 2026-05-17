@@ -356,4 +356,162 @@ final class PromotionService {
 
 		return $result;
 	}
+
+	/**
+	 * Activate draft promotions whose schedule has started.
+	 *
+	 * @return array{changed: list<array{id: int, name: string}>, skipped: list<array{id: int, reason: string}>, errors: list<array{id: int, message: string}>}
+	 */
+	public function activate_scheduled_promotions( ?int $actor_user_id = null ): array {
+		return $this->run_status_batch(
+			$this->promotions->find_scheduled_drafts_ready( 500 ),
+			PromotionStatus::DRAFT,
+			PromotionStatus::ACTIVE,
+			'promotion.auto_activated',
+			$actor_user_id
+		);
+	}
+
+	/**
+	 * Archive paused promotions past ends_at.
+	 *
+	 * @return array{changed: list<array{id: int, name: string}>, skipped: list<array{id: int, reason: string}>, errors: list<array{id: int, message: string}>}
+	 */
+	public function archive_expired_paused_promotions( ?int $actor_user_id = null ): array {
+		return $this->run_status_batch(
+			$this->promotions->find_expired_paused( 500 ),
+			PromotionStatus::PAUSED,
+			PromotionStatus::ARCHIVED,
+			'promotion.auto_archived',
+			$actor_user_id
+		);
+	}
+
+	/**
+	 * Normalize inconsistent promotion states (pause expired active; warn archived future).
+	 *
+	 * @return array{
+	 *     changed: list<array{id: int, name: string, action: string}>,
+	 *     warnings: list<array{id: int, name: string, reason: string}>,
+	 *     skipped: list<array{id: int, reason: string}>,
+	 *     errors: list<array{id: int, message: string}>
+	 * }
+	 */
+	public function normalize_invalid_promotion_states( ?int $actor_user_id = null ): array {
+		$result = array(
+			'changed'  => array(),
+			'warnings' => array(),
+			'skipped'  => array(),
+			'errors'   => array(),
+		);
+
+		$expired_active = $this->promotions->find_expired_active( 500 );
+		foreach ( $expired_active as $promotion ) {
+			$id = $promotion->get_id();
+			if ( $id === null || $id <= 0 ) {
+				continue;
+			}
+			try {
+				$this->change_status( $promotion, PromotionStatus::PAUSED, $actor_user_id );
+				$this->audit->log(
+					'promotion.normalized',
+					$id,
+					array(
+						'action' => 'expired_active_to_paused',
+					),
+					$actor_user_id
+				);
+				$result['changed'][] = array(
+					'id'     => $id,
+					'name'   => $promotion->get_name(),
+					'action' => 'expired_active_to_paused',
+				);
+			} catch ( RuntimeException $e ) {
+				$result['errors'][] = array(
+					'id'      => $id,
+					'message' => $e->getMessage(),
+				);
+			}
+		}
+
+		$all = $this->promotions->find_filtered( array( 'status' => PromotionStatus::ARCHIVED, 'limit' => 500 ) );
+		$now = strtotime( current_time( 'mysql' ) );
+		foreach ( $all as $promotion ) {
+			$id = $promotion->get_id();
+			if ( $id === null || $id <= 0 ) {
+				continue;
+			}
+			$starts = $promotion->get_starts_at();
+			if ( $starts === null || $starts === '' ) {
+				continue;
+			}
+			$starts_ts = strtotime( $starts );
+			if ( $starts_ts !== false && $starts_ts > $now ) {
+				$result['warnings'][] = array(
+					'id'     => $id,
+					'name'   => $promotion->get_name(),
+					'reason' => 'archived_future_starts_at',
+				);
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * @param list<Promotion> $candidates
+	 * @return array{changed: list<array{id: int, name: string}>, skipped: list<array{id: int, reason: string}>, errors: list<array{id: int, message: string}>}
+	 */
+	private function run_status_batch(
+		array $candidates,
+		string $expected_status,
+		string $target_status,
+		string $audit_action,
+		?int $actor_user_id
+	): array {
+		$result = array(
+			'changed' => array(),
+			'skipped' => array(),
+			'errors'  => array(),
+		);
+
+		foreach ( $candidates as $promotion ) {
+			$id = $promotion->get_id();
+			if ( $id === null || $id <= 0 ) {
+				continue;
+			}
+
+			if ( $promotion->get_status() !== $expected_status ) {
+				$result['skipped'][] = array(
+					'id'     => $id,
+					'reason' => 'unexpected_status',
+				);
+				continue;
+			}
+
+			try {
+				$this->change_status( $promotion, $target_status, $actor_user_id );
+				$this->audit->log(
+					$audit_action,
+					$id,
+					array(
+						'from' => $expected_status,
+						'to'   => $target_status,
+					),
+					$actor_user_id
+				);
+				$result['changed'][] = array(
+					'id'   => $id,
+					'name' => $promotion->get_name(),
+				);
+			} catch ( RuntimeException $e ) {
+				$result['errors'][] = array(
+					'id'      => $id,
+					'message' => $e->getMessage(),
+				);
+			}
+		}
+
+		return $result;
+	}
 }

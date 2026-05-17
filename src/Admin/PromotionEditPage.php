@@ -41,7 +41,9 @@ use MP\CommercePromotions\Woo\CartPromotionApplier;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerationOutcome;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
+use MP\CommercePromotions\Domain\PromotionSnapshot;
 use MP\CommercePromotions\Service\PromotionService;
+use MP\CommercePromotions\Service\PromotionSnapshotService;
 use MP\CommercePromotions\Service\SimpleRuleBuilder;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use RuntimeException;
@@ -84,6 +86,8 @@ final class PromotionEditPage {
 
 	private ?AuditLogger $audit_logger;
 
+	private ?PromotionSnapshotService $snapshot_service;
+
 	private ?PromotionCodeBatchGenerationOutcome $batch_generation_outcome = null;
 
 	private ?string $batch_generation_error = null;
@@ -108,7 +112,8 @@ final class PromotionEditPage {
 		?PromotionCodeFactory $promotion_code_factory = null,
 		?PromotionCodeBatchRepository $code_batches = null,
 		?PromotionCodeBatchGenerator $batch_generator = null,
-		?AuditLogger $audit_logger = null
+		?AuditLogger $audit_logger = null,
+		?PromotionSnapshotService $snapshot_service = null
 	) {
 		$this->promotions             = $promotions;
 		$this->promotion_service      = $promotion_service;
@@ -123,6 +128,7 @@ final class PromotionEditPage {
 		$this->code_batches           = $code_batches;
 		$this->batch_generator        = $batch_generator;
 		$this->audit_logger           = $audit_logger;
+		$this->snapshot_service       = $snapshot_service;
 	}
 
 	public function render( string $identifier ): void {
@@ -151,6 +157,7 @@ final class PromotionEditPage {
 
 		$this->handle_post_change_status( $promotion );
 		$this->handle_post_duplicate_promotion( $promotion );
+		$this->handle_post_restore_snapshot( $promotion );
 		$this->handle_post_apply_promotion_template( $promotion );
 		$this->handle_post_apply_rule_builder( $promotion );
 		$this->handle_post_update( $promotion );
@@ -185,6 +192,7 @@ final class PromotionEditPage {
 		$this->render_edit_header_summary( $promotion );
 		$this->render_status_section( $promotion );
 		$this->render_form( $promotion );
+		$this->render_recent_snapshots_section( $promotion );
 		$this->render_rule_validation_section( $promotion );
 		$this->render_schedule_warnings_section( $promotion );
 		$this->render_cart_preview_section( $promotion );
@@ -770,6 +778,8 @@ final class PromotionEditPage {
 			$this->redirect_to_edit( $pid, array( 'mp_cp_duplicate_error' => 'id_mismatch' ) );
 		}
 
+		$this->capture_rules_snapshot( $promotion, PromotionSnapshotService::TYPE_BEFORE_DUPLICATE );
+
 		try {
 			$copy = $this->promotion_service->duplicate_as_draft( $promotion, (int) get_current_user_id() );
 		} catch ( RuntimeException $e ) {
@@ -836,6 +846,8 @@ final class PromotionEditPage {
 		} catch ( InvalidArgumentException $e ) {
 			$this->redirect_to_edit( $pid, array( 'mp_cp_promotion_template_error' => $e->getMessage() ) );
 		}
+
+		$this->capture_rules_snapshot( $promotion, PromotionSnapshotService::TYPE_BEFORE_TEMPLATE );
 
 		try {
 			$updated = $promotion->with_rules(
@@ -909,6 +921,9 @@ final class PromotionEditPage {
 			'gift_quantity'              => isset( $_POST['mp_cp_tpl_gift_quantity'] ) ? wp_unslash( (string) $_POST['mp_cp_tpl_gift_quantity'] ) : '',
 			'discount_type'              => isset( $_POST['mp_cp_tpl_discount_type'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_tpl_discount_type'] ) ) : '',
 			'roles'                      => $roles,
+			'lifetime_spend_threshold'   => isset( $_POST['mp_cp_tpl_lifetime_spend_threshold'] ) ? wp_unslash( (string) $_POST['mp_cp_tpl_lifetime_spend_threshold'] ) : '',
+			'order_count_threshold'      => isset( $_POST['mp_cp_tpl_order_count_threshold'] ) ? wp_unslash( (string) $_POST['mp_cp_tpl_order_count_threshold'] ) : '',
+			'average_order_value_threshold' => isset( $_POST['mp_cp_tpl_average_order_value_threshold'] ) ? wp_unslash( (string) $_POST['mp_cp_tpl_average_order_value_threshold'] ) : '',
 		);
 	}
 
@@ -1004,6 +1019,12 @@ final class PromotionEditPage {
 			'mp_cp_builder_cheapest_discount_percentage' => isset( $_POST['mp_cp_builder_cheapest_discount_percentage'] )
 				? wp_unslash( (string) $_POST['mp_cp_builder_cheapest_discount_percentage'] )
 				: '',
+			'mp_cp_builder_segment_amount' => isset( $_POST['mp_cp_builder_segment_amount'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_segment_amount'] )
+				: '',
+			'mp_cp_builder_segment_count'  => isset( $_POST['mp_cp_builder_segment_count'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_segment_count'] )
+				: '',
 		);
 
 		try {
@@ -1011,6 +1032,8 @@ final class PromotionEditPage {
 		} catch ( InvalidArgumentException $e ) {
 			$this->redirect_to_edit( $pid, array( 'mp_cp_rule_builder_error' => $e->getMessage() ) );
 		}
+
+		$this->capture_rules_snapshot( $promotion, PromotionSnapshotService::TYPE_BEFORE_BUILDER );
 
 		try {
 			$updated = $promotion->with_rules(
@@ -1024,6 +1047,61 @@ final class PromotionEditPage {
 		}
 
 		$this->redirect_to_edit( $pid, array( 'mp_cp_rule_builder_saved' => '1' ) );
+	}
+
+	private function handle_post_restore_snapshot( Promotion $promotion ): void {
+		if ( $this->snapshot_service === null || ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		$action = isset( $_POST['mp_cp_action'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_action'] ) ) : '';
+		if ( $action !== 'restore_snapshot' ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mp-commerce-promotions' ) );
+		}
+
+		$pid = $promotion->get_id();
+		if ( $pid === null || $pid <= 0 ) {
+			return;
+		}
+
+		$nonce_action = 'mp_cp_restore_snapshot_' . $pid;
+		if ( ! isset( $_POST['mp_cp_restore_snapshot_nonce'] )
+			|| ! wp_verify_nonce(
+				sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_restore_snapshot_nonce'] ) ),
+				$nonce_action
+			) ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_snapshot_error' => 'invalid_nonce' ) );
+		}
+
+		$snapshot_id = isset( $_POST['mp_cp_snapshot_id'] ) ? (int) $_POST['mp_cp_snapshot_id'] : 0;
+		if ( $snapshot_id <= 0 ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_snapshot_error' => 'invalid_snapshot' ) );
+		}
+
+		try {
+			$this->snapshot_service->restore( $snapshot_id, (int) get_current_user_id() );
+		} catch ( RuntimeException $e ) {
+			$this->redirect_to_edit( $pid, array( 'mp_cp_snapshot_error' => 'restore_failed' ) );
+		}
+
+		$this->redirect_to_edit( $pid, array( 'mp_cp_snapshot_restored' => '1' ) );
+	}
+
+	private function capture_rules_snapshot( Promotion $promotion, string $snapshot_type ): void {
+		if ( $this->snapshot_service === null ) {
+			return;
+		}
+
+		$this->snapshot_service->capture(
+			$promotion,
+			$snapshot_type,
+			null,
+			(int) get_current_user_id()
+		);
 	}
 
 	private function handle_post_update( Promotion $promotion ): void {
@@ -1280,6 +1358,20 @@ final class PromotionEditPage {
 			exit;
 		}
 
+		$orchestration_meta = $this->parse_orchestration_metadata_from_post();
+		if ( $orchestration_meta === null ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_orchestration_metadata',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
+			exit;
+		}
+
 		try {
 			$updated = $promotion
 				->with_name( $name )
@@ -1300,6 +1392,10 @@ final class PromotionEditPage {
 					$budget_meta['budget_amount'],
 					$promotion->get_budget_spent(),
 					$budget_meta['budget_currency']
+				)
+				->with_orchestration(
+					$orchestration_meta['cooldown_hours'],
+					$orchestration_meta['orchestration_group']
 				)
 				->with_rules( $conditions, $actions, $restrictions );
 
@@ -1393,6 +1489,37 @@ final class PromotionEditPage {
 			return array(
 				'budget_amount'   => Promotion::normalize_budget_amount( $amount ),
 				'budget_currency' => Promotion::normalize_budget_currency( $currency ),
+			);
+		} catch ( InvalidArgumentException $e ) {
+			return null;
+		}
+	}
+
+	/**
+	 * @return array{cooldown_hours: ?int, orchestration_group: ?string}|null
+	 */
+	private function parse_orchestration_metadata_from_post(): ?array {
+		$cooldown_raw = isset( $_POST['promotion_cooldown_hours'] )
+			? trim( wp_unslash( (string) $_POST['promotion_cooldown_hours'] ) )
+			: '';
+		$group_raw = isset( $_POST['promotion_orchestration_group'] )
+			? trim( wp_unslash( (string) $_POST['promotion_orchestration_group'] ) )
+			: '';
+
+		$cooldown = null;
+		if ( $cooldown_raw !== '' ) {
+			if ( ! is_numeric( $cooldown_raw ) ) {
+				return null;
+			}
+			$cooldown = (int) $cooldown_raw;
+		}
+
+		$group = $group_raw === '' ? null : $group_raw;
+
+		try {
+			return array(
+				'cooldown_hours'      => Promotion::normalize_cooldown_hours( $cooldown ),
+				'orchestration_group' => Promotion::normalize_orchestration_group( $group ),
 			);
 		} catch ( InvalidArgumentException $e ) {
 			return null;
@@ -1497,6 +1624,10 @@ final class PromotionEditPage {
 
 		if ( isset( $_GET['mp_cp_rule_builder_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_rule_builder_saved'] ) ) === '1' ) {
 			$add( 'success', __( 'Rules updated from the simple rule builder.', 'mp-commerce-promotions' ) );
+		}
+
+		if ( isset( $_GET['mp_cp_snapshot_restored'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_snapshot_restored'] ) ) === '1' ) {
+			$add( 'success', __( 'Promotion restored from snapshot.', 'mp-commerce-promotions' ) );
 		}
 
 		if ( isset( $_GET['mp_cp_promotion_template_saved'] ) && sanitize_text_field( wp_unslash( (string) $_GET['mp_cp_promotion_template_saved'] ) ) === '1' ) {
@@ -1709,6 +1840,8 @@ final class PromotionEditPage {
 				return __( 'Campaign label, admin color (hex), or internal notes are invalid.', 'mp-commerce-promotions' );
 			case 'invalid_budget_metadata':
 				return __( 'Budget amount must be a positive number or empty; budget currency is invalid.', 'mp-commerce-promotions' );
+			case 'invalid_orchestration_metadata':
+				return __( 'Cooldown hours must be empty or at least 1; orchestration group is invalid.', 'mp-commerce-promotions' );
 			case 'invalid_json':
 				return __( 'Conditions, actions, and restrictions must be valid JSON arrays.', 'mp-commerce-promotions' );
 			case 'update_failed':
@@ -1796,6 +1929,79 @@ final class PromotionEditPage {
 				echo '<p class="description" style="color:#b32d2e;">' . esc_html__( 'Budget is exhausted; active promotions may be auto-paused by maintenance.', 'mp-commerce-promotions' ) . '</p>';
 			}
 			echo '</td></tr>';
+		}
+
+		$orch_group = $promotion->get_orchestration_group() ?? '';
+		echo '<tr><th scope="row"><label for="mp_cp_orchestration_group">' . esc_html__( 'Orchestration group', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_orchestration_group" name="promotion_orchestration_group" maxlength="191" value="' . esc_attr( $orch_group ) . '" />';
+		echo '<p class="description">' . esc_html__(
+			'Optional label (e.g. welcome-series). Only one promotion per group may be selected in a cart plan; first eligible by priority wins.',
+			'mp-commerce-promotions'
+		) . '</p></td></tr>';
+
+		$cooldown_hours = $promotion->get_cooldown_hours();
+		$cooldown_value = $cooldown_hours !== null ? (string) $cooldown_hours : '';
+		echo '<tr><th scope="row"><label for="mp_cp_cooldown_hours">' . esc_html__( 'Cooldown hours', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_cooldown_hours" name="promotion_cooldown_hours" min="1" step="1" value="' . esc_attr( $cooldown_value ) . '" />';
+		echo '<p class="description">' . esc_html__(
+			'Optional hours after a recorded redemption before the same logged-in customer can redeem this promotion again.',
+			'mp-commerce-promotions'
+		) . '</p></td></tr>';
+
+		echo '</tbody></table></div>';
+	}
+
+	private function render_recent_snapshots_section( Promotion $promotion ): void {
+		if ( $this->snapshot_service === null ) {
+			return;
+		}
+
+		$id = $promotion->get_id();
+		if ( $id === null || $id <= 0 ) {
+			return;
+		}
+
+		$snapshots = $this->snapshot_service->list_recent( $id, 10 );
+		if ( $snapshots === array() ) {
+			return;
+		}
+
+		echo '<h2 class="mp-cp-edit-section-title" style="margin:1.5em 0 0.5em;">' . esc_html__( 'Recent snapshots', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:0 0 16px;">';
+		echo '<p class="description">' . esc_html__(
+			'Automatic rollback points captured before template apply, rule builder apply, or duplication. Restore replaces the full promotion row from the snapshot.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<table class="widefat striped"><thead><tr>';
+		echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Type', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Created', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Action', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		$nonce_action = 'mp_cp_restore_snapshot_' . $id;
+		foreach ( $snapshots as $snapshot ) {
+			if ( ! $snapshot instanceof PromotionSnapshot ) {
+				continue;
+			}
+			$snapshot_id = $snapshot->get_id();
+			if ( $snapshot_id === null || $snapshot_id <= 0 ) {
+				continue;
+			}
+
+			echo '<tr>';
+			echo '<td>' . esc_html( (string) $snapshot_id ) . '</td>';
+			echo '<td><code>' . esc_html( $snapshot->get_snapshot_type() ) . '</code></td>';
+			echo '<td>' . esc_html( $snapshot->get_created_at() ?? '—' ) . '</td>';
+			echo '<td>';
+			echo '<form method="post" action="" style="display:inline;" onsubmit="return confirm(\'' . esc_js( __( 'Restore this snapshot? Current promotion data will be overwritten.', 'mp-commerce-promotions' ) ) . '\');">';
+			wp_nonce_field( $nonce_action, 'mp_cp_restore_snapshot_nonce' );
+			echo '<input type="hidden" name="mp_cp_action" value="restore_snapshot" />';
+			echo '<input type="hidden" name="mp_cp_snapshot_id" value="' . esc_attr( (string) $snapshot_id ) . '" />';
+			echo '<button type="submit" class="button button-secondary">' . esc_html__( 'Restore', 'mp-commerce-promotions' ) . '</button>';
+			echo '</form>';
+			echo '</td>';
+			echo '</tr>';
 		}
 
 		echo '</tbody></table></div>';
@@ -2292,6 +2498,9 @@ final class PromotionEditPage {
 			PromotionEvaluationDecision::REASON_STOPPED_PROCESSING => 'stopped_processing',
 			PromotionEvaluationDecision::REASON_EXCLUDED_BY_SELECTED => 'excluded_by_selected_promotion',
 			PromotionEvaluationDecision::REASON_MAX_APPLICATIONS_REACHED => 'max_applications_reached',
+			PromotionEvaluationDecision::REASON_ORCHESTRATION_GROUP_BLOCKED => 'orchestration_group_blocked',
+			PromotionEvaluationDecision::REASON_BLOCKED_BY_COOLDOWN => 'blocked_by_cooldown',
+			ConditionTrace::REASON_PROMOTION_COOLDOWN_ACTIVE => 'promotion_cooldown_active',
 			ConditionTrace::REASON_USAGE_LIMIT_REACHED => 'usage_limit_reached',
 			ConditionTrace::REASON_CUSTOMER_USAGE_LIMIT_REACHED => 'customer_usage_limit_reached',
 			ConditionTrace::REASON_CUSTOMER_REQUIRED_FOR_USAGE_TRACKING => 'customer_required_for_usage_tracking',
@@ -2493,6 +2702,18 @@ final class PromotionEditPage {
 		echo '<tr><th scope="row"><label for="mp_cp_tpl_roles">' . esc_html__( 'Customer roles', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="text" class="regular-text" id="mp_cp_tpl_roles" name="mp_cp_tpl_roles" placeholder="customer, vip" /></td></tr>';
 
+		echo '<tr><th scope="row"><label for="mp_cp_tpl_lifetime_spend_threshold">' . esc_html__( 'Lifetime spend threshold', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_tpl_lifetime_spend_threshold" name="mp_cp_tpl_lifetime_spend_threshold" min="0" step="0.01" />';
+		echo '<p class="description">' . esc_html__( 'vip_customer template.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_tpl_order_count_threshold">' . esc_html__( 'Order count threshold', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_tpl_order_count_threshold" name="mp_cp_tpl_order_count_threshold" min="1" step="1" />';
+		echo '<p class="description">' . esc_html__( 'loyal_customer template.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_tpl_average_order_value_threshold">' . esc_html__( 'Average order value threshold', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_tpl_average_order_value_threshold" name="mp_cp_tpl_average_order_value_threshold" min="0" step="0.01" />';
+		echo '<p class="description">' . esc_html__( 'returning_customer template.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
 		echo '</tbody></table>';
 
 		echo '<p><button type="submit" class="button button-primary" name="mp_cp_action" value="apply_promotion_template">' . esc_html__( 'Apply template to rules', 'mp-commerce-promotions' ) . '</button></p>';
@@ -2536,7 +2757,22 @@ final class PromotionEditPage {
 		echo '<option value="exclude_sale_items">' . esc_html__( 'Exclude sale items', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="minimum_eligible_subtotal">' . esc_html__( 'Minimum eligible subtotal', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="maximum_eligible_subtotal">' . esc_html__( 'Maximum eligible subtotal', 'mp-commerce-promotions' ) . '</option>';
-		echo '</select></td></tr>';
+		echo '<option value="customer_lifetime_spend">' . esc_html__( 'Customer lifetime spend', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="customer_order_count">' . esc_html__( 'Customer order count', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="customer_average_order_value">' . esc_html__( 'Customer average order value', 'mp-commerce-promotions' ) . '</option>';
+		echo '</select>';
+		echo '<p class="description">' . esc_html__(
+			'Segmentation conditions require a logged-in customer with Woo order stats in cart context.',
+			'mp-commerce-promotions'
+		) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_segment_amount">' . esc_html__( 'Segmentation amount', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_segment_amount" name="mp_cp_builder_segment_amount" min="0" step="0.01" />';
+		echo '<p class="description">' . esc_html__( 'Threshold for lifetime spend or average order value (use operator).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_segment_count">' . esc_html__( 'Segmentation order count', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="number" class="small-text" id="mp_cp_builder_segment_count" name="mp_cp_builder_segment_count" min="0" step="1" />';
+		echo '<p class="description">' . esc_html__( 'Threshold for customer order count (use operator).', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_product_ids">' . esc_html__( 'Product IDs (list)', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="text" class="regular-text" id="mp_cp_builder_product_ids" name="mp_cp_builder_product_ids" placeholder="100, 3703" />';

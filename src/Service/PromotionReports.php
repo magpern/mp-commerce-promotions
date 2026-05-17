@@ -52,6 +52,16 @@ final class PromotionReports {
 	 *     total_budget_spent: float,
 	 *     active_budgeted_promotions: int,
 	 *     exhausted_promotions: int,
+	 *     cooldown_active_promotions: int,
+	 *     avg_recorded_discount_per_redemption: float,
+	 *     top_orchestration_groups: list<array{orchestration_group: string, promotion_count: int}>,
+	 *     highest_budget_burn: list<array{
+	 *         promotion_id: int,
+	 *         name: string,
+	 *         budget_amount: float|null,
+	 *         budget_spent: float,
+	 *         budget_utilization_percent: float|null
+	 *     }>,
 	 *     top_promotions: list<array{
 	 *         promotion_id: int,
 	 *         name: string,
@@ -92,18 +102,56 @@ final class PromotionReports {
 		$top = $this->enrich_top_promotions_budget( $top, $filters['budget_exhausted'] );
 
 		return array(
-			'total_promotions'           => $this->promotions->count_all(),
-			'active_promotions'          => $this->promotions->count_filtered(
+			'total_promotions'                      => $this->promotions->count_all(),
+			'active_promotions'                     => $this->promotions->count_filtered(
 				array( 'status' => PromotionStatus::ACTIVE )
 			),
-			'recorded_redemptions'       => $recorded_count,
-			'reversed_redemptions'       => $reversed_count,
-			'recorded_discount_total'    => $this->redemptions->sum_recorded_discount_amount( $sum_filters ),
-			'total_budget_spent'         => $this->promotions->sum_budget_spent_for_budgeted(),
-			'active_budgeted_promotions' => $this->promotions->count_active_budgeted(),
-			'exhausted_promotions'       => $this->promotions->count_budget_exhausted_active(),
-			'top_promotions'             => $top,
+			'recorded_redemptions'                  => $recorded_count,
+			'reversed_redemptions'                  => $reversed_count,
+			'recorded_discount_total'               => $this->redemptions->sum_recorded_discount_amount( $sum_filters ),
+			'total_budget_spent'                    => $this->promotions->sum_budget_spent_for_budgeted(),
+			'active_budgeted_promotions'            => $this->promotions->count_active_budgeted(),
+			'exhausted_promotions'                  => $this->promotions->count_budget_exhausted_active(),
+			'cooldown_active_promotions'            => $this->promotions->count_cooldown_active_promotions(),
+			'avg_recorded_discount_per_redemption'  => $recorded_count > 0
+				? $this->redemptions->avg_recorded_discount_amount( $sum_filters )
+				: 0.0,
+			'top_orchestration_groups'              => $this->promotions->find_top_orchestration_groups( 10 ),
+			'highest_budget_burn'                   => $this->format_highest_budget_burn( $this->promotions->find_highest_budget_burn( 10 ) ),
+			'top_promotions'                        => $top,
 		);
+	}
+
+	/**
+	 * @param list<Promotion> $promotions
+	 * @return list<array{
+	 *     promotion_id: int,
+	 *     name: string,
+	 *     budget_amount: float|null,
+	 *     budget_spent: float,
+	 *     budget_utilization_percent: float|null
+	 * }>
+	 */
+	private function format_highest_budget_burn( array $promotions ): array {
+		$out = array();
+		foreach ( $promotions as $promotion ) {
+			if ( ! $promotion instanceof Promotion ) {
+				continue;
+			}
+			$id = $promotion->get_id();
+			if ( $id === null || $id <= 0 ) {
+				continue;
+			}
+			$out[] = array(
+				'promotion_id'               => $id,
+				'name'                       => $promotion->get_name(),
+				'budget_amount'              => $promotion->get_budget_amount(),
+				'budget_spent'               => $promotion->get_budget_spent(),
+				'budget_utilization_percent' => $promotion->get_budget_utilization_percent(),
+			);
+		}
+
+		return $out;
 	}
 
 	/**
@@ -157,6 +205,9 @@ final class PromotionReports {
 				'campaign_label',
 				'budget_amount',
 				'budget_spent',
+				'orchestration_group',
+				'cooldown_hours',
+				'budget_utilization_percent',
 			)
 		);
 
@@ -177,6 +228,9 @@ final class PromotionReports {
 					self::escape_csv_cell( (string) ( $row['campaign_label'] ?? '' ) ),
 					self::escape_csv_cell( (string) ( $row['budget_amount'] ?? '' ) ),
 					self::escape_csv_cell( (string) ( $row['budget_spent'] ?? '' ) ),
+					self::escape_csv_cell( (string) ( $row['orchestration_group'] ?? '' ) ),
+					self::escape_csv_cell( (string) ( $row['cooldown_hours'] ?? '' ) ),
+					self::escape_csv_cell( self::format_budget_utilization_percent_for_csv( $row ) ),
 				)
 			);
 		}
@@ -360,6 +414,26 @@ final class PromotionReports {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * @param array<string, mixed> $row
+	 */
+	public static function format_budget_utilization_percent_for_csv( array $row ): string {
+		$amount = isset( $row['budget_amount'] ) && is_numeric( $row['budget_amount'] )
+			? (float) $row['budget_amount']
+			: 0.0;
+		$spent = isset( $row['budget_spent'] ) && is_numeric( $row['budget_spent'] )
+			? (float) $row['budget_spent']
+			: 0.0;
+
+		if ( $amount <= 0 ) {
+			return '';
+		}
+
+		$pct = min( 100.0, max( 0.0, ( $spent / $amount ) * 100.0 ) );
+
+		return number_format( $pct, 1, '.', '' );
 	}
 
 	public static function escape_csv_cell( string $value ): string {

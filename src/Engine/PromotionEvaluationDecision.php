@@ -20,6 +20,10 @@ final class PromotionEvaluationDecision {
 	public const REASON_EXCLUDED_BY_SELECTED       = 'excluded_by_selected_promotion';
 	public const REASON_MAX_APPLICATIONS_REACHED  = 'max_applications_reached';
 
+	public const REASON_ORCHESTRATION_GROUP_BLOCKED = 'orchestration_group_blocked';
+
+	public const REASON_BLOCKED_BY_COOLDOWN         = 'blocked_by_cooldown';
+
 	private ?int $promotion_id;
 
 	private string $promotion_uuid;

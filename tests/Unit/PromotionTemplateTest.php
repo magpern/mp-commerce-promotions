@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
 final class PromotionTemplateTest extends TestCase {
 
 	public function test_templates_returns_seven_presets(): void {
-		$this->assertCount( 7, PromotionTemplate::templates() );
+		$this->assertCount( 10, PromotionTemplate::templates() );
 		$this->assertArrayHasKey( PromotionTemplate::TEMPLATE_PERCENT_OFF_CATEGORY, PromotionTemplate::templates() );
 	}
 

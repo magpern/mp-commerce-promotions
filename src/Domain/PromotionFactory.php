@@ -44,6 +44,8 @@ final class PromotionFactory {
 			null,
 			0.0,
 			null,
+			null,
+			null,
 			$created_by,
 			null,
 			null
@@ -83,6 +85,8 @@ final class PromotionFactory {
 			$source->get_budget_amount(),
 			0.0,
 			$source->get_budget_currency(),
+			$source->get_cooldown_hours(),
+			$source->get_orchestration_group(),
 			$created_by,
 			null,
 			null

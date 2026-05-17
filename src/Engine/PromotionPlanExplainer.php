@@ -18,17 +18,22 @@ final class PromotionPlanExplainer {
 	 *     summary_lines: list<string>,
 	 *     stop_processing: list<string>,
 	 *     exclusions: list<string>,
-	 *     max_applications: list<string>
+	 *     max_applications: list<string>,
+	 *     orchestration_group_blocked: list<string>,
+	 *     blocked_by_cooldown: list<string>,
+	 *     plan_metrics: array<string, mixed>
 	 * }
 	 */
 	public static function explain( PromotionEvaluationPlan $plan ): array {
 		$selected = self::summarize_selected( $plan );
 		$skipped  = self::summarize_skipped( $plan );
 
-		$stop_processing   = array();
-		$exclusions        = array();
-		$max_applications  = array();
-		$summary_lines     = array();
+		$stop_processing              = array();
+		$exclusions                   = array();
+		$max_applications             = array();
+		$orchestration_group_blocked  = array();
+		$blocked_by_cooldown          = array();
+		$summary_lines                = array();
 
 		foreach ( $selected as $row ) {
 			$summary_lines[] = (string) $row['summary'];
@@ -58,15 +63,50 @@ final class PromotionPlanExplainer {
 			if ( $reason === PromotionEvaluationDecision::REASON_MAX_APPLICATIONS_REACHED ) {
 				$max_applications[] = (string) $row['summary'];
 			}
+
+			if ( $reason === PromotionEvaluationDecision::REASON_ORCHESTRATION_GROUP_BLOCKED ) {
+				$orchestration_group_blocked[] = (string) $row['summary'];
+			}
+
+			if ( $reason === PromotionEvaluationDecision::REASON_BLOCKED_BY_COOLDOWN ) {
+				$blocked_by_cooldown[] = (string) $row['summary'];
+			}
+		}
+
+		$plan_metrics = $plan->get_metrics();
+		if ( $plan_metrics !== array() ) {
+			$summary_lines[] = self::format_plan_metrics_summary( $plan_metrics );
 		}
 
 		return array(
-			'selected'          => $selected,
-			'skipped'           => $skipped,
-			'summary_lines'     => $summary_lines,
-			'stop_processing'   => $stop_processing,
-			'exclusions'        => $exclusions,
-			'max_applications'  => $max_applications,
+			'selected'                     => $selected,
+			'skipped'                      => $skipped,
+			'summary_lines'                => $summary_lines,
+			'stop_processing'              => $stop_processing,
+			'exclusions'                   => $exclusions,
+			'max_applications'             => $max_applications,
+			'orchestration_group_blocked'  => $orchestration_group_blocked,
+			'blocked_by_cooldown'          => $blocked_by_cooldown,
+			'plan_metrics'                 => $plan_metrics,
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $metrics
+	 */
+	private static function format_plan_metrics_summary( array $metrics ): string {
+		$selected = isset( $metrics['selected_count'] ) ? (int) $metrics['selected_count'] : 0;
+		$skipped  = isset( $metrics['skipped_count'] ) ? (int) $metrics['skipped_count'] : 0;
+		$group    = isset( $metrics['blocked_by_group_count'] ) ? (int) $metrics['blocked_by_group_count'] : 0;
+		$cooldown = isset( $metrics['blocked_by_cooldown_count'] ) ? (int) $metrics['blocked_by_cooldown_count'] : 0;
+
+		return sprintf(
+			/* translators: 1: selected count, 2: skipped count, 3: orchestration blocks, 4: cooldown blocks */
+			__( 'Plan metrics: %1$d selected, %2$d skipped (%3$d orchestration group, %4$d cooldown).', 'mp-commerce-promotions' ),
+			$selected,
+			$skipped,
+			$group,
+			$cooldown
 		);
 	}
 
@@ -177,6 +217,31 @@ final class PromotionPlanExplainer {
 				$row['summary'] = sprintf(
 					/* translators: %s: promotion label */
 					__( 'Promotion %s skipped because a selected promotion has stop processing enabled.', 'mp-commerce-promotions' ),
+					$label
+				);
+			} elseif ( $reason === PromotionEvaluationDecision::REASON_ORCHESTRATION_GROUP_BLOCKED ) {
+				$meta = $decision->get_metadata();
+				$group = isset( $meta['orchestration_group'] ) ? (string) $meta['orchestration_group'] : '';
+				$winner = isset( $meta['winning_promotion_id'] ) ? (int) $meta['winning_promotion_id'] : 0;
+				$row['orchestration_group'] = $group !== '' ? $group : null;
+				$row['winning_promotion_id'] = $winner > 0 ? $winner : null;
+				$row['summary'] = $winner > 0 && $group !== ''
+					? sprintf(
+						/* translators: 1: skipped promotion label, 2: orchestration group, 3: winning promotion id */
+						__( 'Promotion %1$s skipped because orchestration group "%2$s" already selected promotion %3$d.', 'mp-commerce-promotions' ),
+						$label,
+						$group,
+						$winner
+					)
+					: sprintf(
+						/* translators: %s: promotion label */
+						__( 'Promotion %s skipped because another promotion in the same orchestration group was already selected.', 'mp-commerce-promotions' ),
+						$label
+					);
+			} elseif ( $reason === PromotionEvaluationDecision::REASON_BLOCKED_BY_COOLDOWN ) {
+				$row['summary'] = sprintf(
+					/* translators: %s: promotion label */
+					__( 'Promotion %s skipped because promotion cooldown is active for this customer.', 'mp-commerce-promotions' ),
 					$label
 				);
 			} else {

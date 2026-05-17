@@ -15,6 +15,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Orchestration and segmentation (schema 1.11.0)** — cooldown/orchestration fields, snapshots, segmentation conditions, planner explainability, conflict congestion, reports, templates, admin UX, diagnostics automation, PHPUnit + smoke/docs
 - **Economics and scheduling (schema 1.10.0)** — promotion budgets, batch export metadata, lifecycle filters/badges, schedule analyzer, reports economics, diagnostics pause exhausted, PHPUnit + smoke/docs
 - **Campaign operations (schema 1.9.0)** — campaign_label/internal_notes/admin_color, admin UI, list/report filters, Diagnostics archive hygiene, smoke/docs
 - **Conflict analysis and planner explainability** — `PromotionConflictAnalyzer`, `PromotionPlanExplainer`, admin preview + list indicators, validator heuristics, PHPUnit + `scripts/conflict-analysis-smoke.php`, `docs/manual-conflict-analysis-test.md`

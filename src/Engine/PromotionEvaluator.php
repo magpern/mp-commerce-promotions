@@ -25,6 +25,9 @@ use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\ConditionInterface;
 use MP\CommercePromotions\Engine\Condition\ConditionTrace;
 use MP\CommercePromotions\Engine\Condition\CustomerEmailDomainCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerAverageOrderValueCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerLifetimeSpendCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerOrderCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\FirstOrderCondition;
@@ -491,6 +494,18 @@ final class PromotionEvaluator {
 			);
 		}
 
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_LIFETIME_SPEND ) {
+			return $this->resolve_customer_numeric_threshold_condition( $raw, 'amount', RuleTypes::CONDITION_CUSTOMER_LIFETIME_SPEND );
+		}
+
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT ) {
+			return $this->resolve_customer_numeric_threshold_condition( $raw, 'count', RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT );
+		}
+
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_AVERAGE_ORDER_VALUE ) {
+			return $this->resolve_customer_numeric_threshold_condition( $raw, 'amount', RuleTypes::CONDITION_CUSTOMER_AVERAGE_ORDER_VALUE );
+		}
+
 		if ( $type === RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL ) {
 			try {
 				return array(
@@ -548,6 +563,50 @@ final class PromotionEvaluator {
 			$items,
 			$metadata
 		);
+	}
+
+	/**
+	 * @param array<string, mixed> $raw
+	 * @return array{condition: ?ConditionInterface, error: ?string}
+	 */
+	private function resolve_customer_numeric_threshold_condition( array $raw, string $field, string $type ): array {
+		if ( ! isset( $raw['operator'] ) || ! is_string( $raw['operator'] ) ) {
+			return array( 'condition' => null, 'error' => 'invalid' );
+		}
+		$operator = trim( $raw['operator'] );
+		if ( ! QuantityComparator::supports( $operator ) ) {
+			return array( 'condition' => null, 'error' => 'invalid' );
+		}
+		if ( ! isset( $raw[ $field ] ) || ! is_numeric( $raw[ $field ] ) ) {
+			return array( 'condition' => null, 'error' => 'invalid' );
+		}
+
+		$value = (float) $raw[ $field ];
+
+		try {
+			if ( $type === RuleTypes::CONDITION_CUSTOMER_LIFETIME_SPEND ) {
+				return array(
+					'condition' => new CustomerLifetimeSpendCondition( $operator, $value ),
+					'error'     => null,
+				);
+			}
+			if ( $type === RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT ) {
+				return array(
+					'condition' => new CustomerOrderCountCondition( $operator, $value ),
+					'error'     => null,
+				);
+			}
+			if ( $type === RuleTypes::CONDITION_CUSTOMER_AVERAGE_ORDER_VALUE ) {
+				return array(
+					'condition' => new CustomerAverageOrderValueCondition( $operator, $value ),
+					'error'     => null,
+				);
+			}
+		} catch ( \InvalidArgumentException $e ) {
+			return array( 'condition' => null, 'error' => 'invalid' );
+		}
+
+		return array( 'condition' => null, 'error' => 'unknown' );
 	}
 
 	/**

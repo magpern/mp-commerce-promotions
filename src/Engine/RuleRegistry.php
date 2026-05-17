@@ -35,6 +35,9 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS,
 			RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL,
 			RuleTypes::CONDITION_MAXIMUM_ELIGIBLE_SUBTOTAL,
+			RuleTypes::CONDITION_CUSTOMER_LIFETIME_SPEND,
+			RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT,
+			RuleTypes::CONDITION_CUSTOMER_AVERAGE_ORDER_VALUE,
 		);
 	}
 
@@ -87,6 +90,9 @@ final class RuleRegistry {
 			RuleTypes::CONDITION_EXCLUDE_SALE_ITEMS      => 'Exclude sale items',
 			RuleTypes::CONDITION_MINIMUM_ELIGIBLE_SUBTOTAL => 'Minimum eligible subtotal',
 			RuleTypes::CONDITION_MAXIMUM_ELIGIBLE_SUBTOTAL => 'Maximum eligible subtotal',
+			RuleTypes::CONDITION_CUSTOMER_LIFETIME_SPEND    => 'Customer lifetime spend',
+			RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT       => 'Customer order count',
+			RuleTypes::CONDITION_CUSTOMER_AVERAGE_ORDER_VALUE => 'Customer average order value',
 		);
 
 		return $labels[ $type ] ?? $type;

@@ -145,6 +145,14 @@ final class Plugin {
 					$this->audit_logger
 				);
 			}
+			$snapshot_service = null;
+			if ( $wpdb instanceof wpdb && $this->audit_logger !== null ) {
+				$snapshot_service = new \MP\CommercePromotions\Service\PromotionSnapshotService(
+					$this->promotion_repository,
+					new \MP\CommercePromotions\Domain\PromotionSnapshotRepository( $wpdb ),
+					$this->audit_logger
+				);
+			}
 			$edit_page        = new PromotionEditPage(
 				$this->promotion_repository,
 				$this->promotion_service,
@@ -157,7 +165,8 @@ final class Plugin {
 				$code_factory,
 				$batch_repository,
 				$batch_generator,
-				$this->audit_logger
+				$this->audit_logger,
+				$snapshot_service
 			);
 			$promotions_page = new PromotionsPage(
 				$this->promotion_repository,

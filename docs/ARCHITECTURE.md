@@ -363,6 +363,18 @@ Promotion rows store optional **`campaign_label`** (varchar 191), **`internal_no
 
 **Archive hygiene** (Diagnostics tab): `PromotionService::archive_expired_active_promotions()` archives active promotions with `ends_at` in the past; `archive_old_drafts( $days )` archives drafts older than N days by `created_at`. Uses `change_status()` → `archived` with audit; no hard deletes. See [manual-campaign-operations-test.md](manual-campaign-operations-test.md).
 
+### Orchestration and segmentation (schema 1.11.0)
+
+- **Promotion fields** — `cooldown_hours` (per-customer repeat redemption window after last recorded redemption) and `orchestration_group` (planner selects at most one eligible promotion per group per cart plan).
+- **`PromotionPlanner`** — tracks group winners and maps restriction `promotion_cooldown_active` to `blocked_by_cooldown`; plan `metrics` include `blocked_by_group_count` and `blocked_by_cooldown_count`.
+- **`PromotionPlanExplainer`** — human summaries for orchestration/cooldown skips plus `plan_metrics` in `explain()` output.
+- **`PromotionConflictAnalyzer::TYPE_ORCHESTRATION_CONGESTION`** — active promotions sharing a group with overlapping date windows.
+- **Segmentation conditions** — `customer_lifetime_spend`, `customer_order_count`, `customer_average_order_value` read Woo-enriched cart metadata (`CustomerOrderStats` / `CartContextBuilder`).
+- **`mp_cp_promotion_snapshots`** — `PromotionSnapshotService::capture()` / `restore()`; admin recent snapshots (latest 10) with restore POST; auto-capture before template apply, rule builder apply, and duplicate.
+- **Reports** — orchestration summary (top groups, budget burn, cooldown-active count, avg discount per redemption); CSV columns `orchestration_group`, `cooldown_hours`, `budget_utilization_percent`.
+- **Diagnostics** — manual triggers for `activate_scheduled_promotions`, `archive_expired_paused_promotions`, `normalize_invalid_promotion_states`.
+- **Manual QA** — [manual-orchestration-and-segmentation-test.md](manual-orchestration-and-segmentation-test.md); smoke: `scripts/orchestration-segmentation-smoke.php`.
+
 ### Economics and scheduling (schema 1.10.0)
 
 **Promotion budgets** — optional `budget_amount`, `budget_currency`, and running `budget_spent` on `{prefix}mp_cp_promotions`. Checkout recording increments `budget_spent` via `PromotionBudgetLedger` + `PromotionRepository::adjust_budget_spent()`; reversal subtracts the same discount amount. `PromotionRestrictionEvaluator` blocks exhausted caps with `promotion_budget_exhausted`. Diagnostics can pause exhausted actives via `PromotionService::pause_budget_exhausted_promotions()`.

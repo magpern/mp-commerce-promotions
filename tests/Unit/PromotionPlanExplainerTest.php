@@ -12,6 +12,7 @@ use MP\CommercePromotions\Engine\PromotionEvaluationDecision;
 use MP\CommercePromotions\Engine\PromotionEvaluationPlan;
 use MP\CommercePromotions\Engine\PromotionPlanExplainer;
 use MP\CommercePromotions\Engine\PromotionPlanner;
+use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Engine\RuleTypes;
 use MP\CommercePromotions\Tests\Support\PromotionTestFixtures;
 use PHPUnit\Framework\TestCase;
@@ -85,5 +86,31 @@ final class PromotionPlanExplainerTest extends TestCase {
 			}
 		}
 		$this->assertTrue( $found_max );
+	}
+
+	public function test_explain_includes_plan_metrics(): void {
+		$cond = array( array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 1 ) );
+		$act  = array( array( 'type' => RuleTypes::ACTION_PERCENTAGE_DISCOUNT, 'percentage' => 10 ) );
+
+		$first = PromotionTestFixtures::active_promotion_with_id( 1, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+		$data  = $first->to_array();
+		$data['orchestration_group'] = 'lane-a';
+		$first = Promotion::from_array( $data );
+
+		$second = PromotionTestFixtures::active_promotion_with_id( 2, $cond, $act )
+			->with_application_rules( PromotionApplicationMode::STACKABLE, false, null );
+		$data   = $second->to_array();
+		$data['orchestration_group'] = 'lane-a';
+		$second = Promotion::from_array( $data );
+
+		$plan = ( new PromotionPlanner() )->plan(
+			array( $first, $second ),
+			PromotionTestFixtures::cart_context( null, 100.0 )
+		);
+
+		$explanation = PromotionPlanExplainer::explain( $plan );
+		$this->assertNotEmpty( $explanation['plan_metrics'] );
+		$this->assertNotEmpty( $explanation['orchestration_group_blocked'] );
 	}
 }

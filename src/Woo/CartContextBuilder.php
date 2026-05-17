@@ -13,6 +13,7 @@ use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\CartQuantityHelper;
 use MP\CommercePromotions\Engine\EvaluationContext;
+use MP\CommercePromotions\Service\CustomerOrderStats;
 
 final class CartContextBuilder {
 
@@ -184,6 +185,11 @@ final class CartContextBuilder {
 		if ( $this->redemptions !== null ) {
 			$metadata['customer_redemption_count'] = $this->redemptions->count_recorded_for_customer( $customer_id );
 		}
+
+		$stats = CustomerOrderStats::for_customer( $customer_id );
+		$metadata['lifetime_spend']       = $stats['lifetime_spend'];
+		$metadata['order_count']          = $stats['order_count'];
+		$metadata['average_order_value']  = $stats['average_order_value'];
 	}
 
 	private function customer_has_previous_orders( int $customer_id ): ?bool {

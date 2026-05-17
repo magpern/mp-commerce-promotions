@@ -85,6 +85,7 @@ final class MigrationRunner {
 			Schema::audit_log_create_sql( $this->wpdb ),
 			Schema::promotion_codes_create_sql( $this->wpdb ),
 			Schema::code_batches_create_sql( $this->wpdb ),
+			Schema::promotion_snapshots_create_sql( $this->wpdb ),
 		);
 
 		foreach ( $statements as $sql ) {
@@ -260,6 +261,10 @@ final class MigrationRunner {
 
 		if ( version_compare( Schema::SCHEMA_VERSION, '1.3.0', '>=' ) ) {
 			$required[] = Schema::code_batches_table( $this->wpdb );
+		}
+
+		if ( version_compare( Schema::SCHEMA_VERSION, '1.11.0', '>=' ) ) {
+			$required[] = Schema::promotion_snapshots_table( $this->wpdb );
 		}
 
 		foreach ( $required as $table ) {

@@ -68,6 +68,10 @@ final class Promotion {
 
 	private ?string $budget_currency;
 
+	private ?int $cooldown_hours;
+
+	private ?string $orchestration_group;
+
 	private ?int $created_by;
 
 	private ?string $created_at;
@@ -101,6 +105,8 @@ final class Promotion {
 		?float $budget_amount,
 		float $budget_spent,
 		?string $budget_currency,
+		?int $cooldown_hours,
+		?string $orchestration_group,
 		?int $created_by,
 		?string $created_at,
 		?string $updated_at
@@ -149,6 +155,8 @@ final class Promotion {
 		$budget_amount          = self::normalize_budget_amount( $budget_amount );
 		$budget_spent           = self::normalize_budget_spent( $budget_spent );
 		$budget_currency        = self::normalize_budget_currency( $budget_currency );
+		$cooldown_hours         = self::normalize_cooldown_hours( $cooldown_hours );
+		$orchestration_group    = self::normalize_orchestration_group( $orchestration_group );
 
 		$this->id           = $id;
 		$this->uuid         = $uuid;
@@ -176,6 +184,8 @@ final class Promotion {
 		$this->budget_amount          = $budget_amount;
 		$this->budget_spent           = $budget_spent;
 		$this->budget_currency        = $budget_currency;
+		$this->cooldown_hours         = $cooldown_hours;
+		$this->orchestration_group    = $orchestration_group;
 		$this->created_by             = $created_by;
 		$this->created_at   = $created_at;
 		$this->updated_at   = $updated_at;
@@ -254,6 +264,8 @@ final class Promotion {
 			self::normalize_budget_amount( self::optional_float( $data['budget_amount'] ?? null ) ),
 			self::normalize_budget_spent( isset( $data['budget_spent'] ) ? (float) $data['budget_spent'] : 0.0 ),
 			self::normalize_budget_currency( self::optional_string( $data['budget_currency'] ?? null ) ),
+			self::normalize_cooldown_hours( self::optional_int( $data['cooldown_hours'] ?? null ) ),
+			self::normalize_orchestration_group( self::optional_string( $data['orchestration_group'] ?? null ) ),
 			$created_by,
 			self::optional_string( $data['created_at'] ?? null ),
 			self::optional_string( $data['updated_at'] ?? null )
@@ -291,6 +303,8 @@ final class Promotion {
 			'budget_amount'          => $this->budget_amount,
 			'budget_spent'           => $this->budget_spent,
 			'budget_currency'        => $this->budget_currency,
+			'cooldown_hours'         => $this->cooldown_hours,
+			'orchestration_group'    => $this->orchestration_group,
 			'created_by'             => $this->created_by,
 			'created_at'   => $this->created_at,
 			'updated_at'   => $this->updated_at,
@@ -419,6 +433,14 @@ final class Promotion {
 		return $this->budget_currency;
 	}
 
+	public function get_cooldown_hours(): ?int {
+		return $this->cooldown_hours;
+	}
+
+	public function get_orchestration_group(): ?string {
+		return $this->orchestration_group;
+	}
+
 	public function has_budget_cap(): bool {
 		return $this->budget_amount !== null && $this->budget_amount > 0;
 	}
@@ -486,6 +508,8 @@ final class Promotion {
 			$this->budget_amount,
 			$this->budget_spent,
 			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -520,6 +544,8 @@ final class Promotion {
 			$this->budget_amount,
 			$this->budget_spent,
 			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -554,6 +580,8 @@ final class Promotion {
 			$this->budget_amount,
 			$this->budget_spent,
 			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -588,6 +616,8 @@ final class Promotion {
 			$this->budget_amount,
 			$this->budget_spent,
 			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -622,6 +652,8 @@ final class Promotion {
 			$this->budget_amount,
 			$this->budget_spent,
 			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -663,6 +695,8 @@ final class Promotion {
 			$this->budget_amount,
 			$this->budget_spent,
 			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -697,6 +731,8 @@ final class Promotion {
 			$this->budget_amount,
 			$this->budget_spent,
 			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -736,6 +772,8 @@ final class Promotion {
 			$this->budget_amount,
 			$this->budget_spent,
 			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -773,6 +811,8 @@ final class Promotion {
 			$this->budget_amount,
 			$this->budget_spent,
 			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -811,6 +851,8 @@ final class Promotion {
 			$this->budget_amount,
 			$this->budget_spent,
 			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -845,6 +887,44 @@ final class Promotion {
 			self::normalize_budget_amount( $amount ),
 			self::normalize_budget_spent( $spent ?? $this->budget_spent ),
 			self::normalize_budget_currency( $currency ),
+			$this->cooldown_hours,
+			$this->orchestration_group,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	public function with_orchestration( ?int $cooldown_hours, ?string $orchestration_group ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->customer_usage_limit,
+			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
+			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
+			self::normalize_cooldown_hours( $cooldown_hours ),
+			self::normalize_orchestration_group( $orchestration_group ),
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -883,6 +963,8 @@ final class Promotion {
 			$this->budget_amount,
 			$this->budget_spent,
 			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -921,6 +1003,8 @@ final class Promotion {
 			$this->budget_amount,
 			$this->budget_spent,
 			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -996,6 +1080,37 @@ final class Promotion {
 		}
 
 		return $currency;
+	}
+
+	public static function normalize_cooldown_hours( ?int $hours ): ?int {
+		if ( $hours === null ) {
+			return null;
+		}
+
+		if ( $hours < 1 ) {
+			throw new InvalidArgumentException( 'cooldown_hours must be null or >= 1.' );
+		}
+
+		return $hours;
+	}
+
+	public static function normalize_orchestration_group( ?string $group ): ?string {
+		if ( $group === null ) {
+			return null;
+		}
+
+		$group = sanitize_text_field( $group );
+		if ( $group === '' ) {
+			return null;
+		}
+
+		if ( function_exists( 'mb_substr' ) ) {
+			$group = mb_substr( $group, 0, 191 );
+		} elseif ( strlen( $group ) > 191 ) {
+			$group = substr( $group, 0, 191 );
+		}
+
+		return $group;
 	}
 
 	public static function normalize_admin_color( ?string $color ): ?string {

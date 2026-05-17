@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.10.0';
+	public const SCHEMA_VERSION = '1.11.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -41,6 +41,10 @@ final class Schema {
 
 	public static function code_batches_table( wpdb $wpdb ): string {
 		return $wpdb->prefix . 'mp_cp_code_batches';
+	}
+
+	public static function promotion_snapshots_table( wpdb $wpdb ): string {
+		return $wpdb->prefix . 'mp_cp_promotion_snapshots';
 	}
 
 	public static function promotions_create_sql( wpdb $wpdb ): string {
@@ -74,6 +78,8 @@ admin_color varchar(20) NULL,
 budget_amount decimal(18,2) NULL,
 budget_spent decimal(18,2) NOT NULL default 0,
 budget_currency varchar(10) NULL,
+cooldown_hours int(10) unsigned NULL,
+orchestration_group varchar(191) NULL,
 created_by bigint(20) unsigned NULL,
 created_at datetime NOT NULL default CURRENT_TIMESTAMP,
 updated_at datetime NOT NULL default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -175,6 +181,24 @@ created_by bigint(20) unsigned NULL,
 created_at datetime NOT NULL default CURRENT_TIMESTAMP,
 PRIMARY KEY  (id),
 UNIQUE KEY batch_uuid (batch_uuid),
+KEY promotion_id (promotion_id),
+KEY created_at (created_at)
+) {$collate};";
+	}
+
+	public static function promotion_snapshots_create_sql( wpdb $wpdb ): string {
+		$table   = self::promotion_snapshots_table( $wpdb );
+		$collate = $wpdb->get_charset_collate();
+
+		return "CREATE TABLE {$table} (
+id bigint(20) unsigned NOT NULL auto_increment,
+promotion_id bigint(20) unsigned NOT NULL,
+snapshot_type varchar(64) NOT NULL,
+snapshot_json longtext NOT NULL,
+notes text NULL,
+created_by bigint(20) unsigned NULL,
+created_at datetime NOT NULL default CURRENT_TIMESTAMP,
+PRIMARY KEY  (id),
 KEY promotion_id (promotion_id),
 KEY created_at (created_at)
 ) {$collate};";

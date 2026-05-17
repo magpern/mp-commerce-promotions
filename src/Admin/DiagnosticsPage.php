@@ -38,6 +38,24 @@ final class DiagnosticsPage {
 
 	private const PAUSE_EXHAUSTED_SUBMIT = 'mp_cp_pause_budget_exhausted_submit';
 
+	private const ACTIVATE_SCHEDULED_NONCE_ACTION = 'mp_cp_activate_scheduled';
+
+	private const ACTIVATE_SCHEDULED_NONCE_FIELD = 'mp_cp_activate_scheduled_nonce';
+
+	private const ACTIVATE_SCHEDULED_SUBMIT = 'mp_cp_activate_scheduled_submit';
+
+	private const ARCHIVE_EXPIRED_PAUSED_NONCE_ACTION = 'mp_cp_archive_expired_paused';
+
+	private const ARCHIVE_EXPIRED_PAUSED_NONCE_FIELD = 'mp_cp_archive_expired_paused_nonce';
+
+	private const ARCHIVE_EXPIRED_PAUSED_SUBMIT = 'mp_cp_archive_expired_paused_submit';
+
+	private const NORMALIZE_STATES_NONCE_ACTION = 'mp_cp_normalize_promotion_states';
+
+	private const NORMALIZE_STATES_NONCE_FIELD = 'mp_cp_normalize_promotion_states_nonce';
+
+	private const NORMALIZE_STATES_SUBMIT = 'mp_cp_normalize_promotion_states_submit';
+
 	private UsageDiagnostics $diagnostics;
 
 	private ?PromotionService $promotion_service;
@@ -65,6 +83,7 @@ final class DiagnosticsPage {
 
 		$this->render_repair_form();
 		$this->render_archive_hygiene_section();
+		$this->render_scheduler_automation_section();
 		$this->render_integrity_notes();
 		$this->render_promotions_table( $report['promotions'] );
 		$this->render_codes_table( $report['codes'] );
@@ -148,6 +167,45 @@ final class DiagnosticsPage {
 		echo '</form>';
 	}
 
+	private function render_scheduler_automation_section(): void {
+		if ( $this->promotion_service === null ) {
+			return;
+		}
+
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Scheduler automation', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="description">' . esc_html__(
+			'Manual triggers for promotion lifecycle automation (same operations intended for cron). All actions are audited.',
+			'mp-commerce-promotions'
+		) . '</p>';
+
+		$confirm_activate = esc_js( __( 'Activate all scheduled draft promotions whose start date has passed?', 'mp-commerce-promotions' ) );
+		echo '<form method="post" action="" style="margin:0 0 1em;">';
+		wp_nonce_field( self::ACTIVATE_SCHEDULED_NONCE_ACTION, self::ACTIVATE_SCHEDULED_NONCE_FIELD );
+		echo '<p><button type="submit" name="' . esc_attr( self::ACTIVATE_SCHEDULED_SUBMIT ) . '" value="1" class="button button-secondary" onclick="return confirm(\'' . $confirm_activate . '\');">';
+		echo esc_html__( 'Activate scheduled promotions', 'mp-commerce-promotions' );
+		echo '</button></p>';
+		echo '<p class="description">' . esc_html__( 'Draft promotions with starts_at in the past move to active.', 'mp-commerce-promotions' ) . '</p>';
+		echo '</form>';
+
+		$confirm_archive_paused = esc_js( __( 'Archive all paused promotions past their end date?', 'mp-commerce-promotions' ) );
+		echo '<form method="post" action="" style="margin:0 0 1em;">';
+		wp_nonce_field( self::ARCHIVE_EXPIRED_PAUSED_NONCE_ACTION, self::ARCHIVE_EXPIRED_PAUSED_NONCE_FIELD );
+		echo '<p><button type="submit" name="' . esc_attr( self::ARCHIVE_EXPIRED_PAUSED_SUBMIT ) . '" value="1" class="button button-secondary" onclick="return confirm(\'' . $confirm_archive_paused . '\');">';
+		echo esc_html__( 'Archive expired paused promotions', 'mp-commerce-promotions' );
+		echo '</button></p>';
+		echo '<p class="description">' . esc_html__( 'Paused promotions with ends_at before now are archived.', 'mp-commerce-promotions' ) . '</p>';
+		echo '</form>';
+
+		$confirm_normalize = esc_js( __( 'Normalize invalid promotion states (pause expired active, flag archived with future start)?', 'mp-commerce-promotions' ) );
+		echo '<form method="post" action="" style="margin:0 0 1em;">';
+		wp_nonce_field( self::NORMALIZE_STATES_NONCE_ACTION, self::NORMALIZE_STATES_NONCE_FIELD );
+		echo '<p><button type="submit" name="' . esc_attr( self::NORMALIZE_STATES_SUBMIT ) . '" value="1" class="button button-secondary" onclick="return confirm(\'' . $confirm_normalize . '\');">';
+		echo esc_html__( 'Normalize promotion states', 'mp-commerce-promotions' );
+		echo '</button></p>';
+		echo '<p class="description">' . esc_html__( 'Pauses active promotions past end date; records warnings for archived promotions with future starts_at.', 'mp-commerce-promotions' ) . '</p>';
+		echo '</form>';
+	}
+
 	private function handle_post_archive_hygiene(): void {
 		if ( $this->promotion_service === null || ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
 			return;
@@ -218,6 +276,69 @@ final class DiagnosticsPage {
 				array(
 					'promotions' => count( $result['changed'] ),
 					'codes'      => count( $result['skipped'] ),
+					'errors'     => count( $result['errors'] ),
+				)
+			);
+		}
+
+		if ( isset( $_POST[ self::ACTIVATE_SCHEDULED_SUBMIT ] ) ) {
+			if ( ! isset( $_POST[ self::ACTIVATE_SCHEDULED_NONCE_FIELD ] )
+				|| ! wp_verify_nonce(
+					sanitize_text_field( wp_unslash( (string) $_POST[ self::ACTIVATE_SCHEDULED_NONCE_FIELD ] ) ),
+					self::ACTIVATE_SCHEDULED_NONCE_ACTION
+				) ) {
+				$this->redirect_with_notice( 'error', 'invalid_nonce' );
+			}
+
+			$result = $this->promotion_service->activate_scheduled_promotions( $actor );
+			$this->redirect_with_notice(
+				'success',
+				'scheduler_automation_done',
+				array(
+					'promotions' => count( $result['changed'] ),
+					'codes'      => count( $result['skipped'] ),
+					'errors'     => count( $result['errors'] ),
+				)
+			);
+		}
+
+		if ( isset( $_POST[ self::ARCHIVE_EXPIRED_PAUSED_SUBMIT ] ) ) {
+			if ( ! isset( $_POST[ self::ARCHIVE_EXPIRED_PAUSED_NONCE_FIELD ] )
+				|| ! wp_verify_nonce(
+					sanitize_text_field( wp_unslash( (string) $_POST[ self::ARCHIVE_EXPIRED_PAUSED_NONCE_FIELD ] ) ),
+					self::ARCHIVE_EXPIRED_PAUSED_NONCE_ACTION
+				) ) {
+				$this->redirect_with_notice( 'error', 'invalid_nonce' );
+			}
+
+			$result = $this->promotion_service->archive_expired_paused_promotions( $actor );
+			$this->redirect_with_notice(
+				'success',
+				'scheduler_automation_done',
+				array(
+					'promotions' => count( $result['changed'] ),
+					'codes'      => count( $result['skipped'] ),
+					'errors'     => count( $result['errors'] ),
+				)
+			);
+		}
+
+		if ( isset( $_POST[ self::NORMALIZE_STATES_SUBMIT ] ) ) {
+			if ( ! isset( $_POST[ self::NORMALIZE_STATES_NONCE_FIELD ] )
+				|| ! wp_verify_nonce(
+					sanitize_text_field( wp_unslash( (string) $_POST[ self::NORMALIZE_STATES_NONCE_FIELD ] ) ),
+					self::NORMALIZE_STATES_NONCE_ACTION
+				) ) {
+				$this->redirect_with_notice( 'error', 'invalid_nonce' );
+			}
+
+			$result = $this->promotion_service->normalize_invalid_promotion_states( $actor );
+			$this->redirect_with_notice(
+				'success',
+				'scheduler_normalize_done',
+				array(
+					'promotions' => count( $result['changed'] ),
+					'codes'      => count( $result['warnings'] ),
 					'errors'     => count( $result['errors'] ),
 				)
 			);
@@ -314,6 +435,22 @@ final class DiagnosticsPage {
 				return sprintf(
 					/* translators: 1: paused count, 2: skipped count, 3: error count */
 					__( 'Budget exhausted maintenance: %1$d paused, %2$d skipped, %3$d errors.', 'mp-commerce-promotions' ),
+					$promotions,
+					$codes,
+					$errors
+				);
+			case 'scheduler_automation_done':
+				return sprintf(
+					/* translators: 1: changed count, 2: skipped count, 3: error count */
+					__( 'Scheduler automation: %1$d changed, %2$d skipped, %3$d errors.', 'mp-commerce-promotions' ),
+					$promotions,
+					$codes,
+					$errors
+				);
+			case 'scheduler_normalize_done':
+				return sprintf(
+					/* translators: 1: changed count, 2: warnings count, 3: error count */
+					__( 'State normalization: %1$d changed, %2$d warnings, %3$d errors.', 'mp-commerce-promotions' ),
 					$promotions,
 					$codes,
 					$errors

@@ -17,7 +17,10 @@ use MP\CommercePromotions\Engine\Action\FreeShippingAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;
 use MP\CommercePromotions\Engine\Condition\BillingCountryCondition;
 use MP\CommercePromotions\Engine\Condition\CategoryQuantityCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerAverageOrderValueCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerEmailDomainCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerLifetimeSpendCondition;
+use MP\CommercePromotions\Engine\Condition\CustomerOrderCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\MaximumCartQuantityCondition;
@@ -178,6 +181,12 @@ final class SimpleRuleBuilder {
 			return self::build_eligible_subtotal_condition( $type, $post );
 		}
 
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_LIFETIME_SPEND
+			|| $type === RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT
+			|| $type === RuleTypes::CONDITION_CUSTOMER_AVERAGE_ORDER_VALUE ) {
+			return self::build_customer_segmentation_condition( $type, $post );
+		}
+
 		$operator = self::parse_operator( $post );
 		$quantity = self::parse_required_float( $post, 'mp_cp_builder_quantity', 'invalid_quantity' );
 
@@ -244,6 +253,44 @@ final class SimpleRuleBuilder {
 		FixedAmountDiscountAction::from_config( $config );
 
 		return $config;
+	}
+
+	/**
+	 * @param array<string, mixed> $post
+	 * @return array<string, mixed>
+	 */
+	private static function build_customer_segmentation_condition( string $type, array $post ): array {
+		$operator = self::parse_operator( $post );
+
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT ) {
+			$count = self::parse_required_float( $post, 'mp_cp_builder_segment_count', 'invalid_segment_count' );
+			new CustomerOrderCountCondition( $operator, $count );
+
+			return array(
+				'type'     => RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT,
+				'operator' => $operator,
+				'count'    => $count,
+			);
+		}
+
+		$amount = self::parse_required_float( $post, 'mp_cp_builder_segment_amount', 'invalid_segment_amount' );
+		if ( $type === RuleTypes::CONDITION_CUSTOMER_LIFETIME_SPEND ) {
+			new CustomerLifetimeSpendCondition( $operator, $amount );
+
+			return array(
+				'type'     => RuleTypes::CONDITION_CUSTOMER_LIFETIME_SPEND,
+				'operator' => $operator,
+				'amount'   => $amount,
+			);
+		}
+
+		new CustomerAverageOrderValueCondition( $operator, $amount );
+
+		return array(
+			'type'     => RuleTypes::CONDITION_CUSTOMER_AVERAGE_ORDER_VALUE,
+			'operator' => $operator,
+			'amount'   => $amount,
+		);
 	}
 
 	/**

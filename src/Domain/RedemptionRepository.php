@@ -200,6 +200,31 @@ final class RedemptionRepository {
 	}
 
 	/**
+	 * Latest redeemed_at for a recorded redemption (customer + promotion), or null.
+	 */
+	public function find_latest_recorded_redeemed_at_for_customer_and_promotion( int $customer_id, int $promotion_id ): ?string {
+		if ( $customer_id <= 0 || $promotion_id <= 0 ) {
+			return null;
+		}
+
+		$table = $this->redemptions_table();
+		$value = DbQuery::get_var(
+			$this->wpdb,
+			"SELECT redeemed_at FROM {$table}
+				WHERE customer_id = %d AND promotion_id = %d AND status = %s
+				ORDER BY redeemed_at DESC, id DESC
+				LIMIT 1",
+			array( $customer_id, $promotion_id, Redemption::STATUS_RECORDED )
+		);
+
+		if ( ! is_string( $value ) || trim( $value ) === '' ) {
+			return null;
+		}
+
+		return $value;
+	}
+
+	/**
 	 * Count reversed redemptions for a promotion.
 	 */
 	public function count_reversed_for_promotion( int $promotion_id ): int {
@@ -369,6 +394,36 @@ final class RedemptionRepository {
 	}
 
 	/**
+	 * Average discount_amount per recorded redemption row.
+	 *
+	 * @param array{
+	 *     date_from?: string|null,
+	 *     date_to?: string|null,
+	 *     promotion_id?: int|null,
+	 *     status?: string|null
+	 * } $filters
+	 */
+	public function avg_recorded_discount_amount( array $filters = array() ): float {
+		$built = $this->build_report_where( $filters, true );
+		$table = $this->redemptions_table();
+
+		$sql = "SELECT COALESCE(AVG(discount_amount), 0) FROM {$table} WHERE status = %s";
+		if ( $built['where'] !== '' ) {
+			$sql .= ' AND ' . $built['where'];
+		}
+
+		$params = array( Redemption::STATUS_RECORDED );
+		$params = array_merge( $params, $built['params'] );
+		$avg    = DbQuery::get_var( $this->wpdb, $sql, $params );
+
+		if ( ! is_numeric( $avg ) ) {
+			return 0.0;
+		}
+
+		return (float) $avg;
+	}
+
+	/**
 	 * Top promotions by recorded redemption count.
 	 *
 	 * @param array{
@@ -462,7 +517,9 @@ final class RedemptionRepository {
 			r.discount_amount, r.currency, r.status, r.redeemed_at, r.created_at,
 			p.campaign_label AS campaign_label,
 			p.budget_amount AS budget_amount,
-			p.budget_spent AS budget_spent
+			p.budget_spent AS budget_spent,
+			p.orchestration_group AS orchestration_group,
+			p.cooldown_hours AS cooldown_hours
 			FROM {$r_table} r
 			INNER JOIN {$p_table} p ON p.id = r.promotion_id";
 

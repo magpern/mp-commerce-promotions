@@ -22,6 +22,10 @@ final class PromotionLifecycle {
 	public const PHASE_BUDGET_EXHAUSTED = 'budget_exhausted';
 	public const PHASE_ARCHIVED         = 'archived';
 
+	public const PHASE_SCHEDULED_DRAFT  = 'scheduled_draft';
+
+	public const PHASE_EXPIRED_PAUSED   = 'expired_paused';
+
 	public const ENDING_SOON_DAYS = 7;
 
 	/**
@@ -52,7 +56,41 @@ final class PromotionLifecycle {
 			return self::PHASE_LIVE;
 		}
 
+		if ( $promotion->get_status() === PromotionStatus::DRAFT && self::is_scheduled_draft_ready( $promotion ) ) {
+			return self::PHASE_SCHEDULED_DRAFT;
+		}
+
+		if ( $promotion->get_status() === PromotionStatus::PAUSED && self::is_expired_paused( $promotion ) ) {
+			return self::PHASE_EXPIRED_PAUSED;
+		}
+
 		return $promotion->get_status();
+	}
+
+	public static function is_scheduled_draft_ready( Promotion $promotion ): bool {
+		if ( $promotion->get_status() !== PromotionStatus::DRAFT ) {
+			return false;
+		}
+
+		$starts = PromotionDateHelper::parse_mysql_datetime( $promotion->get_starts_at() );
+		if ( $starts === null ) {
+			return false;
+		}
+
+		return PromotionDateHelper::now_timestamp() >= $starts;
+	}
+
+	public static function is_expired_paused( Promotion $promotion ): bool {
+		if ( $promotion->get_status() !== PromotionStatus::PAUSED ) {
+			return false;
+		}
+
+		$ends = PromotionDateHelper::parse_mysql_datetime( $promotion->get_ends_at() );
+		if ( $ends === null ) {
+			return false;
+		}
+
+		return PromotionDateHelper::now_timestamp() > $ends;
 	}
 
 	public static function badge_label( string $phase ): string {
@@ -63,6 +101,8 @@ final class PromotionLifecycle {
 			self::PHASE_EXPIRED_ACTIVE   => __( 'Expired (active)', 'mp-commerce-promotions' ),
 			self::PHASE_BUDGET_EXHAUSTED => __( 'Exhausted', 'mp-commerce-promotions' ),
 			self::PHASE_ARCHIVED         => __( 'Archived', 'mp-commerce-promotions' ),
+			self::PHASE_SCHEDULED_DRAFT  => __( 'Ready to activate', 'mp-commerce-promotions' ),
+			self::PHASE_EXPIRED_PAUSED   => __( 'Expired (paused)', 'mp-commerce-promotions' ),
 		);
 
 		return $labels[ $phase ] ?? $phase;

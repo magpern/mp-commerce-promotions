@@ -30,8 +30,12 @@ final class PromotionPlanner {
 		$exclusive_was_selected = false;
 		/** @var array<int, true> $active_exclusion_ids */
 		$active_exclusion_ids = array();
-		$selected_count         = 0;
-		$plan_max_applications  = null;
+		$selected_count            = 0;
+		$plan_max_applications     = null;
+		$blocked_by_group_count    = 0;
+		$blocked_by_cooldown_count = 0;
+		/** @var array<string, int> $orchestration_group_winner */
+		$orchestration_group_winner = array();
 
 		foreach ( $promotions as $promotion ) {
 			if ( $stop_further_selection ) {
@@ -44,16 +48,36 @@ final class PromotionPlanner {
 
 			$result = $this->evaluator->evaluate( $promotion, $context );
 			if ( ! $result->is_eligible() ) {
+				$skip_reason = $this->resolve_ineligibility_reason( $result );
+				if ( $skip_reason === 'promotion_cooldown_active' ) {
+					$skip_reason = PromotionEvaluationDecision::REASON_BLOCKED_BY_COOLDOWN;
+					++$blocked_by_cooldown_count;
+				}
 				$decisions[] = new PromotionEvaluationDecision(
 					$promotion,
 					$result,
 					false,
-					$this->resolve_ineligibility_reason( $result )
+					$skip_reason
 				);
 				continue;
 			}
 
 			$promotion_id = $promotion->get_id();
+			$orch_group   = $promotion->get_orchestration_group();
+			if ( $orch_group !== null && $orch_group !== '' ) {
+				if ( isset( $orchestration_group_winner[ $orch_group ] ) ) {
+					$decisions[] = $this->build_skipped_decision(
+						$promotion,
+						PromotionEvaluationDecision::REASON_ORCHESTRATION_GROUP_BLOCKED,
+						array(
+							'orchestration_group'        => $orch_group,
+							'winning_promotion_id'       => $orchestration_group_winner[ $orch_group ],
+						)
+					);
+					++$blocked_by_group_count;
+					continue;
+				}
+			}
 			if ( $promotion_id !== null && $promotion_id > 0 && isset( $active_exclusion_ids[ $promotion_id ] ) ) {
 				$decisions[] = $this->build_skipped_decision(
 					$promotion,
@@ -86,6 +110,10 @@ final class PromotionPlanner {
 
 			++$selected_count;
 
+			if ( $orch_group !== null && $orch_group !== '' && $promotion_id !== null && $promotion_id > 0 ) {
+				$orchestration_group_winner[ $orch_group ] = $promotion_id;
+			}
+
 			$promotion_max = $promotion->get_max_applications();
 			if ( $promotion_max !== null ) {
 				$plan_max_applications = $plan_max_applications === null
@@ -107,7 +135,22 @@ final class PromotionPlanner {
 			}
 		}
 
-		return new PromotionEvaluationPlan( $decisions );
+		$skipped_count = 0;
+		foreach ( $decisions as $decision ) {
+			if ( ! $decision->is_selected() ) {
+				++$skipped_count;
+			}
+		}
+
+		return new PromotionEvaluationPlan(
+			$decisions,
+			array(
+				'selected_count'            => $selected_count,
+				'skipped_count'             => $skipped_count,
+				'blocked_by_group_count'    => $blocked_by_group_count,
+				'blocked_by_cooldown_count' => $blocked_by_cooldown_count,
+			)
+		);
 	}
 
 	private function resolve_ineligibility_reason( EvaluationResult $result ): string {
@@ -140,6 +183,8 @@ final class PromotionPlanner {
 			PromotionEvaluationDecision::REASON_STOPPED_PROCESSING => 'Skipped: processing stopped after a prior selected promotion.',
 			PromotionEvaluationDecision::REASON_EXCLUDED_BY_SELECTED => 'Skipped: excluded by a previously selected promotion in this plan.',
 			PromotionEvaluationDecision::REASON_MAX_APPLICATIONS_REACHED => 'Skipped: plan max applications limit reached.',
+			PromotionEvaluationDecision::REASON_ORCHESTRATION_GROUP_BLOCKED => 'Skipped: another promotion in the same orchestration group was already selected.',
+			PromotionEvaluationDecision::REASON_BLOCKED_BY_COOLDOWN => 'Skipped: promotion cooldown is active for this customer.',
 		);
 
 		$message = $messages[ $reason ] ?? 'Skipped by promotion application plan.';

@@ -30,6 +30,12 @@ final class PromotionTemplate {
 
 	public const TEMPLATE_CUSTOMER_ROLE_DISCOUNT   = 'customer_role_discount';
 
+	public const TEMPLATE_VIP_CUSTOMER             = 'vip_customer';
+
+	public const TEMPLATE_LOYAL_CUSTOMER           = 'loyal_customer';
+
+	public const TEMPLATE_RETURNING_CUSTOMER       = 'returning_customer';
+
 	/**
 	 * @return array<string, array{label: string, description: string, example: string}>
 	 */
@@ -70,6 +76,21 @@ final class PromotionTemplate {
 				'description' => __( 'Customer role condition with whole-cart percentage or fixed amount discount.', 'mp-commerce-promotions' ),
 				'example'     => __( 'Example: 15% off for role “vip”.', 'mp-commerce-promotions' ),
 			),
+			self::TEMPLATE_VIP_CUSTOMER => array(
+				'label'       => __( 'VIP customer', 'mp-commerce-promotions' ),
+				'description' => __( 'Logged-in customers with lifetime spend at or above a threshold receive a whole-cart discount.', 'mp-commerce-promotions' ),
+				'example'     => __( 'Example: 15% off when lifetime spend is at least €500.', 'mp-commerce-promotions' ),
+			),
+			self::TEMPLATE_LOYAL_CUSTOMER => array(
+				'label'       => __( 'Loyal customer', 'mp-commerce-promotions' ),
+				'description' => __( 'Logged-in customers with order count at or above a threshold receive a whole-cart discount.', 'mp-commerce-promotions' ),
+				'example'     => __( 'Example: €20 off when the customer has placed at least 5 orders.', 'mp-commerce-promotions' ),
+			),
+			self::TEMPLATE_RETURNING_CUSTOMER => array(
+				'label'       => __( 'Returning customer', 'mp-commerce-promotions' ),
+				'description' => __( 'Logged-in customers with average order value at or above a threshold receive a whole-cart discount.', 'mp-commerce-promotions' ),
+				'example'     => __( 'Example: 10% off when average order value is at least €75.', 'mp-commerce-promotions' ),
+			),
 		);
 	}
 
@@ -102,6 +123,12 @@ final class PromotionTemplate {
 				return self::build_first_order_discount( $input );
 			case self::TEMPLATE_CUSTOMER_ROLE_DISCOUNT:
 				return self::build_customer_role_discount( $input );
+			case self::TEMPLATE_VIP_CUSTOMER:
+				return self::build_vip_customer( $input );
+			case self::TEMPLATE_LOYAL_CUSTOMER:
+				return self::build_loyal_customer( $input );
+			case self::TEMPLATE_RETURNING_CUSTOMER:
+				return self::build_returning_customer( $input );
 			default:
 				throw new InvalidArgumentException( 'invalid_template_key' );
 		}
@@ -279,6 +306,69 @@ final class PromotionTemplate {
 	 * @param array<string, mixed> $input
 	 * @return array{conditions: list<array<string, mixed>>, actions: list<array<string, mixed>>, restrictions: list<array<string, mixed>>}
 	 */
+	/**
+	 * @param array<string, mixed> $input
+	 * @return array{conditions: list<array<string, mixed>>, actions: list<array<string, mixed>>, restrictions: list<array<string, mixed>>}
+	 */
+	private static function build_vip_customer( array $input ): array {
+		$threshold = self::require_non_negative_float( $input, 'lifetime_spend_threshold' );
+		$action    = self::build_whole_cart_discount_action( $input );
+
+		return self::rules_payload(
+			array(
+				array( 'type' => RuleTypes::CONDITION_LOGGED_IN ),
+				array(
+					'type'     => RuleTypes::CONDITION_CUSTOMER_LIFETIME_SPEND,
+					'operator' => '>=',
+					'amount'   => $threshold,
+				),
+			),
+			array( $action )
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $input
+	 * @return array{conditions: list<array<string, mixed>>, actions: list<array<string, mixed>>, restrictions: list<array<string, mixed>>}
+	 */
+	private static function build_loyal_customer( array $input ): array {
+		$count  = self::require_positive_float( $input, 'order_count_threshold' );
+		$action = self::build_whole_cart_discount_action( $input );
+
+		return self::rules_payload(
+			array(
+				array( 'type' => RuleTypes::CONDITION_LOGGED_IN ),
+				array(
+					'type'     => RuleTypes::CONDITION_CUSTOMER_ORDER_COUNT,
+					'operator' => '>=',
+					'count'    => $count,
+				),
+			),
+			array( $action )
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $input
+	 * @return array{conditions: list<array<string, mixed>>, actions: list<array<string, mixed>>, restrictions: list<array<string, mixed>>}
+	 */
+	private static function build_returning_customer( array $input ): array {
+		$threshold = self::require_non_negative_float( $input, 'average_order_value_threshold' );
+		$action    = self::build_whole_cart_discount_action( $input );
+
+		return self::rules_payload(
+			array(
+				array( 'type' => RuleTypes::CONDITION_LOGGED_IN ),
+				array(
+					'type'     => RuleTypes::CONDITION_CUSTOMER_AVERAGE_ORDER_VALUE,
+					'operator' => '>=',
+					'amount'   => $threshold,
+				),
+			),
+			array( $action )
+		);
+	}
+
 	private static function build_customer_role_discount( array $input ): array {
 		$roles = self::require_role_list( $input, 'roles' );
 		$action = self::build_whole_cart_discount_action( $input );

@@ -14,11 +14,23 @@ final class PromotionEvaluationPlan {
 	/** @var list<PromotionEvaluationDecision> */
 	private array $decisions;
 
+	/** @var array<string, mixed> */
+	private array $metrics;
+
 	/**
 	 * @param list<PromotionEvaluationDecision> $decisions
+	 * @param array<string, mixed>              $metrics
 	 */
-	public function __construct( array $decisions ) {
+	public function __construct( array $decisions, array $metrics = array() ) {
 		$this->decisions = $decisions;
+		$this->metrics     = $metrics;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function get_metrics(): array {
+		return $this->metrics;
 	}
 
 	/**
@@ -51,8 +63,13 @@ final class PromotionEvaluationPlan {
 			$rows[] = $decision->to_array();
 		}
 
-		return array(
+		$out = array(
 			'decisions' => $rows,
 		);
+		if ( $this->metrics !== array() ) {
+			$out['metrics'] = $this->metrics;
+		}
+
+		return $out;
 	}
 }

@@ -140,10 +140,14 @@ final class PromotionRepository {
 			'budget_amount'          => $promotion->get_budget_amount(),
 			'budget_spent'           => $promotion->get_budget_spent(),
 			'budget_currency'        => $promotion->get_budget_currency(),
+			'cooldown_hours'         => $promotion->get_cooldown_hours(),
+			'orchestration_group'    => $promotion->get_orchestration_group(),
 			'created_by'             => $promotion->get_created_by(),
 			'created_at'             => $promotion->get_created_at() ?? $now,
 			'updated_at'             => $promotion->get_updated_at() ?? $now,
 		);
+
+		$cooldown_format = $data['cooldown_hours'] === null ? '%s' : '%d';
 
 		$formats = array(
 			'%s',
@@ -170,6 +174,8 @@ final class PromotionRepository {
 			'%s',
 			'%f',
 			'%f',
+			'%s',
+			$cooldown_format,
 			'%s',
 			'%d',
 			'%s',
@@ -228,9 +234,13 @@ final class PromotionRepository {
 			'budget_amount'          => $promotion->get_budget_amount(),
 			'budget_spent'           => $promotion->get_budget_spent(),
 			'budget_currency'        => $promotion->get_budget_currency(),
+			'cooldown_hours'         => $promotion->get_cooldown_hours(),
+			'orchestration_group'    => $promotion->get_orchestration_group(),
 			'created_by'             => $promotion->get_created_by(),
 			'updated_at'             => $now,
 		);
+
+		$cooldown_format = $data['cooldown_hours'] === null ? '%s' : '%d';
 
 		$formats = array(
 			'%s',
@@ -257,6 +267,8 @@ final class PromotionRepository {
 			'%s',
 			'%f',
 			'%f',
+			'%s',
+			$cooldown_format,
 			'%s',
 			'%d',
 			'%s',
@@ -538,6 +550,151 @@ final class PromotionRepository {
 		return is_numeric( $count ) ? (int) $count : 0;
 	}
 
+	/**
+	 * Draft promotions whose starts_at is in the past (ready to activate).
+	 *
+	 * @return list<Promotion>
+	 */
+	public function find_scheduled_drafts_ready( int $limit = 500 ): array {
+		$limit = max( 1, min( 500, $limit ) );
+		$table = $this->promotions_table();
+		$now   = current_time( 'mysql' );
+
+		$sql = "SELECT * FROM {$table}
+			WHERE status = %s
+			AND starts_at IS NOT NULL
+			AND starts_at <= %s
+			ORDER BY starts_at ASC, id ASC
+			LIMIT %d";
+
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			$sql,
+			array(
+				PromotionStatus::DRAFT,
+				$now,
+				$limit,
+			)
+		);
+
+		return $this->rows_to_promotions( $rows );
+	}
+
+	/**
+	 * Paused promotions with ends_at in the past.
+	 *
+	 * @return list<Promotion>
+	 */
+	public function find_expired_paused( int $limit = 500 ): array {
+		$limit = max( 1, min( 500, $limit ) );
+		$table = $this->promotions_table();
+		$now   = current_time( 'mysql' );
+
+		$sql = "SELECT * FROM {$table}
+			WHERE status = %s
+			AND ends_at IS NOT NULL
+			AND ends_at < %s
+			ORDER BY ends_at ASC, id ASC
+			LIMIT %d";
+
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			$sql,
+			array(
+				PromotionStatus::PAUSED,
+				$now,
+				$limit,
+			)
+		);
+
+		return $this->rows_to_promotions( $rows );
+	}
+
+	/**
+	 * Count active promotions with cooldown_hours configured.
+	 */
+	public function count_cooldown_active_promotions(): int {
+		$table = $this->promotions_table();
+		$count = DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COUNT(*) FROM {$table} WHERE status = %s AND cooldown_hours IS NOT NULL AND cooldown_hours > 0",
+			array( PromotionStatus::ACTIVE )
+		);
+
+		return is_numeric( $count ) ? (int) $count : 0;
+	}
+
+	/**
+	 * @return list<array{orchestration_group: string, promotion_count: int}>
+	 */
+	public function find_top_orchestration_groups( int $limit = 10 ): array {
+		$limit = max( 1, min( 50, $limit ) );
+		$table = $this->promotions_table();
+
+		$sql = "SELECT orchestration_group, COUNT(*) AS promotion_count
+			FROM {$table}
+			WHERE status = %s
+			AND orchestration_group IS NOT NULL
+			AND orchestration_group <> ''
+			GROUP BY orchestration_group
+			ORDER BY promotion_count DESC, orchestration_group ASC
+			LIMIT %d";
+
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			$sql,
+			array(
+				PromotionStatus::ACTIVE,
+				$limit,
+			)
+		);
+
+		$out = array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$group = isset( $row['orchestration_group'] ) ? trim( (string) $row['orchestration_group'] ) : '';
+			if ( $group === '' ) {
+				continue;
+			}
+			$out[] = array(
+				'orchestration_group' => $group,
+				'promotion_count'     => isset( $row['promotion_count'] ) ? (int) $row['promotion_count'] : 0,
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Active budgeted promotions with highest budget_spent (budget burn).
+	 *
+	 * @return list<Promotion>
+	 */
+	public function find_highest_budget_burn( int $limit = 10 ): array {
+		$limit = max( 1, min( 50, $limit ) );
+		$table = $this->promotions_table();
+
+		$sql = "SELECT * FROM {$table}
+			WHERE status = %s
+			AND budget_amount IS NOT NULL
+			AND budget_amount > 0
+			ORDER BY budget_spent DESC, id ASC
+			LIMIT %d";
+
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			$sql,
+			array(
+				PromotionStatus::ACTIVE,
+				$limit,
+			)
+		);
+
+		return $this->rows_to_promotions( $rows );
+	}
+
 	public function find_budget_exhausted_active( int $limit = 500 ): array {
 		$limit = max( 1, min( 500, $limit ) );
 		$table = $this->promotions_table();
@@ -630,6 +787,8 @@ final class PromotionRepository {
 			PromotionLifecycle::PHASE_EXPIRED_ACTIVE,
 			PromotionLifecycle::PHASE_BUDGET_EXHAUSTED,
 			PromotionLifecycle::PHASE_ARCHIVED,
+			PromotionLifecycle::PHASE_SCHEDULED_DRAFT,
+			PromotionLifecycle::PHASE_EXPIRED_PAUSED,
 		);
 
 		if ( ! in_array( $phase, $valid, true ) ) {
@@ -693,6 +852,22 @@ final class PromotionRepository {
 			$clauses[] = 'NOT ( budget_amount IS NOT NULL AND budget_amount > 0 AND budget_spent >= budget_amount )';
 			$clauses[] = '( ends_at IS NULL OR ends_at > %s )';
 			$params[]  = $ending_cutoff;
+			return;
+		}
+
+		if ( $phase === PromotionLifecycle::PHASE_SCHEDULED_DRAFT ) {
+			$clauses[] = 'status = %s';
+			$params[]  = PromotionStatus::DRAFT;
+			$clauses[] = 'starts_at IS NOT NULL AND starts_at <= %s';
+			$params[]  = $now;
+			return;
+		}
+
+		if ( $phase === PromotionLifecycle::PHASE_EXPIRED_PAUSED ) {
+			$clauses[] = 'status = %s';
+			$params[]  = PromotionStatus::PAUSED;
+			$clauses[] = 'ends_at IS NOT NULL AND ends_at < %s';
+			$params[]  = $now;
 		}
 	}
 
