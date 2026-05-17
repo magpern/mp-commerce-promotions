@@ -18,6 +18,7 @@ use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\RedemptionRepository;
+use MP\CommercePromotions\Service\PromotionHealthMonitor;
 use MP\CommercePromotions\Service\PromotionLifecycle;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
@@ -47,6 +48,8 @@ final class PromotionsPage {
 
 	private PromotionRuleValidator $rule_validator;
 
+	private ?PromotionHealthMonitor $health_monitor;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionService $promotion_service,
@@ -54,7 +57,8 @@ final class PromotionsPage {
 		?PromotionCodeRepository $promotion_codes = null,
 		?PromotionCodeBatchRepository $code_batches = null,
 		?RedemptionRepository $redemptions = null,
-		?PromotionRuleValidator $rule_validator = null
+		?PromotionRuleValidator $rule_validator = null,
+		?PromotionHealthMonitor $health_monitor = null
 	) {
 		$this->promotions        = $promotions;
 		$this->promotion_service = $promotion_service;
@@ -63,6 +67,7 @@ final class PromotionsPage {
 		$this->code_batches      = $code_batches;
 		$this->redemptions       = $redemptions;
 		$this->rule_validator    = $rule_validator ?? new PromotionRuleValidator();
+		$this->health_monitor    = $health_monitor;
 	}
 
 	public function render(): void {
@@ -83,13 +88,18 @@ final class PromotionsPage {
 		$this->handle_post_bulk( $list_query );
 		$this->handle_post_create();
 		$repo_args  = array(
-			'status'          => $list_query['status'],
-			'search'          => $list_query['search'],
-			'campaign_label'  => $list_query['campaign_label'],
-			'lifecycle_phase' => $list_query['lifecycle_phase'],
-			'limit'           => self::PER_PAGE,
-			'offset'          => $list_query['offset'],
+			'status'              => $list_query['status'],
+			'search'              => $list_query['search'],
+			'campaign_label'      => $list_query['campaign_label'],
+			'lifecycle_phase'     => $list_query['lifecycle_phase'],
+			'orchestration_group' => $list_query['orchestration_group'],
+			'limit'               => self::PER_PAGE,
+			'offset'              => $list_query['offset'],
 		);
+
+		if ( $list_query['quick_filter'] === 'health_issues' && $this->health_monitor !== null ) {
+			$repo_args['promotion_ids'] = $this->health_issue_promotion_ids();
+		}
 
 		try {
 			$total = $this->promotions->count_filtered( $repo_args );
@@ -113,6 +123,7 @@ final class PromotionsPage {
 		echo '<p>' . esc_html__( 'Create draft promotions, then use Edit to change details, raw JSON rules, and status (via action buttons on the edit screen). Hard delete and visual rule builder are not implemented yet.', 'mp-commerce-promotions' ) . '</p>';
 
 		$this->render_create_form();
+		$this->render_recently_modified_section();
 		$this->render_list_filters( $list_query );
 		$this->render_list_summary( $list_query, $total, $total_pages );
 		$this->render_promotions_list_form( $list, $list_query );
@@ -167,19 +178,89 @@ final class PromotionsPage {
 			}
 		}
 
+		$quick_filter = null;
+		if ( isset( $_GET['quick_filter'] ) ) {
+			$raw = sanitize_key( wp_unslash( (string) $_GET['quick_filter'] ) );
+			$allowed = array( 'budget_exhausted', 'ending_soon', 'orchestration_group', 'health_issues' );
+			if ( in_array( $raw, $allowed, true ) ) {
+				$quick_filter = $raw;
+				if ( $raw === 'budget_exhausted' ) {
+					$lifecycle_phase = PromotionLifecycle::PHASE_BUDGET_EXHAUSTED;
+				} elseif ( $raw === 'ending_soon' ) {
+					$lifecycle_phase = PromotionLifecycle::PHASE_ENDING_SOON;
+				}
+			}
+		}
+
+		$orchestration_group = null;
+		if ( isset( $_GET['orchestration_group'] ) ) {
+			$raw = sanitize_text_field( wp_unslash( (string) $_GET['orchestration_group'] ) );
+			if ( $raw !== '' ) {
+				$orchestration_group = $raw;
+			}
+		}
+
+		$compact = isset( $_GET['compact'] ) && sanitize_text_field( wp_unslash( (string) $_GET['compact'] ) ) === '1';
+
 		$paged = isset( $_GET['paged'] ) ? (int) $_GET['paged'] : 1;
 		if ( $paged < 1 ) {
 			$paged = 1;
 		}
 
 		return array(
-			'status'          => $status,
-			'search'          => $search,
-			'campaign_label'  => $campaign_label,
-			'lifecycle_phase' => $lifecycle_phase,
-			'paged'           => $paged,
-			'offset'          => ( $paged - 1 ) * self::PER_PAGE,
+			'status'              => $status,
+			'search'              => $search,
+			'campaign_label'      => $campaign_label,
+			'lifecycle_phase'     => $lifecycle_phase,
+			'quick_filter'        => $quick_filter,
+			'orchestration_group' => $orchestration_group,
+			'compact'             => $compact,
+			'paged'               => $paged,
+			'offset'              => ( $paged - 1 ) * self::PER_PAGE,
 		);
+	}
+
+	/**
+	 * @return list<int>
+	 */
+	private function health_issue_promotion_ids(): array {
+		if ( $this->health_monitor === null ) {
+			return array();
+		}
+
+		$ids = array();
+		foreach ( $this->health_monitor->analyze( 500 ) as $issue ) {
+			if ( ! isset( $issue['promotion_ids'] ) || ! is_array( $issue['promotion_ids'] ) ) {
+				continue;
+			}
+			foreach ( $issue['promotion_ids'] as $id ) {
+				$id = (int) $id;
+				if ( $id > 0 ) {
+					$ids[ $id ] = $id;
+				}
+			}
+		}
+
+		return array_values( $ids );
+	}
+
+	private function render_recently_modified_section(): void {
+		$recent = $this->promotions->find_recently_modified( 5 );
+		if ( $recent === array() ) {
+			return;
+		}
+
+		echo '<h2 style="margin-top:1em;font-size:1.1em;">' . esc_html__( 'Recently modified', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<ul style="list-style:disc;margin-left:1.5em;">';
+		foreach ( $recent as $promotion ) {
+			$id = $promotion->get_id();
+			if ( $id === null ) {
+				continue;
+			}
+			$url = $this->list_url( array( 'promotion' => (string) $id ) );
+			echo '<li><a href="' . esc_url( $url ) . '">' . esc_html( $promotion->get_name() ) . '</a></li>';
+		}
+		echo '</ul>';
 	}
 
 	/**
@@ -220,6 +301,39 @@ final class PromotionsPage {
 		}
 		echo '<li>' . implode( '</li> | <li>', $link_parts ) . '</li>';
 		echo '</ul>';
+
+		echo '<p class="description" style="margin:0 0 8px;">' . esc_html__( 'Quick filters:', 'mp-commerce-promotions' ) . ' ';
+		$quick_links = array(
+			'budget_exhausted' => __( 'Budget exhausted', 'mp-commerce-promotions' ),
+			'ending_soon'      => __( 'Ending soon', 'mp-commerce-promotions' ),
+			'health_issues'    => __( 'Health issues', 'mp-commerce-promotions' ),
+		);
+		$quick_parts = array();
+		foreach ( $quick_links as $key => $label ) {
+			$quick_parts[] = '<a href="' . esc_url( $this->list_url( array( 'quick_filter' => $key ) ) ) . '">' . esc_html( $label ) . '</a>';
+		}
+		echo implode( ' · ', $quick_parts );
+		$compact_url = $this->list_url(
+			array_merge(
+				array_filter(
+					array(
+						'promotion_status'    => $list_query['status'],
+						's'                   => $list_query['search'],
+						'campaign_label'      => $list_query['campaign_label'],
+						'lifecycle_phase'     => $list_query['lifecycle_phase'],
+						'orchestration_group' => $list_query['orchestration_group'],
+						'quick_filter'        => $list_query['quick_filter'],
+					),
+					static fn ( $v ): bool => $v !== null && $v !== ''
+				),
+				array( 'compact' => empty( $list_query['compact'] ) ? '1' : '0' )
+			)
+		);
+		echo ' · <a href="' . esc_url( $compact_url ) . '">';
+		echo empty( $list_query['compact'] )
+			? esc_html__( 'Compact mode', 'mp-commerce-promotions' )
+			: esc_html__( 'Full columns', 'mp-commerce-promotions' );
+		echo '</a></p>';
 
 		echo '<form method="get" action="' . esc_url( admin_url( 'admin.php' ) ) . '" class="search-form" style="display:flex;align-items:center;gap:8px;">';
 		echo '<input type="hidden" name="page" value="' . esc_attr( AdminNavigation::PAGE_SLUG ) . '" />';

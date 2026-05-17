@@ -17,6 +17,7 @@ use MP\CommercePromotions\Engine\EvaluationContext;
 use MP\CommercePromotions\Engine\PromotionEvaluationDecision;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Engine\PromotionPlanner;
+use MP\CommercePromotions\Service\PlannerTelemetryRecorder;
 use MP\CommercePromotions\Service\Settings;
 
 final class CartPromotionApplier {
@@ -49,6 +50,8 @@ final class CartPromotionApplier {
 
 	private FreeGiftCartSynchronizer $gift_synchronizer;
 
+	private ?PlannerTelemetryRecorder $telemetry_recorder;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionCodeRepository $promotion_codes,
@@ -57,7 +60,8 @@ final class CartPromotionApplier {
 		Settings $settings,
 		?PromotionPlanner $planner = null,
 		?FreeGiftCartHandler $free_gift_handler = null,
-		?FreeGiftCartSynchronizer $gift_synchronizer = null
+		?FreeGiftCartSynchronizer $gift_synchronizer = null,
+		?PlannerTelemetryRecorder $telemetry_recorder = null
 	) {
 		$this->promotions         = $promotions;
 		$this->promotion_codes    = $promotion_codes;
@@ -66,7 +70,8 @@ final class CartPromotionApplier {
 		$this->context_builder    = $context_builder;
 		$this->settings           = $settings;
 		$this->free_gift_handler  = $free_gift_handler ?? new FreeGiftCartHandler();
-		$this->gift_synchronizer  = $gift_synchronizer ?? new FreeGiftCartSynchronizer( $promotions );
+		$this->gift_synchronizer   = $gift_synchronizer ?? new FreeGiftCartSynchronizer( $promotions );
+		$this->telemetry_recorder  = $telemetry_recorder;
 	}
 
 	/**
@@ -183,6 +188,7 @@ final class CartPromotionApplier {
 			}
 
 			$plan     = $this->planner->plan( array( $promotion ), $context );
+			$this->record_plan_telemetry( $plan );
 			$decisions = $plan->get_selected_decisions();
 			$entries  = $this->apply_selected_decisions(
 				$decisions,
@@ -215,6 +221,7 @@ final class CartPromotionApplier {
 	private function apply_automatic_promotions( $cart, EvaluationContext $context, float $subtotal ): void {
 		$active    = $this->promotions->find_active( 50 );
 		$plan      = $this->planner->plan( $active, $context );
+		$this->record_plan_telemetry( $plan );
 		$decisions = $plan->get_selected_decisions();
 		$entries   = $this->apply_selected_decisions(
 			$decisions,
@@ -798,5 +805,13 @@ final class CartPromotionApplier {
 		}
 
 		$cart->add_fee( $label, -$discount, false );
+	}
+
+	private function record_plan_telemetry( \MP\CommercePromotions\Engine\PromotionEvaluationPlan $plan ): void {
+		if ( $this->telemetry_recorder === null ) {
+			return;
+		}
+
+		$this->telemetry_recorder->record_plan( $plan );
 	}
 }

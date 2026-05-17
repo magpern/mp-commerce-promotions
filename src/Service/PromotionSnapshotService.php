@@ -39,7 +39,14 @@ final class PromotionSnapshotService {
 		$this->audit      = $audit;
 	}
 
-	public function capture( Promotion $promotion, string $snapshot_type, ?string $notes = null, ?int $actor_user_id = null ): int {
+	public function capture(
+		Promotion $promotion,
+		string $snapshot_type,
+		?string $notes = null,
+		?int $actor_user_id = null,
+		?string $snapshot_label = null,
+		?string $snapshot_source = null
+	): int {
 		$promotion_id = $promotion->get_id();
 		if ( $promotion_id === null || $promotion_id <= 0 ) {
 			return 0;
@@ -52,16 +59,50 @@ final class PromotionSnapshotService {
 			$promotion->to_array(),
 			$notes,
 			$actor_user_id,
-			null
+			null,
+			$snapshot_label,
+			$snapshot_source
 		);
 
 		return $this->snapshots->insert( $snapshot );
+	}
+
+	/**
+	 * @return true|string
+	 */
+	public function validate_snapshot_payload( PromotionSnapshot $snapshot ) {
+		$data = $snapshot->get_snapshot_data();
+		if ( $data === array() ) {
+			return 'empty_payload';
+		}
+
+		try {
+			Promotion::from_array( $data );
+		} catch ( \InvalidArgumentException $e ) {
+			return 'invalid_promotion_payload';
+		}
+
+		foreach ( array( 'conditions', 'actions', 'restrictions' ) as $key ) {
+			if ( ! isset( $data[ $key ] ) ) {
+				continue;
+			}
+			if ( ! is_array( $data[ $key ] ) ) {
+				return 'invalid_json_' . $key;
+			}
+		}
+
+		return true;
 	}
 
 	public function restore( int $snapshot_id, ?int $actor_user_id = null ): Promotion {
 		$snapshot = $this->snapshots->find( $snapshot_id );
 		if ( $snapshot === null ) {
 			throw new RuntimeException( 'Snapshot not found.' );
+		}
+
+		$validation = $this->validate_snapshot_payload( $snapshot );
+		if ( $validation !== true ) {
+			throw new RuntimeException( 'Snapshot payload is invalid or corrupted.' );
 		}
 
 		$promotion_id = $snapshot->get_promotion_id();

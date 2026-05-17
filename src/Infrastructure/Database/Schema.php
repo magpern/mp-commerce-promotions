@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.11.0';
+	public const SCHEMA_VERSION = '1.12.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -45,6 +45,14 @@ final class Schema {
 
 	public static function promotion_snapshots_table( wpdb $wpdb ): string {
 		return $wpdb->prefix . 'mp_cp_promotion_snapshots';
+	}
+
+	public static function automation_runs_table( wpdb $wpdb ): string {
+		return $wpdb->prefix . 'mp_cp_automation_runs';
+	}
+
+	public static function planner_telemetry_table( wpdb $wpdb ): string {
+		return $wpdb->prefix . 'mp_cp_planner_telemetry';
 	}
 
 	public static function promotions_create_sql( wpdb $wpdb ): string {
@@ -194,13 +202,54 @@ KEY created_at (created_at)
 id bigint(20) unsigned NOT NULL auto_increment,
 promotion_id bigint(20) unsigned NOT NULL,
 snapshot_type varchar(64) NOT NULL,
+snapshot_label varchar(191) NULL,
+snapshot_source varchar(64) NULL,
 snapshot_json longtext NOT NULL,
 notes text NULL,
 created_by bigint(20) unsigned NULL,
 created_at datetime NOT NULL default CURRENT_TIMESTAMP,
 PRIMARY KEY  (id),
 KEY promotion_id (promotion_id),
+KEY created_at (created_at),
+KEY snapshot_type (snapshot_type)
+) {$collate};";
+	}
+
+	public static function automation_runs_create_sql( wpdb $wpdb ): string {
+		$table   = self::automation_runs_table( $wpdb );
+		$collate = $wpdb->get_charset_collate();
+
+		return "CREATE TABLE {$table} (
+id bigint(20) unsigned NOT NULL auto_increment,
+run_type varchar(64) NOT NULL,
+status varchar(32) NOT NULL default 'completed',
+summary_json longtext NOT NULL,
+warnings_count int(10) unsigned NOT NULL default 0,
+errors_count int(10) unsigned NOT NULL default 0,
+created_at datetime NOT NULL default CURRENT_TIMESTAMP,
+finished_at datetime NULL,
+PRIMARY KEY  (id),
+KEY run_type (run_type),
+KEY status (status),
 KEY created_at (created_at)
+) {$collate};";
+	}
+
+	public static function planner_telemetry_create_sql( wpdb $wpdb ): string {
+		$table   = self::planner_telemetry_table( $wpdb );
+		$collate = $wpdb->get_charset_collate();
+
+		return "CREATE TABLE {$table} (
+promotion_id bigint(20) unsigned NOT NULL,
+selected_count bigint(20) unsigned NOT NULL default 0,
+skipped_count bigint(20) unsigned NOT NULL default 0,
+blocked_by_group_count bigint(20) unsigned NOT NULL default 0,
+blocked_by_cooldown_count bigint(20) unsigned NOT NULL default 0,
+blocked_by_budget_count bigint(20) unsigned NOT NULL default 0,
+blocked_by_exclusion_count bigint(20) unsigned NOT NULL default 0,
+last_seen_at datetime NOT NULL default CURRENT_TIMESTAMP,
+PRIMARY KEY  (promotion_id),
+KEY last_seen_at (last_seen_at)
 ) {$collate};";
 	}
 }

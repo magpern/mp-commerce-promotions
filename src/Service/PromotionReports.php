@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Service;
 
+use MP\CommercePromotions\Domain\AutomationRunRepository;
+use MP\CommercePromotions\Domain\PlannerTelemetryRepository;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
@@ -33,12 +35,98 @@ final class PromotionReports {
 
 	private RedemptionRepository $redemptions;
 
+	private ?PlannerTelemetryRepository $telemetry;
+
+	private ?AutomationRunRepository $automation_runs;
+
+	private ?PromotionHealthMonitor $health_monitor;
+
 	public function __construct(
 		PromotionRepository $promotions,
-		RedemptionRepository $redemptions
+		RedemptionRepository $redemptions,
+		?PlannerTelemetryRepository $telemetry = null,
+		?AutomationRunRepository $automation_runs = null,
+		?PromotionHealthMonitor $health_monitor = null
 	) {
-		$this->promotions  = $promotions;
-		$this->redemptions = $redemptions;
+		$this->promotions       = $promotions;
+		$this->redemptions      = $redemptions;
+		$this->telemetry        = $telemetry;
+		$this->automation_runs  = $automation_runs;
+		$this->health_monitor   = $health_monitor;
+	}
+
+	/**
+	 * @return array{
+	 *     most_selected: list<array<string, mixed>>,
+	 *     most_blocked: list<array<string, mixed>>,
+	 *     top_orchestration_conflicts: list<array<string, mixed>>
+	 * }
+	 */
+	public function telemetry_summary( int $limit = 10 ): array {
+		if ( $this->telemetry === null ) {
+			return array(
+				'most_selected'               => array(),
+				'most_blocked'                => array(),
+				'top_orchestration_conflicts' => array(),
+			);
+		}
+
+		$limit = max( 1, min( 20, $limit ) );
+
+		return array(
+			'most_selected'               => $this->telemetry->top_by_column( 'selected_count', $limit ),
+			'most_blocked'                => $this->telemetry->top_by_column( 'blocked_by_group_count', $limit ),
+			'top_orchestration_conflicts' => $this->telemetry->top_orchestration_groups_by_blocks( $limit ),
+		);
+	}
+
+	/**
+	 * @return list<\MP\CommercePromotions\Domain\AutomationRun>
+	 */
+	public function latest_automation_runs( int $limit = 20 ): array {
+		if ( $this->automation_runs === null ) {
+			return array();
+		}
+
+		return $this->automation_runs->find_latest( $limit );
+	}
+
+	/**
+	 * @return array{total: int, critical: int, warning: int, info: int, issues: list<array<string, mixed>>}
+	 */
+	public function health_summary( int $limit = 500 ): array {
+		if ( $this->health_monitor === null ) {
+			return array(
+				'total'    => 0,
+				'critical' => 0,
+				'warning'  => 0,
+				'info'     => 0,
+				'issues'   => array(),
+			);
+		}
+
+		$issues   = $this->health_monitor->analyze( $limit );
+		$critical = 0;
+		$warning  = 0;
+		$info     = 0;
+		foreach ( $issues as $issue ) {
+			$severity = isset( $issue['severity'] ) ? (string) $issue['severity'] : '';
+			if ( $severity === PromotionHealthMonitor::SEVERITY_CRITICAL ) {
+				++$critical;
+			} elseif ( $severity === PromotionHealthMonitor::SEVERITY_WARNING ) {
+				++$warning;
+			} else {
+				++$info;
+			}
+		}
+
+		return array(
+			'total'    => count( $issues ),
+			'critical' => $critical,
+			'warning'  => $warning,
+			'info'     => $info,
+			'issues'   => array_slice( $issues, 0, 25 ),
+		);
 	}
 
 	/**

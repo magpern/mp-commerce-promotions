@@ -32,8 +32,10 @@ final class PromotionPlanner {
 		$active_exclusion_ids = array();
 		$selected_count            = 0;
 		$plan_max_applications     = null;
-		$blocked_by_group_count    = 0;
-		$blocked_by_cooldown_count = 0;
+		$blocked_by_group_count     = 0;
+		$blocked_by_cooldown_count  = 0;
+		$blocked_by_budget_count    = 0;
+		$blocked_by_exclusion_count = 0;
 		/** @var array<string, int> $orchestration_group_winner */
 		$orchestration_group_winner = array();
 
@@ -52,6 +54,8 @@ final class PromotionPlanner {
 				if ( $skip_reason === 'promotion_cooldown_active' ) {
 					$skip_reason = PromotionEvaluationDecision::REASON_BLOCKED_BY_COOLDOWN;
 					++$blocked_by_cooldown_count;
+				} elseif ( $skip_reason === 'promotion_budget_exhausted' ) {
+					++$blocked_by_budget_count;
 				}
 				$decisions[] = new PromotionEvaluationDecision(
 					$promotion,
@@ -83,6 +87,7 @@ final class PromotionPlanner {
 					$promotion,
 					PromotionEvaluationDecision::REASON_EXCLUDED_BY_SELECTED
 				);
+				++$blocked_by_exclusion_count;
 				continue;
 			}
 
@@ -147,8 +152,10 @@ final class PromotionPlanner {
 			array(
 				'selected_count'            => $selected_count,
 				'skipped_count'             => $skipped_count,
-				'blocked_by_group_count'    => $blocked_by_group_count,
-				'blocked_by_cooldown_count' => $blocked_by_cooldown_count,
+				'blocked_by_group_count'     => $blocked_by_group_count,
+				'blocked_by_cooldown_count'  => $blocked_by_cooldown_count,
+				'blocked_by_budget_count'    => $blocked_by_budget_count,
+				'blocked_by_exclusion_count' => $blocked_by_exclusion_count,
 			)
 		);
 	}

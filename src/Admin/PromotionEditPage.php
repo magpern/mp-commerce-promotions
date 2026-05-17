@@ -780,8 +780,25 @@ final class PromotionEditPage {
 
 		$this->capture_rules_snapshot( $promotion, PromotionSnapshotService::TYPE_BEFORE_DUPLICATE );
 
+		$options = array();
+		if ( ! empty( $_POST['mp_cp_duplicate_scheduled'] ) ) {
+			$options['scheduled_draft'] = true;
+		}
+		if ( ! empty( $_POST['mp_cp_duplicate_without_codes'] ) ) {
+			$options['without_codes'] = true;
+		}
+		if ( ! empty( $_POST['mp_cp_duplicate_without_budget'] ) ) {
+			$options['without_budget'] = true;
+		}
+		if ( isset( $_POST['mp_cp_duplicate_orchestration_group'] ) ) {
+			$raw_group = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_duplicate_orchestration_group'] ) );
+			if ( $raw_group !== '' ) {
+				$options['orchestration_group'] = $raw_group;
+			}
+		}
+
 		try {
-			$copy = $this->promotion_service->duplicate_as_draft( $promotion, (int) get_current_user_id() );
+			$copy = $this->promotion_service->duplicate_as_draft( $promotion, (int) get_current_user_id(), $options );
 		} catch ( RuntimeException $e ) {
 			$this->redirect_to_edit( $pid, array( 'mp_cp_duplicate_error' => 'duplicate_failed' ) );
 		}
@@ -1961,12 +1978,41 @@ final class PromotionEditPage {
 			return;
 		}
 
-		$snapshots = $this->snapshot_service->list_recent( $id, 10 );
-		if ( $snapshots === array() ) {
+		$filter_type = isset( $_GET['mp_cp_snapshot_type'] )
+			? sanitize_key( wp_unslash( (string) $_GET['mp_cp_snapshot_type'] ) )
+			: '';
+		$snapshots = $this->snapshot_service->list_recent( $id, 25 );
+		if ( $filter_type !== '' ) {
+			$snapshots = array_values(
+				array_filter(
+					$snapshots,
+					static fn ( PromotionSnapshot $s ): bool => $s->get_snapshot_type() === $filter_type
+				)
+			);
+		}
+		$display = array_slice( $snapshots, 0, 10 );
+		if ( $display === array() ) {
 			return;
 		}
 
-		echo '<h2 class="mp-cp-edit-section-title" style="margin:1.5em 0 0.5em;">' . esc_html__( 'Recent snapshots', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<h2 class="mp-cp-edit-section-title" style="margin:1.5em 0 0.5em;">' . esc_html__( 'Recent snapshots', 'mp-commerce-promotions' );
+		echo ' <span class="description">(' . esc_html( sprintf(
+			/* translators: %d: snapshot count */
+			__( '%d stored', 'mp-commerce-promotions' ),
+			count( $snapshots )
+		) ) . ')</span></h2>';
+		echo '<form method="get" style="margin:0 0 8px;">';
+		echo '<input type="hidden" name="page" value="' . esc_attr( AdminNavigation::PAGE_SLUG ) . '" />';
+		echo '<input type="hidden" name="tab" value="' . esc_attr( AdminNavigation::TAB_ALL ) . '" />';
+		echo '<input type="hidden" name="promotion" value="' . esc_attr( (string) $id ) . '" />';
+		echo '<label for="mp_cp_snapshot_type">' . esc_html__( 'Filter by type', 'mp-commerce-promotions' ) . '</label> ';
+		echo '<select name="mp_cp_snapshot_type" id="mp_cp_snapshot_type">';
+		echo '<option value="">' . esc_html__( 'All types', 'mp-commerce-promotions' ) . '</option>';
+		foreach ( array( PromotionSnapshot::TYPE_TEMPLATE_APPLY, PromotionSnapshot::TYPE_BUILDER_APPLY, PromotionSnapshot::TYPE_DUPLICATION, PromotionSnapshot::TYPE_AUTOMATION ) as $type ) {
+			echo '<option value="' . esc_attr( $type ) . '"' . selected( $filter_type, $type, false ) . '>' . esc_html( $type ) . '</option>';
+		}
+		echo '</select> <button type="submit" class="button button-small">' . esc_html__( 'Filter', 'mp-commerce-promotions' ) . '</button>';
+		echo '</form>';
 		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:0 0 16px;">';
 		echo '<p class="description">' . esc_html__(
 			'Automatic rollback points captured before template apply, rule builder apply, or duplication. Restore replaces the full promotion row from the snapshot.',
@@ -1975,12 +2021,14 @@ final class PromotionEditPage {
 		echo '<table class="widefat striped"><thead><tr>';
 		echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Type', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Label', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Source', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Created', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Action', 'mp-commerce-promotions' ) . '</th>';
 		echo '</tr></thead><tbody>';
 
 		$nonce_action = 'mp_cp_restore_snapshot_' . $id;
-		foreach ( $snapshots as $snapshot ) {
+		foreach ( $display as $snapshot ) {
 			if ( ! $snapshot instanceof PromotionSnapshot ) {
 				continue;
 			}
@@ -1992,9 +2040,12 @@ final class PromotionEditPage {
 			echo '<tr>';
 			echo '<td>' . esc_html( (string) $snapshot_id ) . '</td>';
 			echo '<td><code>' . esc_html( $snapshot->get_snapshot_type() ) . '</code></td>';
+			echo '<td>' . esc_html( $snapshot->get_snapshot_label() ?? '—' ) . '</td>';
+			echo '<td>' . esc_html( $snapshot->get_snapshot_source() ?? '—' ) . '</td>';
 			echo '<td>' . esc_html( $snapshot->get_created_at() ?? '—' ) . '</td>';
 			echo '<td>';
-			echo '<form method="post" action="" style="display:inline;" onsubmit="return confirm(\'' . esc_js( __( 'Restore this snapshot? Current promotion data will be overwritten.', 'mp-commerce-promotions' ) ) . '\');">';
+			$restore_warning = __( 'Restore this snapshot? Current promotion data will be overwritten. This cannot be undone from the UI except by restoring another snapshot.', 'mp-commerce-promotions' );
+			echo '<form method="post" action="" style="display:inline;" onsubmit="return confirm(\'' . esc_js( $restore_warning ) . '\');">';
 			wp_nonce_field( $nonce_action, 'mp_cp_restore_snapshot_nonce' );
 			echo '<input type="hidden" name="mp_cp_action" value="restore_snapshot" />';
 			echo '<input type="hidden" name="mp_cp_snapshot_id" value="' . esc_attr( (string) $snapshot_id ) . '" />';
@@ -2046,6 +2097,14 @@ final class PromotionEditPage {
 		wp_nonce_field( 'mp_cp_duplicate_promotion_' . $promotion_id, 'mp_cp_duplicate_promotion_nonce' );
 		echo '<input type="hidden" name="mp_cp_action" value="duplicate_promotion" />';
 		echo '<input type="hidden" name="promotion_id" value="' . esc_attr( (string) $promotion_id ) . '" />';
+		echo '<p><label><input type="checkbox" name="mp_cp_duplicate_scheduled" value="1" /> ';
+		echo esc_html__( 'Duplicate as scheduled draft (future start if missing)', 'mp-commerce-promotions' ) . '</label></p>';
+		echo '<p><label><input type="checkbox" name="mp_cp_duplicate_without_codes" value="1" /> ';
+		echo esc_html__( 'Duplicate without codes (codes are never copied; confirms intent)', 'mp-commerce-promotions' ) . '</label></p>';
+		echo '<p><label><input type="checkbox" name="mp_cp_duplicate_without_budget" value="1" /> ';
+		echo esc_html__( 'Duplicate without budget cap', 'mp-commerce-promotions' ) . '</label></p>';
+		echo '<p><label for="mp_cp_duplicate_orchestration_group">' . esc_html__( 'Orchestration group override', 'mp-commerce-promotions' ) . '</label> ';
+		echo '<input type="text" class="regular-text" id="mp_cp_duplicate_orchestration_group" name="mp_cp_duplicate_orchestration_group" maxlength="64" placeholder="' . esc_attr__( 'Optional', 'mp-commerce-promotions' ) . '" /></p>';
 		echo '<button type="submit" class="button">' . esc_html__( 'Duplicate promotion', 'mp-commerce-promotions' ) . '</button>';
 		echo '<p class="description" style="margin:8px 0 0;">' . esc_html__(
 			'Creates a new draft copy with the same rules. Codes, batches, redemptions, and usage counts are not copied.',

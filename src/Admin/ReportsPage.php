@@ -55,6 +55,9 @@ final class ReportsPage {
 
 		$this->render_filter_form( $filters );
 		$this->render_summary_cards( $summary );
+		$this->render_telemetry_section();
+		$this->render_automation_history_section();
+		$this->render_health_summary_section();
 		$this->render_orchestration_section( $summary );
 		$this->render_economics_sections( $filters );
 		$this->render_top_promotions_table( $summary['top_promotions'] );
@@ -471,5 +474,79 @@ final class ReportsPage {
 			false
 		);
 		echo '</form>';
+	}
+
+	private function render_telemetry_section(): void {
+		$telemetry = $this->reports->telemetry_summary( 10 );
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Planner telemetry', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="description">' . esc_html__( 'Aggregate planner counters (no customer PII). Updated during cart totals calculation.', 'mp-commerce-promotions' ) . '</p>';
+
+		$this->render_telemetry_table( __( 'Most selected promotions', 'mp-commerce-promotions' ), $telemetry['most_selected'], 'selected_count' );
+		$this->render_telemetry_table( __( 'Most blocked (orchestration group)', 'mp-commerce-promotions' ), $telemetry['most_blocked'], 'metric_value' );
+		echo '<h3>' . esc_html__( 'Most conflicted orchestration groups', 'mp-commerce-promotions' ) . '</h3>';
+		if ( $telemetry['top_orchestration_conflicts'] === array() ) {
+			echo '<p>' . esc_html__( 'No orchestration block data yet.', 'mp-commerce-promotions' ) . '</p>';
+		} else {
+			echo '<ul>';
+			foreach ( $telemetry['top_orchestration_conflicts'] as $row ) {
+				echo '<li><code>' . esc_html( (string) ( $row['orchestration_group'] ?? '' ) ) . '</code> — ';
+				echo esc_html( (string) (int) ( $row['total_blocked'] ?? 0 ) ) . ' ' . esc_html__( 'blocks', 'mp-commerce-promotions' );
+				echo '</li>';
+			}
+			echo '</ul>';
+		}
+	}
+
+	/**
+	 * @param list<array<string, mixed>> $rows
+	 */
+	private function render_telemetry_table( string $title, array $rows, string $metric_key ): void {
+		echo '<h3>' . esc_html( $title ) . '</h3>';
+		if ( $rows === array() ) {
+			echo '<p>' . esc_html__( 'No data yet.', 'mp-commerce-promotions' ) . '</p>';
+			return;
+		}
+		echo '<table class="widefat striped" style="max-width:640px;"><thead><tr><th>ID</th><th>' . esc_html__( 'Name', 'mp-commerce-promotions' ) . '</th><th>' . esc_html__( 'Count', 'mp-commerce-promotions' ) . '</th></tr></thead><tbody>';
+		foreach ( $rows as $row ) {
+			$metric = isset( $row[ $metric_key ] ) ? (int) $row[ $metric_key ] : (int) ( $row['metric_value'] ?? 0 );
+			echo '<tr><td>' . esc_html( (string) (int) ( $row['promotion_id'] ?? 0 ) ) . '</td>';
+			echo '<td>' . esc_html( (string) ( $row['name'] ?? '' ) ) . '</td>';
+			echo '<td>' . esc_html( (string) $metric ) . '</td></tr>';
+		}
+		echo '</tbody></table>';
+	}
+
+	private function render_automation_history_section(): void {
+		$runs = $this->reports->latest_automation_runs( 10 );
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Automation history', 'mp-commerce-promotions' ) . '</h2>';
+		if ( $runs === array() ) {
+			echo '<p>' . esc_html__( 'No automation runs yet. Use Diagnostics → Run all automation.', 'mp-commerce-promotions' ) . '</p>';
+			return;
+		}
+		echo '<table class="widefat striped" style="max-width:720px;"><thead><tr><th>ID</th><th>Type</th><th>Status</th><th>Warnings</th><th>Errors</th><th>Started</th></tr></thead><tbody>';
+		foreach ( $runs as $run ) {
+			echo '<tr><td>' . esc_html( (string) ( $run->get_id() ?? 0 ) ) . '</td>';
+			echo '<td><code>' . esc_html( $run->get_run_type() ) . '</code></td>';
+			echo '<td>' . esc_html( $run->get_status() ) . '</td>';
+			echo '<td>' . esc_html( (string) $run->get_warnings_count() ) . '</td>';
+			echo '<td>' . esc_html( (string) $run->get_errors_count() ) . '</td>';
+			echo '<td>' . esc_html( $run->get_created_at() ) . '</td></tr>';
+		}
+		echo '</tbody></table>';
+	}
+
+	private function render_health_summary_section(): void {
+		$health = $this->reports->health_summary( 500 );
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Promotion health summary', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p>';
+		printf(
+			/* translators: 1: total, 2: critical, 3: warning, 4: info */
+			esc_html__( 'Issues found: %1$d (critical: %2$d, warning: %3$d, info: %4$d). See Diagnostics for the full list.', 'mp-commerce-promotions' ),
+			(int) $health['total'],
+			(int) $health['critical'],
+			(int) $health['warning'],
+			(int) $health['info']
+		);
+		echo '</p>';
 	}
 }

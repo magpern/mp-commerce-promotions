@@ -27,18 +27,22 @@ final class PromotionSnapshotRepository {
 		$now = current_time( 'mysql' );
 
 		$data = array(
-			'promotion_id'  => $snapshot->get_promotion_id(),
-			'snapshot_type' => $snapshot->get_snapshot_type(),
-			'snapshot_json' => wp_json_encode( $snapshot->get_snapshot_data() ),
-			'notes'         => $snapshot->get_notes(),
-			'created_by'    => $snapshot->get_created_by(),
-			'created_at'    => $snapshot->get_created_at() ?? $now,
+			'promotion_id'    => $snapshot->get_promotion_id(),
+			'snapshot_type'   => $snapshot->get_snapshot_type(),
+			'snapshot_label'  => $snapshot->get_snapshot_label(),
+			'snapshot_source' => $snapshot->get_snapshot_source(),
+			'snapshot_json'   => wp_json_encode( $snapshot->get_snapshot_data() ),
+			'notes'           => $snapshot->get_notes(),
+			'created_by'      => $snapshot->get_created_by(),
+			'created_at'      => $snapshot->get_created_at() ?? $now,
 		);
 
 		$notes_format       = $data['notes'] === null ? '%s' : '%s';
 		$created_by_format  = $data['created_by'] === null ? '%s' : '%d';
+		$label_format       = $data['snapshot_label'] === null ? '%s' : '%s';
+		$source_format      = $data['snapshot_source'] === null ? '%s' : '%s';
 
-		$formats = array( '%d', '%s', '%s', $notes_format, $created_by_format, '%s' );
+		$formats = array( '%d', '%s', $label_format, $source_format, '%s', $notes_format, $created_by_format, '%s' );
 
 		$inserted = $this->wpdb->insert( $this->table(), $data, $formats );
 		if ( false === $inserted ) {
@@ -83,6 +87,24 @@ final class PromotionSnapshotRepository {
 		);
 
 		return $this->rows_to_snapshots( $rows );
+	}
+
+	public function count_for_promotion( int $promotion_id, ?string $snapshot_type = null ): int {
+		if ( $promotion_id <= 0 ) {
+			return 0;
+		}
+
+		$sql    = "SELECT COUNT(*) FROM {$this->table()} WHERE promotion_id = %d";
+		$params = array( $promotion_id );
+
+		if ( $snapshot_type !== null && trim( $snapshot_type ) !== '' ) {
+			$sql     .= ' AND snapshot_type = %s';
+			$params[] = $snapshot_type;
+		}
+
+		$count = DbQuery::get_var( $this->wpdb, $sql, $params );
+
+		return is_numeric( $count ) ? (int) $count : 0;
 	}
 
 	private function table(): string {

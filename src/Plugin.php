@@ -17,7 +17,10 @@ use MP\CommercePromotions\Admin\PromotionEditPage;
 use MP\CommercePromotions\Admin\PromotionsPage;
 use MP\CommercePromotions\Admin\SettingsPage;
 use MP\CommercePromotions\Domain\AuditLogRepository;
+use MP\CommercePromotions\Domain\AutomationRunRepository;
+use MP\CommercePromotions\Domain\PlannerTelemetryRepository;
 use MP\CommercePromotions\Domain\PromotionCodeBatchRepository;
+use MP\CommercePromotions\Domain\PromotionSnapshotRepository;
 use MP\CommercePromotions\Domain\PromotionCodeFactory;
 use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionFactory;
@@ -25,7 +28,12 @@ use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Service\AuditLogger;
+use MP\CommercePromotions\Service\PlannerTelemetryRecorder;
+use MP\CommercePromotions\Service\PromotionAutomationRunner;
 use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
+use MP\CommercePromotions\Service\PromotionConflictAnalyzer;
+use MP\CommercePromotions\Service\PromotionHealthMonitor;
+use MP\CommercePromotions\Service\PromotionOperationalRecovery;
 use MP\CommercePromotions\Service\PromotionReports;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
@@ -102,6 +110,14 @@ final class Plugin {
 				$this->audit_logger
 			);
 
+			$telemetry_recorder = null;
+			global $wpdb;
+			if ( $wpdb instanceof wpdb ) {
+				$telemetry_recorder = new PlannerTelemetryRecorder(
+					new PlannerTelemetryRepository( $wpdb )
+				);
+			}
+
 			$cart_applier = new CartPromotionApplier(
 				$this->promotion_repository,
 				$this->promotion_code_repository,
@@ -110,7 +126,8 @@ final class Plugin {
 				$this->settings,
 				null,
 				null,
-				$gift_sync
+				$gift_sync,
+				$telemetry_recorder
 			);
 			$this->woo_bridge->set_cart_promotion_applier( $cart_applier );
 
@@ -168,6 +185,11 @@ final class Plugin {
 				$this->audit_logger,
 				$snapshot_service
 			);
+			$health_monitor = new PromotionHealthMonitor(
+				$this->promotion_repository,
+				new PromotionConflictAnalyzer()
+			);
+
 			$promotions_page = new PromotionsPage(
 				$this->promotion_repository,
 				$this->promotion_service,
@@ -175,7 +197,8 @@ final class Plugin {
 				$this->promotion_code_repository,
 				$batch_repository,
 				$this->redemption_repository,
-				$rule_validator
+				$rule_validator,
+				$health_monitor
 			);
 		}
 
@@ -193,14 +216,56 @@ final class Plugin {
 				$this->redemption_repository,
 				$this->audit_logger
 			);
-			$diagnostics_page = new DiagnosticsPage( $usage_diagnostics, $this->promotion_service );
+			$automation_runner = null;
+			$health_monitor    = null;
+			$operational_recovery = null;
+			$automation_runs_repo = null;
+			global $wpdb;
+			if ( $wpdb instanceof wpdb && $this->promotion_service !== null ) {
+				$automation_runs_repo = new AutomationRunRepository( $wpdb );
+				$automation_runner    = new PromotionAutomationRunner(
+					$this->promotion_service,
+					$automation_runs_repo
+				);
+				$health_monitor = new PromotionHealthMonitor(
+					$this->promotion_repository,
+					new PromotionConflictAnalyzer()
+				);
+				$operational_recovery = new PromotionOperationalRecovery(
+					$this->promotion_repository,
+					$this->redemption_repository,
+					new PlannerTelemetryRepository( $wpdb ),
+					new PromotionSnapshotRepository( $wpdb ),
+					$this->audit_logger
+				);
+			}
+
+			$diagnostics_page = new DiagnosticsPage(
+				$usage_diagnostics,
+				$this->promotion_service,
+				$automation_runner,
+				$health_monitor,
+				$operational_recovery,
+				$automation_runs_repo
+			);
 		}
 
 		$reports_page = null;
 		if ( $this->promotion_repository !== null && $this->redemption_repository !== null ) {
+			global $wpdb;
+			$telemetry_repo = ( $wpdb instanceof wpdb ) ? new PlannerTelemetryRepository( $wpdb ) : null;
+			$automation_runs_repo = ( $wpdb instanceof wpdb ) ? new AutomationRunRepository( $wpdb ) : null;
+			$health_monitor = new PromotionHealthMonitor(
+				$this->promotion_repository,
+				new PromotionConflictAnalyzer()
+			);
+
 			$promotion_reports = new PromotionReports(
 				$this->promotion_repository,
-				$this->redemption_repository
+				$this->redemption_repository,
+				$telemetry_repo,
+				$automation_runs_repo,
+				$health_monitor
 			);
 			$reports_page = new ReportsPage( $promotion_reports, $this->promotion_repository );
 		}

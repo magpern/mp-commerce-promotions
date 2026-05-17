@@ -50,7 +50,7 @@ final class PromotionRuleValidatorEconomicsTest extends TestCase {
 			3,
 			array( array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 1 ) ),
 			array( array( 'type' => RuleTypes::ACTION_PERCENTAGE_DISCOUNT, 'percentage' => 5 ) )
-		);
+		)->with_date_window( null, null );
 
 		$issues = $this->validator->validate_with_catalog( $promotion, array( $promotion ) );
 		$this->assertTrue( $this->has_message_containing( $issues, 'No end date is configured' ) );

@@ -769,6 +769,28 @@ final class PromotionRepository {
 			$this->append_lifecycle_phase_where( $lifecycle_phase, $clauses, $params );
 		}
 
+		$orchestration_group = isset( $args['orchestration_group'] ) ? trim( (string) $args['orchestration_group'] ) : '';
+		if ( $orchestration_group !== '' ) {
+			$clauses[] = 'orchestration_group = %s';
+			$params[]  = $orchestration_group;
+		}
+
+		if ( ! empty( $args['promotion_ids'] ) && is_array( $args['promotion_ids'] ) ) {
+			$ids = array_values(
+				array_filter(
+					array_map( 'intval', $args['promotion_ids'] ),
+					static fn ( int $id ): bool => $id > 0
+				)
+			);
+			if ( $ids !== array() ) {
+				$placeholders = implode( ', ', array_fill( 0, count( $ids ), '%d' ) );
+				$clauses[]    = "id IN ({$placeholders})";
+				foreach ( $ids as $id ) {
+					$params[] = $id;
+				}
+			}
+		}
+
 		return array(
 			'where'  => implode( ' AND ', $clauses ),
 			'params' => $params,
@@ -869,6 +891,19 @@ final class PromotionRepository {
 			$clauses[] = 'ends_at IS NOT NULL AND ends_at < %s';
 			$params[]  = $now;
 		}
+	}
+
+	/**
+	 * @return list<Promotion>
+	 */
+	public function find_recently_modified( int $limit = 5 ): array {
+		$limit = max( 1, min( 20, $limit ) );
+		$table = $this->promotions_table();
+
+		$sql = "SELECT * FROM {$table} ORDER BY updated_at DESC, id DESC LIMIT %d";
+		$rows = DbQuery::get_results( $this->wpdb, $sql, array( $limit ) );
+
+		return $this->rows_to_promotions( $rows );
 	}
 
 	/**

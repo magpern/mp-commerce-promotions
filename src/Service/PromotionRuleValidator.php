@@ -57,6 +57,7 @@ final class PromotionRuleValidator {
 		$this->append_segmentation_condition_warnings( $promotion->get_conditions(), $issues );
 		$this->append_action_issues( $promotion->get_actions(), $issues );
 		$this->append_conflict_heuristic_issues( $promotion, $issues );
+		$this->append_operational_maturity_issues( $promotion, $issues );
 
 		return $issues;
 	}
@@ -255,6 +256,79 @@ final class PromotionRuleValidator {
 				),
 			);
 		}
+	}
+
+	/**
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function append_operational_maturity_issues( Promotion $promotion, array &$issues ): void {
+		$cooldown = $promotion->get_cooldown_hours();
+		if ( $cooldown !== null && $cooldown > 0 && ! $this->conditions_include_logged_in( $promotion->get_conditions() ) ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __( 'Cooldown is configured but no logged-in customer condition is present.', 'mp-commerce-promotions' ),
+			);
+		}
+
+		$group = $promotion->get_orchestration_group();
+		if ( $group !== null && $group !== '' ) {
+			$normalized = Promotion::normalize_orchestration_group( $group );
+			if ( $normalized !== $group ) {
+				$issues[] = $this->error(
+					__( 'Orchestration group contains invalid characters and must be normalized before activation.', 'mp-commerce-promotions' )
+				);
+			}
+		}
+
+		if (
+			$promotion->get_status() === PromotionStatus::ACTIVE
+			&& $promotion->get_ends_at() === null
+			&& $promotion->get_usage_limit() === null
+		) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __( 'Promotion has no end date and no usage limit (unlimited campaign).', 'mp-commerce-promotions' ),
+			);
+		}
+
+		if ( $promotion->get_status() === PromotionStatus::ACTIVE && count( $promotion->get_actions() ) === 0 ) {
+			$issues[] = $this->error(
+				__( 'Active promotion has no actions configured.', 'mp-commerce-promotions' )
+			);
+		}
+
+		if ( $promotion->get_status() === PromotionStatus::ACTIVE ) {
+			$ends = PromotionDateHelper::parse_mysql_datetime( $promotion->get_ends_at() );
+			if ( $ends !== null && PromotionDateHelper::now_timestamp() > $ends ) {
+				$issues[] = array(
+					'level'   => 'warning',
+					'message' => __( 'Lifecycle conflict: promotion is active but past its end date.', 'mp-commerce-promotions' ),
+				);
+			}
+			$starts = PromotionDateHelper::parse_mysql_datetime( $promotion->get_starts_at() );
+			if ( $starts !== null && PromotionDateHelper::now_timestamp() < $starts ) {
+				$issues[] = array(
+					'level'   => 'warning',
+					'message' => __( 'Lifecycle conflict: promotion is active but before its start date.', 'mp-commerce-promotions' ),
+				);
+			}
+		}
+	}
+
+	/**
+	 * @param array<mixed> $conditions
+	 */
+	private function conditions_include_logged_in( array $conditions ): bool {
+		foreach ( $conditions as $condition ) {
+			if ( ! is_array( $condition ) ) {
+				continue;
+			}
+			if ( ( $condition['type'] ?? '' ) === RuleTypes::CONDITION_LOGGED_IN ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

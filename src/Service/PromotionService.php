@@ -155,7 +155,15 @@ final class PromotionService {
 		return $reloaded;
 	}
 
-	public function duplicate_as_draft( Promotion $source, ?int $actor_user_id = null ): Promotion {
+	/**
+	 * @param array{
+	 *     scheduled_draft?: bool,
+	 *     without_codes?: bool,
+	 *     without_budget?: bool,
+	 *     orchestration_group?: string|null
+	 * } $options
+	 */
+	public function duplicate_as_draft( Promotion $source, ?int $actor_user_id = null, array $options = array() ): Promotion {
 		$source_id = $source->get_id();
 		if ( $source_id === null || $source_id <= 0 ) {
 			throw new RuntimeException( 'Source promotion id is required for duplication.' );
@@ -173,6 +181,25 @@ final class PromotionService {
 		}
 
 		$draft = $this->factory->create_draft_from_source( $source, $name, $actor_user_id );
+
+		if ( ! empty( $options['without_budget'] ) ) {
+			$draft = $draft->with_budget( null, 0.0, null );
+		}
+
+		if ( ! empty( $options['scheduled_draft'] ) ) {
+			$starts = $draft->get_starts_at();
+			if ( $starts === null || trim( (string) $starts ) === '' ) {
+				$draft = $draft->with_date_window(
+					gmdate( 'Y-m-d H:i:s', strtotime( '+1 day', strtotime( current_time( 'mysql' ) ) ) ),
+					$draft->get_ends_at()
+				);
+			}
+		}
+
+		if ( array_key_exists( 'orchestration_group', $options ) ) {
+			$group = $options['orchestration_group'];
+			$draft = $draft->with_orchestration( $draft->get_cooldown_hours(), is_string( $group ) ? $group : null );
+		}
 
 		$new_id = $this->promotions->insert( $draft );
 		if ( $new_id <= 0 ) {
@@ -192,6 +219,8 @@ final class PromotionService {
 				'new_promotion_id'    => $saved->get_id(),
 				'name'                => $saved->get_name(),
 				'uuid'                => $saved->get_uuid(),
+				'options'             => $options,
+				'without_codes'       => ! empty( $options['without_codes'] ),
 			),
 			$actor_user_id
 		);

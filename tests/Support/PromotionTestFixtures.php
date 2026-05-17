@@ -20,18 +20,22 @@ final class PromotionTestFixtures {
 	 * @param array<mixed> $actions
 	 */
 	public static function promotion( string $status, array $conditions, array $actions ): Promotion {
-		return Promotion::from_array(
-			array(
-				'uuid'         => '11111111-1111-4111-8111-111111111111',
-				'name'         => 'Test Promotion',
-				'status'       => $status,
-				'priority'     => 10,
-				'conditions'   => $conditions,
-				'actions'      => $actions,
-				'restrictions' => array(),
-				'usage_count'  => 0,
-			)
+		$data = array(
+			'uuid'         => '11111111-1111-4111-8111-111111111111',
+			'name'         => 'Test Promotion',
+			'status'       => $status,
+			'priority'     => 10,
+			'conditions'   => $conditions,
+			'actions'      => $actions,
+			'restrictions' => array(),
+			'usage_count'  => 0,
 		);
+
+		if ( $status === PromotionStatus::ACTIVE ) {
+			$data['ends_at'] = '2099-12-31 23:59:59';
+		}
+
+		return Promotion::from_array( $data );
 	}
 
 	public static function active_promotion( array $conditions, array $actions ): Promotion {

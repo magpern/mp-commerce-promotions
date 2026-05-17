@@ -36,6 +36,10 @@ final class PromotionSnapshot {
 
 	private ?string $created_at;
 
+	private ?string $snapshot_label;
+
+	private ?string $snapshot_source;
+
 	/**
 	 * @param array<string, mixed> $snapshot_data
 	 */
@@ -46,7 +50,9 @@ final class PromotionSnapshot {
 		array $snapshot_data,
 		?string $notes,
 		?int $created_by,
-		?string $created_at
+		?string $created_at,
+		?string $snapshot_label = null,
+		?string $snapshot_source = null
 	) {
 		if ( $promotion_id <= 0 ) {
 			throw new InvalidArgumentException( 'PromotionSnapshot promotion_id must be > 0.' );
@@ -66,8 +72,14 @@ final class PromotionSnapshot {
 		$this->snapshot_type = $snapshot_type;
 		$this->snapshot_data = $snapshot_data;
 		$this->notes         = $notes !== null && trim( $notes ) !== '' ? sanitize_textarea_field( $notes ) : null;
-		$this->created_by    = $created_by !== null && $created_by > 0 ? $created_by : null;
-		$this->created_at    = $created_at;
+		$this->created_by      = $created_by !== null && $created_by > 0 ? $created_by : null;
+		$this->created_at      = $created_at;
+		$this->snapshot_label  = $snapshot_label !== null && trim( $snapshot_label ) !== ''
+			? sanitize_text_field( $snapshot_label )
+			: null;
+		$this->snapshot_source = $snapshot_source !== null && trim( $snapshot_source ) !== ''
+			? sanitize_key( $snapshot_source )
+			: null;
 	}
 
 	/**
@@ -94,7 +106,9 @@ final class PromotionSnapshot {
 			$data,
 			isset( $row['notes'] ) ? (string) $row['notes'] : null,
 			$created_by,
-			isset( $row['created_at'] ) ? (string) $row['created_at'] : null
+			isset( $row['created_at'] ) ? (string) $row['created_at'] : null,
+			isset( $row['snapshot_label'] ) ? (string) $row['snapshot_label'] : null,
+			isset( $row['snapshot_source'] ) ? (string) $row['snapshot_source'] : null
 		);
 	}
 
@@ -129,6 +143,14 @@ final class PromotionSnapshot {
 		return $this->created_at;
 	}
 
+	public function get_snapshot_label(): ?string {
+		return $this->snapshot_label;
+	}
+
+	public function get_snapshot_source(): ?string {
+		return $this->snapshot_source;
+	}
+
 	public function with_id( int $id ): self {
 		return new self(
 			$id,
@@ -137,7 +159,9 @@ final class PromotionSnapshot {
 			$this->snapshot_data,
 			$this->notes,
 			$this->created_by,
-			$this->created_at
+			$this->created_at,
+			$this->snapshot_label,
+			$this->snapshot_source
 		);
 	}
 }
