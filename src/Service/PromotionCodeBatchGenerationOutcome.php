@@ -129,10 +129,10 @@ final class PromotionCodeBatchGenerationOutcome {
 	): string {
 		$payload = wp_json_encode(
 			array(
-				'promotion_id'  => $promotion_id,
-				'batch_id'      => $batch_id,
-				'generated_at'  => $generated_at,
-				'codes'         => array_values( $plain_codes ),
+				'promotion_id' => $promotion_id,
+				'batch_id'     => $batch_id,
+				'generated_at' => $generated_at,
+				'codes'        => array_values( $plain_codes ),
 			)
 		);
 

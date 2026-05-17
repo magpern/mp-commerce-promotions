@@ -8,10 +8,10 @@ See [CHANGELOG.md](../CHANGELOG.md) for user-facing release notes and [DEVELOPME
 
 - [ ] Git working tree clean (`git status` shows no uncommitted changes you intend to ship).
 - [ ] On intended branch (usually `main`).
-- [ ] **GitHub Actions CI** passes on `main` for the commit you will tag (workflow: `.github/workflows/ci.yml` — syntax lint + build zip; PHPCS not gating yet).
+- [ ] **GitHub Actions CI** passes on `main` for the commit you will tag (workflow: `.github/workflows/ci.yml` — syntax lint, PHPUnit, build zip; PHPCS runs but **does not fail** the job).
 - [ ] `composer install` (dev dependencies for lint only).
 - [ ] `composer run lint:php` — must pass (syntax).
-- [ ] `composer run lint:phpcs` — **optional for now**; full plugin baseline is **not clean** (see [DEVELOPMENT.md](DEVELOPMENT.md)). Do not block a release solely on a zero-violation PHPCS run until CI policy says so.
+- [ ] `composer run lint:phpcs` — record counts in release notes; **non-blocking** in CI (see [BETA_READINESS.md](BETA_READINESS.md)).
 - [ ] `bash scripts/build-zip.sh` — produces `../build/mp-commerce-promotions-{version}.zip`.
 - [ ] Inspect zip: no `.git/`, `vendor/`, `node_modules/`, or cache directories (see script output / `unzip -l`).
 
@@ -19,6 +19,13 @@ See [CHANGELOG.md](../CHANGELOG.md) for user-facing release notes and [DEVELOPME
 
 - [ ] `bash scripts/sync-to-live.sh` — never copies `.git` or `vendor` to live.
 - [ ] `bash scripts/verify-plugin.sh` — deactivate/activate cycle and `mp_cp_schema_version` printed.
+
+## Beta certification checklist
+
+- [ ] [BETA_READINESS.md](BETA_READINESS.md) reviewed.
+- [ ] [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md) — confirm blocks still **not** declared unless block QA passed.
+- [ ] `./wp eval-file .../scripts/beta-readiness-smoke.php` passes.
+- [ ] `languages/mp-commerce-promotions.pot` regenerated if admin strings changed.
 
 ## Commercial beta checklist
 
@@ -43,7 +50,7 @@ See [CHANGELOG.md](../CHANGELOG.md) for user-facing release notes and [DEVELOPME
 
 ## Localization checklist
 
-- [ ] `languages/mp-commerce-promotions.pot` present (regenerate with `wp i18n make-pot` when available).
+- [ ] `languages/mp-commerce-promotions.pot` present (6000+ lines from `wp i18n make-pot`; see [BETA_READINESS.md](BETA_READINESS.md)).
 - [ ] New admin strings use `__()` / `esc_html__()` with text domain `mp-commerce-promotions`.
 
 ## Browser QA checklist

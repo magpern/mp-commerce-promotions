@@ -113,9 +113,9 @@ final class PromotionCodeBatchGenerator {
 		$batch = $batch->with_id( $batch_id );
 
 		/** @var list<string> $plain_codes */
-		$plain_codes     = array();
-		$inserted        = 0;
-		$seen_hashes     = array();
+		$plain_codes = array();
+		$inserted    = 0;
+		$seen_hashes = array();
 
 		for ( $i = 0; $i < $quantity; $i++ ) {
 			$inserted_one = false;
@@ -149,7 +149,7 @@ final class PromotionCodeBatchGenerator {
 				$seen_hashes[ $hash ] = true;
 				$plain_codes[]        = $plain;
 				++$inserted;
-				$inserted_one         = true;
+				$inserted_one = true;
 				break;
 			}
 

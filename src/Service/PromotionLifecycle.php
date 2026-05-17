@@ -22,9 +22,9 @@ final class PromotionLifecycle {
 	public const PHASE_BUDGET_EXHAUSTED = 'budget_exhausted';
 	public const PHASE_ARCHIVED         = 'archived';
 
-	public const PHASE_SCHEDULED_DRAFT  = 'scheduled_draft';
+	public const PHASE_SCHEDULED_DRAFT = 'scheduled_draft';
 
-	public const PHASE_EXPIRED_PAUSED   = 'expired_paused';
+	public const PHASE_EXPIRED_PAUSED = 'expired_paused';
 
 	public const ENDING_SOON_DAYS = 7;
 

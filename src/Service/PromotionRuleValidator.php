@@ -81,8 +81,8 @@ final class PromotionRuleValidator {
 	}
 
 	/**
-	 * @param list<Promotion>                               $catalog
-	 * @param list<array{level: string, message: string}>   $issues
+	 * @param list<Promotion>                             $catalog
+	 * @param list<array{level: string, message: string}> $issues
 	 */
 	private function append_economics_issues( Promotion $promotion, array $catalog, array &$issues ): void {
 		if ( $promotion->has_budget_cap() && ( $promotion->get_budget_currency() === null || $promotion->get_budget_currency() === '' ) ) {
@@ -465,7 +465,7 @@ final class PromotionRuleValidator {
 	}
 
 	/**
-	 * @param list<array<string, mixed>>                    $actions
+	 * @param list<array<string, mixed>>                  $actions
 	 * @param list<array{level: string, message: string}> $issues
 	 */
 	private function append_settings_gated_action_issues( array $actions, array &$issues ): void {
@@ -1113,7 +1113,7 @@ final class PromotionRuleValidator {
 	 * @param list<array{level: string, message: string}> $issues
 	 */
 	private function append_conflict_heuristic_issues( Promotion $promotion, array &$issues ): void {
-		$mode = $promotion->get_application_mode();
+		$mode     = $promotion->get_application_mode();
 		$excluded = $promotion->get_excluded_promotion_ids();
 
 		if ( $mode === PromotionApplicationMode::EXCLUSIVE && $excluded !== array() ) {
@@ -1172,7 +1172,7 @@ final class PromotionRuleValidator {
 			$categories = isset( $raw['category_ids'] ) && is_array( $raw['category_ids'] )
 				? $raw['category_ids']
 				: array();
-			$products = isset( $raw['product_ids'] ) && is_array( $raw['product_ids'] )
+			$products   = isset( $raw['product_ids'] ) && is_array( $raw['product_ids'] )
 				? $raw['product_ids']
 				: array();
 

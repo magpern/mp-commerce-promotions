@@ -189,7 +189,7 @@ final class Settings {
 	}
 
 	public function telemetry_retention_days(): int {
-		$raw = get_option( self::OPTION_TELEMETRY_RETENTION_DAYS, self::DEFAULT_RETENTION_DAYS );
+		$raw  = get_option( self::OPTION_TELEMETRY_RETENTION_DAYS, self::DEFAULT_RETENTION_DAYS );
 		$days = is_numeric( $raw ) ? (int) $raw : self::DEFAULT_RETENTION_DAYS;
 
 		return max( 7, min( 3650, $days ) );

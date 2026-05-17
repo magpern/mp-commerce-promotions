@@ -45,8 +45,18 @@ final class SimulationScenario {
 				array(
 					'preset'   => $preset,
 					'items'    => array(
-						array( 'product_id' => 101, 'quantity' => 1, 'line_subtotal' => 49.99, 'unit_price' => 49.99 ),
-						array( 'product_id' => 202, 'quantity' => 2, 'line_subtotal' => 30.00, 'unit_price' => 15.00 ),
+						array(
+							'product_id'    => 101,
+							'quantity'      => 1,
+							'line_subtotal' => 49.99,
+							'unit_price'    => 49.99,
+						),
+						array(
+							'product_id'    => 202,
+							'quantity'      => 2,
+							'line_subtotal' => 30.00,
+							'unit_price'    => 15.00,
+						),
 					),
 					'metadata' => array( 'customer_lifetime_spend' => 250.0 ),
 				)
@@ -55,16 +65,26 @@ final class SimulationScenario {
 				array(
 					'preset'   => $preset,
 					'items'    => array(
-						array( 'product_id' => 301, 'quantity' => 3, 'line_subtotal' => 90.0, 'category_ids' => array( 15 ) ),
+						array(
+							'product_id'    => 301,
+							'quantity'      => 3,
+							'line_subtotal' => 90.0,
+							'category_ids'  => array( 15 ),
+						),
 					),
 					'metadata' => array( 'customer_order_count' => 5 ),
 				)
 			),
 			self::PRESET_HIGH_QUANTITY => new self(
 				array(
-					'preset'   => $preset,
-					'items'    => array(
-						array( 'product_id' => 401, 'quantity' => 12, 'line_subtotal' => 240.0, 'unit_price' => 20.0 ),
+					'preset' => $preset,
+					'items'  => array(
+						array(
+							'product_id'    => 401,
+							'quantity'      => 12,
+							'line_subtotal' => 240.0,
+							'unit_price'    => 20.0,
+						),
 					),
 				)
 			),
@@ -73,11 +93,15 @@ final class SimulationScenario {
 					'preset'      => $preset,
 					'customer_id' => 42,
 					'items'       => array(
-						array( 'product_id' => 501, 'quantity' => 1, 'line_subtotal' => 199.0 ),
+						array(
+							'product_id'    => 501,
+							'quantity'      => 1,
+							'line_subtotal' => 199.0,
+						),
 					),
 					'metadata'    => array(
-						'customer_lifetime_spend'       => 5000.0,
-						'customer_order_count'          => 25,
+						'customer_lifetime_spend'      => 5000.0,
+						'customer_order_count'         => 25,
 						'customer_average_order_value' => 200.0,
 					),
 				)
@@ -87,7 +111,11 @@ final class SimulationScenario {
 					'preset'      => $preset,
 					'customer_id' => null,
 					'items'       => array(
-						array( 'product_id' => 601, 'quantity' => 1, 'line_subtotal' => 75.0 ),
+						array(
+							'product_id'    => 601,
+							'quantity'      => 1,
+							'line_subtotal' => 75.0,
+						),
 					),
 				)
 			),
@@ -96,7 +124,11 @@ final class SimulationScenario {
 					'preset'      => $preset,
 					'customer_id' => 99,
 					'items'       => array(
-						array( 'product_id' => 701, 'quantity' => 1, 'line_subtotal' => 55.0 ),
+						array(
+							'product_id'    => 701,
+							'quantity'      => 1,
+							'line_subtotal' => 55.0,
+						),
 					),
 					'metadata'    => array( 'simulate_cooldown_active' => true ),
 				)
@@ -105,8 +137,18 @@ final class SimulationScenario {
 				array(
 					'preset' => self::PRESET_WHOLE_CART,
 					'items'  => array(
-						array( 'product_id' => 1, 'quantity' => 2, 'line_subtotal' => 100.0, 'unit_price' => 50.0 ),
-						array( 'product_id' => 2, 'quantity' => 1, 'line_subtotal' => 25.0, 'unit_price' => 25.0 ),
+						array(
+							'product_id'    => 1,
+							'quantity'      => 2,
+							'line_subtotal' => 100.0,
+							'unit_price'    => 50.0,
+						),
+						array(
+							'product_id'    => 2,
+							'quantity'      => 1,
+							'line_subtotal' => 25.0,
+							'unit_price'    => 25.0,
+						),
 					),
 				)
 			),

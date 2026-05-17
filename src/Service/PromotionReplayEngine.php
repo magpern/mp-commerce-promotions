@@ -65,7 +65,10 @@ final class PromotionReplayEngine {
 	public function replay_promotion( int $promotion_id ): array {
 		$promotion = $this->promotions->find( $promotion_id );
 		if ( $promotion === null ) {
-			return array( 'promotion_id' => $promotion_id, 'error' => 'not_found' );
+			return array(
+				'promotion_id' => $promotion_id,
+				'error'        => 'not_found',
+			);
 		}
 
 		$historical_count = $this->redemptions->count_recorded_for_promotion( $promotion_id );
@@ -85,15 +88,15 @@ final class PromotionReplayEngine {
 		$changed_winner     = $historical_count > 0 && ! $would_select_today;
 
 		return array(
-			'promotion_id'              => $promotion_id,
-			'historical_redemptions'    => $historical_count,
-			'would_select_today'        => $would_select_today,
-			'changed_winner'            => $changed_winner,
-			'estimated_discount_today'  => $today->get_total_discount(),
-			'newly_blocked'             => $changed_winner,
-			'estimated_budget_delta'    => $today->get_total_discount(),
-			'stackability_changed'      => false,
-			'simulation'                => $today->to_array(),
+			'promotion_id'             => $promotion_id,
+			'historical_redemptions'   => $historical_count,
+			'would_select_today'       => $would_select_today,
+			'changed_winner'           => $changed_winner,
+			'estimated_discount_today' => $today->get_total_discount(),
+			'newly_blocked'            => $changed_winner,
+			'estimated_budget_delta'   => $today->get_total_discount(),
+			'stackability_changed'     => false,
+			'simulation'               => $today->to_array(),
 		);
 	}
 }

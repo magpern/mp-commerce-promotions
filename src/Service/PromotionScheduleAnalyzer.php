@@ -24,8 +24,8 @@ final class PromotionScheduleAnalyzer {
 	public const CODE_SEASONAL_OVERLAP            = 'seasonal_overlap';
 
 	/**
-	 * @param list<Promotion>   $catalog   Peer promotions (typically active + scheduled).
-	 * @param Promotion|null    $subject   When set, only emit issues involving this promotion.
+	 * @param list<Promotion> $catalog   Peer promotions (typically active + scheduled).
+	 * @param Promotion|null  $subject   When set, only emit issues involving this promotion.
 	 * @return list<array{code: string, severity: string, promotion_ids: list<int>, message: string}>
 	 */
 	public function analyze( array $catalog, ?Promotion $subject = null ): array {
@@ -215,7 +215,7 @@ final class PromotionScheduleAnalyzer {
 			if ( ! is_array( $action ) || ( $action['type'] ?? '' ) !== RuleTypes::ACTION_PERCENTAGE_DISCOUNT ) {
 				continue;
 			}
-			$product_ids = isset( $action['product_ids'] ) && is_array( $action['product_ids'] )
+			$product_ids  = isset( $action['product_ids'] ) && is_array( $action['product_ids'] )
 				? CartItemSelector::normalize_positive_int_list( $action['product_ids'] )
 				: array();
 			$category_ids = isset( $action['category_ids'] ) && is_array( $action['category_ids'] )

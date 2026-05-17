@@ -1,27 +1,6013 @@
-# Copyright (C) 2026 Commerce Promotions for WooCommerce
+# Copyright (C) 2026 Magpern
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
 "Project-Id-Version: Commerce Promotions for WooCommerce 0.1.0\n"
-"Report-Msgid-Bugs-To: https://github.com/magpern/mp-commerce-promotions\n"
-"POT-Creation-Date: 2026-05-16 12:00+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/mp-commerce-promotions\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Manual placeholder — run `wp i18n make-pot` when WP-CLI i18n is available.\n"
+"POT-Creation-Date: 2026-05-17T18:37:33+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: mp-commerce-promotions\n"
 
-#: src/Admin/AdminNavigation.php
+#. Plugin Name of the plugin
+#: mp-commerce-promotions.php
+msgid "Commerce Promotions for WooCommerce"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: mp-commerce-promotions.php
+msgid "https://github.com/magpern/mp-commerce-promotions"
+msgstr ""
+
+#. Description of the plugin
+#: mp-commerce-promotions.php
+msgid "Generic WooCommerce promotion engine for discounts, promotion codes, and voucher workflows."
+msgstr ""
+
+#. Author of the plugin
+#: mp-commerce-promotions.php
+msgid "Magpern"
+msgstr ""
+
+#. Author URI of the plugin
+#: mp-commerce-promotions.php
+msgid "https://github.com/magpern"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:42
+#: src/Admin/PromotionsPage.php:136
+#: src/src/Admin/AdminMenu.php:42
+#: src/src/Admin/PromotionsPage.php:131
+msgid "Commerce Promotions"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:43
+#: src/Admin/PromotionEditPage.php:2711
+#: src/Admin/ReportsPage.php:300
+#: src/Admin/ReportsPage.php:709
+#: src/src/Admin/AdminMenu.php:43
+#: src/src/Admin/PromotionEditPage.php:2624
+#: src/src/Admin/ReportsPage.php:280
+msgid "Promotions"
+msgstr ""
+
+#: src/Admin/AdminNavigation.php:79
+#: src/Admin/GettingStartedPage.php:59
+#: src/src/Admin/AdminNavigation.php:76
+msgid "All Promotions"
+msgstr ""
+
+#: src/Admin/AdminNavigation.php:83
+#: src/Admin/GettingStartedPage.php:28
 msgid "Getting Started"
 msgstr ""
 
-#: src/Admin/SettingsPage.php
+#: src/Admin/AdminNavigation.php:87
+#: src/Admin/GettingStartedPage.php:74
+#: src/src/Admin/AdminNavigation.php:80
+msgid "Settings"
+msgstr ""
+
+#: src/Admin/AdminNavigation.php:91
+#: src/Admin/GettingStartedPage.php:69
+#: src/src/Admin/AdminNavigation.php:84
+msgid "Diagnostics"
+msgstr ""
+
+#: src/Admin/AdminNavigation.php:95
+#: src/Admin/GettingStartedPage.php:64
+#: src/src/Admin/AdminNavigation.php:88
+msgid "Reports"
+msgstr ""
+
+#: src/Admin/AdminNavigation.php:100
+#: src/src/Admin/AdminNavigation.php:93
+msgid "Promotions navigation"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:68
+msgid "Performance & hardening"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:72
+msgid "Planner profiler"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:76
+msgid "Planner runs"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:81
+msgid "Average planner runtime"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:86
+#: src/Admin/ReportsPage.php:699
+msgid "Allocation cache hit rate"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:91
+#: src/Admin/ReportsPage.php:701
+msgid "Planner failures"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:97
+msgid "Storefront degraded mode is active."
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:101
+msgid "Clear degraded state"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:108
+msgid "Concurrency warnings"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:110
+msgid "No recent concurrency warnings."
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:122
+#: src/Admin/ReportsPage.php:629
+msgid "WP-Cron automation"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:126
+msgid "Cron automation is enabled."
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:127
+msgid "Cron automation is disabled (default)."
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:133
+msgid "Hourly hook scheduled"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:134
+#: src/Admin/AdminPerformanceHardeningPanel.php:136
+#: src/Admin/ReportsPage.php:637
+#: src/Admin/ReportsPage.php:638
+msgid "yes"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:134
+#: src/Admin/AdminPerformanceHardeningPanel.php:136
+#: src/Admin/ReportsPage.php:637
+#: src/Admin/ReportsPage.php:638
+msgid "no"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:135
+msgid "Daily hook scheduled"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:141
+msgid "Reschedule cron hooks"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:148
+msgid "Storage & cleanup"
+msgstr ""
+
+#. translators: 1: retention days, 2: automation rows, 3: scenarios
+#: src/Admin/AdminPerformanceHardeningPanel.php:161
+#, php-format
+msgid "Retention: %1$d days. Dry-run would remove ~%2$d automation runs and archive ~%3$d scenarios."
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:167
+msgid "Run retention cleanup now?"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:170
+msgid "Run cleanup now"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:176
+#: src/Admin/ReportsPage.php:651
+msgid "Compatibility confidence"
+msgstr ""
+
+#: src/Admin/AdminPerformanceHardeningPanel.php:179
+msgid "Confidence"
+msgstr ""
+
+#: src/Admin/AdminProductionNotices.php:32
+msgid "Safe mode is ON: automatic promotions are disabled. Promotion codes may still apply when allowed in settings."
+msgstr ""
+
+#: src/Admin/AdminProductionNotices.php:38
+msgid "Planner telemetry is paused. Aggregate telemetry writes are disabled."
+msgstr ""
+
+#: src/Admin/AdminProductionNotices.php:44
+msgid "Simulation features are paused."
+msgstr ""
+
+#: src/Admin/AdminProductionNotices.php:50
+msgid "Automation emergency stop is active. Scheduled and manual automation runs are blocked."
+msgstr ""
+
+#. translators: %s: short error summary
+#: src/Admin/AdminProductionNotices.php:60
+#, php-format
+msgid "Storefront planner degraded mode was recorded: %s"
+msgstr ""
+
+#: src/Admin/AdminProductionNotices.php:61
+msgid "unknown error"
+msgstr ""
+
+#: src/Admin/AdminRouter.php:62
+#: src/Admin/DiagnosticsPage.php:199
+#: src/Admin/GettingStartedPage.php:24
+#: src/Admin/PromotionEditPage.php:146
+#: src/Admin/PromotionsPage.php:89
+#: src/Admin/ReportsPage.php:57
+#: src/Admin/SettingsPage.php:28
+#: src/src/Admin/AdminRouter.php:58
+#: src/src/Admin/DiagnosticsPage.php:164
+#: src/src/Admin/PromotionEditPage.php:138
+#: src/src/Admin/PromotionsPage.php:84
+#: src/src/Admin/ReportsPage.php:51
+#: src/src/Admin/SettingsPage.php:28
+msgid "You do not have permission to access this page."
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:20
+msgid "Compatibility status"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:23
+msgid "WordPress version"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:24
+msgid "WooCommerce version"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:25
+msgid "PHP version"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:27
+msgid "HPOS enabled"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:28
+#: src/Admin/CompatibilityStatusPanel.php:32
+#: src/Admin/PromotionEditPage.php:2482
+#: src/Admin/PromotionEditPage.php:2617
+#: src/Admin/PromotionEditPage.php:2620
+#: src/Admin/PromotionEditPage.php:2811
+#: src/src/Admin/PromotionEditPage.php:2413
+#: src/src/Admin/PromotionEditPage.php:2548
+#: src/src/Admin/PromotionEditPage.php:2551
+#: src/src/Admin/PromotionEditPage.php:2724
+msgid "Yes"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:28
+#: src/Admin/CompatibilityStatusPanel.php:32
+#: src/Admin/PromotionEditPage.php:2425
+#: src/Admin/PromotionEditPage.php:2482
+#: src/Admin/PromotionEditPage.php:2618
+#: src/Admin/PromotionEditPage.php:2621
+#: src/Admin/PromotionEditPage.php:2812
+#: src/src/Admin/PromotionEditPage.php:2356
+#: src/src/Admin/PromotionEditPage.php:2413
+#: src/src/Admin/PromotionEditPage.php:2549
+#: src/src/Admin/PromotionEditPage.php:2552
+#: src/src/Admin/PromotionEditPage.php:2725
+msgid "No"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:31
+msgid "HPOS declared compatible"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:35
+msgid "Cart/Checkout Blocks"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:36
+msgid "Not declared"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:42
+msgid "Cart fees"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:45
+msgid "Free gift cart lines"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:48
+msgid "Allocation reporting"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:50
+msgid "Discount strategy"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:53
+msgid "Tax mode"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:54
+#: src/Admin/PromotionEditPage.php:4002
+#: src/src/Admin/PromotionEditPage.php:3869
+msgid "Currency"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:57
+msgid "Active payment gateways"
+msgstr ""
+
+#: src/Admin/CompatibilityStatusPanel.php:60
+msgid "Shipping methods (zones)"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:220
+#: src/src/Admin/DiagnosticsPage.php:177
+msgid "Promotion Diagnostics"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:222
+#: src/src/Admin/DiagnosticsPage.php:179
+msgid "Compare stored usage_count values against redemption and order-meta records. Use the repair action to recalculate mismatched counters from recorded redemptions."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:252
+#: src/src/Admin/DiagnosticsPage.php:198
+msgid "Promotion integrity notes"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:254
+#: src/src/Admin/DiagnosticsPage.php:200
+msgid "Checkout recording is idempotent per order and promotion (unique redemption rows; duplicate checkout hooks do not double usage)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:255
+#: src/src/Admin/DiagnosticsPage.php:201
+msgid "Order cancellation, failure, refund, and trash/delete reverse recorded redemptions once per promotion; repeated reversal hooks are ignored."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:256
+#: src/src/Admin/DiagnosticsPage.php:202
+msgid "Orders that return to processing or completed after reversal restore reversed redemption rows when applicable."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:257
+#: src/src/Admin/DiagnosticsPage.php:203
+msgid "Free gift cart lines marked mp_cp_free_gift=yes are synchronized on each totals pass (stale gifts removed, quantities normalized)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:258
+#: src/src/Admin/DiagnosticsPage.php:204
+msgid "Stacked promotions record separate redemption rows and applied-promotion meta entries."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:264
+#: src/src/Admin/DiagnosticsPage.php:210
+msgid "Repair usage counters for all mismatches shown below?"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:270
+#: src/src/Admin/DiagnosticsPage.php:216
+msgid "This recalculates stored usage counters from recorded redemptions. No rows are deleted."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:280
+#: src/src/Admin/DiagnosticsPage.php:226
+msgid "Repair Usage Counters"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:291
+#: src/src/Admin/DiagnosticsPage.php:237
+msgid "Archive hygiene"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:292
+#: src/src/Admin/DiagnosticsPage.php:238
+msgid "Safe maintenance: moves promotions to archived status. Nothing is deleted."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:297
+#: src/src/Admin/DiagnosticsPage.php:243
+msgid "Archive all active promotions whose end date is in the past?"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:301
+#: src/src/Admin/DiagnosticsPage.php:247
+msgid "Archive expired active promotions"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:303
+#: src/src/Admin/DiagnosticsPage.php:249
+msgid "Active promotions with ends_at before now are archived (audited)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:306
+#: src/src/Admin/DiagnosticsPage.php:252
+msgid "Archive old draft promotions?"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:309
+#: src/src/Admin/DiagnosticsPage.php:255
+msgid "Draft age (days)"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:312
+#: src/src/Admin/DiagnosticsPage.php:258
+msgid "Archive old drafts"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:314
+#: src/src/Admin/DiagnosticsPage.php:260
+msgid "Draft promotions created before the cutoff are archived (audited)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:317
+#: src/src/Admin/DiagnosticsPage.php:263
+msgid "Pause all active promotions whose budget cap is exhausted?"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:321
+#: src/src/Admin/DiagnosticsPage.php:267
+msgid "Deactivate exhausted promotions"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:323
+#: src/src/Admin/DiagnosticsPage.php:269
+msgid "Sets active promotions with budget_spent >= budget_amount to paused (audited)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:332
+#: src/src/Admin/DiagnosticsPage.php:278
+msgid "Scheduler automation"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:333
+#: src/src/Admin/DiagnosticsPage.php:279
+msgid "Manual triggers for promotion lifecycle automation (same operations intended for cron). All actions are audited."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:338
+#: src/src/Admin/DiagnosticsPage.php:284
+msgid "Activate all scheduled draft promotions whose start date has passed?"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:342
+#: src/src/Admin/DiagnosticsPage.php:288
+msgid "Activate scheduled promotions"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:344
+#: src/src/Admin/DiagnosticsPage.php:290
+msgid "Draft promotions with starts_at in the past move to active."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:347
+#: src/src/Admin/DiagnosticsPage.php:293
+msgid "Archive all paused promotions past their end date?"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:351
+#: src/src/Admin/DiagnosticsPage.php:297
+msgid "Archive expired paused promotions"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:353
+#: src/src/Admin/DiagnosticsPage.php:299
+msgid "Paused promotions with ends_at before now are archived."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:356
+#: src/src/Admin/DiagnosticsPage.php:302
+msgid "Normalize invalid promotion states (pause expired active, flag archived with future start)?"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:360
+#: src/src/Admin/DiagnosticsPage.php:306
+msgid "Normalize promotion states"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:362
+#: src/src/Admin/DiagnosticsPage.php:308
+msgid "Pauses active promotions past end date; records warnings for archived promotions with future starts_at."
+msgstr ""
+
+#. translators: 1: archived count, 2: skipped count, 3: error count
+#: src/Admin/DiagnosticsPage.php:586
+#: src/src/Admin/DiagnosticsPage.php:532
+#, php-format
+msgid "Archive hygiene: %1$d archived, %2$d skipped, %3$d errors."
+msgstr ""
+
+#. translators: 1: paused count, 2: skipped count, 3: error count
+#: src/Admin/DiagnosticsPage.php:594
+#: src/src/Admin/DiagnosticsPage.php:540
+#, php-format
+msgid "Budget exhausted maintenance: %1$d paused, %2$d skipped, %3$d errors."
+msgstr ""
+
+#. translators: 1: changed count, 2: skipped count, 3: error count
+#: src/Admin/DiagnosticsPage.php:602
+#: src/src/Admin/DiagnosticsPage.php:548
+#, php-format
+msgid "Scheduler automation: %1$d changed, %2$d skipped, %3$d errors."
+msgstr ""
+
+#. translators: 1: changed count, 2: warnings count, 3: error count
+#: src/Admin/DiagnosticsPage.php:610
+#: src/src/Admin/DiagnosticsPage.php:556
+#, php-format
+msgid "State normalization: %1$d changed, %2$d warnings, %3$d errors."
+msgstr ""
+
+#. translators: 1: changed count, 2: warnings count, 3: error count
+#: src/Admin/DiagnosticsPage.php:618
+#: src/src/Admin/DiagnosticsPage.php:564
+#, php-format
+msgid "Automation run_all finished: ~%1$d lifecycle changes, %2$d warnings, %3$d errors. See automation history for the full summary."
+msgstr ""
+
+#. translators: 1: changed, 2: skipped, 3: errors
+#: src/Admin/DiagnosticsPage.php:626
+#: src/src/Admin/DiagnosticsPage.php:572
+#, php-format
+msgid "Budget recalculation: %1$d would change / changed, %2$d skipped, %3$d errors."
+msgstr ""
+
+#. translators: 1: rows, 2: promotions scanned
+#: src/Admin/DiagnosticsPage.php:634
+#: src/src/Admin/DiagnosticsPage.php:580
+#, php-format
+msgid "Planner telemetry rebuild: %1$d row(s), %2$d promotion(s) scanned."
+msgstr ""
+
+#. translators: 1: valid, 2: invalid
+#: src/Admin/DiagnosticsPage.php:641
+#: src/src/Admin/DiagnosticsPage.php:587
+#, php-format
+msgid "Snapshot validation: %1$d valid, %2$d invalid."
+msgstr ""
+
+#. translators: 1: changed, 2: skipped
+#: src/Admin/DiagnosticsPage.php:648
+#: src/src/Admin/DiagnosticsPage.php:594
+#, php-format
+msgid "Orchestration group repair: %1$d changed, %2$d skipped."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:654
+#: src/src/Admin/DiagnosticsPage.php:600
+#, php-format
+msgid "Planner telemetry reset: %1$d row(s) affected (dry-run when apply unchecked)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:658
+#: src/src/Admin/DiagnosticsPage.php:604
+msgid "Forecast cache reset completed (or previewed in dry-run)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:660
+#: src/src/Admin/DiagnosticsPage.php:606
+msgid "Simulation / planner performance counters recalculated."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:663
+#: src/src/Admin/DiagnosticsPage.php:609
+#, php-format
+msgid "Scenario validation: %1$d valid, %2$d invalid."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:669
+#: src/src/Admin/DiagnosticsPage.php:615
+#, php-format
+msgid "Scenario repair: %1$d valid kept, %2$d archived."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:674
+#, php-format
+msgid "Allocation summary rebuild processed %d promotion(s)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:676
+#, php-format
+msgid "Normalized %d invalid priority tier(s)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:678
+#, php-format
+msgid "Repaired %d malformed coupon coexistence config(s)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:680
+msgid "Profitability metric cache recalculated."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:683
+#, php-format
+msgid "Allocation snapshot validation: %1$d valid, %2$d invalid."
+msgstr ""
+
+#. translators: 1: promotions repaired count, 2: codes repaired count
+#: src/Admin/DiagnosticsPage.php:690
+#: src/src/Admin/DiagnosticsPage.php:622
+#, php-format
+msgid "Usage counters repaired: %1$d promotion(s), %2$d code(s)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:695
+#: src/src/Admin/DiagnosticsPage.php:627
+msgid "No usage counter mismatches were found to repair."
+msgstr ""
+
+#. translators: 1: promotions repaired count, 2: codes repaired count
+#: src/Admin/DiagnosticsPage.php:699
+#: src/src/Admin/DiagnosticsPage.php:631
+#, php-format
+msgid "Repair completed with errors. Repaired: %1$d promotion(s), %2$d code(s). Check logs for details."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:705
+#: src/Admin/PromotionEditPage.php:491
+#: src/Admin/PromotionEditPage.php:496
+#: src/Admin/PromotionEditPage.php:578
+#: src/Admin/PromotionEditPage.php:584
+#: src/Admin/PromotionEditPage.php:1838
+#: src/Admin/PromotionsPage.php:1011
+#: src/Admin/SettingsPage.php:277
+#: src/src/Admin/DiagnosticsPage.php:637
+#: src/src/Admin/PromotionEditPage.php:482
+#: src/src/Admin/PromotionEditPage.php:487
+#: src/src/Admin/PromotionEditPage.php:569
+#: src/src/Admin/PromotionEditPage.php:575
+#: src/src/Admin/PromotionEditPage.php:1769
+#: src/src/Admin/PromotionsPage.php:976
+#: src/src/Admin/SettingsPage.php:126
+msgid "Security check failed. Please try again."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:738
+#: src/src/Admin/DiagnosticsPage.php:670
+msgid "Promotion usage"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:741
+#: src/Admin/DiagnosticsPage.php:791
+#: src/src/Admin/DiagnosticsPage.php:673
+#: src/src/Admin/DiagnosticsPage.php:723
+msgid "No diagnostics available."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:748
+#: src/Admin/PromotionEditPage.php:2154
+#: src/Admin/PromotionEditPage.php:3202
+#: src/Admin/PromotionEditPage.php:3239
+#: src/Admin/PromotionEditPage.php:3736
+#: src/Admin/PromotionEditPage.php:3846
+#: src/Admin/PromotionEditPage.php:3998
+#: src/Admin/PromotionEditPage.php:4059
+#: src/Admin/PromotionPicker.php:106
+#: src/Admin/PromotionsPage.php:450
+#: src/Admin/ReportsPage.php:320
+#: src/Admin/ReportsPage.php:360
+#: src/Admin/ReportsPage.php:420
+#: src/src/Admin/DiagnosticsPage.php:680
+#: src/src/Admin/PromotionEditPage.php:2085
+#: src/src/Admin/PromotionEditPage.php:3115
+#: src/src/Admin/PromotionEditPage.php:3152
+#: src/src/Admin/PromotionEditPage.php:3603
+#: src/src/Admin/PromotionEditPage.php:3713
+#: src/src/Admin/PromotionEditPage.php:3865
+#: src/src/Admin/PromotionEditPage.php:3926
+#: src/src/Admin/PromotionPicker.php:106
+#: src/src/Admin/PromotionsPage.php:445
+#: src/src/Admin/ReportsPage.php:300
+#: src/src/Admin/ReportsPage.php:340
+#: src/src/Admin/ReportsPage.php:400
+msgid "ID"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:749
+#: src/Admin/PromotionEditPage.php:3203
+#: src/Admin/PromotionEditPage.php:3240
+#: src/Admin/PromotionEditPage.php:3548
+#: src/Admin/PromotionEditPage.php:3847
+#: src/Admin/PromotionEditPage.php:4156
+#: src/Admin/PromotionPicker.php:107
+#: src/Admin/PromotionsPage.php:451
+#: src/Admin/ReportsPage.php:321
+#: src/Admin/ReportsPage.php:361
+#: src/Admin/ReportsPage.php:421
+#: src/Admin/ReportsPage.php:547
+#: src/Admin/ReportsPage.php:755
+#: src/src/Admin/DiagnosticsPage.php:681
+#: src/src/Admin/PromotionEditPage.php:3116
+#: src/src/Admin/PromotionEditPage.php:3153
+#: src/src/Admin/PromotionEditPage.php:3461
+#: src/src/Admin/PromotionEditPage.php:3714
+#: src/src/Admin/PromotionEditPage.php:4023
+#: src/src/Admin/PromotionPicker.php:107
+#: src/src/Admin/PromotionsPage.php:446
+#: src/src/Admin/ReportsPage.php:301
+#: src/src/Admin/ReportsPage.php:341
+#: src/src/Admin/ReportsPage.php:401
+#: src/src/Admin/ReportsPage.php:527
+#: src/src/Admin/ReportsPage.php:633
+msgid "Name"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:750
+#: src/Admin/DiagnosticsPage.php:801
+#: src/src/Admin/DiagnosticsPage.php:682
+#: src/src/Admin/DiagnosticsPage.php:733
+msgid "Stored usage"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:751
+#: src/Admin/ReportsPage.php:264
+#: src/src/Admin/DiagnosticsPage.php:683
+#: src/src/Admin/ReportsPage.php:244
+msgid "Recorded redemptions"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:752
+#: src/Admin/ReportsPage.php:265
+#: src/src/Admin/DiagnosticsPage.php:684
+#: src/src/Admin/ReportsPage.php:245
+msgid "Reversed redemptions"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:753
+#: src/Admin/DiagnosticsPage.php:802
+#: src/src/Admin/DiagnosticsPage.php:685
+#: src/src/Admin/DiagnosticsPage.php:734
+msgid "Expected usage"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:754
+#: src/Admin/DiagnosticsPage.php:803
+#: src/Admin/DiagnosticsPage.php:1335
+#: src/Admin/PromotionEditPage.php:3739
+#: src/Admin/PromotionEditPage.php:4003
+#: src/Admin/PromotionEditPage.php:4316
+#: src/Admin/PromotionPicker.php:108
+#: src/Admin/PromotionsPage.php:453
+#: src/Admin/ReportsPage.php:222
+#: src/src/Admin/DiagnosticsPage.php:686
+#: src/src/Admin/DiagnosticsPage.php:735
+#: src/src/Admin/DiagnosticsPage.php:1150
+#: src/src/Admin/PromotionEditPage.php:3606
+#: src/src/Admin/PromotionEditPage.php:3870
+#: src/src/Admin/PromotionEditPage.php:4183
+#: src/src/Admin/PromotionPicker.php:108
+#: src/src/Admin/PromotionsPage.php:448
+#: src/src/Admin/ReportsPage.php:202
+msgid "Status"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:772
+#: src/Admin/DiagnosticsPage.php:820
+#: src/Admin/PromotionsPage.php:1152
+#: src/src/Admin/DiagnosticsPage.php:704
+#: src/src/Admin/DiagnosticsPage.php:752
+#: src/src/Admin/PromotionsPage.php:1117
+msgid "OK"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:774
+#: src/Admin/DiagnosticsPage.php:822
+#: src/src/Admin/DiagnosticsPage.php:706
+#: src/src/Admin/DiagnosticsPage.php:754
+msgid "Mismatch"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:787
+#: src/src/Admin/DiagnosticsPage.php:719
+msgid "Promotion code usage"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:788
+#: src/src/Admin/DiagnosticsPage.php:720
+msgid "Expected usage counts recorded redemptions whose order meta _mp_cp_promotion_code_id matches the code id."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:798
+#: src/Admin/PromotionEditPage.php:4314
+#: src/src/Admin/DiagnosticsPage.php:730
+#: src/src/Admin/PromotionEditPage.php:4181
+msgid "Code ID"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:799
+#: src/Admin/PromotionEditPage.php:4157
+#: src/src/Admin/DiagnosticsPage.php:731
+#: src/src/Admin/PromotionEditPage.php:4024
+msgid "Promotion ID"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:800
+#: src/Admin/PromotionEditPage.php:3738
+#: src/Admin/PromotionEditPage.php:4315
+#: src/src/Admin/DiagnosticsPage.php:732
+#: src/src/Admin/PromotionEditPage.php:3605
+#: src/src/Admin/PromotionEditPage.php:4182
+msgid "Last 4"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1013
+#: src/src/Admin/DiagnosticsPage.php:941
+msgid "Promotion automation"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1015
+msgid "Runs activate-scheduled, archive-expired, pause-budget-exhausted, and normalize-states in one pass. Manual trigger only (no WP-Cron in this release). Each run is stored in automation history."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1020
+#: src/src/Admin/DiagnosticsPage.php:947
+msgid "Run full promotion automation now?"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1024
+#: src/src/Admin/DiagnosticsPage.php:951
+msgid "Run all automation"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1028
+msgid "Automatic WP-Cron scheduling is not available in this release. Re-enable “Automation runner: manual only” in Settings to use Diagnostics triggers."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1045
+#: src/Admin/DiagnosticsPage.php:1050
+#: src/Admin/ReportsPage.php:117
+#: src/Admin/ReportsPage.php:122
+#: src/src/Admin/ReportsPage.php:97
+#: src/src/Admin/ReportsPage.php:102
+msgid "Security check failed."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1068
+msgid "Export support bundle"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1069
+msgid "Download a JSON snapshot for support (versions, settings, counts, health issues). No customer PII or raw promotion codes."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1076
+msgid "Download support bundle"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1087
+#: src/src/Admin/DiagnosticsPage.php:962
+msgid "Promotion health"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1088
+#: src/src/Admin/DiagnosticsPage.php:963
+msgid "Read-only configuration checks across promotions (dates, budgets, exclusions, orchestration, actions)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1091
+#: src/src/Admin/DiagnosticsPage.php:966
+msgid "No health issues detected."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1096
+#: src/Admin/DiagnosticsPage.php:1291
+#: src/Admin/PromotionEditPage.php:2709
+#: src/Admin/ReportsPage.php:778
+#: src/src/Admin/DiagnosticsPage.php:971
+#: src/src/Admin/DiagnosticsPage.php:1106
+#: src/src/Admin/PromotionEditPage.php:2622
+#: src/src/Admin/ReportsPage.php:656
+msgid "Severity"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1097
+#: src/Admin/DiagnosticsPage.php:1292
+#: src/Admin/PromotionEditPage.php:3777
+#: src/Admin/ReportsPage.php:778
+#: src/src/Admin/DiagnosticsPage.php:972
+#: src/src/Admin/DiagnosticsPage.php:1107
+#: src/src/Admin/PromotionEditPage.php:3644
+#: src/src/Admin/ReportsPage.php:656
+msgid "Code"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1098
+#: src/src/Admin/DiagnosticsPage.php:973
+msgid "Promotion IDs"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1099
+#: src/Admin/DiagnosticsPage.php:1293
+#: src/Admin/PromotionEditPage.php:2440
+#: src/Admin/PromotionEditPage.php:2471
+#: src/Admin/PromotionEditPage.php:2712
+#: src/Admin/ReportsPage.php:778
+#: src/src/Admin/DiagnosticsPage.php:974
+#: src/src/Admin/DiagnosticsPage.php:1108
+#: src/src/Admin/PromotionEditPage.php:2371
+#: src/src/Admin/PromotionEditPage.php:2402
+#: src/src/Admin/PromotionEditPage.php:2625
+#: src/src/Admin/ReportsPage.php:656
+msgid "Message"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1116
+#: src/src/Admin/DiagnosticsPage.php:991
+msgid "Critical"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1119
+#: src/Admin/PromotionEditPage.php:2352
+#: src/Admin/PromotionEditPage.php:2386
+#: src/src/Admin/DiagnosticsPage.php:994
+#: src/src/Admin/PromotionEditPage.php:2283
+#: src/src/Admin/PromotionEditPage.php:2317
+msgid "Warning"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1122
+#: src/Admin/PromotionEditPage.php:2355
+#: src/Admin/PromotionEditPage.php:2387
+#: src/src/Admin/DiagnosticsPage.php:997
+#: src/src/Admin/PromotionEditPage.php:2286
+#: src/src/Admin/PromotionEditPage.php:2318
+msgid "Info"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1130
+#: src/src/Admin/DiagnosticsPage.php:1005
+msgid "Rollback and recovery"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1131
+#: src/src/Admin/DiagnosticsPage.php:1006
+msgid "Dry-run is the default (preview only). Check “Apply changes” to persist. All actions require confirmation."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1136
+#: src/src/Admin/DiagnosticsPage.php:1011
+msgid "Apply changes (budget recalc form)"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1142
+#: src/src/Admin/DiagnosticsPage.php:1017
+msgid "Recalculate budget_spent from redemptions"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1149
+#: src/src/Admin/DiagnosticsPage.php:1024
+msgid "Rebuild planner telemetry from redemption history"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1156
+#: src/src/Admin/DiagnosticsPage.php:1031
+msgid "Validate promotion snapshots"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1163
+#: src/src/Admin/DiagnosticsPage.php:1038
+msgid "Repair invalid orchestration groups"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1173
+#: src/src/Admin/DiagnosticsPage.php:1048
+msgid "Simulation & forecasting recovery"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1174
+#: src/src/Admin/DiagnosticsPage.php:1049
+msgid "Dry-run by default. Check “Apply intelligence recovery” on any form to persist. Heuristic forecasts only (no ML)."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1179
+#: src/src/Admin/DiagnosticsPage.php:1054
+msgid "Apply intelligence recovery (telemetry reset form)"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1185
+#: src/src/Admin/DiagnosticsPage.php:1060
+msgid "Reset planner telemetry"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1192
+#: src/src/Admin/DiagnosticsPage.php:1067
+msgid "Reset forecast cache"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1199
+#: src/src/Admin/DiagnosticsPage.php:1074
+msgid "Recalculate simulation / planner metrics"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1206
+#: src/src/Admin/DiagnosticsPage.php:1081
+msgid "Validate saved simulation scenario payloads"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1213
+#: src/src/Admin/DiagnosticsPage.php:1088
+msgid "Repair malformed simulation rows (soft-archive)"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1269
+msgid "Pricing engine recovery"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1270
+msgid "Rebuild allocation summaries and normalize priority tiers. Dry-run unless apply is checked."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1271
+msgid "Rebuild allocation summaries"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1272
+msgid "Repair malformed coexistence configs"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1273
+msgid "Normalize invalid priority tiers"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1274
+msgid "Recalculate profitability metrics"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1275
+msgid "Validate allocation snapshots"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1284
+#: src/src/Admin/DiagnosticsPage.php:1099
+msgid "Campaign recommendations"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1286
+#: src/Admin/ReportsPage.php:775
+#: src/src/Admin/DiagnosticsPage.php:1101
+#: src/src/Admin/ReportsPage.php:653
+msgid "No recommendations."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1324
+#: src/src/Admin/DiagnosticsPage.php:1139
+msgid "Automation run history (latest 20)"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1327
+#: src/src/Admin/DiagnosticsPage.php:1142
+msgid "No automation runs recorded yet."
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1334
+#: src/Admin/PromotionEditPage.php:2155
+#: src/Admin/PromotionEditPage.php:2437
+#: src/Admin/PromotionEditPage.php:2468
+#: src/Admin/PromotionEditPage.php:2710
+#: src/src/Admin/DiagnosticsPage.php:1149
+#: src/src/Admin/PromotionEditPage.php:2086
+#: src/src/Admin/PromotionEditPage.php:2368
+#: src/src/Admin/PromotionEditPage.php:2399
+#: src/src/Admin/PromotionEditPage.php:2623
+msgid "Type"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1336
+#: src/src/Admin/DiagnosticsPage.php:1151
+msgid "Warnings"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1337
+#: src/src/Admin/DiagnosticsPage.php:1152
+msgid "Errors"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1338
+#: src/src/Admin/DiagnosticsPage.php:1153
+msgid "Started"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1339
+#: src/Admin/PromotionEditPage.php:2602
+#: src/src/Admin/DiagnosticsPage.php:1154
+#: src/src/Admin/PromotionEditPage.php:2533
+msgid "Details"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1355
+#: src/src/Admin/DiagnosticsPage.php:1170
+msgid "View summary"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1363
+#: src/src/Admin/DiagnosticsPage.php:1178
+msgid "Run summary"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1373
+#: src/src/Admin/DiagnosticsPage.php:1188
+msgid "Failed"
+msgstr ""
+
+#: src/Admin/DiagnosticsPage.php:1376
+#: src/src/Admin/DiagnosticsPage.php:1191
+msgid "Completed"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:32
+msgid "What this plugin does"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:33
+msgid "Commerce Promotions is a rule-driven promotion engine for WooCommerce. Define conditions, actions, and restrictions, then evaluate eligible promotions on each cart totals pass. Promotion codes use the standard coupon field with virtual coupons (discounts come from this plugin)."
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:39
+msgid "Quick setup checklist"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:41
+msgid "Confirm WooCommerce is active and cart discounts are enabled in Settings."
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:42
+msgid "Create a draft promotion or apply a template on the edit screen."
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:43
+msgid "Use cart preview to validate eligibility and planner output."
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:44
+msgid "Activate when ready; monitor Reports and Diagnostics."
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:47
+msgid "Recommended first templates"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:49
+msgid "Percentage off whole cart (minimum subtotal)"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:50
+msgid "Free shipping over threshold"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:51
+msgid "First-order discount for new customers"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:54
+msgid "Admin shortcuts"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:78
+msgid "Current capabilities"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:80
+msgid "Stackable and exclusive promotions with planner orchestration"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:81
+msgid "Promotion codes (hashed storage), batches, redemptions"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:82
+msgid "Reports, diagnostics, simulation, and allocation explainability"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:83
+msgid "HPOS compatibility declared"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:86
+msgid "Known limitations (beta)"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:88
+msgid "Discounts apply as cart fees — not per-line catalog price changes."
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:89
+msgid "Cart/Checkout Blocks compatibility is not declared yet."
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:90
+msgid "Allocation engine is reporting metadata; storefront fees remain authoritative."
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:93
+msgid "Suggested workflow"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:95
+msgid "Create draft"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:96
+msgid "Apply template"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:97
+msgid "Preview cart"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:98
+#: src/Admin/PromotionEditPage.php:2305
+#: src/Admin/PromotionEditPage.php:2311
+#: src/Admin/PromotionsPage.php:547
+#: src/src/Admin/PromotionEditPage.php:2236
+#: src/src/Admin/PromotionEditPage.php:2242
+#: src/src/Admin/PromotionsPage.php:542
+msgid "Activate"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:99
+msgid "Monitor reports and diagnostics"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:103
+msgid "Feature gates (current)"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:109
+msgid "enabled"
+msgstr ""
+
+#: src/Admin/GettingStartedPage.php:109
+msgid "disabled"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:194
+#: src/src/Admin/PromotionEditPage.php:185
+msgid "← Back to promotions"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:196
+#: src/src/Admin/PromotionEditPage.php:187
+msgid "← Back to promotion"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:486
+#: src/src/Admin/PromotionEditPage.php:477
+msgid "Invalid promotion."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:500
+#: src/src/Admin/PromotionEditPage.php:491
+msgid "No generated codes were submitted for download."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:506
+#: src/Admin/PromotionEditPage.php:511
+#: src/src/Admin/PromotionEditPage.php:497
+#: src/src/Admin/PromotionEditPage.php:502
+msgid "Generated codes payload is invalid or expired."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:515
+#: src/src/Admin/PromotionEditPage.php:506
+msgid "Generated codes do not match this promotion."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:592
+#: src/src/Admin/PromotionEditPage.php:583
+msgid "Please enter a batch name."
+msgstr ""
+
+#. translators: %d: maximum batch size
+#: src/Admin/PromotionEditPage.php:600
+#: src/src/Admin/PromotionEditPage.php:591
+#, php-format
+msgid "Quantity must be between 1 and %d."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:617
+#: src/Admin/PromotionEditPage.php:1957
+#: src/src/Admin/PromotionEditPage.php:608
+#: src/src/Admin/PromotionEditPage.php:1888
+msgid "Usage limit must be zero or greater."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:679
+#: src/src/Admin/PromotionEditPage.php:670
+msgid "Cart preview is not available."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:684
+#: src/Admin/PromotionEditPage.php:690
+#: src/src/Admin/PromotionEditPage.php:675
+#: src/src/Admin/PromotionEditPage.php:681
+msgid "Security check failed (preview)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:696
+#: src/src/Admin/PromotionEditPage.php:687
+msgid "Invalid preview form submission."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:719
+#: src/src/Admin/PromotionEditPage.php:699
+msgid "Preview failed."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:781
+#: src/Admin/PromotionEditPage.php:857
+#: src/Admin/PromotionEditPage.php:981
+#: src/Admin/PromotionEditPage.php:1103
+#: src/src/Admin/PromotionEditPage.php:761
+#: src/src/Admin/PromotionEditPage.php:837
+#: src/src/Admin/PromotionEditPage.php:961
+#: src/src/Admin/PromotionEditPage.php:1083
+msgid "You do not have permission to perform this action."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1762
+#: src/src/Admin/PromotionEditPage.php:1693
+msgid "Promotion duplicated successfully. You are editing the new draft copy."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1767
+#: src/src/Admin/PromotionEditPage.php:1698
+msgid "Promotion saved successfully."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1771
+#: src/src/Admin/PromotionEditPage.php:1702
+msgid "Promotion status updated successfully."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1775
+#: src/src/Admin/PromotionEditPage.php:1706
+msgid "Rules updated from the simple rule builder."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1779
+#: src/src/Admin/PromotionEditPage.php:1710
+msgid "Promotion restored from snapshot."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1783
+#: src/src/Admin/PromotionEditPage.php:1714
+msgid "Promotion rules updated from the selected template."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1787
+#: src/src/Admin/PromotionEditPage.php:1718
+msgid "Promotion code created successfully."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1791
+#: src/src/Admin/PromotionEditPage.php:1722
+msgid "Promotion code status updated successfully."
+msgstr ""
+
+#. translators: %d: number of promotion codes updated
+#: src/Admin/PromotionEditPage.php:1800
+#: src/src/Admin/PromotionEditPage.php:1731
+#, php-format
+msgid "%d promotion code in this batch was updated successfully."
+msgid_plural "%d promotion codes in this batch were updated successfully."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/PromotionEditPage.php:1847
+#: src/src/Admin/PromotionEditPage.php:1778
+msgid "Invalid duplicate promotion form submission."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1849
+#: src/src/Admin/PromotionEditPage.php:1780
+msgid "Could not duplicate the promotion. Please try again."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1861
+#: src/src/Admin/PromotionEditPage.php:1792
+msgid "Invalid promotion template form submission."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1863
+#: src/src/Admin/PromotionEditPage.php:1794
+msgid "Please choose a supported promotion template."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1865
+#: src/src/Admin/PromotionEditPage.php:1796
+msgid "Discount type must be percentage or fixed."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1867
+#: src/src/Admin/PromotionEditPage.php:1798
+msgid "Cheapest-item scope must be category or products."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1869
+#: src/src/Admin/PromotionEditPage.php:1800
+msgid "Discounted quantity must be between 1 and required quantity."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1871
+#: src/src/Admin/PromotionEditPage.php:1802
+msgid "Could not save promotion rules from template. Please try again."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1874
+#: src/src/Admin/PromotionEditPage.php:1805
+msgid "One or more template fields are missing or invalid. Check the inputs for your selected template."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1887
+#: src/src/Admin/PromotionEditPage.php:1818
+msgid "Invalid rule builder form submission."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1889
+#: src/src/Admin/PromotionEditPage.php:1820
+msgid "Please choose a supported condition type."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1891
+#: src/src/Admin/PromotionEditPage.php:1822
+msgid "Please choose a supported action type."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1893
+#: src/src/Admin/PromotionEditPage.php:1824
+msgid "Please choose a supported operator."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1895
+#: src/src/Admin/PromotionEditPage.php:1826
+msgid "Enter a valid minimum subtotal amount."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1897
+#: src/src/Admin/PromotionEditPage.php:1828
+msgid "Enter a valid numeric product ID greater than zero."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1899
+#: src/src/Admin/PromotionEditPage.php:1830
+msgid "Enter a valid numeric category ID greater than zero."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1901
+#: src/src/Admin/PromotionEditPage.php:1832
+msgid "Enter a valid quantity."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1903
+#: src/src/Admin/PromotionEditPage.php:1834
+msgid "Enter a valid percentage greater than zero and up to 100."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1905
+#: src/src/Admin/PromotionEditPage.php:1836
+msgid "Enter a valid fixed discount amount greater than zero."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1907
+#: src/src/Admin/PromotionEditPage.php:1838
+msgid "Could not save rules from the builder. Please try again."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1919
+#: src/src/Admin/PromotionEditPage.php:1850
+msgid "Invalid batch code status form submission."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1921
+#: src/src/Admin/PromotionEditPage.php:1852
+msgid "Code batch not found for this promotion."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1923
+#: src/src/Admin/PromotionEditPage.php:1854
+msgid "That batch code status change is not allowed."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1935
+#: src/src/Admin/PromotionEditPage.php:1866
+msgid "Invalid promotion code status form submission."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1937
+#: src/src/Admin/PromotionEditPage.php:1868
+msgid "Promotion code not found for this promotion."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1939
+#: src/src/Admin/PromotionEditPage.php:1870
+msgid "That promotion code status change is not allowed."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1941
+#: src/src/Admin/PromotionEditPage.php:1872
+msgid "Could not update the promotion code status. Please try again."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1953
+#: src/src/Admin/PromotionEditPage.php:1884
+msgid "Please enter a promotion code."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1955
+#: src/src/Admin/PromotionEditPage.php:1886
+msgid "Promotion code must be at least 4 characters and use only A-Z, 0-9, and hyphens."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1959
+#: src/src/Admin/PromotionEditPage.php:1890
+msgid "That promotion code already exists."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1961
+#: src/src/Admin/PromotionEditPage.php:1892
+msgid "Could not create the promotion code. Please try again."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1973
+#: src/src/Admin/PromotionEditPage.php:1904
+msgid "Invalid form submission."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1975
+#: src/Admin/PromotionsPage.php:1013
+#: src/src/Admin/PromotionEditPage.php:1906
+#: src/src/Admin/PromotionsPage.php:978
+msgid "Please enter a promotion name."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1977
+#: src/src/Admin/PromotionEditPage.php:1908
+msgid "Priority must be zero or greater."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1979
+#: src/src/Admin/PromotionEditPage.php:1910
+msgid "Application mode must be exclusive or stackable."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1981
+#: src/src/Admin/PromotionEditPage.php:1912
+msgid "Max applications must be empty or at least 1."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1983
+#: src/src/Admin/PromotionEditPage.php:1914
+msgid "Excluded promotion IDs must be a comma-separated list of positive integers and cannot include this promotion."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1985
+#: src/src/Admin/PromotionEditPage.php:1916
+msgid "Excluded product IDs must be a comma-separated list of positive integers."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1987
+#: src/src/Admin/PromotionEditPage.php:1918
+msgid "Excluded category IDs must be a comma-separated list of positive integers."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1989
+#: src/src/Admin/PromotionEditPage.php:1920
+msgid "Campaign label, admin color (hex), or internal notes are invalid."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1991
+#: src/src/Admin/PromotionEditPage.php:1922
+msgid "Budget amount must be a positive number or empty; budget currency is invalid."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1993
+#: src/src/Admin/PromotionEditPage.php:1924
+msgid "Cooldown hours must be empty or at least 1; orchestration group is invalid."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1995
+#: src/src/Admin/PromotionEditPage.php:1926
+msgid "Conditions, actions, and restrictions must be valid JSON arrays."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:1997
+#: src/src/Admin/PromotionEditPage.php:1928
+msgid "Could not save the promotion. Please try again."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2009
+#: src/src/Admin/PromotionEditPage.php:1940
+msgid "Invalid status form submission."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2011
+#: src/src/Admin/PromotionEditPage.php:1942
+msgid "Invalid target status."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2013
+#: src/src/Admin/PromotionEditPage.php:1944
+msgid "That status change is not allowed or could not be saved."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2029
+#: src/src/Admin/PromotionEditPage.php:1960
+msgid "Campaign metadata"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2031
+#: src/src/Admin/PromotionEditPage.php:1962
+msgid "Internal labels and notes for organizing promotions. Not shown to customers on the storefront."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2038
+#: src/Admin/PromotionsPage.php:384
+#: src/Admin/PromotionsPage.php:681
+#: src/Admin/PromotionsPage.php:693
+#: src/Admin/ReportsPage.php:211
+#: src/src/Admin/PromotionEditPage.php:1969
+#: src/src/Admin/PromotionsPage.php:379
+#: src/src/Admin/PromotionsPage.php:676
+#: src/src/Admin/PromotionsPage.php:683
+#: src/src/Admin/ReportsPage.php:191
+msgid "Campaign label"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2040
+#: src/src/Admin/PromotionEditPage.php:1971
+msgid "Short tag for grouping promotions (e.g. Summer Sale)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2043
+#: src/src/Admin/PromotionEditPage.php:1974
+msgid "Admin color"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2045
+#: src/src/Admin/PromotionEditPage.php:1976
+msgid "Optional 6-digit hex color for list badges (e.g. #336699)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2048
+#: src/src/Admin/PromotionEditPage.php:1979
+msgid "Internal notes"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2050
+#: src/src/Admin/PromotionEditPage.php:1981
+msgid "Private notes for your team; never shown to shoppers."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2054
+#: src/Admin/PromotionsPage.php:682
+#: src/Admin/PromotionsPage.php:694
+#: src/src/Admin/PromotionEditPage.php:1985
+#: src/src/Admin/PromotionsPage.php:677
+#: src/src/Admin/PromotionsPage.php:684
+msgid "Budget amount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2056
+#: src/src/Admin/PromotionEditPage.php:1987
+msgid "Optional spending cap tracked from recorded redemption discounts. Leave empty for no cap."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2059
+#: src/src/Admin/PromotionEditPage.php:1990
+msgid "Budget currency"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2061
+#: src/src/Admin/PromotionEditPage.php:1992
+msgid "ISO-style currency code for the budget cap (recommended when a budget amount is set)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2067
+#: src/src/Admin/PromotionEditPage.php:1998
+msgid "Budget progress"
+msgstr ""
+
+#. translators: 1: spent amount, 2: cap amount, 3: utilization percent
+#: src/Admin/PromotionEditPage.php:2071
+#: src/src/Admin/PromotionEditPage.php:2002
+#, php-format
+msgid "%1$s spent of %2$s (%3$s%% utilized)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2078
+#: src/src/Admin/PromotionEditPage.php:2009
+msgid "Budget is exhausted; active promotions may be auto-paused by maintenance."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2084
+#: src/Admin/PromotionsPage.php:692
+#: src/src/Admin/PromotionEditPage.php:2015
+#: src/src/Admin/PromotionsPage.php:682
+msgid "Orchestration group"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2086
+#: src/src/Admin/PromotionEditPage.php:2017
+msgid "Optional label (e.g. welcome-series). Only one promotion per group may be selected in a cart plan; first eligible by priority wins."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2093
+#: src/Admin/PromotionsPage.php:683
+#: src/src/Admin/PromotionEditPage.php:2024
+#: src/src/Admin/PromotionsPage.php:678
+msgid "Cooldown hours"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2095
+#: src/src/Admin/PromotionEditPage.php:2026
+msgid "Optional hours after a recorded redemption before the same logged-in customer can redeem this promotion again."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2130
+#: src/src/Admin/PromotionEditPage.php:2061
+msgid "Recent snapshots"
+msgstr ""
+
+#. translators: %d: snapshot count
+#: src/Admin/PromotionEditPage.php:2133
+#: src/src/Admin/PromotionEditPage.php:2064
+#, php-format
+msgid "%d stored"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2140
+#: src/src/Admin/PromotionEditPage.php:2071
+msgid "Filter by type"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2142
+#: src/src/Admin/PromotionEditPage.php:2073
+msgid "All types"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2146
+#: src/src/Admin/PromotionEditPage.php:2077
+msgid "Filter"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2149
+#: src/src/Admin/PromotionEditPage.php:2080
+msgid "Automatic rollback points captured before template apply, rule builder apply, or duplication. Restore replaces the full promotion row from the snapshot."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2156
+#: src/src/Admin/PromotionEditPage.php:2087
+msgid "Label"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2157
+#: src/src/Admin/PromotionEditPage.php:2088
+msgid "Source"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2158
+#: src/Admin/PromotionEditPage.php:3742
+#: src/Admin/PromotionEditPage.php:3853
+#: src/Admin/PromotionEditPage.php:4320
+#: src/Admin/PromotionsPage.php:463
+#: src/src/Admin/PromotionEditPage.php:2089
+#: src/src/Admin/PromotionEditPage.php:3609
+#: src/src/Admin/PromotionEditPage.php:3720
+#: src/src/Admin/PromotionEditPage.php:4187
+#: src/src/Admin/PromotionsPage.php:458
+msgid "Created"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2159
+#: src/src/Admin/PromotionEditPage.php:2090
+msgid "Intelligence"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2160
+#: src/Admin/PromotionEditPage.php:4060
+#: src/src/Admin/PromotionEditPage.php:2091
+#: src/src/Admin/PromotionEditPage.php:3927
+msgid "Action"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2165
+#: src/src/Admin/PromotionEditPage.php:2096
+msgid "Snapshot simulation (read-only):"
+msgstr ""
+
+#. translators: 1: discount, 2: selected count
+#: src/Admin/PromotionEditPage.php:2169
+#: src/src/Admin/PromotionEditPage.php:2100
+#, php-format
+msgid "Estimated discount %1$s with %2$d selected promotion(s) under current rules."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2206
+#: src/src/Admin/PromotionEditPage.php:2137
+msgid "Restore this snapshot? Current promotion data will be overwritten. This cannot be undone from the UI except by restoring another snapshot."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2211
+#: src/src/Admin/PromotionEditPage.php:2142
+msgid "Restore"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2218
+#: src/src/Admin/PromotionEditPage.php:2149
+msgid "Simulate (read-only)"
+msgstr ""
+
+#. translators: 1: promotion ID, 2: status, 3: priority, 4: usage count (optional limit)
+#: src/Admin/PromotionEditPage.php:2251
+#: src/src/Admin/PromotionEditPage.php:2182
+#, php-format
+msgid "Promotion #%1$d · Status: %2$s · Priority: %3$d · Usage: %4$s"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2267
+#: src/src/Admin/PromotionEditPage.php:2198
+msgid "Duplicate as scheduled draft (future start if missing)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2269
+#: src/src/Admin/PromotionEditPage.php:2200
+msgid "Duplicate without codes (codes are never copied; confirms intent)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2271
+#: src/src/Admin/PromotionEditPage.php:2202
+msgid "Duplicate without budget cap"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2272
+#: src/src/Admin/PromotionEditPage.php:2203
+msgid "Orchestration group override"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2273
+#: src/src/Admin/PromotionEditPage.php:2204
+msgid "Optional"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2274
+#: src/src/Admin/PromotionEditPage.php:2205
+msgid "Duplicate promotion"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2275
+#: src/src/Admin/PromotionEditPage.php:2206
+msgid "Creates a new draft copy with the same rules. Codes, batches, redemptions, and usage counts are not copied."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2292
+#: src/src/Admin/PromotionEditPage.php:2223
+msgid "Status actions"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2293
+#: src/src/Admin/PromotionEditPage.php:2224
+msgid "Current:"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2296
+#: src/src/Admin/PromotionEditPage.php:2227
+msgid "Archived promotions cannot be reactivated."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2302
+#: src/src/Admin/PromotionEditPage.php:2233
+msgid "Change status using the actions below."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2306
+#: src/Admin/PromotionEditPage.php:2309
+#: src/Admin/PromotionEditPage.php:2312
+#: src/Admin/PromotionsPage.php:549
+#: src/src/Admin/PromotionEditPage.php:2237
+#: src/src/Admin/PromotionEditPage.php:2240
+#: src/src/Admin/PromotionEditPage.php:2243
+#: src/src/Admin/PromotionsPage.php:544
+msgid "Archive"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2308
+#: src/Admin/PromotionsPage.php:548
+#: src/src/Admin/PromotionEditPage.php:2239
+#: src/src/Admin/PromotionsPage.php:543
+msgid "Pause"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2335
+#: src/src/Admin/PromotionEditPage.php:2266
+msgid "Rule Validation"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2338
+#: src/src/Admin/PromotionEditPage.php:2269
+msgid "No validation issues found."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2349
+#: src/src/Admin/PromotionEditPage.php:2280
+msgid "Error"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2363
+#: src/src/Admin/PromotionEditPage.php:2294
+msgid "Read-only checks against supported condition and action types. Passing validation does not guarantee the promotion will apply to a specific cart."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2380
+#: src/src/Admin/PromotionEditPage.php:2311
+msgid "Schedule warnings"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2393
+#: src/src/Admin/PromotionEditPage.php:2324
+msgid "Overlapping windows and schedule collisions with other draft, paused, or active promotions."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2418
+#: src/src/Admin/PromotionEditPage.php:2349
+msgid "Free gift (storefront)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2420
+#: src/Admin/PromotionEditPage.php:3053
+#: src/src/Admin/PromotionEditPage.php:2351
+#: src/src/Admin/PromotionEditPage.php:2966
+msgid "Product ID"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2421
+#: src/Admin/PromotionEditPage.php:3067
+#: src/Admin/PromotionEditPage.php:3818
+#: src/Admin/PromotionEditPage.php:3848
+#: src/Admin/PromotionEditPage.php:4158
+#: src/src/Admin/PromotionEditPage.php:2352
+#: src/src/Admin/PromotionEditPage.php:2980
+#: src/src/Admin/PromotionEditPage.php:3685
+#: src/src/Admin/PromotionEditPage.php:3715
+#: src/src/Admin/PromotionEditPage.php:4025
+msgid "Quantity"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2422
+#: src/src/Admin/PromotionEditPage.php:2353
+msgid "Eligible on current cart"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2424
+#: src/src/Admin/PromotionEditPage.php:2355
+msgid "Yes — gift would be synchronized on checkout totals"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2434
+#: src/src/Admin/PromotionEditPage.php:2365
+msgid "Condition trace"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2438
+#: src/src/Admin/PromotionEditPage.php:2369
+msgid "Result"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2439
+#: src/Admin/PromotionEditPage.php:2470
+#: src/src/Admin/PromotionEditPage.php:2370
+#: src/src/Admin/PromotionEditPage.php:2401
+msgid "Reason"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2441
+#: src/src/Admin/PromotionEditPage.php:2372
+msgid "Observed"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2451
+#: src/src/Admin/PromotionEditPage.php:2382
+msgid "Pass"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2451
+#: src/src/Admin/PromotionEditPage.php:2382
+msgid "Fail"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2465
+#: src/src/Admin/PromotionEditPage.php:2396
+msgid "Action trace"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2469
+#: src/Admin/PromotionEditPage.php:2600
+#: src/Admin/ReportsPage.php:709
+#: src/src/Admin/PromotionEditPage.php:2400
+#: src/src/Admin/PromotionEditPage.php:2531
+msgid "Selected"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2472
+#: src/src/Admin/PromotionEditPage.php:2403
+msgid "Preview"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2502
+#: src/src/Admin/PromotionEditPage.php:2433
+msgid "Cheapest item discount is applied as a cart fee in the MVP; product line prices are not changed."
+msgstr ""
+
+#. translators: 1: reason code, 2: eligible unit count, 3: required quantity
+#: src/Admin/PromotionEditPage.php:2524
+#: src/src/Admin/PromotionEditPage.php:2455
+#, php-format
+msgid "Not applicable (%1$s): %2$s eligible units, need %3$s."
+msgstr ""
+
+#. translators: 1: discount amount, 2: discounted unit count
+#: src/Admin/PromotionEditPage.php:2536
+#: src/src/Admin/PromotionEditPage.php:2467
+#, php-format
+msgid "Calculated discount: %1$s (%2$d unit(s))."
+msgstr ""
+
+#. translators: %s: scope label
+#: src/Admin/PromotionEditPage.php:2561
+#: src/src/Admin/PromotionEditPage.php:2492
+#, php-format
+msgid "Scope: %s."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2592
+#: src/src/Admin/PromotionEditPage.php:2523
+msgid "Promotion plan (active promotions)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2593
+#: src/src/Admin/PromotionEditPage.php:2524
+msgid "How active promotions would be selected for the current cart. Cart fees follow selected rows only."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2598
+#: src/Admin/PromotionEditPage.php:2681
+#: src/Admin/ReportsPage.php:197
+#: src/src/Admin/PromotionEditPage.php:2529
+#: src/src/Admin/ReportsPage.php:177
+#: src/src/Woo/CartPromotionApplier.php:783
+#: src/Woo/CartPromotionApplier.php:821
+msgid "Promotion"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2599
+#: src/Admin/PromotionEditPage.php:2809
+#: src/src/Admin/PromotionEditPage.php:2530
+#: src/src/Admin/PromotionEditPage.php:2722
+msgid "Eligible"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2601
+#: src/src/Admin/PromotionEditPage.php:2532
+msgid "Skipped reason"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2668
+#: src/src/Admin/PromotionEditPage.php:2599
+msgid "Plan explanation"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2669
+#: src/src/Admin/PromotionEditPage.php:2600
+msgid "Deterministic summary of why promotions were selected or skipped for this cart preview."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2680
+msgid "Where the discount went (allocation estimate)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2681
+msgid "Target"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2681
+msgid "Amount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2691
+msgid "Fee-based storefront application remains authoritative; allocation is read-only planning metadata."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2703
+#: src/src/Admin/PromotionEditPage.php:2616
+msgid "Conflict analysis (active promotions)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2704
+#: src/src/Admin/PromotionEditPage.php:2617
+msgid "Heuristic warnings across all active promotions. Does not guarantee runtime cart behavior."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2778
+#: src/src/Admin/PromotionEditPage.php:2691
+msgid "Cart preview"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2781
+#: src/src/Admin/PromotionEditPage.php:2694
+msgid "WooCommerce is unavailable or the cart context builder is not loaded, so preview against the current cart is disabled."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2791
+#: src/src/Admin/PromotionEditPage.php:2704
+msgid "Preview against current cart"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2793
+#: src/src/Admin/PromotionEditPage.php:2706
+msgid "Evaluates this promotion against the cart for the current session. Nothing is saved to the database; discounts are not applied."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2817
+#: src/src/Admin/PromotionEditPage.php:2730
+msgid "Messages"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2839
+#: src/src/Admin/PromotionEditPage.php:2752
+msgid "Action previews (JSON)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2864
+#: src/src/Admin/PromotionEditPage.php:2777
+msgid "Promotion templates"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2866
+#: src/src/Admin/PromotionEditPage.php:2779
+msgid "Apply a preset to replace the current conditions, actions, and restrictions JSON. Does not change name, status, dates, usage limits, application rules, codes, or batches. Advanced users can still edit raw JSON below."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2876
+#: src/src/Admin/PromotionEditPage.php:2789
+msgid "Template"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2878
+#: src/src/Admin/PromotionEditPage.php:2791
+msgid "— Select template —"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2890
+#: src/src/Admin/PromotionEditPage.php:2803
+msgid "Category IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2892
+#: src/src/Admin/PromotionEditPage.php:2805
+msgid "percent_off_category, buy_x_get_y (category scope)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2894
+#: src/src/Admin/PromotionEditPage.php:2807
+msgid "Product IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2896
+#: src/src/Admin/PromotionEditPage.php:2809
+msgid "fixed_off_products, buy_x_get_y (products scope)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2898
+#: src/src/Admin/PromotionEditPage.php:2811
+msgid "Variation IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2900
+#: src/src/Admin/PromotionEditPage.php:2813
+msgid "Optional for buy_x_get_y products scope."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2902
+#: src/Admin/PromotionEditPage.php:2940
+#: src/Admin/PromotionEditPage.php:3154
+#: src/src/Admin/PromotionEditPage.php:2815
+#: src/src/Admin/PromotionEditPage.php:2853
+#: src/src/Admin/PromotionEditPage.php:3067
+msgid "Percentage"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2905
+#: src/src/Admin/PromotionEditPage.php:2818
+msgid "Amount / subtotal"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2907
+#: src/src/Admin/PromotionEditPage.php:2820
+msgid "Fixed discount, minimum subtotal, or minimum eligible subtotal depending on template."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2909
+#: src/Admin/PromotionEditPage.php:3001
+#: src/Admin/PromotionEditPage.php:3466
+#: src/src/Admin/PromotionEditPage.php:2822
+#: src/src/Admin/PromotionEditPage.php:2914
+#: src/src/Admin/PromotionEditPage.php:3379
+msgid "Minimum eligible subtotal"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2911
+#: src/src/Admin/PromotionEditPage.php:2824
+msgid "Optional for percent_off_category and fixed_off_products."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2913
+#: src/src/Admin/PromotionEditPage.php:2826
+msgid "Cheapest-item scope"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2915
+#: src/Admin/PromotionEditPage.php:3109
+#: src/src/Admin/PromotionEditPage.php:2828
+#: src/src/Admin/PromotionEditPage.php:3022
+msgid "Category"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2916
+#: src/Admin/PromotionEditPage.php:3110
+#: src/src/Admin/PromotionEditPage.php:2829
+#: src/src/Admin/PromotionEditPage.php:3023
+msgid "Products"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2919
+#: src/Admin/PromotionEditPage.php:3128
+#: src/src/Admin/PromotionEditPage.php:2832
+#: src/src/Admin/PromotionEditPage.php:3041
+msgid "Required quantity"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2922
+#: src/Admin/PromotionEditPage.php:3132
+#: src/src/Admin/PromotionEditPage.php:2835
+#: src/src/Admin/PromotionEditPage.php:3045
+msgid "Discounted quantity"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2925
+#: src/src/Admin/PromotionEditPage.php:2838
+msgid "Cheapest discount %"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2927
+#: src/src/Admin/PromotionEditPage.php:2840
+msgid "buy_x_get_y: defaults to 100 (free unit)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2929
+#: src/Admin/PromotionEditPage.php:3095
+#: src/src/Admin/PromotionEditPage.php:2842
+#: src/src/Admin/PromotionEditPage.php:3008
+msgid "Gift product ID"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2932
+#: src/Admin/PromotionEditPage.php:3099
+#: src/src/Admin/PromotionEditPage.php:2845
+#: src/src/Admin/PromotionEditPage.php:3012
+msgid "Gift variation ID"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2935
+#: src/Admin/PromotionEditPage.php:3103
+#: src/src/Admin/PromotionEditPage.php:2848
+#: src/src/Admin/PromotionEditPage.php:3016
+msgid "Gift quantity"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2938
+#: src/src/Admin/PromotionEditPage.php:2851
+msgid "Discount type"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2941
+#: src/src/Admin/PromotionEditPage.php:2854
+msgid "Fixed amount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2943
+#: src/src/Admin/PromotionEditPage.php:2856
+msgid "first_order_discount and customer_role_discount."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2945
+#: src/Admin/PromotionEditPage.php:3070
+#: src/src/Admin/PromotionEditPage.php:2858
+#: src/src/Admin/PromotionEditPage.php:2983
+msgid "Customer roles"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2948
+#: src/src/Admin/PromotionEditPage.php:2861
+msgid "Lifetime spend threshold"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2950
+#: src/src/Admin/PromotionEditPage.php:2863
+msgid "vip_customer template."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2952
+#: src/src/Admin/PromotionEditPage.php:2865
+msgid "Order count threshold"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2954
+#: src/src/Admin/PromotionEditPage.php:2867
+msgid "loyal_customer template."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2956
+#: src/src/Admin/PromotionEditPage.php:2869
+msgid "Average order value threshold"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2958
+#: src/src/Admin/PromotionEditPage.php:2871
+msgid "returning_customer template."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2962
+#: src/src/Admin/PromotionEditPage.php:2875
+msgid "Apply template to rules"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2975
+#: src/src/Admin/PromotionEditPage.php:2888
+msgid "Simple Rule Builder"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2976
+#: src/src/Admin/PromotionEditPage.php:2889
+msgid "Build one condition and one action, then apply them to the JSON fields below. Name, status, priority, dates, and restrictions are not changed. Use the raw JSON fields for advanced edits."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2985
+#: src/src/Admin/PromotionEditPage.php:2898
+msgid "Condition type"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2987
+#: src/Admin/PromotionEditPage.php:3410
+#: src/src/Admin/PromotionEditPage.php:2900
+#: src/src/Admin/PromotionEditPage.php:3323
+msgid "Minimum subtotal"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2988
+#: src/Admin/PromotionEditPage.php:3414
+#: src/src/Admin/PromotionEditPage.php:2901
+#: src/src/Admin/PromotionEditPage.php:3327
+msgid "Product quantity"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2989
+#: src/Admin/PromotionEditPage.php:3418
+#: src/src/Admin/PromotionEditPage.php:2902
+#: src/src/Admin/PromotionEditPage.php:3331
+msgid "Category quantity"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2990
+#: src/Admin/PromotionEditPage.php:3422
+#: src/src/Admin/PromotionEditPage.php:2903
+#: src/src/Admin/PromotionEditPage.php:3335
+msgid "Logged in"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2991
+#: src/Admin/PromotionEditPage.php:3426
+#: src/src/Admin/PromotionEditPage.php:2904
+#: src/src/Admin/PromotionEditPage.php:3339
+msgid "First order"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2992
+#: src/Admin/PromotionEditPage.php:3430
+#: src/src/Admin/PromotionEditPage.php:2905
+#: src/src/Admin/PromotionEditPage.php:3343
+msgid "Customer role"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2993
+#: src/Admin/PromotionEditPage.php:3434
+#: src/src/Admin/PromotionEditPage.php:2906
+#: src/src/Admin/PromotionEditPage.php:3347
+msgid "Billing country"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2994
+#: src/Admin/PromotionEditPage.php:3438
+#: src/src/Admin/PromotionEditPage.php:2907
+#: src/src/Admin/PromotionEditPage.php:3351
+msgid "Customer email domain"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2995
+#: src/Admin/PromotionEditPage.php:3442
+#: src/src/Admin/PromotionEditPage.php:2908
+#: src/src/Admin/PromotionEditPage.php:3355
+msgid "Customer redemption count"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2996
+#: src/Admin/PromotionEditPage.php:3446
+#: src/src/Admin/PromotionEditPage.php:2909
+#: src/src/Admin/PromotionEditPage.php:3359
+msgid "Minimum cart quantity"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2997
+#: src/Admin/PromotionEditPage.php:3450
+#: src/src/Admin/PromotionEditPage.php:2910
+#: src/src/Admin/PromotionEditPage.php:3363
+msgid "Maximum cart quantity"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2998
+#: src/Admin/PromotionEditPage.php:3454
+#: src/src/Admin/PromotionEditPage.php:2911
+#: src/src/Admin/PromotionEditPage.php:3367
+msgid "Product in cart"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:2999
+#: src/Admin/PromotionEditPage.php:3458
+#: src/src/Admin/PromotionEditPage.php:2912
+#: src/src/Admin/PromotionEditPage.php:3371
+msgid "Category in cart"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3000
+#: src/Admin/PromotionEditPage.php:3028
+#: src/Admin/PromotionEditPage.php:3462
+#: src/src/Admin/PromotionEditPage.php:2913
+#: src/src/Admin/PromotionEditPage.php:2941
+#: src/src/Admin/PromotionEditPage.php:3375
+msgid "Exclude sale items"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3002
+#: src/Admin/PromotionEditPage.php:3470
+#: src/src/Admin/PromotionEditPage.php:2915
+#: src/src/Admin/PromotionEditPage.php:3383
+msgid "Maximum eligible subtotal"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3003
+#: src/src/Admin/PromotionEditPage.php:2916
+msgid "Customer lifetime spend"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3004
+#: src/src/Admin/PromotionEditPage.php:2917
+msgid "Customer order count"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3005
+#: src/src/Admin/PromotionEditPage.php:2918
+msgid "Customer average order value"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3007
+#: src/src/Admin/PromotionEditPage.php:2920
+msgid "Segmentation conditions require a logged-in customer with Woo order stats in cart context."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3012
+#: src/src/Admin/PromotionEditPage.php:2925
+msgid "Segmentation amount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3014
+#: src/src/Admin/PromotionEditPage.php:2927
+msgid "Threshold for lifetime spend or average order value (use operator)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3016
+#: src/src/Admin/PromotionEditPage.php:2929
+msgid "Segmentation order count"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3018
+#: src/src/Admin/PromotionEditPage.php:2931
+msgid "Threshold for customer order count (use operator)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3020
+#: src/src/Admin/PromotionEditPage.php:2933
+msgid "Product IDs (list)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3022
+#: src/src/Admin/PromotionEditPage.php:2935
+msgid "Comma-separated product or variation IDs (product_in_cart)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3024
+#: src/src/Admin/PromotionEditPage.php:2937
+msgid "Category IDs (list)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3026
+#: src/src/Admin/PromotionEditPage.php:2939
+msgid "Comma-separated product category term IDs (category_in_cart)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3030
+#: src/src/Admin/PromotionEditPage.php:2943
+msgid "Fail when any cart line is on sale (exclude_sale_items condition)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3032
+#: src/src/Admin/PromotionEditPage.php:2945
+msgid "Cart quantity"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3034
+#: src/src/Admin/PromotionEditPage.php:2947
+msgid "Total units across all cart lines (minimum_cart_quantity / maximum_cart_quantity)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3036
+#: src/src/Admin/PromotionEditPage.php:2949
+msgid "Minimum subtotal amount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3039
+#: src/src/Admin/PromotionEditPage.php:2952
+msgid "Eligible subtotal amount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3041
+#: src/src/Admin/PromotionEditPage.php:2954
+msgid "Threshold for minimum_eligible_subtotal / maximum_eligible_subtotal (scoped line subtotals only)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3043
+#: src/src/Admin/PromotionEditPage.php:2956
+msgid "Eligible scope product IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3045
+#: src/src/Admin/PromotionEditPage.php:2958
+msgid "Optional scope for eligible subtotal conditions; leave empty for all cart lines."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3047
+#: src/src/Admin/PromotionEditPage.php:2960
+msgid "Eligible scope variation IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3050
+#: src/src/Admin/PromotionEditPage.php:2963
+msgid "Eligible scope category IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3056
+#: src/src/Admin/PromotionEditPage.php:2969
+msgid "Category ID"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3059
+#: src/src/Admin/PromotionEditPage.php:2972
+msgid "Operator"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3065
+#: src/src/Admin/PromotionEditPage.php:2978
+msgid "Used for product/category quantity and customer redemption count conditions."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3072
+#: src/src/Admin/PromotionEditPage.php:2985
+msgid "Comma-separated WordPress role slugs (customer_role condition)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3074
+#: src/src/Admin/PromotionEditPage.php:2987
+msgid "Billing countries"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3076
+#: src/src/Admin/PromotionEditPage.php:2989
+msgid "Comma-separated ISO country codes (billing_country condition)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3078
+#: src/src/Admin/PromotionEditPage.php:2991
+msgid "Email domains"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3080
+#: src/src/Admin/PromotionEditPage.php:2993
+msgid "Comma-separated domains without @ (customer_email_domain condition)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3082
+#: src/src/Admin/PromotionEditPage.php:2995
+msgid "Redemption count"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3084
+#: src/src/Admin/PromotionEditPage.php:2997
+msgid "Compared with operator for customer_redemption_count (logged-in customers only)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3086
+#: src/src/Admin/PromotionEditPage.php:2999
+msgid "Action type"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3088
+#: src/Admin/PromotionEditPage.php:3477
+#: src/src/Admin/PromotionEditPage.php:3001
+#: src/src/Admin/PromotionEditPage.php:3390
+msgid "Percentage discount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3089
+#: src/Admin/PromotionEditPage.php:3489
+#: src/src/Admin/PromotionEditPage.php:3002
+#: src/src/Admin/PromotionEditPage.php:3402
+msgid "Fixed amount discount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3090
+#: src/Admin/PromotionEditPage.php:3497
+#: src/src/Admin/PromotionEditPage.php:3003
+#: src/src/Admin/PromotionEditPage.php:3410
+msgid "Free shipping"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3091
+#: src/src/Admin/PromotionEditPage.php:3004
+msgid "Cheapest item discount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3092
+#: src/Admin/PromotionEditPage.php:3509
+#: src/src/Admin/PromotionEditPage.php:3005
+#: src/src/Admin/PromotionEditPage.php:3422
+msgid "Free gift product"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3097
+#: src/src/Admin/PromotionEditPage.php:3010
+msgid "WooCommerce product post ID to add as a free gift (free_gift_product action)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3101
+#: src/src/Admin/PromotionEditPage.php:3014
+msgid "Optional variation post ID when the gift is a variable product."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3105
+#: src/src/Admin/PromotionEditPage.php:3018
+msgid "How many gift units to add when the promotion applies (default 1)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3107
+#: src/src/Admin/PromotionEditPage.php:3020
+msgid "Cheapest item scope"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3112
+#: src/src/Admin/PromotionEditPage.php:3025
+msgid "Category scope matches category term IDs. Products scope matches parent product IDs and optional variation IDs."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3114
+#: src/src/Admin/PromotionEditPage.php:3027
+msgid "Cheapest item category IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3117
+#: src/src/Admin/PromotionEditPage.php:3030
+msgid "Cheapest item product IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3120
+#: src/src/Admin/PromotionEditPage.php:3033
+msgid "Cheapest item variation IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3122
+#: src/src/Admin/PromotionEditPage.php:3035
+msgid "Optional. Products scope only; matches variation post IDs in addition to product IDs."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3124
+#: src/src/Admin/PromotionEditPage.php:3037
+msgid "Exclude sale from pool"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3126
+#: src/src/Admin/PromotionEditPage.php:3039
+msgid "Remove on-sale units from cheapest-item eligible pool."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3130
+#: src/src/Admin/PromotionEditPage.php:3043
+msgid "Minimum eligible units in cart before discount applies (e.g. 3 for buy 2 get 1 free)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3134
+#: src/src/Admin/PromotionEditPage.php:3047
+msgid "How many cheapest units receive the discount (must be <= required quantity)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3136
+#: src/src/Admin/PromotionEditPage.php:3049
+msgid "Discount percentage"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3138
+#: src/src/Admin/PromotionEditPage.php:3051
+msgid "100 = free unit; 50 = half off cheapest unit(s). Applied as a cart fee on the storefront."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3140
+#: src/src/Admin/PromotionEditPage.php:3053
+msgid "Discount scope product IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3142
+#: src/src/Admin/PromotionEditPage.php:3055
+msgid "Optional. Scoped percentage/fixed discounts apply only to matching lines (fee-based; does not change line prices)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3144
+#: src/src/Admin/PromotionEditPage.php:3057
+msgid "Discount scope variation IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3147
+#: src/src/Admin/PromotionEditPage.php:3060
+msgid "Discount scope category IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3150
+#: src/src/Admin/PromotionEditPage.php:3063
+msgid "Exclude sale from discount scope"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3152
+#: src/src/Admin/PromotionEditPage.php:3065
+msgid "Percentage discount only: exclude on-sale lines from eligible subtotal."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3157
+#: src/src/Admin/PromotionEditPage.php:3070
+msgid "Fixed discount amount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3162
+#: src/src/Admin/PromotionEditPage.php:3075
+msgid "Apply builder to JSON"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3168
+#: src/src/Admin/PromotionEditPage.php:3081
+msgid "Product and category IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3171
+#: src/src/Admin/PromotionEditPage.php:3084
+msgid "Products list"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3172
+#: src/src/Admin/PromotionEditPage.php:3085
+msgid "Product categories list"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3178
+#: src/src/Admin/PromotionEditPage.php:3091
+msgid "Product and variation post IDs are interchangeable in product_in_cart and product_quantity matching. Category conditions use product_cat term IDs. Promotion-level excluded product/category IDs remove matching lines from this promotion’s evaluation scope only."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3199
+#: src/src/Admin/PromotionEditPage.php:3112
+msgid "Recent published products"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3204
+#: src/src/Admin/PromotionEditPage.php:3117
+msgid "Type / SKU"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3205
+#: src/Admin/PromotionEditPage.php:3215
+#: src/Admin/PromotionEditPage.php:3242
+#: src/Admin/PromotionEditPage.php:3252
+#: src/Admin/PromotionsPage.php:483
+#: src/src/Admin/PromotionEditPage.php:3118
+#: src/src/Admin/PromotionEditPage.php:3128
+#: src/src/Admin/PromotionEditPage.php:3155
+#: src/src/Admin/PromotionEditPage.php:3165
+#: src/src/Admin/PromotionsPage.php:478
+msgid "Edit"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3236
+#: src/src/Admin/PromotionEditPage.php:3149
+msgid "Product categories"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3241
+#: src/Admin/ReportsPage.php:547
+#: src/src/Admin/PromotionEditPage.php:3154
+#: src/src/Admin/ReportsPage.php:527
+msgid "Count"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3405
+#: src/src/Admin/PromotionEditPage.php:3318
+msgid "Rule templates"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3407
+#: src/src/Admin/PromotionEditPage.php:3320
+msgid "Conditions examples"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3474
+#: src/src/Admin/PromotionEditPage.php:3387
+msgid "Actions examples"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3481
+#: src/src/Admin/PromotionEditPage.php:3394
+msgid "Scoped percentage discount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3485
+#: src/src/Admin/PromotionEditPage.php:3398
+msgid "Scoped percentage (exclude sale)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3493
+#: src/src/Admin/PromotionEditPage.php:3406
+msgid "Scoped fixed amount discount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3501
+#: src/src/Admin/PromotionEditPage.php:3414
+msgid "Cheapest item discount (category)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3505
+#: src/src/Admin/PromotionEditPage.php:3418
+msgid "Cheapest item discount (products)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3513
+#: src/src/Admin/PromotionEditPage.php:3426
+msgid "Copy these JSON examples into the fields below. JSON must be valid. Conditions are all required to pass. Only the first supported action per promotion is applied on the storefront. Product and category IDs must be numeric WordPress IDs. Woo cart context enriches line items with unit_price, item_key, and product_name when available. cheapest_item_discount is BOGO groundwork: it discounts the cheapest eligible units as a negative cart fee (does not add free products or change line prices). free_gift_product adds a configured product to the cart with mp_cp_free_gift metadata and zero line price (no negative fee). See docs/manual-free-gift-test.md. free_shipping is an MVP fee offset equal to the current shipping total. Simple Rule Builder supports cheapest_item_discount and free_gift_product."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3544
+#: src/src/Admin/PromotionEditPage.php:3457
+msgid "Promotion details"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3551
+#: src/src/Admin/PromotionEditPage.php:3464
+msgid "Description"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3555
+#: src/Admin/PromotionsPage.php:459
+#: src/src/Admin/PromotionEditPage.php:3468
+#: src/src/Admin/PromotionsPage.php:454
+msgid "Priority"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3559
+#: src/Admin/PromotionsPage.php:685
+#: src/Admin/PromotionsPage.php:696
+msgid "Priority tier"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3563
+#: src/Admin/SettingsPage.php:41
+msgid "Storefront"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3564
+#: src/Admin/PromotionsPage.php:452
+#: src/Admin/ReportsPage.php:362
+#: src/Admin/ReportsPage.php:422
+#: src/Admin/ReportsPage.php:756
+#: src/src/Admin/PromotionsPage.php:447
+#: src/src/Admin/ReportsPage.php:342
+#: src/src/Admin/ReportsPage.php:402
+#: src/src/Admin/ReportsPage.php:634
+msgid "Campaign"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3565
+msgid "Loyalty"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3566
+msgid "Recovery"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3567
+msgid "Override"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3573
+msgid "Planner evaluates promotions by tier first, then numeric priority."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3576
+#: src/Admin/PromotionsPage.php:686
+#: src/Admin/PromotionsPage.php:697
+msgid "Coupon behavior"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3580
+msgid "Coexist with native coupons"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3581
+msgid "Block when native coupon applied"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3582
+msgid "Require native coupon (diagnostic)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3590
+#: src/Admin/PromotionsPage.php:687
+#: src/Admin/PromotionsPage.php:698
+msgid "Allocation mode"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3594
+msgid "Proportional (lines + shipping)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3595
+msgid "Equal per line"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3596
+msgid "Shipping first"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3602
+msgid "Metadata for allocation explainability; storefront discounts still apply as cart fees."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3604
+#: src/src/Admin/PromotionEditPage.php:3471
+msgid "Starts at"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3606
+#: src/Admin/PromotionEditPage.php:3610
+#: src/Admin/PromotionEditPage.php:3784
+#: src/Admin/PromotionEditPage.php:3829
+#: src/src/Admin/PromotionEditPage.php:3473
+#: src/src/Admin/PromotionEditPage.php:3477
+#: src/src/Admin/PromotionEditPage.php:3651
+#: src/src/Admin/PromotionEditPage.php:3696
+msgid "YYYY-MM-DD HH:MM:SS or leave empty"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3608
+#: src/Admin/PromotionsPage.php:691
+#: src/src/Admin/PromotionEditPage.php:3475
+#: src/src/Admin/PromotionsPage.php:681
+msgid "Ends at"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3613
+#: src/src/Admin/PromotionEditPage.php:3480
+msgid "Global usage limit"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3615
+#: src/src/Admin/PromotionEditPage.php:3482
+msgid "Maximum total successful redemptions for this promotion (all customers). Leave empty for unlimited."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3618
+#: src/src/Admin/PromotionEditPage.php:3485
+msgid "Per-customer usage limit"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3620
+#: src/src/Admin/PromotionEditPage.php:3487
+msgid "Maximum successful redemptions per customer account. Guests cannot satisfy per-customer limits. Leave empty for unlimited."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3626
+#: src/src/Admin/PromotionEditPage.php:3493
+msgid "Application rules"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3628
+#: src/src/Admin/PromotionEditPage.php:3495
+msgid "Controls how this promotion interacts with other eligible promotions in the evaluation plan. Stackable promotions can apply multiple cart fees; exclusions skip specific promotion IDs evaluated later."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3635
+#: src/src/Admin/PromotionEditPage.php:3502
+msgid "Application mode"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3637
+#: src/Admin/PromotionsPage.php:1079
+#: src/src/Admin/PromotionEditPage.php:3504
+#: src/src/Admin/PromotionsPage.php:1044
+msgid "Exclusive"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3638
+#: src/Admin/PromotionsPage.php:1081
+#: src/src/Admin/PromotionEditPage.php:3505
+#: src/src/Admin/PromotionsPage.php:1046
+msgid "Stackable"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3641
+#: src/src/Admin/PromotionEditPage.php:3508
+msgid "Stop processing"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3643
+#: src/src/Admin/PromotionEditPage.php:3510
+msgid "Stop evaluating further promotions after this one is selected in the plan"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3646
+#: src/src/Admin/PromotionEditPage.php:3513
+msgid "Max applications"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3648
+#: src/src/Admin/PromotionEditPage.php:3515
+msgid "Optional. Limits how many promotions may be selected in one cart evaluation plan (not per-customer usage). Leave empty for unlimited. When set, the plan cap is the minimum max_applications among selected promotions."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3656
+#: src/src/Admin/PromotionEditPage.php:3523
+msgid "Excluded promotions"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3657
+#: src/src/Admin/PromotionEditPage.php:3524
+msgid "When this promotion is selected, checked promotions and any manual IDs below will be skipped even if eligible. Your own promotion ID cannot be excluded."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3663
+#: src/src/Admin/PromotionEditPage.php:3530
+msgid "Additional IDs (comma-separated)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3664
+#: src/src/Admin/PromotionEditPage.php:3531
+msgid "12,15,20"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3671
+#: src/src/Admin/PromotionEditPage.php:3538
+msgid "Rules"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3672
+#: src/src/Admin/PromotionEditPage.php:3539
+msgid "Configure conditions and actions with the simple builder, ID helper, templates, or raw JSON below."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3682
+#: src/src/Admin/PromotionEditPage.php:3549
+msgid "Raw JSON editor"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3690
+#: src/src/Admin/PromotionEditPage.php:3557
+msgid "Conditions (JSON)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3692
+#: src/src/Admin/PromotionEditPage.php:3559
+msgid "Copy a template above or enter a valid JSON array. All conditions must pass."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3698
+#: src/src/Admin/PromotionEditPage.php:3565
+msgid "Actions (JSON)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3700
+#: src/src/Admin/PromotionEditPage.php:3567
+msgid "Copy a template above or enter a valid JSON array. Only the first supported action per promotion is applied on the storefront."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3706
+#: src/src/Admin/PromotionEditPage.php:3573
+msgid "Restrictions (JSON)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3711
+#: src/src/Admin/PromotionEditPage.php:3578
+msgid "Save promotion"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3728
+#: src/src/Admin/PromotionEditPage.php:3595
+msgid "Promotion Codes"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3729
+#: src/src/Admin/PromotionEditPage.php:3596
+msgid "Manual codes are stored hashed; only the last four characters are shown after creation. Customers enter codes in the WooCommerce coupon field at checkout."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3732
+#: src/src/Admin/PromotionEditPage.php:3599
+msgid "No promotion codes for this promotion yet."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3737
+#: src/Admin/PromotionEditPage.php:3900
+#: src/Admin/PromotionEditPage.php:4154
+#: src/src/Admin/PromotionEditPage.php:3604
+#: src/src/Admin/PromotionEditPage.php:3767
+#: src/src/Admin/PromotionEditPage.php:4021
+msgid "Batch ID"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3740
+#: src/Admin/PromotionEditPage.php:4317
+#: src/Admin/PromotionsPage.php:460
+#: src/src/Admin/PromotionEditPage.php:3607
+#: src/src/Admin/PromotionEditPage.php:4184
+#: src/src/Admin/PromotionsPage.php:455
+msgid "Usage"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3741
+#: src/Admin/PromotionEditPage.php:3852
+#: src/Admin/PromotionEditPage.php:4319
+#: src/src/Admin/PromotionEditPage.php:3608
+#: src/src/Admin/PromotionEditPage.php:3719
+#: src/src/Admin/PromotionEditPage.php:4186
+msgid "Expires"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3743
+#: src/Admin/PromotionEditPage.php:4322
+#: src/src/Admin/PromotionEditPage.php:3610
+#: src/src/Admin/PromotionEditPage.php:4189
+msgid "Actions"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3773
+#: src/src/Admin/PromotionEditPage.php:3640
+msgid "Add manual code"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3779
+#: src/src/Admin/PromotionEditPage.php:3646
+msgid "A-Z, 0-9, and hyphens only; minimum 4 characters."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3780
+#: src/Admin/PromotionEditPage.php:3825
+#: src/Admin/PromotionEditPage.php:3851
+#: src/Admin/PromotionEditPage.php:4164
+#: src/Admin/PromotionEditPage.php:4318
+#: src/src/Admin/PromotionEditPage.php:3647
+#: src/src/Admin/PromotionEditPage.php:3692
+#: src/src/Admin/PromotionEditPage.php:3718
+#: src/src/Admin/PromotionEditPage.php:4031
+#: src/src/Admin/PromotionEditPage.php:4185
+msgid "Usage limit"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3782
+#: src/Admin/PromotionEditPage.php:3827
+#: src/src/Admin/PromotionEditPage.php:3649
+#: src/src/Admin/PromotionEditPage.php:3694
+msgid "Optional. Leave empty for unlimited."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3783
+#: src/Admin/PromotionEditPage.php:3828
+#: src/Admin/PromotionEditPage.php:4168
+#: src/src/Admin/PromotionEditPage.php:3650
+#: src/src/Admin/PromotionEditPage.php:3695
+#: src/src/Admin/PromotionEditPage.php:4035
+msgid "Expires at"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3787
+#: src/src/Admin/PromotionEditPage.php:3654
+msgid "Create promotion code"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3806
+#: src/src/Admin/PromotionEditPage.php:3673
+msgid "Generate Code Batch"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3807
+#: src/src/Admin/PromotionEditPage.php:3674
+msgid "Generate up to 1,000 unique codes per batch. Full codes are shown once after generation; only hashes are stored."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3816
+#: src/Admin/PromotionEditPage.php:3902
+#: src/src/Admin/PromotionEditPage.php:3683
+#: src/src/Admin/PromotionEditPage.php:3769
+msgid "Batch name"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3820
+#: src/src/Admin/PromotionEditPage.php:3687
+msgid "Maximum 1,000 codes per batch."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3821
+#: src/src/Admin/PromotionEditPage.php:3688
+msgid "Code prefix (optional)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3823
+#: src/src/Admin/PromotionEditPage.php:3690
+msgid "Prepended to each code with a hyphen (A–Z, 0–9). Example: SUMMER produces SUMMER-XXXXXXXXXXXX."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3824
+#: src/src/Admin/PromotionEditPage.php:3691
+msgid "Codes will be PREFIX-RANDOM when set; otherwise RANDOM only."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3831
+#: src/Admin/PromotionEditPage.php:4189
+#: src/src/Admin/PromotionEditPage.php:3698
+#: src/src/Admin/PromotionEditPage.php:4056
+msgid "Batch notes"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3833
+#: src/src/Admin/PromotionEditPage.php:3700
+msgid "Optional internal note stored on the batch record."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3835
+#: src/src/Admin/PromotionEditPage.php:3702
+msgid "Generate code batch"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3838
+#: src/src/Admin/PromotionEditPage.php:3705
+msgid "Previous code batches"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3840
+#: src/src/Admin/PromotionEditPage.php:3707
+msgid "No code batches for this promotion yet."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3849
+#: src/src/Admin/PromotionEditPage.php:3716
+msgid "Code count"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3850
+#: src/Admin/PromotionEditPage.php:4160
+#: src/src/Admin/PromotionEditPage.php:3717
+#: src/src/Admin/PromotionEditPage.php:4027
+msgid "Prefix"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3899
+#: src/src/Admin/PromotionEditPage.php:3766
+msgid "Generated code batch"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3904
+#: src/src/Admin/PromotionEditPage.php:3771
+msgid "Codes generated"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3919
+#: src/src/Admin/PromotionEditPage.php:3786
+msgid "Copy these codes now. They will not be shown again."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3945
+#: src/src/Admin/PromotionEditPage.php:3812
+msgid "Download CSV"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3948
+#: src/src/Admin/PromotionEditPage.php:3815
+msgid "Download the CSV before leaving or refreshing this page. Plain codes are not stored and cannot be downloaded later."
+msgstr ""
+
+#. translators: %d: usage count
+#: src/Admin/PromotionEditPage.php:3963
+#: src/src/Admin/PromotionEditPage.php:3830
+#, php-format
+msgid "%d / —"
+msgstr ""
+
+#. translators: 1: usage count, 2: usage limit
+#. translators: 1: active code count, 2: total code count
+#. translators: 1: recorded redemption count, 2: reversed redemption count
+#: src/Admin/PromotionEditPage.php:3970
+#: src/Admin/PromotionsPage.php:1045
+#: src/Admin/PromotionsPage.php:1069
+#: src/src/Admin/PromotionEditPage.php:3837
+#: src/src/Admin/PromotionsPage.php:1010
+#: src/src/Admin/PromotionsPage.php:1034
+#, php-format
+msgid "%1$d / %2$d"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3989
+#: src/src/Admin/PromotionEditPage.php:3856
+msgid "Usage / Redemptions"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3992
+#: src/src/Admin/PromotionEditPage.php:3859
+msgid "No redemptions recorded."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:3999
+#: src/src/Admin/PromotionEditPage.php:3866
+msgid "Order ID"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4000
+#: src/src/Admin/PromotionEditPage.php:3867
+msgid "Customer ID"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4001
+#: src/src/Admin/PromotionEditPage.php:3868
+msgid "Discount Amount"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4004
+#: src/src/Admin/PromotionEditPage.php:3871
+msgid "Redeemed At"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4005
+#: src/Admin/PromotionEditPage.php:4063
+#: src/src/Admin/PromotionEditPage.php:3872
+#: src/src/Admin/PromotionEditPage.php:3930
+msgid "Created At"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4050
+#: src/src/Admin/PromotionEditPage.php:3917
+msgid "Audit Log"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4053
+#: src/src/Admin/PromotionEditPage.php:3920
+msgid "No audit entries recorded."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4061
+#: src/src/Admin/PromotionEditPage.php:3928
+msgid "Actor User ID"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4062
+#: src/src/Admin/PromotionEditPage.php:3929
+msgid "IP Hash"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4064
+#: src/src/Admin/PromotionEditPage.php:3931
+msgid "Context"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4120
+#: src/src/Admin/PromotionEditPage.php:3987
+msgid "Code batch not found."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4125
+#: src/src/Admin/PromotionEditPage.php:3992
+msgid "That code batch does not belong to this promotion."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4147
+#: src/src/Admin/PromotionEditPage.php:4014
+msgid "Code batch detail"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4148
+#: src/src/Admin/PromotionEditPage.php:4015
+msgid "Read-only batch metadata and linked codes. Full codes are not stored and cannot be recovered."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4155
+#: src/src/Admin/PromotionEditPage.php:4022
+msgid "Batch UUID"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4172
+#: src/src/Admin/PromotionEditPage.php:4039
+msgid "Created by"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4176
+#: src/src/Admin/PromotionEditPage.php:4043
+msgid "Generated at"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4180
+#: src/src/Admin/PromotionEditPage.php:4047
+msgid "Exported at"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4184
+#: src/src/Admin/PromotionEditPage.php:4051
+msgid "Export count"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4193
+#: src/src/Admin/PromotionEditPage.php:4060
+msgid "Linked code count"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4231
+#: src/src/Admin/PromotionEditPage.php:4098
+msgid "Batch code status"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4232
+#: src/src/Admin/PromotionEditPage.php:4099
+msgid "Apply a status change to all matching codes in this batch. Expired codes are not re-enabled."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4241
+#: src/src/Admin/PromotionEditPage.php:4108
+msgid "Disable entire batch (active → disabled)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4246
+#: src/src/Admin/PromotionEditPage.php:4113
+msgid "Expire entire batch (active → expired)"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4254
+#: src/src/Admin/PromotionEditPage.php:4121
+msgid "Enable disabled codes in this batch"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4259
+#: src/src/Admin/PromotionEditPage.php:4126
+msgid "Mark disabled codes expired"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4298
+#: src/src/Admin/PromotionEditPage.php:4165
+msgid "Linked codes"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4301
+#: src/src/Admin/PromotionEditPage.php:4168
+msgid "Promotion codes are unavailable."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4306
+#: src/src/Admin/PromotionEditPage.php:4173
+msgid "No codes are linked to this batch."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4321
+#: src/src/Admin/PromotionEditPage.php:4188
+msgid "Updated"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4350
+#: src/src/Admin/PromotionEditPage.php:4217
+msgid "Showing the latest linked codes only (up to 100)."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4373
+#: src/Admin/PromotionEditPage.php:4387
+#: src/src/Admin/PromotionEditPage.php:4240
+#: src/src/Admin/PromotionEditPage.php:4254
+msgid "Disable"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4378
+#: src/src/Admin/PromotionEditPage.php:4245
+msgid "Enable"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4382
+#: src/src/Admin/PromotionEditPage.php:4249
+msgid "Mark expired"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4535
+#: src/src/Admin/PromotionEditPage.php:4402
+msgid "Product targeting exclusions"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4537
+#: src/src/Admin/PromotionEditPage.php:4404
+msgid "Cart lines matching excluded products or categories are ignored for this promotion’s conditions, cheapest-item pool, and cart quantity helpers. Lines are not removed from the customer cart."
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4544
+#: src/src/Admin/PromotionEditPage.php:4411
+msgid "Exclude products"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4556
+#: src/src/Admin/PromotionEditPage.php:4423
+msgid "Additional product/variation IDs"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4561
+#: src/src/Admin/PromotionEditPage.php:4428
+msgid "Exclude categories"
+msgstr ""
+
+#: src/Admin/PromotionEditPage.php:4573
+#: src/src/Admin/PromotionEditPage.php:4440
+msgid "Additional category IDs"
+msgstr ""
+
+#: src/Admin/PromotionPicker.php:41
+#: src/Admin/ReportsPage.php:204
+#: src/Admin/ReportsPage.php:235
+#: src/src/Admin/PromotionPicker.php:41
+#: src/src/Admin/ReportsPage.php:184
+#: src/src/Admin/ReportsPage.php:215
+msgid "All promotions"
+msgstr ""
+
+#: src/Admin/PromotionPicker.php:98
+#: src/src/Admin/PromotionPicker.php:98
+msgid "No other promotions available to exclude."
+msgstr ""
+
+#: src/Admin/PromotionPicker.php:103
+#: src/src/Admin/PromotionPicker.php:103
+msgid "Exclude promotions"
+msgstr ""
+
+#: src/Admin/PromotionPicker.php:105
+#: src/src/Admin/PromotionPicker.php:105
+msgid "Exclude"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:138
+#: src/src/Admin/PromotionsPage.php:133
+msgid "Create draft promotions, then use Edit to change details, raw JSON rules, and status (via action buttons on the edit screen). Hard delete and visual rule builder are not implemented yet."
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:268
+#: src/src/Admin/PromotionsPage.php:263
+msgid "Recently modified"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:292
+#: src/Admin/ReportsPage.php:224
+#: src/src/Admin/PromotionsPage.php:287
+#: src/src/Admin/ReportsPage.php:204
+msgid "All"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:293
+#: src/src/Admin/PromotionsPage.php:288
+msgid "Draft"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:294
+#: src/Admin/ReportsPage.php:616
+#: src/Admin/ReportsPage.php:622
+#: src/src/Admin/PromotionsPage.php:289
+msgid "Active"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:295
+#: src/Admin/ReportsPage.php:615
+#: src/Admin/ReportsPage.php:621
+#: src/src/Admin/PromotionsPage.php:290
+msgid "Paused"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:296
+#: src/Service/PromotionLifecycle.php:103
+#: src/src/Admin/PromotionsPage.php:291
+#: src/src/Service/PromotionLifecycle.php:103
+msgid "Archived"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:320
+#: src/src/Admin/PromotionsPage.php:315
+msgid "Quick filters:"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:322
+#: src/Admin/ReportsPage.php:233
+#: src/src/Admin/PromotionsPage.php:317
+#: src/src/Admin/ReportsPage.php:213
+msgid "Budget exhausted"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:323
+#: src/Admin/ReportsPage.php:400
+#: src/Service/PromotionLifecycle.php:100
+#: src/src/Admin/PromotionsPage.php:318
+#: src/src/Admin/ReportsPage.php:380
+#: src/src/Service/PromotionLifecycle.php:100
+msgid "Ending soon"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:324
+#: src/src/Admin/PromotionsPage.php:319
+msgid "Health issues"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:349
+#: src/src/Admin/PromotionsPage.php:344
+msgid "Compact mode"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:350
+#: src/src/Admin/PromotionsPage.php:345
+msgid "Full columns"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:366
+#: src/src/Admin/PromotionsPage.php:361
+msgid "Lifecycle"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:368
+#: src/src/Admin/PromotionsPage.php:363
+msgid "All lifecycles"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:386
+#: src/Admin/ReportsPage.php:213
+#: src/src/Admin/PromotionsPage.php:381
+#: src/src/Admin/ReportsPage.php:193
+msgid "All campaigns"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:393
+#: src/src/Admin/PromotionsPage.php:388
+msgid "Search promotions"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:395
+#: src/src/Admin/PromotionsPage.php:390
+msgid "Search"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:401
+#: src/src/Admin/PromotionsPage.php:396
+msgid "Clear search"
+msgstr ""
+
+#. translators: 1: total promotions, 2: current page, 3: total pages
+#: src/Admin/PromotionsPage.php:416
+#: src/src/Admin/PromotionsPage.php:411
+#, php-format
+msgid "%1$d promotion total. Page %2$d of %3$d."
+msgid_plural "%1$d promotions total. Page %2$d of %3$d."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/PromotionsPage.php:436
+#: src/src/Admin/PromotionsPage.php:431
+msgid "No promotions found."
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:448
+#: src/src/Admin/PromotionsPage.php:443
+msgid "Select"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:454
+#: src/src/Admin/PromotionsPage.php:449
+msgid "Codes"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:455
+#: src/src/Admin/PromotionsPage.php:450
+msgid "Batches"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:456
+#: src/src/Admin/PromotionsPage.php:451
+msgid "Redemptions"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:457
+#: src/src/Admin/PromotionsPage.php:452
+msgid "Validation"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:458
+#: src/src/Admin/PromotionsPage.php:453
+msgid "Application"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:461
+#: src/src/Admin/PromotionsPage.php:456
+msgid "Starts"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:462
+#: src/Admin/ReportsPage.php:425
+#: src/src/Admin/PromotionsPage.php:457
+#: src/src/Admin/ReportsPage.php:405
+msgid "Ends"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:543
+#: src/Admin/PromotionsPage.php:546
+#: src/src/Admin/PromotionsPage.php:538
+#: src/src/Admin/PromotionsPage.php:541
+msgid "Bulk actions"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:551
+#: src/src/Admin/PromotionsPage.php:546
+msgid "Apply"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:672
+#: src/src/Admin/PromotionsPage.php:667
+msgid "Campaign bulk updates"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:673
+#: src/src/Admin/PromotionsPage.php:668
+msgid "Select promotions in the list below, then set schedule, orchestration, label, budget, or cooldown fields. Uses the same checkboxes as status bulk actions."
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:677
+#: src/src/Admin/PromotionsPage.php:672
+msgid "Workflow"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:679
+#: src/src/Admin/PromotionsPage.php:674
+msgid "Mass scheduling"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:680
+#: src/src/Admin/PromotionsPage.php:675
+msgid "Orchestration group + cooldown"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:690
+#: src/src/Admin/PromotionsPage.php:680
+msgid "Starts at (Y-m-d H:i:s)"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:695
+#: src/src/Admin/PromotionsPage.php:685
+msgid "Cooldown (hours)"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:701
+#: src/src/Admin/PromotionsPage.php:688
+msgid "Apply campaign bulk update"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:855
+#: src/src/Admin/PromotionsPage.php:820
+msgid "← Previous"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:861
+#: src/src/Admin/PromotionsPage.php:826
+msgid "Next →"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:978
+#: src/src/Admin/PromotionsPage.php:943
+msgid "Draft promotion created."
+msgstr ""
+
+#. translators: 1: number of promotions updated, 2: number skipped
+#: src/Admin/PromotionsPage.php:988
+#: src/src/Admin/PromotionsPage.php:953
+#, php-format
+msgid "Bulk update complete: %1$d changed, %2$d skipped."
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:994
+#: src/src/Admin/PromotionsPage.php:959
+msgid "No promotions were selected for bulk update."
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:1015
+#: src/src/Admin/PromotionsPage.php:980
+msgid "Could not create the promotion. Please try again."
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:1017
+#: src/src/Admin/PromotionsPage.php:982
+msgid "Please choose a bulk action."
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:1019
+#: src/src/Admin/PromotionsPage.php:984
+msgid "That promotion could not be found."
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:1026
+#: src/Admin/PromotionsPage.php:1031
+#: src/src/Admin/PromotionsPage.php:991
+#: src/src/Admin/PromotionsPage.php:996
+msgid "Create draft promotion"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:1029
+#: src/src/Admin/PromotionsPage.php:994
+msgid "Promotion name"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:1086
+#: src/src/Admin/PromotionsPage.php:1051
+msgid "Has exclusions"
+msgstr ""
+
+#. translators: %d: number of excluded promotion IDs
+#: src/Admin/PromotionsPage.php:1089
+#: src/src/Admin/PromotionsPage.php:1054
+#, php-format
+msgid "Conflicts: %d"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:1095
+#: src/src/Admin/PromotionsPage.php:1060
+msgid "Scoped"
+msgstr ""
+
+#: src/Admin/PromotionsPage.php:1099
+#: src/src/Admin/PromotionsPage.php:1064
+msgid "Stop"
+msgstr ""
+
+#. translators: %d: error count
+#: src/Admin/PromotionsPage.php:1160
+#: src/src/Admin/PromotionsPage.php:1125
+#, php-format
+msgid "%d error"
+msgid_plural "%d errors"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: warning count
+#: src/Admin/PromotionsPage.php:1168
+#: src/src/Admin/PromotionsPage.php:1133
+#, php-format
+msgid "%d warning"
+msgid_plural "%d warnings"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: usage count
+#: src/Admin/PromotionsPage.php:1183
+#: src/src/Admin/PromotionsPage.php:1148
+#, php-format
+msgid "%1$s / —"
+msgstr ""
+
+#. translators: 1: usage count, 2: usage limit
+#: src/Admin/PromotionsPage.php:1190
+#: src/src/Admin/PromotionsPage.php:1155
+#, php-format
+msgid "%1$s / %2$s"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:67
+#: src/src/Admin/ReportsPage.php:61
+msgid "Promotion Reports"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:69
+#: src/src/Admin/ReportsPage.php:63
+msgid "Read-only summaries from redemption records. CSV export includes up to 5,000 rows and does not expose raw promotion codes."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:97
+msgid "CSV export is disabled in Promotion Settings."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:175
+#: src/src/Admin/ReportsPage.php:155
+msgid "Date preset"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:177
+#: src/src/Admin/ReportsPage.php:157
+msgid "Custom range"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:179
+#: src/src/Admin/ReportsPage.php:159
+msgid "Today"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:180
+#: src/src/Admin/ReportsPage.php:160
+msgid "Last 7 days"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:181
+#: src/src/Admin/ReportsPage.php:161
+msgid "Last 30 days"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:182
+#: src/src/Admin/ReportsPage.php:162
+msgid "This month"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:188
+#: src/src/Admin/ReportsPage.php:168
+msgid "Presets override manual date fields when selected."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:190
+#: src/src/Admin/ReportsPage.php:170
+msgid "Date from"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:192
+#: src/src/Admin/ReportsPage.php:172
+msgid "Filters by redemption redeemed_at (inclusive)."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:194
+#: src/src/Admin/ReportsPage.php:174
+msgid "Date to"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:227
+#: src/Admin/ReportsPage.php:363
+#: src/Admin/ReportsPage.php:709
+#: src/src/Admin/ReportsPage.php:207
+#: src/src/Admin/ReportsPage.php:343
+msgid "Recorded"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:230
+#: src/Admin/ReportsPage.php:364
+#: src/src/Admin/ReportsPage.php:210
+#: src/src/Admin/ReportsPage.php:344
+msgid "Reversed"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:236
+#: src/src/Admin/ReportsPage.php:216
+msgid "Exhausted only"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:237
+#: src/src/Admin/ReportsPage.php:217
+msgid "Not exhausted"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:239
+#: src/src/Admin/ReportsPage.php:219
+msgid "Filters promotion economics tables and top promotions by budget state."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:243
+#: src/src/Admin/ReportsPage.php:223
+msgid "Apply filters"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:258
+#: src/src/Admin/ReportsPage.php:238
+msgid "Summary"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:262
+#: src/src/Admin/ReportsPage.php:242
+msgid "Total promotions"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:263
+#: src/src/Admin/ReportsPage.php:243
+msgid "Active promotions"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:266
+#: src/src/Admin/ReportsPage.php:246
+msgid "Recorded discount total"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:269
+#: src/src/Admin/ReportsPage.php:249
+msgid "Total budget spent (budgeted promos)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:272
+#: src/src/Admin/ReportsPage.php:252
+msgid "Active promotions with budget cap"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:273
+#: src/src/Admin/ReportsPage.php:253
+msgid "Active promotions with exhausted budget"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:274
+#: src/src/Admin/ReportsPage.php:254
+msgid "Active promotions with cooldown configured"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:275
+#: src/src/Admin/ReportsPage.php:255
+msgid "Avg discount per recorded redemption"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:291
+#: src/Admin/ReportsPage.php:757
+#: src/src/Admin/ReportsPage.php:271
+#: src/src/Admin/ReportsPage.php:635
+msgid "Orchestration"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:294
+#: src/src/Admin/ReportsPage.php:274
+msgid "Top orchestration groups (active)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:296
+#: src/src/Admin/ReportsPage.php:276
+msgid "No active promotions use orchestration groups."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:299
+#: src/src/Admin/ReportsPage.php:279
+msgid "Group"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:313
+#: src/src/Admin/ReportsPage.php:293
+msgid "Highest budget burn (active)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:315
+#: src/src/Admin/ReportsPage.php:295
+msgid "No active budgeted promotions."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:322
+#: src/src/Admin/ReportsPage.php:302
+msgid "Spent"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:323
+#: src/Admin/ReportsPage.php:366
+#: src/src/Admin/ReportsPage.php:303
+#: src/src/Admin/ReportsPage.php:346
+msgid "Budget utilization"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:352
+#: src/src/Admin/ReportsPage.php:332
+msgid "Top promotions (by recorded redemptions)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:355
+#: src/src/Admin/ReportsPage.php:335
+msgid "No redemptions match the current filters."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:365
+#: src/src/Admin/ReportsPage.php:345
+msgid "Recorded discount"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:393
+#: src/src/Admin/ReportsPage.php:373
+msgid "Campaign economics"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:396
+#: src/src/Admin/ReportsPage.php:376
+msgid "Upcoming (scheduled)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:404
+#: src/src/Admin/ReportsPage.php:384
+msgid "Budget exhausted (active)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:415
+#: src/src/Admin/ReportsPage.php:395
+msgid "None match the current filters."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:423
+#: src/src/Admin/ReportsPage.php:403
+msgid "Budget"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:424
+#: src/src/Admin/ReportsPage.php:404
+msgid "Utilization"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:474
+#: src/src/Admin/ReportsPage.php:454
+msgid "Export"
+msgstr ""
+
+#. translators: %d: maximum CSV rows
+#: src/Admin/ReportsPage.php:503
+#: src/src/Admin/ReportsPage.php:483
+#, php-format
+msgid "Download up to %d redemption rows matching the filters above. The code column is not populated with merchant-facing promotion codes."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:509
+#: src/src/Admin/ReportsPage.php:489
+msgid "Export redemptions CSV"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:519
+#: src/Admin/ReportsPage.php:613
+#: src/src/Admin/ReportsPage.php:499
+msgid "Planner telemetry"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:520
+#: src/src/Admin/ReportsPage.php:500
+msgid "Aggregate planner counters (no customer PII). Updated during cart totals calculation."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:522
+#: src/src/Admin/ReportsPage.php:502
+msgid "Most selected promotions"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:523
+#: src/src/Admin/ReportsPage.php:503
+msgid "Most blocked (orchestration group)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:524
+#: src/src/Admin/ReportsPage.php:504
+msgid "Most conflicted orchestration groups"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:526
+#: src/src/Admin/ReportsPage.php:506
+msgid "No orchestration block data yet."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:531
+#: src/src/Admin/ReportsPage.php:511
+msgid "blocks"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:544
+#: src/src/Admin/ReportsPage.php:524
+msgid "No data yet."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:559
+#: src/src/Admin/ReportsPage.php:539
+msgid "Automation history"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:561
+#: src/src/Admin/ReportsPage.php:541
+msgid "No automation runs yet. Use Diagnostics → Run all automation."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:578
+#: src/src/Admin/ReportsPage.php:558
+msgid "Promotion health summary"
+msgstr ""
+
+#. translators: 1: total, 2: critical, 3: warning, 4: info
+#: src/Admin/ReportsPage.php:582
+#: src/src/Admin/ReportsPage.php:562
+#, php-format
+msgid "Issues found: %1$d (critical: %2$d, warning: %3$d, info: %4$d). See Diagnostics for the full list."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:593
+msgid "Production hardening"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:597
+msgid "Safe mode"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:599
+msgid "ON — automatic promotions disabled"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:600
+#: src/Admin/ReportsPage.php:626
+msgid "Off"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:603
+msgid "Automatic promotions"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:604
+msgid "Enabled"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:604
+msgid "Disabled"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:607
+msgid "Storefront degraded mode"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:609
+msgid "Active — see Diagnostics to clear"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:610
+msgid "Not active"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:619
+msgid "Simulations"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:625
+#: src/Admin/SettingsPage.php:107
+msgid "Automation emergency stop"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:626
+msgid "ON"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:630
+msgid "Enabled in settings"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:630
+msgid "Disabled (default)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:633
+msgid "Cron hooks scheduled"
+msgstr ""
+
+#. translators: 1: hourly yes/no, 2: daily yes/no
+#: src/Admin/ReportsPage.php:636
+#, php-format
+msgid "Hourly: %1$s — Daily: %2$s"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:642
+msgid "Telemetry retention"
+msgstr ""
+
+#. translators: %d: days
+#: src/Admin/ReportsPage.php:645
+#, php-format
+msgid "%d days"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:663
+#: src/src/Admin/ReportsPage.php:573
+msgid "Planner performance"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:664
+msgid "In-request cache counters, rolling profiler aggregates, and allocation cache metrics."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:669
+msgid "Request & persisted caches"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:672
+msgid "This request — simulated runs"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:676
+msgid "This request — planner cache hits / misses"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:680
+msgid "Allocation cache hits / misses (request)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:684
+msgid "Persisted planner counters"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:694
+msgid "Profiler aggregates"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:696
+msgid "Planner runs (rolling)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:697
+msgid "Average planner runtime (ms)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:698
+msgid "Max planner runtime (ms)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:700
+msgid "Telemetry writes"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:705
+msgid "Slow planner runs"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:707
+msgid "No slow runs recorded yet."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:709
+msgid "Duration (ms)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:729
+#: src/src/Admin/ReportsPage.php:607
+msgid "Forecasting (heuristic)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:731
+#: src/src/Admin/ReportsPage.php:609
+msgid "Telemetry required for forecasts."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:736
+#: src/src/Admin/ReportsPage.php:614
+#, php-format
+msgid "Estimated catalog discount exposure: %1$s — projected redemptions: %2$d (generated %3$s)."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:746
+#: src/src/Admin/ReportsPage.php:624
+msgid "Promotion calendar"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:751
+#: src/src/Admin/ReportsPage.php:629
+msgid "None"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:758
+#: src/src/Admin/ReportsPage.php:636
+msgid "Phase"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:773
+#: src/src/Admin/ReportsPage.php:651
+msgid "Intelligent recommendations"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:789
+#: src/src/Admin/ReportsPage.php:667
+msgid "Campaign intelligence analytics"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:790
+#: src/src/Admin/ReportsPage.php:668
+msgid "Highest ROI (discount per redemption heuristic):"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:792
+#: src/src/Admin/ReportsPage.php:670
+msgid "No ROI data yet."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:800
+#: src/src/Admin/ReportsPage.php:678
+msgid "Scenario run count (saved scenarios):"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:806
+msgid "Profitability analytics (heuristic)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:807
+msgid "Estimated margin impact and campaign cost signals. Not accounting-grade."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:812
+#, php-format
+msgid "Estimated margin impact: %s"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:813
+#, php-format
+msgid "Average discount rate: %s"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:814
+#, php-format
+msgid "Shipping discount exposure: %s"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:820
+msgid "Pricing & allocation analytics"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:821
+msgid "Priority tiers"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:837
+#: src/src/Admin/ReportsPage.php:687
+msgid "Promotion simulation"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:840
+#: src/src/Admin/ReportsPage.php:690
+msgid "Quick whole-cart simulation against active promotions (synthetic cart)."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:841
+#: src/src/Admin/ReportsPage.php:691
+msgid "Estimated discount:"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:844
+#: src/src/Admin/ReportsPage.php:694
+msgid "Saved scenarios (latest 20)"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:847
+#: src/src/Admin/ReportsPage.php:697
+msgid "No saved scenarios yet."
+msgstr ""
+
+#: src/Admin/ReportsPage.php:861
+#: src/src/Admin/ReportsPage.php:711
+msgid "Save preset scenario"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:873
+#: src/src/Admin/ReportsPage.php:723
+msgid "Scenario name"
+msgstr ""
+
+#: src/Admin/ReportsPage.php:874
+#: src/src/Admin/ReportsPage.php:724
+msgid "Save scenario"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:35
+#: src/src/Admin/SettingsPage.php:37
 msgid "Promotion Settings"
 msgstr ""
 
-#: src/Admin/DiagnosticsPage.php
-msgid "Export support bundle"
+#: src/Admin/SettingsPage.php:45
+#: src/src/Admin/SettingsPage.php:53
+msgid "Enable cart discounts"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:46
+msgid "When disabled, promotions are not applied as cart fees and the applied-promotion session is cleared."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:51
+msgid "Enable free gift actions"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:52
+msgid "When disabled, free_gift_product actions do not add cart lines (validator warns)."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:57
+msgid "Enable free shipping action"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:58
+msgid "When disabled, free_shipping actions do not apply shipping fee offsets."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:63
+msgid "Admin & reporting"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:67
+msgid "Enable planner telemetry"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:68
+msgid "Records aggregate planner outcomes (no PII). Disable to stop telemetry writes."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:73
+msgid "Enable redemption CSV export"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:74
+msgid "When disabled, the Reports export form is hidden."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:79
+msgid "Enable simulation features"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:80
+msgid "When disabled, Reports simulation section is hidden."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:85
+msgid "Enable advanced pricing explainability"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:86
+msgid "When disabled, allocation tables and summaries are hidden in cart preview."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:91
+msgid "Automation"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:95
+msgid "Automation runner: manual only"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:96
+msgid "When enabled, WP-Cron hourly automation is skipped (manual Diagnostics runs still work)."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:101
+msgid "Enable WP-Cron automation"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:102
+msgid "Schedules hourly maintenance and daily cleanup hooks. Disabled by default."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:108
+msgid "Blocks all automation runs until disabled."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:113
+msgid "Production safety"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:117
+msgid "Safe mode (disable automatic promotions)"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:118
+msgid "Skips automatic cart promotions. Promotion codes may still apply when allowed below."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:123
+msgid "Allow promotion codes in safe mode"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:124
+msgid "When safe mode is on, coupon-field promotion codes can still apply."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:129
+msgid "Pause planner telemetry writes"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:130
+msgid "Stops aggregate telemetry persistence while leaving other features enabled."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:135
+msgid "Pause simulations"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:136
+msgid "Blocks simulation runs until disabled."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:140
+msgid "Telemetry retention (days)"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:146
+msgid "Used by daily cleanup for automation runs and archived scenarios."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:150
+msgid "Data retention"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:151
+msgid "By default, uninstalling the plugin retains promotions, codes, redemptions, and settings. Full deletion is opt-in and irreversible."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:158
+msgid "Retain data on uninstall"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:159
+msgid "Recommended. Keeps custom tables and mp_cp_* options when the plugin is removed."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:164
+msgid "Delete all plugin data on uninstall"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:165
+msgid "Dangerous: drops custom tables and deletes all mp_cp_* options when uninstall runs. Requires explicit opt-in."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:172
+#: src/src/Admin/SettingsPage.php:67
+msgid "Save settings"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:274
+#: src/src/Admin/SettingsPage.php:123
+msgid "Settings saved."
+msgstr ""
+
+#. translators: %s: scenario name
+#. translators: %s: original promotion name
+#: src/Domain/SimulationScenarioRepository.php:126
+#: src/Service/PromotionService.php:174
+#: src/src/Domain/SimulationScenarioRepository.php:126
+#: src/src/Service/PromotionService.php:174
+#, php-format
+msgid "Copy of %s"
+msgstr ""
+
+#. translators: 1: skipped promotion id, 2: excluding promotion id
+#: src/Engine/PromotionPlanExplainer.php:58
+#: src/src/Engine/PromotionPlanExplainer.php:58
+#, php-format
+msgid "Promotion %1$d is listed in excluded_promotion_ids of promotion %2$d."
+msgstr ""
+
+#. translators: 1: selected count, 2: skipped count, 3: orchestration blocks, 4: cooldown blocks
+#: src/Engine/PromotionPlanExplainer.php:107
+#: src/src/Engine/PromotionPlanExplainer.php:107
+#, php-format
+msgid "Plan metrics: %1$d selected, %2$d skipped (%3$d orchestration group, %4$d cooldown)."
+msgstr ""
+
+#. translators: 1: promotion label, 2: application mode
+#: src/Engine/PromotionPlanExplainer.php:129
+#: src/src/Engine/PromotionPlanExplainer.php:129
+#, php-format
+msgid "Promotion %1$s selected because eligible (%2$s)."
+msgstr ""
+
+#: src/Engine/PromotionPlanExplainer.php:135
+#: src/src/Engine/PromotionPlanExplainer.php:135
+msgid "Stop processing is enabled; later promotions in plan order may be skipped."
+msgstr ""
+
+#. translators: %s: comma-separated promotion IDs
+#: src/Engine/PromotionPlanExplainer.php:142
+#: src/src/Engine/PromotionPlanExplainer.php:142
+#, php-format
+msgid "Excludes promotion IDs: %s."
+msgstr ""
+
+#. translators: 1: skipped promotion label, 2: excluding promotion id
+#: src/Engine/PromotionPlanExplainer.php:194
+#: src/src/Engine/PromotionPlanExplainer.php:194
+#, php-format
+msgid "Promotion %1$s skipped because excluded by promotion %2$d."
+msgstr ""
+
+#. translators: %s: promotion label
+#: src/Engine/PromotionPlanExplainer.php:200
+#: src/src/Engine/PromotionPlanExplainer.php:200
+#, php-format
+msgid "Promotion %s skipped because excluded by an earlier selected promotion."
+msgstr ""
+
+#. translators: 1: promotion label, 2: max applications limit
+#: src/Engine/PromotionPlanExplainer.php:208
+#: src/src/Engine/PromotionPlanExplainer.php:208
+#, php-format
+msgid "Promotion %1$s skipped because max applications limit %2$d was reached."
+msgstr ""
+
+#. translators: %s: promotion label
+#: src/Engine/PromotionPlanExplainer.php:215
+#: src/src/Engine/PromotionPlanExplainer.php:215
+#, php-format
+msgid "Promotion %s skipped because an exclusive promotion was selected earlier in the plan."
+msgstr ""
+
+#. translators: %s: promotion label
+#: src/Engine/PromotionPlanExplainer.php:221
+#: src/src/Engine/PromotionPlanExplainer.php:221
+#, php-format
+msgid "Promotion %s skipped because a selected promotion has stop processing enabled."
+msgstr ""
+
+#. translators: 1: skipped promotion label, 2: orchestration group, 3: winning promotion id
+#: src/Engine/PromotionPlanExplainer.php:233
+#: src/src/Engine/PromotionPlanExplainer.php:233
+#, php-format
+msgid "Promotion %1$s skipped because orchestration group \"%2$s\" already selected promotion %3$d."
+msgstr ""
+
+#. translators: %s: promotion label
+#: src/Engine/PromotionPlanExplainer.php:240
+#: src/src/Engine/PromotionPlanExplainer.php:240
+#, php-format
+msgid "Promotion %s skipped because another promotion in the same orchestration group was already selected."
+msgstr ""
+
+#. translators: %s: promotion label
+#: src/Engine/PromotionPlanExplainer.php:246
+#: src/src/Engine/PromotionPlanExplainer.php:246
+#, php-format
+msgid "Promotion %s skipped because promotion cooldown is active for this customer."
+msgstr ""
+
+#. translators: 1: promotion label, 2: reason code
+#: src/Engine/PromotionPlanExplainer.php:253
+#: src/src/Engine/PromotionPlanExplainer.php:253
+#, php-format
+msgid "Promotion %1$s skipped because not eligible (%2$s)."
+msgstr ""
+
+#: src/Engine/PromotionPlanExplainer.php:339
+#: src/src/Engine/PromotionPlanExplainer.php:338
+msgid "Review orchestration groups: multiple promotions competed for the same lane."
+msgstr ""
+
+#: src/Engine/PromotionPlanExplainer.php:345
+#: src/src/Engine/PromotionPlanExplainer.php:344
+msgid "Cooldown blocked one or more promotions for this customer context."
+msgstr ""
+
+#. translators: %s: formatted subtotal
+#: src/Engine/PromotionPlanExplainer.php:353
+#: src/src/Engine/PromotionPlanExplainer.php:352
+#, php-format
+msgid "Simulated cart subtotal: %s"
+msgstr ""
+
+#. translators: 1: promotion name, 2: reason
+#: src/Engine/PromotionPlanExplainer.php:362
+#: src/src/Engine/PromotionPlanExplainer.php:361
+#, php-format
+msgid "%1$s lost: %2$s"
+msgstr ""
+
+#: src/Engine/PromotionPlanExplainer.php:397
+msgid "Native Woo coupons present; promotion coupon_behavior rules apply."
+msgstr ""
+
+#: src/Plugin.php:169
+msgid "Some promotions may be temporarily unavailable. Your cart totals are still calculated normally."
+msgstr ""
+
+#: src/Service/CompatibilityStatus.php:31
+msgid "Not declared — block checkout compatibility pending QA."
+msgstr ""
+
+#: src/Service/CompatibilityStatus.php:55
+msgid "Prices include tax"
+msgstr ""
+
+#: src/Service/CompatibilityStatus.php:56
+msgid "Prices exclude tax"
+msgstr ""
+
+#: src/Service/CompatibilityStatus.php:62
+msgid "Unknown (WooCommerce inactive)"
+msgstr ""
+
+#: src/Service/PromotionAutomationRunner.php:124
+msgid "Automation skipped: another run is in progress."
+msgstr ""
+
+#: src/Service/PromotionConcurrencyGuard.php:30
+msgid "Planner lock already held; skipped overlapping execution."
+msgstr ""
+
+#: src/Service/PromotionConcurrencyGuard.php:45
+msgid "Automation runner already in progress."
+msgstr ""
+
+#: src/Service/PromotionConcurrencyGuard.php:60
+msgid "Snapshot restore already in progress."
+msgstr ""
+
+#. translators: %d: order ID
+#: src/Service/PromotionConcurrencyGuard.php:88
+#, php-format
+msgid "Checkout recording lock held for order %d; skipping overlapping write."
+msgstr ""
+
+#. translators: 1: promotion A id, 2: promotion B id
+#: src/Service/PromotionConflictAnalyzer.php:134
+#: src/src/Service/PromotionConflictAnalyzer.php:130
+#, php-format
+msgid "Promotion %1$d and promotion %2$d mutually exclude each other."
+msgstr ""
+
+#. translators: 1: excluding promotion id, 2: excluded promotion id
+#: src/Service/PromotionConflictAnalyzer.php:149
+#: src/Service/PromotionConflictAnalyzer.php:161
+#: src/src/Service/PromotionConflictAnalyzer.php:145
+#: src/src/Service/PromotionConflictAnalyzer.php:157
+#, php-format
+msgid "Promotion %1$d excludes promotion %2$d."
+msgstr ""
+
+#. translators: 1: count exclusive, 2: count stackable
+#: src/Service/PromotionConflictAnalyzer.php:200
+#: src/src/Service/PromotionConflictAnalyzer.php:196
+#, php-format
+msgid "%1$d exclusive and %2$d stackable active promotions overlap; exclusive selections may block stackable promotions in the same cart plan."
+msgstr ""
+
+#. translators: 1: scope key, 2: comma-separated promotion IDs
+#: src/Service/PromotionConflictAnalyzer.php:238
+#: src/src/Service/PromotionConflictAnalyzer.php:234
+#, php-format
+msgid "Scoped discounts overlap on %1$s (promotions %2$s); fees may stack up to cart subtotal cap."
+msgstr ""
+
+#. translators: 1: number of promotions, 2: effective plan cap
+#: src/Service/PromotionConflictAnalyzer.php:331
+#: src/src/Service/PromotionConflictAnalyzer.php:327
+#, php-format
+msgid "%1$d promotions define max_applications; planner uses the minimum cap (%2$d) among selected promotions."
+msgstr ""
+
+#. translators: %s: comma-separated promotion IDs
+#: src/Service/PromotionConflictAnalyzer.php:362
+#: src/src/Service/PromotionConflictAnalyzer.php:358
+#, php-format
+msgid "Multiple free_shipping promotions are active (%s); only the first selected free shipping fee typically applies."
+msgstr ""
+
+#. translators: 1: gift product key, 2: promotion IDs
+#: src/Service/PromotionConflictAnalyzer.php:408
+#: src/src/Service/PromotionConflictAnalyzer.php:404
+#, php-format
+msgid "Multiple free_gift_product promotions target the same gift (%1$s) on promotions %2$s."
+msgstr ""
+
+#. translators: %s: promotion IDs
+#: src/Service/PromotionConflictAnalyzer.php:446
+#: src/src/Service/PromotionConflictAnalyzer.php:442
+#, php-format
+msgid "Stackable promotions %s have usage limits; customers may qualify for fewer combinations than expected."
+msgstr ""
+
+#. translators: 1: high-priority promotion id, 2: lower-priority ids
+#: src/Service/PromotionConflictAnalyzer.php:510
+#: src/src/Service/PromotionConflictAnalyzer.php:506
+#, php-format
+msgid "High-priority exclusive promotion %1$d (stop processing) may prevent lower-priority promotions (%2$s) from being selected when eligible."
+msgstr ""
+
+#. translators: 1: orchestration group, 2: promotion IDs, 3: count
+#: src/Service/PromotionConflictAnalyzer.php:554
+#: src/src/Service/PromotionConflictAnalyzer.php:550
+#, php-format
+msgid "Orchestration group \"%1$s\" has %3$d active promotions with overlapping schedules (%2$s); only one can be selected per cart plan."
+msgstr ""
+
+#. translators: 1: priority tier, 2: promotion IDs, 3: count
+#: src/Service/PromotionConflictAnalyzer.php:627
+#, php-format
+msgid "Priority tier \"%1$s\" has %3$d overlapping promotions (%2$s); planner evaluates tier first then numeric priority."
+msgstr ""
+
+#. translators: %d: promotion id
+#: src/Service/PromotionHealthMonitor.php:90
+#: src/src/Service/PromotionHealthMonitor.php:90
+#, php-format
+msgid "Promotion %d has starts_at after ends_at."
+msgstr ""
+
+#: src/Service/PromotionHealthMonitor.php:122
+#: src/src/Service/PromotionHealthMonitor.php:122
+#, php-format
+msgid "Promotion %d has a budget cap without currency."
+msgstr ""
+
+#: src/Service/PromotionHealthMonitor.php:134
+#: src/src/Service/PromotionHealthMonitor.php:134
+#, php-format
+msgid "Promotion %d budget_spent greatly exceeds budget_amount (possible drift)."
+msgstr ""
+
+#. translators: 1: promotion id, 2: orphan ids
+#: src/Service/PromotionHealthMonitor.php:178
+#: src/src/Service/PromotionHealthMonitor.php:178
+#, php-format
+msgid "Promotion %1$d references missing excluded promotion IDs: %2$s."
+msgstr ""
+
+#. translators: %s: promotion ids
+#: src/Service/PromotionHealthMonitor.php:221
+#: src/src/Service/PromotionHealthMonitor.php:221
+#, php-format
+msgid "%d active promotion(s) are past ends_at."
+msgstr ""
+
+#: src/Service/PromotionHealthMonitor.php:248
+#: src/src/Service/PromotionHealthMonitor.php:248
+#, php-format
+msgid "Active promotion %d has no actions configured."
+msgstr ""
+
+#: src/Service/PromotionHealthMonitor.php:258
+#: src/src/Service/PromotionHealthMonitor.php:258
+#, php-format
+msgid "Promotion %d has no actions configured."
+msgstr ""
+
+#. translators: 1: promotion id, 2: field name
+#: src/Service/PromotionHealthMonitor.php:295
+#: src/src/Service/PromotionHealthMonitor.php:295
+#, php-format
+msgid "Promotion %1$d field %2$s is not a valid array."
+msgstr ""
+
+#. translators: 1: group name, 2: count
+#: src/Service/PromotionHealthMonitor.php:354
+#: src/src/Service/PromotionHealthMonitor.php:354
+#, php-format
+msgid "Orchestration group \"%1$s\" has %2$d promotions."
+msgstr ""
+
+#: src/Service/PromotionHealthMonitor.php:396
+#: src/src/Service/PromotionHealthMonitor.php:396
+#, php-format
+msgid "%d active promotions include free shipping actions."
+msgstr ""
+
+#: src/Service/PromotionLifecycle.php:98
+#: src/src/Service/PromotionLifecycle.php:98
+msgid "Scheduled"
+msgstr ""
+
+#: src/Service/PromotionLifecycle.php:99
+#: src/src/Service/PromotionLifecycle.php:99
+msgid "Live"
+msgstr ""
+
+#: src/Service/PromotionLifecycle.php:101
+#: src/src/Service/PromotionLifecycle.php:101
+msgid "Expired (active)"
+msgstr ""
+
+#: src/Service/PromotionLifecycle.php:102
+#: src/src/Service/PromotionLifecycle.php:102
+msgid "Exhausted"
+msgstr ""
+
+#: src/Service/PromotionLifecycle.php:104
+#: src/src/Service/PromotionLifecycle.php:104
+msgid "Ready to activate"
+msgstr ""
+
+#: src/Service/PromotionLifecycle.php:105
+#: src/src/Service/PromotionLifecycle.php:105
+msgid "Expired (paused)"
+msgstr ""
+
+#: src/Service/PromotionRecommendationEngine.php:87
+#: src/src/Service/PromotionRecommendationEngine.php:87
+#, php-format
+msgid "Promotion %d is active without an end date."
+msgstr ""
+
+#: src/Service/PromotionRecommendationEngine.php:113
+#: src/src/Service/PromotionRecommendationEngine.php:113
+#, php-format
+msgid "Promotion %d has no recorded redemptions yet."
+msgstr ""
+
+#: src/Service/PromotionRecommendationEngine.php:145
+#: src/src/Service/PromotionRecommendationEngine.php:145
+#, php-format
+msgid "Promotion %d has no planner telemetry selections yet."
+msgstr ""
+
+#: src/Service/PromotionRecommendationEngine.php:174
+#: src/src/Service/PromotionRecommendationEngine.php:174
+#, php-format
+msgid "Promotion %d cooldown (%d hours) may be excessive."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:91
+#: src/src/Service/PromotionRuleValidator.php:85
+msgid "Budget amount is set without a budget currency."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:100
+#: src/src/Service/PromotionRuleValidator.php:94
+msgid "Promotion is active but the end date is in the past."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:108
+#: src/src/Service/PromotionRuleValidator.php:102
+msgid "No end date is configured for this promotion."
+msgstr ""
+
+#. translators: %d: number of overlapping stackable promotions
+#: src/Service/PromotionRuleValidator.php:173
+#: src/src/Service/PromotionRuleValidator.php:167
+#, php-format
+msgid "This stackable promotion overlaps %d other active stackable promotion(s) in time."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:220
+#: src/src/Service/PromotionRuleValidator.php:214
+msgid "usage_limit must be null or at least 1."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:227
+#: src/src/Service/PromotionRuleValidator.php:221
+msgid "customer_usage_limit must be null or at least 1."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:242
+#: src/src/Service/PromotionRuleValidator.php:236
+msgid "cooldown_hours must be null or at least 1."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:249
+#: src/src/Service/PromotionRuleValidator.php:243
+msgid "Cooldown blocks repeat redemptions for the same logged-in customer until the configured hours pass after the last recorded redemption."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:260
+#: src/src/Service/PromotionRuleValidator.php:254
+msgid "Orchestration group allows only one selected promotion per group in a cart evaluation plan (first eligible by priority wins)."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:276
+#: src/src/Service/PromotionRuleValidator.php:270
+msgid "Cooldown is configured but no logged-in customer condition is present."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:285
+#: src/src/Service/PromotionRuleValidator.php:279
+msgid "Orchestration group contains invalid characters and must be normalized before activation."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:297
+#: src/src/Service/PromotionRuleValidator.php:291
+msgid "Promotion has no end date and no usage limit (unlimited campaign)."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:303
+#: src/src/Service/PromotionRuleValidator.php:297
+msgid "Active promotion has no actions configured."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:312
+#: src/src/Service/PromotionRuleValidator.php:306
+msgid "Lifecycle conflict: promotion is active but past its end date."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:319
+#: src/src/Service/PromotionRuleValidator.php:313
+msgid "Lifecycle conflict: promotion is active but before its start date."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:345
+#: src/src/Service/PromotionRuleValidator.php:339
+msgid "Cooldown duration exceeds campaign window (customers may never redeem twice)."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:356
+#: src/src/Service/PromotionRuleValidator.php:350
+msgid "Configured discount may exceed budget before usage limits are reached."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:370
+#: src/src/Service/PromotionRuleValidator.php:364
+msgid "Stackable promotion includes free shipping; overlapping stackable shipping may overload checkout."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:389
+#: src/src/Service/PromotionRuleValidator.php:383
+msgid "Many scoped discount actions on one promotion may overlap and confuse planner selection."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:397
+#: src/src/Service/PromotionRuleValidator.php:391
+msgid "Very high priority with orchestration group may block peer promotions unexpectedly."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:403
+#: src/src/Service/PromotionRuleValidator.php:397
+msgid "Active promotion has no eligible products or actions (empty rules)."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:410
+#: src/src/Service/PromotionRuleValidator.php:404
+msgid "Forecast cache is corrupted; reset via Diagnostics → Intelligence recovery."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:424
+msgid "Corrupted coupon_behavior configuration; repair via Diagnostics."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:430
+msgid "Invalid priority_tier value."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:455
+msgid "Shipping plus high percentage discounts may exceed profitable margins (heuristic)."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:462
+msgid "Coupon coexistence with free shipping may overload checkout discounts."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:481
+msgid "Free gift actions are disabled in Settings; this promotion will not add gift lines on the storefront."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:487
+msgid "Free shipping actions are disabled in Settings; this promotion will not apply shipping offsets."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:557
+#: src/src/Service/PromotionRuleValidator.php:476
+msgid "Customer segmentation conditions require a logged-in customer; add a logged_in condition or expect guests to fail eligibility."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:570
+#: src/src/Service/PromotionRuleValidator.php:489
+msgid "Invalid application_mode. Allowed values: exclusive, stackable."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:579
+#: src/src/Service/PromotionRuleValidator.php:498
+msgid "max_applications must be null or at least 1."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:586
+#: src/src/Service/PromotionRuleValidator.php:505
+msgid "Max applications limits how many promotions may be selected in one cart evaluation plan (not per-customer usage). The plan cap is the minimum max_applications among selected promotions."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:596
+#: src/src/Service/PromotionRuleValidator.php:515
+msgid "Exclusive promotions stop further selections when stop processing is enabled; max_applications above 1 may have no effect unless stop processing is off."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:608
+#: src/src/Service/PromotionRuleValidator.php:527
+msgid "A promotion cannot exclude itself."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:615
+#: src/src/Service/PromotionRuleValidator.php:534
+msgid "When this promotion is selected, listed promotion IDs are skipped in the plan even if eligible. Exclusions apply only to promotions evaluated later (priority/order)."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:632
+#: src/src/Service/PromotionRuleValidator.php:551
+msgid "Archived promotions do not run."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:640
+#: src/src/Service/PromotionRuleValidator.php:559
+msgid "Promotion is not active and will not run."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:653
+#: src/src/Service/PromotionRuleValidator.php:572
+msgid "Promotion has no conditions and may apply broadly."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:672
+#: src/src/Service/PromotionRuleValidator.php:591
+#, php-format
+msgid "Condition at index %s must be an object."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:684
+#: src/src/Service/PromotionRuleValidator.php:603
+#, php-format
+msgid "Condition at index %s has no type."
+msgstr ""
+
+#. translators: %s: condition type string
+#: src/Service/PromotionRuleValidator.php:695
+#: src/Service/PromotionRuleValidator.php:776
+#: src/src/Service/PromotionRuleValidator.php:614
+#: src/src/Service/PromotionRuleValidator.php:695
+#, php-format
+msgid "Unknown condition type: %s"
+msgstr ""
+
+#. translators: 1: condition type, 2: field name, 3: index
+#: src/Service/PromotionRuleValidator.php:791
+#: src/src/Service/PromotionRuleValidator.php:710
+#, php-format
+msgid "%1$s at index %3$s is missing %2$s."
+msgstr ""
+
+#. translators: 1: condition type, 2: field name, 3: index
+#: src/Service/PromotionRuleValidator.php:805
+#: src/Service/PromotionRuleValidator.php:1376
+#: src/src/Service/PromotionRuleValidator.php:724
+#: src/src/Service/PromotionRuleValidator.php:1295
+#, php-format
+msgid "%1$s at index %3$s has invalid %2$s (positive integers only)."
+msgstr ""
+
+#. translators: 1: condition type, 2: zero-based index
+#. translators: 1: condition type, 2: index
+#: src/Service/PromotionRuleValidator.php:829
+#: src/Service/PromotionRuleValidator.php:1025
+#: src/src/Service/PromotionRuleValidator.php:748
+#: src/src/Service/PromotionRuleValidator.php:944
+#, php-format
+msgid "%1$s at index %2$s is missing or has an invalid quantity."
+msgstr ""
+
+#. translators: 1: condition type, 2: zero-based index
+#: src/Service/PromotionRuleValidator.php:842
+#: src/src/Service/PromotionRuleValidator.php:761
+#, php-format
+msgid "%1$s at index %2$s quantity must be >= 1."
+msgstr ""
+
+#. translators: 1: condition type, 2: zero-based index
+#: src/Service/PromotionRuleValidator.php:860
+#: src/src/Service/PromotionRuleValidator.php:779
+#, php-format
+msgid "%1$s at index %2$s has invalid quantity."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:873
+#: src/src/Service/PromotionRuleValidator.php:792
+#, php-format
+msgid "billing_country at index %s is missing a countries array."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:886
+#: src/src/Service/PromotionRuleValidator.php:805
+#, php-format
+msgid "billing_country at index %s has invalid countries."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:898
+#: src/src/Service/PromotionRuleValidator.php:817
+#, php-format
+msgid "customer_email_domain at index %s is missing a domains array."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:911
+#: src/src/Service/PromotionRuleValidator.php:830
+#, php-format
+msgid "customer_email_domain at index %s has invalid domains."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:923
+#: src/src/Service/PromotionRuleValidator.php:842
+#, php-format
+msgid "customer_role at index %s is missing a roles array."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:936
+#: src/src/Service/PromotionRuleValidator.php:855
+#, php-format
+msgid "customer_role at index %s has invalid roles."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:952
+#: src/src/Service/PromotionRuleValidator.php:871
+#, php-format
+msgid "minimum_subtotal at index %s is missing or has an invalid amount."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:965
+#: src/src/Service/PromotionRuleValidator.php:884
+#, php-format
+msgid "minimum_subtotal at index %s has an invalid amount."
+msgstr ""
+
+#. translators: 1: condition type, 2: index
+#: src/Service/PromotionRuleValidator.php:987
+#: src/src/Service/PromotionRuleValidator.php:906
+#, php-format
+msgid "%1$s at index %2$s is missing or has an invalid %3$s."
+msgstr ""
+
+#. translators: 1: condition type, 2: index
+#: src/Service/PromotionRuleValidator.php:1000
+#: src/Service/PromotionRuleValidator.php:1651
+#: src/src/Service/PromotionRuleValidator.php:919
+#: src/src/Service/PromotionRuleValidator.php:1570
+#, php-format
+msgid "%1$s at index %2$s is missing or has an invalid operator."
+msgstr ""
+
+#. translators: 1: condition type, 2: index
+#: src/Service/PromotionRuleValidator.php:1013
+#: src/Service/PromotionRuleValidator.php:1664
+#: src/src/Service/PromotionRuleValidator.php:932
+#: src/src/Service/PromotionRuleValidator.php:1583
+#, php-format
+msgid "%1$s at index %2$s has an unsupported operator."
+msgstr ""
+
+#. translators: 1: condition type, 2: index
+#. translators: 1: condition type, 2: zero-based index
+#: src/Service/PromotionRuleValidator.php:1043
+#: src/Service/PromotionRuleValidator.php:1397
+#: src/Service/PromotionRuleValidator.php:1699
+#: src/src/Service/PromotionRuleValidator.php:962
+#: src/src/Service/PromotionRuleValidator.php:1316
+#: src/src/Service/PromotionRuleValidator.php:1618
+#, php-format
+msgid "%1$s at index %2$s has invalid field values."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:1058
+#: src/src/Service/PromotionRuleValidator.php:977
+msgid "Promotion has no actions."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1070
+#: src/src/Service/PromotionRuleValidator.php:989
+#, php-format
+msgid "Action at index %s must be an object."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1082
+#: src/src/Service/PromotionRuleValidator.php:1001
+#, php-format
+msgid "Action at index %s has no type."
+msgstr ""
+
+#. translators: %s: action type string
+#: src/Service/PromotionRuleValidator.php:1093
+#: src/src/Service/PromotionRuleValidator.php:1012
+#, php-format
+msgid "Unknown action type: %s"
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:1107
+#: src/src/Service/PromotionRuleValidator.php:1026
+msgid "Only the first supported action per promotion is applied on the storefront."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:1122
+#: src/src/Service/PromotionRuleValidator.php:1041
+msgid "Exclusive promotion with excluded_promotion_ids: exclusions apply only after this promotion is selected; redundant if stop processing is enabled."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:1133
+#: src/src/Service/PromotionRuleValidator.php:1052
+msgid "max_applications is 1 on a stackable promotion without stop processing; additional stackable promotions may still be selected unless planner cap applies."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:1143
+#: src/src/Service/PromotionRuleValidator.php:1062
+msgid "max_applications may be unreachable when exclusive stop processing prevents further selections."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:1190
+#: src/src/Service/PromotionRuleValidator.php:1109
+msgid "Multiple scoped discount actions on this promotion may overlap; only the first action applies on the storefront."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:1197
+#: src/src/Service/PromotionRuleValidator.php:1116
+msgid "Scoped percentage/fixed discounts on this promotion only affect matching cart lines (fee-based)."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:1221
+#: src/src/Service/PromotionRuleValidator.php:1140
+msgid "Duplicate free_gift_product actions for the same product_id; only the first action applies."
+msgstr ""
+
+#: src/Service/PromotionRuleValidator.php:1241
+#: src/src/Service/PromotionRuleValidator.php:1160
+msgid "Multiple free_shipping actions defined; only the first applies on the storefront."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1256
+#: src/src/Service/PromotionRuleValidator.php:1175
+#, php-format
+msgid "percentage_discount at index %s is missing or has an invalid percentage."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1269
+#: src/src/Service/PromotionRuleValidator.php:1188
+#, php-format
+msgid "percentage_discount at index %s has an invalid percentage or scope."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1284
+#: src/src/Service/PromotionRuleValidator.php:1203
+#, php-format
+msgid "free_shipping at index %s is invalid."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1306
+#: src/src/Service/PromotionRuleValidator.php:1225
+#, php-format
+msgid "fixed_amount_discount at index %s is missing or has an invalid amount."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1319
+#: src/src/Service/PromotionRuleValidator.php:1238
+#, php-format
+msgid "fixed_amount_discount at index %s has an invalid amount or scope."
+msgstr ""
+
+#. translators: 1: condition type, 2: zero-based index
+#: src/Service/PromotionRuleValidator.php:1335
+#: src/src/Service/PromotionRuleValidator.php:1254
+#, php-format
+msgid "%1$s at index %2$s is missing or has an invalid amount."
+msgstr ""
+
+#. translators: 1: condition type, 2: zero-based index
+#: src/Service/PromotionRuleValidator.php:1347
+#: src/src/Service/PromotionRuleValidator.php:1266
+#, php-format
+msgid "%1$s at index %2$s amount must be >= 0."
+msgstr ""
+
+#. translators: 1: condition type, 2: field name, 3: index
+#: src/Service/PromotionRuleValidator.php:1363
+#: src/src/Service/PromotionRuleValidator.php:1282
+#, php-format
+msgid "%1$s at index %3$s has invalid %2$s."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1414
+#: src/src/Service/PromotionRuleValidator.php:1333
+#, php-format
+msgid "free_gift_product at index %s is missing or has an invalid product_id."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1426
+#: src/src/Service/PromotionRuleValidator.php:1345
+#, php-format
+msgid "free_gift_product at index %s product_id must be a positive integer."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1438
+#: src/src/Service/PromotionRuleValidator.php:1357
+#, php-format
+msgid "free_gift_product at index %s has an invalid variation_id."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1449
+#: src/src/Service/PromotionRuleValidator.php:1368
+#, php-format
+msgid "free_gift_product at index %s variation_id must be a positive integer when set."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1461
+#: src/src/Service/PromotionRuleValidator.php:1380
+#, php-format
+msgid "free_gift_product at index %s is missing or has an invalid quantity."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1473
+#: src/src/Service/PromotionRuleValidator.php:1392
+#, php-format
+msgid "free_gift_product at index %s quantity must be >= 1."
+msgstr ""
+
+#. translators: 1: zero-based action index, 2: detail
+#: src/Service/PromotionRuleValidator.php:1486
+#: src/src/Service/PromotionRuleValidator.php:1405
+#, php-format
+msgid "free_gift_product at index %1$s has invalid field values (%2$s)."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1503
+#: src/src/Service/PromotionRuleValidator.php:1422
+#, php-format
+msgid "cheapest_item_discount at index %s is missing scope (use category or products)."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1515
+#: src/src/Service/PromotionRuleValidator.php:1434
+#, php-format
+msgid "cheapest_item_discount at index %s has invalid scope (must be category or products)."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1527
+#: src/src/Service/PromotionRuleValidator.php:1446
+#, php-format
+msgid "cheapest_item_discount at index %s is missing category_ids."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1537
+#: src/src/Service/PromotionRuleValidator.php:1456
+#, php-format
+msgid "cheapest_item_discount at index %s is missing product_ids."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1548
+#: src/src/Service/PromotionRuleValidator.php:1467
+#, php-format
+msgid "cheapest_item_discount at index %s is missing or has an invalid discount_percentage."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1560
+#: src/src/Service/PromotionRuleValidator.php:1479
+#, php-format
+msgid "cheapest_item_discount at index %s discount_percentage must be > 0 and <= 100."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1571
+#: src/src/Service/PromotionRuleValidator.php:1490
+#, php-format
+msgid "cheapest_item_discount at index %s is missing or has an invalid required_quantity."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1583
+#: src/src/Service/PromotionRuleValidator.php:1502
+#, php-format
+msgid "cheapest_item_discount at index %s required_quantity must be >= 1."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1594
+#: src/src/Service/PromotionRuleValidator.php:1513
+#, php-format
+msgid "cheapest_item_discount at index %s is missing or has an invalid discounted_quantity."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1606
+#: src/src/Service/PromotionRuleValidator.php:1525
+#, php-format
+msgid "cheapest_item_discount at index %s discounted_quantity must be >= 1."
+msgstr ""
+
+#. translators: %s: zero-based action index
+#: src/Service/PromotionRuleValidator.php:1617
+#: src/src/Service/PromotionRuleValidator.php:1536
+#, php-format
+msgid "cheapest_item_discount at index %s discounted_quantity must be <= required_quantity."
+msgstr ""
+
+#. translators: 1: zero-based action index, 2: detail
+#: src/Service/PromotionRuleValidator.php:1630
+#: src/src/Service/PromotionRuleValidator.php:1549
+#, php-format
+msgid "cheapest_item_discount at index %1$s has invalid IDs or field values (%2$s)."
+msgstr ""
+
+#. translators: 1: condition type, 2: field name, 3: index
+#: src/Service/PromotionRuleValidator.php:1677
+#: src/src/Service/PromotionRuleValidator.php:1596
+#, php-format
+msgid "%1$s at index %3$s is missing or has an invalid %2$s."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:1712
+#: src/src/Service/PromotionRuleValidator.php:1631
+#, php-format
+msgid "customer_redemption_count at index %s is missing or has an invalid operator."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:1724
+#: src/src/Service/PromotionRuleValidator.php:1643
+#, php-format
+msgid "customer_redemption_count at index %s has an unsupported operator."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:1735
+#: src/src/Service/PromotionRuleValidator.php:1654
+#, php-format
+msgid "customer_redemption_count at index %s is missing or has an invalid count."
+msgstr ""
+
+#. translators: %s: zero-based condition index
+#: src/Service/PromotionRuleValidator.php:1748
+#: src/src/Service/PromotionRuleValidator.php:1667
+#, php-format
+msgid "customer_redemption_count at index %s has invalid field values."
+msgstr ""
+
+#. translators: 1: promotion A id, 2: promotion B id
+#: src/Service/PromotionScheduleAnalyzer.php:75
+#: src/src/Service/PromotionScheduleAnalyzer.php:75
+#, php-format
+msgid "Promotions %1$d and %2$d have overlapping schedule windows."
+msgstr ""
+
+#. translators: 1: promotion A id, 2: promotion B id
+#: src/Service/PromotionScheduleAnalyzer.php:88
+#: src/src/Service/PromotionScheduleAnalyzer.php:88
+#, php-format
+msgid "Exclusive promotions %1$d and %2$d overlap in time; only one may apply per cart."
+msgstr ""
+
+#. translators: 1: promotion A id, 2: promotion B id
+#: src/Service/PromotionScheduleAnalyzer.php:102
+#: src/src/Service/PromotionScheduleAnalyzer.php:102
+#, php-format
+msgid "Promotions %1$d and %2$d have overlapping scoped percentage discounts during the same window (combined rates may exceed 100%% on shared lines)."
+msgstr ""
+
+#. translators: 1: campaign label, 2: promotion ids
+#: src/Service/PromotionScheduleAnalyzer.php:116
+#: src/src/Service/PromotionScheduleAnalyzer.php:116
+#, php-format
+msgid "Campaign label \"%1$s\" is shared by promotions %2$s with overlapping schedules."
+msgstr ""
+
+#: src/Service/PromotionSimulationEngine.php:70
+msgid "Simulations are paused."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:45
+#: src/src/Service/PromotionTemplate.php:45
+msgid "Percent off category"
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:46
+#: src/src/Service/PromotionTemplate.php:46
+msgid "Scoped percentage discount on cart lines in selected categories. Optional minimum eligible subtotal on those categories."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:47
+#: src/src/Service/PromotionTemplate.php:47
+msgid "Example: 20% off category “Supplements” when eligible lines total at least €50."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:50
+#: src/src/Service/PromotionTemplate.php:50
+msgid "Fixed amount off products"
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:51
+#: src/src/Service/PromotionTemplate.php:51
+msgid "Fixed cart fee discount capped to eligible subtotal of selected products. Optional minimum eligible subtotal."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:52
+#: src/src/Service/PromotionTemplate.php:52
+msgid "Example: €10 off specific SKUs when those lines total at least €30."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:55
+#: src/src/Service/PromotionTemplate.php:55
+msgid "Buy X get Y cheapest free"
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:56
+#: src/src/Service/PromotionTemplate.php:56
+msgid "Cheapest-item discount (BOGO groundwork) on category or product scope. Default 100% off cheapest units."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:57
+#: src/src/Service/PromotionTemplate.php:57
+msgid "Example: Buy 3 in category, get 1 cheapest unit free (required 3, discounted 1, 100%)."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:60
+#: src/src/Service/PromotionTemplate.php:60
+msgid "Free shipping over subtotal"
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:61
+#: src/src/Service/PromotionTemplate.php:61
+msgid "Minimum cart subtotal condition plus free shipping fee offset."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:62
+#: src/src/Service/PromotionTemplate.php:62
+msgid "Example: Free shipping when cart subtotal is at least €75."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:65
+#: src/src/Service/PromotionTemplate.php:65
+msgid "Free gift over subtotal"
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:66
+#: src/src/Service/PromotionTemplate.php:66
+msgid "Minimum cart subtotal condition plus free gift product added to cart at zero price."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:67
+#: src/src/Service/PromotionTemplate.php:67
+msgid "Example: Free sample product when order subtotal reaches €100."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:70
+#: src/src/Service/PromotionTemplate.php:70
+msgid "First order discount"
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:71
+#: src/src/Service/PromotionTemplate.php:71
+msgid "First-order condition with whole-cart percentage or fixed amount discount."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:72
+#: src/src/Service/PromotionTemplate.php:72
+msgid "Example: 10% off for customers with no previous orders."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:75
+#: src/src/Service/PromotionTemplate.php:75
+msgid "Customer role discount"
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:76
+#: src/src/Service/PromotionTemplate.php:76
+msgid "Customer role condition with whole-cart percentage or fixed amount discount."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:77
+#: src/src/Service/PromotionTemplate.php:77
+msgid "Example: 15% off for role “vip”."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:80
+#: src/src/Service/PromotionTemplate.php:80
+msgid "VIP customer"
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:81
+#: src/src/Service/PromotionTemplate.php:81
+msgid "Logged-in customers with lifetime spend at or above a threshold receive a whole-cart discount."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:82
+#: src/src/Service/PromotionTemplate.php:82
+msgid "Example: 15% off when lifetime spend is at least €500."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:85
+#: src/src/Service/PromotionTemplate.php:85
+msgid "Loyal customer"
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:86
+#: src/src/Service/PromotionTemplate.php:86
+msgid "Logged-in customers with order count at or above a threshold receive a whole-cart discount."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:87
+#: src/src/Service/PromotionTemplate.php:87
+msgid "Example: €20 off when the customer has placed at least 5 orders."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:90
+#: src/src/Service/PromotionTemplate.php:90
+msgid "Returning customer"
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:91
+#: src/src/Service/PromotionTemplate.php:91
+msgid "Logged-in customers with average order value at or above a threshold receive a whole-cart discount."
+msgstr ""
+
+#: src/Service/PromotionTemplate.php:92
+#: src/src/Service/PromotionTemplate.php:92
+msgid "Example: 10% off when average order value is at least €75."
+msgstr ""
+
+#: src/src/Admin/DiagnosticsPage.php:942
+msgid "Runs activate-scheduled, archive-expired, pause-budget-exhausted, and normalize-states in one pass. Manual trigger only (no WP-Cron yet). Each run is stored in automation history."
+msgstr ""
+
+#: src/src/Admin/ReportsPage.php:574
+msgid "In-request cache counters for simulations and cart planning (no Redis)."
+msgstr ""
+
+#. translators: 1: simulated runs, 2: hits, 3: misses
+#: src/src/Admin/ReportsPage.php:584
+#, php-format
+msgid "This request — simulated: %1$d, cache hits: %2$d, misses: %3$d"
+msgstr ""
+
+#: src/src/Admin/ReportsPage.php:595
+#, php-format
+msgid "Persisted totals — simulated: %1$d, hits: %2$d, misses: %3$d"
+msgstr ""
+
+#: src/src/Admin/SettingsPage.php:45
+msgid "Cart discounts"
+msgstr ""
+
+#: src/src/Admin/SettingsPage.php:56
+msgid "When disabled, commerce promotions are not applied as negative cart fees and the applied-promotion session is cleared."
+msgstr ""
+
+#. translators: %s: last four characters of the promotion code
+#: src/src/Woo/CartPromotionApplier.php:764
+#: src/Woo/CartPromotionApplier.php:802
+#, php-format
+msgid "Commerce promotion code: Free shipping ****%s"
+msgstr ""
+
+#. translators: %s: last four characters of the promotion code
+#: src/src/Woo/CartPromotionApplier.php:770
+#: src/Woo/CartPromotionApplier.php:808
+#, php-format
+msgid "Commerce promotion code: Cheapest item discount ****%s"
+msgstr ""
+
+#. translators: %s: last four characters of the promotion code
+#: src/src/Woo/CartPromotionApplier.php:776
+#: src/Woo/CartPromotionApplier.php:814
+#, php-format
+msgid "Commerce promotion code: ****%s"
+msgstr ""
+
+#. translators: %s: sanitized promotion name
+#: src/src/Woo/CartPromotionApplier.php:789
+#: src/Woo/CartPromotionApplier.php:827
+#, php-format
+msgid "Commerce promotion: Free shipping - %s"
+msgstr ""
+
+#. translators: %s: sanitized promotion name
+#: src/src/Woo/CartPromotionApplier.php:795
+#: src/Woo/CartPromotionApplier.php:833
+#, php-format
+msgid "Commerce promotion: Cheapest item discount - %s"
+msgstr ""
+
+#. translators: %s: sanitized promotion name
+#: src/src/Woo/CartPromotionApplier.php:801
+#: src/Woo/CartPromotionApplier.php:839
+#, php-format
+msgid "Commerce promotion: %s"
+msgstr ""
+
+#: src/src/Woo/PromotionCodeCouponBridge.php:92
+#: src/Woo/PromotionCodeCouponBridge.php:92
+msgid "Commerce promotion code"
+msgstr ""
+
+#. translators: %d: coupon count
+#: src/Woo/CouponCoexistenceEvaluator.php:38
+#, php-format
+msgid "%d native WooCommerce coupon applied."
+msgid_plural "%d native WooCommerce coupons applied."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Woo/CouponCoexistenceEvaluator.php:50
+msgid "Multiple native coupons may stack with plugin promotions."
+msgstr ""
+
+#: src/Woo/CouponCoexistenceEvaluator.php:139
+msgid "1 native WooCommerce coupon in context."
+msgstr ""
+
+#. translators: %d: coupon count
+#: src/Woo/CouponCoexistenceEvaluator.php:142
+#, php-format
+msgid "%d native WooCommerce coupons in context."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:79
+msgid "Compatibility analyzer failed; see debug log."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:128
+msgid "Store uses tax-inclusive prices; allocation tax estimates are heuristic."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:145
+msgid "WooCommerce sequential discount calculation may interact with promotion fees."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:162
+msgid "Multi-currency plugin detected; verify promotion amounts per currency."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:179
+msgid "Bundle/composite product plugin detected; line allocation may not match component pricing."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:215
+msgid "WooCommerce Subscriptions detected; renewal carts may need separate QA."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:232
+msgid "Cart/Checkout Blocks may be active; plugin does not declare block compatibility yet."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:249
+msgid "External object cache detected; planner transients rely on cache flush policies."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:266
+msgid "Advanced coupon/discount plugin detected; verify stacking with promotion fees."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:283
+msgid "External tax service plugin detected; allocation tax estimates remain heuristic."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:299
+msgid "Test classic checkout or document block-checkout limitations for merchants."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:302
+msgid "Validate promotion amounts in each currency before high-traffic campaigns."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:305
+msgid "Review coupon coexistence settings on promotions when native coupons stack."
+msgstr ""
+
+#: src/Woo/PricingCompatibilityAnalyzer.php:308
+msgid "No critical compatibility blockers detected by heuristics."
 msgstr ""

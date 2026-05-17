@@ -35,7 +35,7 @@ final class CustomerOrderStats {
 			return self::$cache[ $customer_id ];
 		}
 
-		$stats = self::compute_from_woocommerce( $customer_id );
+		$stats                       = self::compute_from_woocommerce( $customer_id );
 		self::$cache[ $customer_id ] = $stats;
 
 		return $stats;
@@ -94,9 +94,9 @@ final class CustomerOrderStats {
 		$aov = $count > 0 ? round( $total / $count, 2 ) : 0.0;
 
 		return array(
-			'lifetime_spend'        => round( $total, 2 ),
-			'order_count'           => $count,
-			'average_order_value'   => $aov,
+			'lifetime_spend'      => round( $total, 2 ),
+			'order_count'         => $count,
+			'average_order_value' => $aov,
 		);
 	}
 

@@ -171,7 +171,7 @@ final class PromotionRecommendationEngine {
 				'excessive_cooldown',
 				array( $id ),
 				sprintf(
-					__( 'Promotion %d cooldown (%d hours) may be excessive.', 'mp-commerce-promotions' ),
+					__( 'Promotion %1$d cooldown (%2$d hours) may be excessive.', 'mp-commerce-promotions' ),
 					$id,
 					$cooldown
 				)
@@ -196,12 +196,12 @@ final class PromotionRecommendationEngine {
 		foreach ( $this->conflicts->analyze( $active ) as $conflict ) {
 			$severity = isset( $conflict['severity'] ) ? (string) $conflict['severity'] : self::SEVERITY_INFO;
 			$issues[] = array(
-				'severity'       => $severity === 'warning' ? self::SEVERITY_WARNING : self::SEVERITY_INFO,
-				'code'           => 'campaign_overlap_' . (string) ( $conflict['type'] ?? 'unknown' ),
-				'promotion_ids'  => isset( $conflict['promotion_ids'] ) && is_array( $conflict['promotion_ids'] )
+				'severity'      => $severity === 'warning' ? self::SEVERITY_WARNING : self::SEVERITY_INFO,
+				'code'          => 'campaign_overlap_' . (string) ( $conflict['type'] ?? 'unknown' ),
+				'promotion_ids' => isset( $conflict['promotion_ids'] ) && is_array( $conflict['promotion_ids'] )
 					? array_map( 'intval', $conflict['promotion_ids'] )
 					: array(),
-				'message'        => (string) ( $conflict['message'] ?? '' ),
+				'message'       => (string) ( $conflict['message'] ?? '' ),
 			);
 		}
 

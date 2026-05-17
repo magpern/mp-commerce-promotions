@@ -16,42 +16,42 @@ use MP\CommercePromotions\Engine\RuleTypes;
 
 final class PromotionTemplate {
 
-	public const TEMPLATE_PERCENT_OFF_CATEGORY       = 'percent_off_category';
+	public const TEMPLATE_PERCENT_OFF_CATEGORY = 'percent_off_category';
 
-	public const TEMPLATE_FIXED_OFF_PRODUCTS         = 'fixed_off_products';
+	public const TEMPLATE_FIXED_OFF_PRODUCTS = 'fixed_off_products';
 
-	public const TEMPLATE_BUY_X_GET_Y_CHEAPEST_FREE  = 'buy_x_get_y_cheapest_free';
+	public const TEMPLATE_BUY_X_GET_Y_CHEAPEST_FREE = 'buy_x_get_y_cheapest_free';
 
 	public const TEMPLATE_FREE_SHIPPING_OVER_SUBTOTAL = 'free_shipping_over_subtotal';
 
-	public const TEMPLATE_FREE_GIFT_OVER_SUBTOTAL    = 'free_gift_over_subtotal';
+	public const TEMPLATE_FREE_GIFT_OVER_SUBTOTAL = 'free_gift_over_subtotal';
 
-	public const TEMPLATE_FIRST_ORDER_DISCOUNT       = 'first_order_discount';
+	public const TEMPLATE_FIRST_ORDER_DISCOUNT = 'first_order_discount';
 
-	public const TEMPLATE_CUSTOMER_ROLE_DISCOUNT   = 'customer_role_discount';
+	public const TEMPLATE_CUSTOMER_ROLE_DISCOUNT = 'customer_role_discount';
 
-	public const TEMPLATE_VIP_CUSTOMER             = 'vip_customer';
+	public const TEMPLATE_VIP_CUSTOMER = 'vip_customer';
 
-	public const TEMPLATE_LOYAL_CUSTOMER           = 'loyal_customer';
+	public const TEMPLATE_LOYAL_CUSTOMER = 'loyal_customer';
 
-	public const TEMPLATE_RETURNING_CUSTOMER       = 'returning_customer';
+	public const TEMPLATE_RETURNING_CUSTOMER = 'returning_customer';
 
 	/**
 	 * @return array<string, array{label: string, description: string, example: string}>
 	 */
 	public static function templates(): array {
 		return array(
-			self::TEMPLATE_PERCENT_OFF_CATEGORY => array(
+			self::TEMPLATE_PERCENT_OFF_CATEGORY        => array(
 				'label'       => __( 'Percent off category', 'mp-commerce-promotions' ),
 				'description' => __( 'Scoped percentage discount on cart lines in selected categories. Optional minimum eligible subtotal on those categories.', 'mp-commerce-promotions' ),
 				'example'     => __( 'Example: 20% off category “Supplements” when eligible lines total at least €50.', 'mp-commerce-promotions' ),
 			),
-			self::TEMPLATE_FIXED_OFF_PRODUCTS => array(
+			self::TEMPLATE_FIXED_OFF_PRODUCTS          => array(
 				'label'       => __( 'Fixed amount off products', 'mp-commerce-promotions' ),
 				'description' => __( 'Fixed cart fee discount capped to eligible subtotal of selected products. Optional minimum eligible subtotal.', 'mp-commerce-promotions' ),
 				'example'     => __( 'Example: €10 off specific SKUs when those lines total at least €30.', 'mp-commerce-promotions' ),
 			),
-			self::TEMPLATE_BUY_X_GET_Y_CHEAPEST_FREE => array(
+			self::TEMPLATE_BUY_X_GET_Y_CHEAPEST_FREE   => array(
 				'label'       => __( 'Buy X get Y cheapest free', 'mp-commerce-promotions' ),
 				'description' => __( 'Cheapest-item discount (BOGO groundwork) on category or product scope. Default 100% off cheapest units.', 'mp-commerce-promotions' ),
 				'example'     => __( 'Example: Buy 3 in category, get 1 cheapest unit free (required 3, discounted 1, 100%).', 'mp-commerce-promotions' ),
@@ -61,32 +61,32 @@ final class PromotionTemplate {
 				'description' => __( 'Minimum cart subtotal condition plus free shipping fee offset.', 'mp-commerce-promotions' ),
 				'example'     => __( 'Example: Free shipping when cart subtotal is at least €75.', 'mp-commerce-promotions' ),
 			),
-			self::TEMPLATE_FREE_GIFT_OVER_SUBTOTAL => array(
+			self::TEMPLATE_FREE_GIFT_OVER_SUBTOTAL     => array(
 				'label'       => __( 'Free gift over subtotal', 'mp-commerce-promotions' ),
 				'description' => __( 'Minimum cart subtotal condition plus free gift product added to cart at zero price.', 'mp-commerce-promotions' ),
 				'example'     => __( 'Example: Free sample product when order subtotal reaches €100.', 'mp-commerce-promotions' ),
 			),
-			self::TEMPLATE_FIRST_ORDER_DISCOUNT => array(
+			self::TEMPLATE_FIRST_ORDER_DISCOUNT        => array(
 				'label'       => __( 'First order discount', 'mp-commerce-promotions' ),
 				'description' => __( 'First-order condition with whole-cart percentage or fixed amount discount.', 'mp-commerce-promotions' ),
 				'example'     => __( 'Example: 10% off for customers with no previous orders.', 'mp-commerce-promotions' ),
 			),
-			self::TEMPLATE_CUSTOMER_ROLE_DISCOUNT => array(
+			self::TEMPLATE_CUSTOMER_ROLE_DISCOUNT      => array(
 				'label'       => __( 'Customer role discount', 'mp-commerce-promotions' ),
 				'description' => __( 'Customer role condition with whole-cart percentage or fixed amount discount.', 'mp-commerce-promotions' ),
 				'example'     => __( 'Example: 15% off for role “vip”.', 'mp-commerce-promotions' ),
 			),
-			self::TEMPLATE_VIP_CUSTOMER => array(
+			self::TEMPLATE_VIP_CUSTOMER                => array(
 				'label'       => __( 'VIP customer', 'mp-commerce-promotions' ),
 				'description' => __( 'Logged-in customers with lifetime spend at or above a threshold receive a whole-cart discount.', 'mp-commerce-promotions' ),
 				'example'     => __( 'Example: 15% off when lifetime spend is at least €500.', 'mp-commerce-promotions' ),
 			),
-			self::TEMPLATE_LOYAL_CUSTOMER => array(
+			self::TEMPLATE_LOYAL_CUSTOMER              => array(
 				'label'       => __( 'Loyal customer', 'mp-commerce-promotions' ),
 				'description' => __( 'Logged-in customers with order count at or above a threshold receive a whole-cart discount.', 'mp-commerce-promotions' ),
 				'example'     => __( 'Example: €20 off when the customer has placed at least 5 orders.', 'mp-commerce-promotions' ),
 			),
-			self::TEMPLATE_RETURNING_CUSTOMER => array(
+			self::TEMPLATE_RETURNING_CUSTOMER          => array(
 				'label'       => __( 'Returning customer', 'mp-commerce-promotions' ),
 				'description' => __( 'Logged-in customers with average order value at or above a threshold receive a whole-cart discount.', 'mp-commerce-promotions' ),
 				'example'     => __( 'Example: 10% off when average order value is at least €75.', 'mp-commerce-promotions' ),
@@ -142,7 +142,7 @@ final class PromotionTemplate {
 		$category_ids = self::require_positive_int_list( $input, 'category_ids' );
 		$percentage   = self::require_percentage( $input, 'percentage' );
 
-		$conditions = array();
+		$conditions   = array();
 		$min_eligible = self::optional_non_negative_float( $input, 'minimum_eligible_subtotal' );
 		if ( $min_eligible !== null && $min_eligible > 0 ) {
 			$conditions[] = array(
@@ -171,7 +171,7 @@ final class PromotionTemplate {
 		$product_ids = self::require_positive_int_list( $input, 'product_ids' );
 		$amount      = self::require_positive_float( $input, 'amount' );
 
-		$conditions = array();
+		$conditions   = array();
 		$min_eligible = self::optional_non_negative_float( $input, 'minimum_eligible_subtotal' );
 		if ( $min_eligible !== null && $min_eligible > 0 ) {
 			$conditions[] = array(
@@ -370,7 +370,7 @@ final class PromotionTemplate {
 	}
 
 	private static function build_customer_role_discount( array $input ): array {
-		$roles = self::require_role_list( $input, 'roles' );
+		$roles  = self::require_role_list( $input, 'roles' );
 		$action = self::build_whole_cart_discount_action( $input );
 
 		return self::rules_payload(

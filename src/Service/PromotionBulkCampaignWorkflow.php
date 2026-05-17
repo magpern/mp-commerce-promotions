@@ -21,7 +21,7 @@ final class PromotionBulkCampaignWorkflow {
 
 	public function __construct( PromotionRepository $promotions, AuditLogger $audit ) {
 		$this->promotions = $promotions;
-		$this->audit       = $audit;
+		$this->audit      = $audit;
 	}
 
 	/**
@@ -37,7 +37,10 @@ final class PromotionBulkCampaignWorkflow {
 					$ends_at ?? $p->get_ends_at()
 				);
 			},
-			array( 'starts_at' => $starts_at, 'ends_at' => $ends_at ),
+			array(
+				'starts_at' => $starts_at,
+				'ends_at'   => $ends_at,
+			),
 			$actor_user_id
 		);
 	}
@@ -51,7 +54,10 @@ final class PromotionBulkCampaignWorkflow {
 			static function ( Promotion $p ) use ( $group, $cooldown_hours ): Promotion {
 				return $p->with_orchestration( $cooldown_hours ?? $p->get_cooldown_hours(), $group );
 			},
-			array( 'orchestration_group' => $group, 'cooldown_hours' => $cooldown_hours ),
+			array(
+				'orchestration_group' => $group,
+				'cooldown_hours'      => $cooldown_hours,
+			),
 			$actor_user_id
 		);
 	}
@@ -79,7 +85,10 @@ final class PromotionBulkCampaignWorkflow {
 			static function ( Promotion $p ) use ( $amount, $currency ): Promotion {
 				return $p->with_budget( $amount, $p->get_budget_spent(), $currency ?? $p->get_budget_currency() );
 			},
-			array( 'budget_amount' => $amount, 'budget_currency' => $currency ),
+			array(
+				'budget_amount'   => $amount,
+				'budget_currency' => $currency,
+			),
 			$actor_user_id
 		);
 	}
@@ -99,13 +108,17 @@ final class PromotionBulkCampaignWorkflow {
 	}
 
 	/**
-	 * @param list<int>               $promotion_ids
+	 * @param list<int>                      $promotion_ids
 	 * @param callable(Promotion): Promotion $mutator
-	 * @param array<string, mixed>    $audit_payload
+	 * @param array<string, mixed>           $audit_payload
 	 * @return array{changed: int, skipped: int, errors: list<string>}
 	 */
 	private function bulk_apply( array $promotion_ids, callable $mutator, array $audit_payload, ?int $actor_user_id ): array {
-		$result = array( 'changed' => 0, 'skipped' => 0, 'errors' => array() );
+		$result = array(
+			'changed' => 0,
+			'skipped' => 0,
+			'errors'  => array(),
+		);
 
 		foreach ( $promotion_ids as $raw_id ) {
 			$id = (int) $raw_id;

@@ -86,20 +86,20 @@ final class PromotionSimulationEngine {
 			$warnings[] = is_string( $validation ) ? $validation : 'invalid_scenario';
 		}
 
-		$context     = $this->build_context( $scenario );
-		$promotions  = $this->resolve_promotions( $scenario, $promotion_filter_ids );
-		$promotions  = $this->sort_promotions( $promotions );
+		$context    = $this->build_context( $scenario );
+		$promotions = $this->resolve_promotions( $scenario, $promotion_filter_ids );
+		$promotions = $this->sort_promotions( $promotions );
 
-		$plan        = $this->planner->plan( $promotions, $context );
-		$allocation  = $this->allocator->allocate( $context, $plan->get_selected_decisions() );
-		$explained   = PromotionPlanExplainer::explain( $plan );
-		$explained   = PromotionPlanExplainer::enrich_explanation( $explained, $plan, $context, $allocation );
+		$plan       = $this->planner->plan( $promotions, $context );
+		$allocation = $this->allocator->allocate( $context, $plan->get_selected_decisions() );
+		$explained  = PromotionPlanExplainer::explain( $plan );
+		$explained  = PromotionPlanExplainer::enrich_explanation( $explained, $plan, $context, $allocation );
 
-		$eligible    = array();
-		$selected    = array();
-		$skipped     = array();
-		$actions     = array();
-		$total       = 0.0;
+		$eligible = array();
+		$selected = array();
+		$skipped  = array();
+		$actions  = array();
+		$total    = 0.0;
 
 		foreach ( $plan->get_decisions() as $decision ) {
 			$pid = $decision->get_promotion_id();
@@ -169,7 +169,7 @@ final class PromotionSimulationEngine {
 	}
 
 	private function build_context( SimulationScenario $scenario ): EvaluationContext {
-		$items = $scenario->get_items();
+		$items    = $scenario->get_items();
 		$subtotal = 0.0;
 		foreach ( $items as $item ) {
 			if ( isset( $item['line_subtotal'] ) && is_numeric( $item['line_subtotal'] ) ) {
@@ -234,12 +234,12 @@ final class PromotionSimulationEngine {
 			}
 			$type = isset( $action['type'] ) ? (string) $action['type'] : '';
 			if ( $type === RuleTypes::ACTION_PERCENTAGE_DISCOUNT ) {
-				$pct = isset( $action['percentage'] ) ? (float) $action['percentage'] : 0.0;
+				$pct       = isset( $action['percentage'] ) ? (float) $action['percentage'] : 0.0;
 				$discount += $subtotal * ( max( 0.0, min( 100.0, $pct ) ) / 100 );
 			} elseif ( $type === RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT ) {
 				$discount += isset( $action['amount'] ) ? (float) $action['amount'] : 0.0;
 			} elseif ( $type === RuleTypes::ACTION_FREE_SHIPPING ) {
-				$meta = $context->to_array()['metadata'] ?? array();
+				$meta      = $context->to_array()['metadata'] ?? array();
 				$discount += is_array( $meta ) && isset( $meta['shipping_total'] )
 					? (float) $meta['shipping_total']
 					: 10.0;

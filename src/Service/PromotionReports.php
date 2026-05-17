@@ -29,11 +29,11 @@ final class PromotionReports {
 
 	public const EXPORT_ROW_LIMIT = 5000;
 
-	public const DATE_PRESET_TODAY      = 'today';
+	public const DATE_PRESET_TODAY = 'today';
 
-	public const DATE_PRESET_7D         = '7d';
+	public const DATE_PRESET_7D = '7d';
 
-	public const DATE_PRESET_30D        = '30d';
+	public const DATE_PRESET_30D = '30d';
 
 	public const DATE_PRESET_THIS_MONTH = 'this_month';
 
@@ -57,12 +57,12 @@ final class PromotionReports {
 		?PromotionHealthMonitor $health_monitor = null,
 		?SimulationScenarioRepository $scenarios = null
 	) {
-		$this->promotions       = $promotions;
-		$this->redemptions      = $redemptions;
-		$this->telemetry        = $telemetry;
-		$this->automation_runs  = $automation_runs;
-		$this->health_monitor   = $health_monitor;
-		$this->scenarios        = $scenarios;
+		$this->promotions      = $promotions;
+		$this->redemptions     = $redemptions;
+		$this->telemetry       = $telemetry;
+		$this->automation_runs = $automation_runs;
+		$this->health_monitor  = $health_monitor;
+		$this->scenarios       = $scenarios;
 	}
 
 	public function forecast_summary(): array {
@@ -78,11 +78,11 @@ final class PromotionReports {
 	 */
 	public function promotion_calendar(): array {
 		return array(
-			'upcoming'     => $this->calendar_phase( PromotionLifecycle::PHASE_UPCOMING ),
-			'active'       => $this->calendar_phase( PromotionLifecycle::PHASE_LIVE ),
-			'ending_soon'  => $this->calendar_phase( PromotionLifecycle::PHASE_ENDING_SOON ),
-			'exhausted'    => $this->calendar_phase( PromotionLifecycle::PHASE_BUDGET_EXHAUSTED ),
-			'archived'     => $this->calendar_phase( PromotionLifecycle::PHASE_ARCHIVED ),
+			'upcoming'    => $this->calendar_phase( PromotionLifecycle::PHASE_UPCOMING ),
+			'active'      => $this->calendar_phase( PromotionLifecycle::PHASE_LIVE ),
+			'ending_soon' => $this->calendar_phase( PromotionLifecycle::PHASE_ENDING_SOON ),
+			'exhausted'   => $this->calendar_phase( PromotionLifecycle::PHASE_BUDGET_EXHAUSTED ),
+			'archived'    => $this->calendar_phase( PromotionLifecycle::PHASE_ARCHIVED ),
 		);
 	}
 
@@ -147,12 +147,12 @@ final class PromotionReports {
 	 * @return array<string, mixed>
 	 */
 	public function intelligence_analytics(): array {
-		$telemetry = $this->telemetry;
+		$telemetry    = $this->telemetry;
 		$top_selected = $telemetry !== null ? $telemetry->top_by_column( 'selected_count', 10 ) : array();
 		$top_group    = $telemetry !== null ? $telemetry->top_by_column( 'blocked_by_group_count', 10 ) : array();
 		$top_cooldown = $telemetry !== null ? $telemetry->top_by_column( 'blocked_by_cooldown_count', 10 ) : array();
 
-		$low_usage = array();
+		$low_usage  = array();
 		$promotions = $this->promotions->find_filtered( array( 'limit' => 100 ) );
 		foreach ( $promotions as $promotion ) {
 			$id = $promotion->get_id();
@@ -180,7 +180,7 @@ final class PromotionReports {
 				continue;
 			}
 			$total_discount = $this->redemptions->sum_recorded_discount_amount( array( 'promotion_id' => $id ) );
-			$highest_roi[] = array(
+			$highest_roi[]  = array(
 				'promotion_id'   => $id,
 				'name'           => $promotion->get_name(),
 				'redemptions'    => $count,
@@ -207,7 +207,7 @@ final class PromotionReports {
 			if ( $id === null ) {
 				continue;
 			}
-			$spent = $promotion->get_budget_spent();
+			$spent           = $promotion->get_budget_spent();
 			$burn_velocity[] = array(
 				'promotion_id' => $id,
 				'name'         => $promotion->get_name(),
@@ -217,13 +217,13 @@ final class PromotionReports {
 		}
 
 		return array(
-			'highest_roi_campaigns'        => $highest_roi,
-			'lowest_usage_promotions'      => array_slice( $low_usage, 0, 10 ),
-			'most_simulated_scenarios_runs'  => $scenario_runs,
-			'highest_blocked_by_group'     => $top_group,
-			'highest_blocked_by_cooldown'  => $top_cooldown,
-			'most_selected'                => $top_selected,
-			'budget_burn_velocity'         => $burn_velocity,
+			'highest_roi_campaigns'         => $highest_roi,
+			'lowest_usage_promotions'       => array_slice( $low_usage, 0, 10 ),
+			'most_simulated_scenarios_runs' => $scenario_runs,
+			'highest_blocked_by_group'      => $top_group,
+			'highest_blocked_by_cooldown'   => $top_cooldown,
+			'most_selected'                 => $top_selected,
+			'budget_burn_velocity'          => $burn_velocity,
 		);
 	}
 
@@ -255,25 +255,25 @@ final class PromotionReports {
 		$profiler = new PromotionPerformanceProfiler();
 
 		return array(
-			'planner_performance'      => $perf,
-			'profiler'                 => $perf['profiler'] ?? $profiler->get_report_summary(),
-			'compatibility_confidence' => (string) ( $perf['compatibility_confidence'] ?? PricingCompatibilityAnalyzer::CONFIDENCE_UNKNOWN ),
-			'slow_runs'                => (array) ( $perf['slow_runs'] ?? array() ),
-			'safe_mode'                => $settings->safe_mode_enabled(),
-			'automatic_promotions'     => $settings->automatic_promotions_enabled(),
-			'telemetry_paused'         => $settings->telemetry_paused(),
-			'simulation_paused'        => $settings->simulation_paused(),
+			'planner_performance'       => $perf,
+			'profiler'                  => $perf['profiler'] ?? $profiler->get_report_summary(),
+			'compatibility_confidence'  => (string) ( $perf['compatibility_confidence'] ?? PricingCompatibilityAnalyzer::CONFIDENCE_UNKNOWN ),
+			'slow_runs'                 => (array) ( $perf['slow_runs'] ?? array() ),
+			'safe_mode'                 => $settings->safe_mode_enabled(),
+			'automatic_promotions'      => $settings->automatic_promotions_enabled(),
+			'telemetry_paused'          => $settings->telemetry_paused(),
+			'simulation_paused'         => $settings->simulation_paused(),
 			'automation_emergency_stop' => $settings->automation_emergency_stop(),
-			'cron_automation_enabled'  => $settings->cron_automation_enabled(),
-			'cron_hourly_scheduled'    => function_exists( 'wp_next_scheduled' )
+			'cron_automation_enabled'   => $settings->cron_automation_enabled(),
+			'cron_hourly_scheduled'     => function_exists( 'wp_next_scheduled' )
 				? (bool) wp_next_scheduled( PromotionCronScheduler::HOOK_HOURLY )
 				: false,
-			'cron_daily_scheduled'     => function_exists( 'wp_next_scheduled' )
+			'cron_daily_scheduled'      => function_exists( 'wp_next_scheduled' )
 				? (bool) wp_next_scheduled( PromotionCronScheduler::HOOK_DAILY )
 				: false,
-			'telemetry_retention_days' => $settings->telemetry_retention_days(),
-			'degraded_state'           => $profiler->get_degraded_state(),
-			'storefront_degraded'      => $profiler->is_storefront_degraded(),
+			'telemetry_retention_days'  => $settings->telemetry_retention_days(),
+			'degraded_state'            => $profiler->get_degraded_state(),
+			'storefront_degraded'       => $profiler->is_storefront_degraded(),
 		);
 	}
 
@@ -281,7 +281,7 @@ final class PromotionReports {
 	 * @return array<string, mixed>
 	 */
 	public function profitability_analytics(): array {
-		$redemptions = $this->redemptions->find_redemptions_for_export( array(), 500 );
+		$redemptions    = $this->redemptions->find_redemptions_for_export( array(), 500 );
 		$total_discount = 0.0;
 		$count          = 0;
 		foreach ( $redemptions as $row ) {
@@ -315,13 +315,13 @@ final class PromotionReports {
 		);
 
 		return array(
-			'estimated_margin_impact'      => round( $total_discount * 0.35, 2 ),
-			'average_discount_rate'        => $count > 0 ? round( ( $total_discount / max( 1, $count ) ), 2 ) : 0.0,
-			'shipping_discount_exposure'   => $this->shipping_discount_exposure(),
-			'highest_cost_campaigns'       => array_slice( $highest_cost, 0, 10 ),
-			'highest_effective_savings'    => $this->intelligence_analytics()['highest_roi_campaigns'] ?? array(),
-			'estimated_revenue_influence'  => round( $total_discount * 2.5, 2 ),
-			'budget_burn_percent_peak'     => round( $avg_rate, 2 ),
+			'estimated_margin_impact'     => round( $total_discount * 0.35, 2 ),
+			'average_discount_rate'       => $count > 0 ? round( ( $total_discount / max( 1, $count ) ), 2 ) : 0.0,
+			'shipping_discount_exposure'  => $this->shipping_discount_exposure(),
+			'highest_cost_campaigns'      => array_slice( $highest_cost, 0, 10 ),
+			'highest_effective_savings'   => $this->intelligence_analytics()['highest_roi_campaigns'] ?? array(),
+			'estimated_revenue_influence' => round( $total_discount * 2.5, 2 ),
+			'budget_burn_percent_peak'    => round( $avg_rate, 2 ),
 		);
 	}
 
@@ -341,13 +341,13 @@ final class PromotionReports {
 		$coupon_eval = ( new CouponCoexistenceEvaluator() )->evaluate_cart();
 
 		return array(
-			'allocation_metrics'       => AllocationContextCache::get_persisted_metrics(),
-			'shipping_analytics'       => array(
+			'allocation_metrics'   => AllocationContextCache::get_persisted_metrics(),
+			'shipping_analytics'   => array(
 				'exposure' => $this->shipping_discount_exposure(),
 			),
-			'coupon_coexistence'       => $coupon_eval,
-			'priority_tier_counts'     => $tiers,
-			'compatibility_issues'     => ( new PricingCompatibilityAnalyzer() )->analyze(),
+			'coupon_coexistence'   => $coupon_eval,
+			'priority_tier_counts' => $tiers,
+			'compatibility_issues' => ( new PricingCompatibilityAnalyzer() )->analyze(),
 		);
 	}
 
@@ -475,10 +475,10 @@ final class PromotionReports {
 	public function summary( array $args = array() ): array {
 		$filters = self::sanitize_filters( $args );
 
-		$recorded_filters = $filters;
+		$recorded_filters           = $filters;
 		$recorded_filters['status'] = Redemption::STATUS_RECORDED;
 
-		$reversed_filters = $filters;
+		$reversed_filters           = $filters;
 		$reversed_filters['status'] = Redemption::STATUS_REVERSED;
 
 		$sum_filters = $filters;
@@ -499,23 +499,23 @@ final class PromotionReports {
 		$top = $this->enrich_top_promotions_budget( $top, $filters['budget_exhausted'] );
 
 		return array(
-			'total_promotions'                      => $this->promotions->count_all(),
-			'active_promotions'                     => $this->promotions->count_filtered(
+			'total_promotions'                     => $this->promotions->count_all(),
+			'active_promotions'                    => $this->promotions->count_filtered(
 				array( 'status' => PromotionStatus::ACTIVE )
 			),
-			'recorded_redemptions'                  => $recorded_count,
-			'reversed_redemptions'                  => $reversed_count,
-			'recorded_discount_total'               => $this->redemptions->sum_recorded_discount_amount( $sum_filters ),
-			'total_budget_spent'                    => $this->promotions->sum_budget_spent_for_budgeted(),
-			'active_budgeted_promotions'            => $this->promotions->count_active_budgeted(),
-			'exhausted_promotions'                  => $this->promotions->count_budget_exhausted_active(),
-			'cooldown_active_promotions'            => $this->promotions->count_cooldown_active_promotions(),
-			'avg_recorded_discount_per_redemption'  => $recorded_count > 0
+			'recorded_redemptions'                 => $recorded_count,
+			'reversed_redemptions'                 => $reversed_count,
+			'recorded_discount_total'              => $this->redemptions->sum_recorded_discount_amount( $sum_filters ),
+			'total_budget_spent'                   => $this->promotions->sum_budget_spent_for_budgeted(),
+			'active_budgeted_promotions'           => $this->promotions->count_active_budgeted(),
+			'exhausted_promotions'                 => $this->promotions->count_budget_exhausted_active(),
+			'cooldown_active_promotions'           => $this->promotions->count_cooldown_active_promotions(),
+			'avg_recorded_discount_per_redemption' => $recorded_count > 0
 				? $this->redemptions->avg_recorded_discount_amount( $sum_filters )
 				: 0.0,
-			'top_orchestration_groups'              => $this->promotions->find_top_orchestration_groups( 10 ),
-			'highest_budget_burn'                   => $this->format_highest_budget_burn( $this->promotions->find_highest_budget_burn( 10 ) ),
-			'top_promotions'                        => $top,
+			'top_orchestration_groups'             => $this->promotions->find_top_orchestration_groups( 10 ),
+			'highest_budget_burn'                  => $this->format_highest_budget_burn( $this->promotions->find_highest_budget_burn( 10 ) ),
+			'top_promotions'                       => $top,
 		);
 	}
 
@@ -622,7 +622,7 @@ final class PromotionReports {
 		if ( $forecast !== array() ) {
 			$forecast_exposure = (string) ( $forecast['estimated_discount_exposure'] ?? '' );
 		}
-		$planner = $this->planner_performance();
+		$planner  = $this->planner_performance();
 		$sim_runs = (string) (int) ( $planner['persisted']['simulated_runs'] ?? 0 );
 		$hits     = (string) (int) ( $planner['persisted']['cache_hits'] ?? 0 );
 		$misses   = (string) (int) ( $planner['persisted']['cache_misses'] ?? 0 );
@@ -632,7 +632,7 @@ final class PromotionReports {
 			$tier          = $promotion_row instanceof Promotion ? $promotion_row->get_priority_tier() : '';
 			$coupon_beh    = $promotion_row instanceof Promotion ? $promotion_row->get_coupon_behavior() : '';
 			$alloc_total   = (string) ( $row['discount_amount'] ?? '' );
-			$lines[] = implode(
+			$lines[]       = implode(
 				',',
 				array(
 					self::escape_csv_cell( (string) ( $row['redemption_id'] ?? '' ) ),
@@ -791,7 +791,7 @@ final class PromotionReports {
 			return null;
 		}
 
-		$value = sanitize_key( $value );
+		$value   = sanitize_key( $value );
 		$allowed = array(
 			self::DATE_PRESET_TODAY,
 			self::DATE_PRESET_7D,
@@ -862,7 +862,7 @@ final class PromotionReports {
 		$amount = isset( $row['budget_amount'] ) && is_numeric( $row['budget_amount'] )
 			? (float) $row['budget_amount']
 			: 0.0;
-		$spent = isset( $row['budget_spent'] ) && is_numeric( $row['budget_spent'] )
+		$spent  = isset( $row['budget_spent'] ) && is_numeric( $row['budget_spent'] )
 			? (float) $row['budget_spent']
 			: 0.0;
 
@@ -904,9 +904,9 @@ final class PromotionReports {
 				continue;
 			}
 
-			$row['budget_amount']               = $promotion->get_budget_amount();
-			$row['budget_spent']                  = $promotion->get_budget_spent();
-			$row['budget_utilization_percent']    = $promotion->get_budget_utilization_percent();
+			$row['budget_amount']              = $promotion->get_budget_amount();
+			$row['budget_spent']               = $promotion->get_budget_spent();
+			$row['budget_utilization_percent'] = $promotion->get_budget_utilization_percent();
 
 			$out[] = $row;
 		}

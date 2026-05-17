@@ -26,6 +26,8 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 - [docs/MANUAL_QA_EVIDENCE.md](docs/MANUAL_QA_EVIDENCE.md) — manual/browser QA evidence (latest verification bundle)
 - [docs/manual-performance-and-hardening-test.md](docs/manual-performance-and-hardening-test.md) — profiler, safe mode, cron, cleanup, concurrency
 - [docs/BROWSER_QA_MATRIX.md](docs/BROWSER_QA_MATRIX.md) — reproducible browser QA matrix
+- [docs/BETA_READINESS.md](docs/BETA_READINESS.md) — beta certification status and release criteria
+- [docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md) — blocks investigation (not declared)
 
 WordPress.org-style [readme.txt](readme.txt) and [LICENSE](LICENSE) are included as distribution scaffolding.
 

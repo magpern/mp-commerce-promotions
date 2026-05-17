@@ -72,10 +72,22 @@ for path in \
 	"src/Service/PromotionCronScheduler.php" \
 	"src/Service/PromotionDataRetentionService.php" \
 	"scripts/performance-hardening-smoke.php" \
-	"scripts/production-hardening-closure-smoke.php"
+	"scripts/production-hardening-closure-smoke.php" \
+	"scripts/beta-readiness-smoke.php"
 do
 	[[ -f "${REPO_ROOT}/${path}" ]] || fail "Missing ${path}"
 done
+
+POT_FILE="${REPO_ROOT}/languages/mp-commerce-promotions.pot"
+[[ -f "${POT_FILE}" ]] || fail "Missing languages/mp-commerce-promotions.pot"
+POT_LINES="$(wc -l < "${POT_FILE}")"
+if [[ "${POT_LINES}" -lt 100 ]]; then
+	fail "POT file looks like a placeholder (${POT_LINES} lines); run wp i18n make-pot"
+fi
+echo "    POT: ${POT_LINES} lines"
+
+[[ -f "${REPO_ROOT}/docs/BETA_READINESS.md" ]] || fail "Missing docs/BETA_READINESS.md"
+[[ -f "${REPO_ROOT}/docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md" ]] || fail "Missing docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md"
 
 ZIP_PATH="${BUILD_ROOT}/${PLUGIN_SLUG}-${VERSION_CONST}.zip"
 if [[ ! -f "${ZIP_PATH}" ]]; then

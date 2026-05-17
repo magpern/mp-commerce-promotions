@@ -51,11 +51,11 @@ final class PromotionDataRetentionService {
 		$prefix = $wpdb->prefix;
 
 		return array(
-			'automation_runs'       => $this->table_row_count( $prefix . 'mp_cp_automation_runs' ),
-			'planner_telemetry'     => $this->table_row_count( $prefix . 'mp_cp_planner_telemetry' ),
-			'simulation_scenarios'  => $this->table_row_count( $prefix . 'mp_cp_simulation_scenarios' ),
-			'redemptions'           => $this->table_row_count( $prefix . 'mp_cp_redemptions' ),
-			'promotions'            => $this->table_row_count( $prefix . 'mp_cp_promotions' ),
+			'automation_runs'      => $this->table_row_count( $prefix . 'mp_cp_automation_runs' ),
+			'planner_telemetry'    => $this->table_row_count( $prefix . 'mp_cp_planner_telemetry' ),
+			'simulation_scenarios' => $this->table_row_count( $prefix . 'mp_cp_simulation_scenarios' ),
+			'redemptions'          => $this->table_row_count( $prefix . 'mp_cp_redemptions' ),
+			'promotions'           => $this->table_row_count( $prefix . 'mp_cp_promotions' ),
 		);
 	}
 
@@ -66,11 +66,11 @@ final class PromotionDataRetentionService {
 		$days   = $this->settings->telemetry_retention_days();
 		$cutoff = gmdate( 'Y-m-d H:i:s', time() - ( $days * DAY_IN_SECONDS ) );
 		$result = array(
-			'dry_run'              => $dry_run,
-			'cutoff'               => $cutoff,
-			'automation_runs'      => 0,
-			'scenarios_archived'   => 0,
-			'forecast_cache_reset' => false,
+			'dry_run'                => $dry_run,
+			'cutoff'                 => $cutoff,
+			'automation_runs'        => 0,
+			'scenarios_archived'     => 0,
+			'forecast_cache_reset'   => false,
 			'planner_counters_reset' => false,
 		);
 

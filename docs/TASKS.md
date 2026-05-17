@@ -4,7 +4,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Current milestone
 
-**Pre-beta stabilization** — production hardening closure (Reports UI, docs, PHPCS batch, checkout lock, optimizations). Next: block checkout QA, full i18n extraction, CI PHPCS gating.
+**Beta release candidate** — certification docs, blocks investigation, PHPCS persistence, POT extraction, browser QA matrix closure, CI PHPCS visibility. Next: block page E2E, `0.2.0-beta.1` tag when approved, merchant pilot.
 
 ## Manual QA (2026-05-17)
 
@@ -15,6 +15,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Beta readiness certification** — BETA_READINESS, blocks doc (not declared), POT, PHPCBF on staging, CI PHPCS soft gate, beta smoke
 - **Production hardening closure** — Reports production dashboard, checkout recording lock, redemption memoization, simulation request cache, expanded `release-audit.sh`, closure smoke/tests, docs
 - **Performance and production hardening** — profiler, concurrency, optional cron, safe/degraded mode, retention cleanup, compatibility confidence
 - **Commercial readiness** — Getting Started, settings governance, compatibility panel, support bundle, uninstall opt-in

@@ -190,10 +190,10 @@ final class CartContextBuilder {
 			$metadata['customer_redemption_count'] = $this->memoized_customer_redemption_count( $customer_id );
 		}
 
-		$stats = CustomerOrderStats::for_customer( $customer_id );
-		$metadata['lifetime_spend']       = $stats['lifetime_spend'];
-		$metadata['order_count']          = $stats['order_count'];
-		$metadata['average_order_value']  = $stats['average_order_value'];
+		$stats                           = CustomerOrderStats::for_customer( $customer_id );
+		$metadata['lifetime_spend']      = $stats['lifetime_spend'];
+		$metadata['order_count']         = $stats['order_count'];
+		$metadata['average_order_value'] = $stats['average_order_value'];
 	}
 
 	private function customer_has_previous_orders( int $customer_id ): ?bool {
@@ -447,7 +447,7 @@ final class CartContextBuilder {
 			return $this->redemption_count_cache[ $key ];
 		}
 
-		$count = $this->redemptions !== null
+		$count                                = $this->redemptions !== null
 			? $this->redemptions->count_recorded_for_customer( $customer_id )
 			: 0;
 		$this->redemption_count_cache[ $key ] = $count;
@@ -461,7 +461,7 @@ final class CartContextBuilder {
 			return $this->redemption_count_cache[ $key ];
 		}
 
-		$count = $this->redemptions !== null
+		$count                                = $this->redemptions !== null
 			? $this->redemptions->count_recorded_for_customer_and_promotion( $customer_id, $promotion_id )
 			: 0;
 		$this->redemption_count_cache[ $key ] = $count;

@@ -216,8 +216,36 @@ Full browser checkout with payment capture was **not** completed in this run (cr
 
 ---
 
+## Beta certification update (2026-05-17)
+
+**Milestone:** Beta readiness (`chore: prepare beta readiness certification`)  
+**Local Docker:** Classic shortcode cart/checkout only — **not** block cart pages.
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Cart/Checkout Blocks | **Blocked** | See [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md); declaration remains **false** |
+| Classic stacked fees | **Partial** | Smokes + prior browser; matrix updated in [BROWSER_QA_MATRIX.md](BROWSER_QA_MATRIX.md) |
+| Scoped / cheapest / shipping | **Partial** | Script coverage; browser not re-run this milestone |
+| Free gift | **Partial** | Prior live site notes |
+| Promotion code | **Partial** | Paused smoke codes on biopentra |
+| Checkout recording | **Partial** | `checkout-integrity-smoke.php` pass; BTCPay blocks paid browser flow |
+| Reversal / restore | **Partial** | Hooks tested via smoke; browser cancel not run |
+| Reports CSV | **Partial** | Export UI pass; download not triggered |
+| Diagnostics repair | **Partial** | Dry-run not applied on production |
+| Settings gates / safe mode | **Pass** | Smoke + settings UI |
+| Reports production hardening | **Pass** | New Reports section (closure milestone) |
+| POT generation | **Pass** | `wp i18n make-pot` → 6000+ lines |
+| PHPCS (target paths) | **Improved** | PHPCBF committed on staging Service/Admin/Woo subset |
+| PHPUnit (staging) | **Pass** | 324+ tests (see verification on commit) |
+
+**Automated (beta milestone):** `scripts/beta-readiness-smoke.php`, `scripts/release-audit.sh` (POT + beta docs).
+
+---
+
 ## References
 
 - Base commit: `e8da1f1` (admin UX polish)
+- Beta readiness: [BETA_READINESS.md](BETA_READINESS.md)
+- Blocks investigation: [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md)
 - Manual procedures: `docs/manual-*.md`
 - Prior checkout simulation: [manual-checkout-test.md](manual-checkout-test.md) § Test Run — 2026-05-16

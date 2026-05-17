@@ -64,9 +64,9 @@ final class PromotionBulkPricingWorkflow {
 	}
 
 	/**
-	 * @param list<int>                        $promotion_ids
-	 * @param callable(Promotion): Promotion     $mutator
-	 * @param array<string, mixed>             $audit_meta
+	 * @param list<int>                      $promotion_ids
+	 * @param callable(Promotion): Promotion $mutator
+	 * @param array<string, mixed>           $audit_meta
 	 * @return array{changed: int, skipped: int, errors: list<string>}
 	 */
 	private function bulk_apply( array $promotion_ids, callable $mutator, array $audit_meta, ?int $actor_user_id ): array {

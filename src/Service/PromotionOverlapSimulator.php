@@ -50,13 +50,13 @@ final class PromotionOverlapSimulator {
 		$results = array();
 		foreach ( $this->conflicts->simulate_overlap( $active ) as $row ) {
 			$results[] = array(
-				'severity'          => (string) ( $row['severity'] ?? 'info' ),
-				'type'              => (string) ( $row['type'] ?? '' ),
-				'promotion_ids'     => isset( $row['promotion_ids'] ) && is_array( $row['promotion_ids'] )
+				'severity'         => (string) ( $row['severity'] ?? 'info' ),
+				'type'             => (string) ( $row['type'] ?? '' ),
+				'promotion_ids'    => isset( $row['promotion_ids'] ) && is_array( $row['promotion_ids'] )
 					? array_map( 'intval', $row['promotion_ids'] )
 					: array(),
-				'message'           => (string) ( $row['message'] ?? '' ),
-				'estimated_impact'  => $this->estimate_impact( $row ),
+				'message'          => (string) ( $row['message'] ?? '' ),
+				'estimated_impact' => $this->estimate_impact( $row ),
 			);
 		}
 

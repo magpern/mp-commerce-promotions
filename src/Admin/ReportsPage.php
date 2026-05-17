@@ -197,11 +197,11 @@ final class ReportsPage {
 		echo '<tr><th scope="row"><label for="mp_cp_reports_promotion_id">' . esc_html__( 'Promotion', 'mp-commerce-promotions' ) . '</label></th><td>';
 		$this->picker->render_select(
 			array(
-				'name'         => 'promotion_id',
-				'id'           => 'mp_cp_reports_promotion_id',
-				'selected'     => $filters['promotion_id'],
+				'name'          => 'promotion_id',
+				'id'            => 'mp_cp_reports_promotion_id',
+				'selected'      => $filters['promotion_id'],
 				'include_empty' => true,
-				'empty_label'  => __( 'All promotions', 'mp-commerce-promotions' ),
+				'empty_label'   => __( 'All promotions', 'mp-commerce-promotions' ),
 			)
 		);
 		echo '</td></tr>';

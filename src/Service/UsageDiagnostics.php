@@ -35,10 +35,10 @@ final class UsageDiagnostics {
 		RedemptionRepository $redemptions,
 		?AuditLogger $audit_logger = null
 	) {
-		$this->promotions    = $promotions;
-		$this->codes         = $codes;
-		$this->redemptions   = $redemptions;
-		$this->audit_logger  = $audit_logger;
+		$this->promotions   = $promotions;
+		$this->codes        = $codes;
+		$this->redemptions  = $redemptions;
+		$this->audit_logger = $audit_logger;
 	}
 
 	/**
@@ -164,10 +164,10 @@ final class UsageDiagnostics {
 				continue;
 			}
 
-			$code_id       = (int) $row['code_id'];
-			$promotion_id  = (int) $row['promotion_id'];
-			$expected      = (int) $row['expected_usage_count'];
-			$old           = (int) $row['stored_usage_count'];
+			$code_id      = (int) $row['code_id'];
+			$promotion_id = (int) $row['promotion_id'];
+			$expected     = (int) $row['expected_usage_count'];
+			$old          = (int) $row['stored_usage_count'];
 
 			$code = $this->codes->find( $code_id );
 			if ( $code === null ) {

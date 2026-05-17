@@ -40,10 +40,10 @@ final class OrderPromotionRecorder {
 	private PromotionBudgetLedger $budget_ledger;
 
 	/**
-	 * @param RedemptionRepository    $redemptions     Redemption persistence.
-	 * @param PromotionRepository     $promotions      Promotion persistence.
-	 * @param PromotionCodeRepository $promotion_codes Code persistence.
-	 * @param AuditLogger             $audit           Audit trail writer.
+	 * @param RedemptionRepository       $redemptions     Redemption persistence.
+	 * @param PromotionRepository        $promotions      Promotion persistence.
+	 * @param PromotionCodeRepository    $promotion_codes Code persistence.
+	 * @param AuditLogger                $audit           Audit trail writer.
 	 * @param PromotionBudgetLedger|null $budget_ledger Budget spent adjustments.
 	 */
 	public function __construct(
@@ -130,26 +130,26 @@ final class OrderPromotionRecorder {
 			$entries = AppliedPromotionSession::entries_from_session(
 				CartSessionHelper::get_applied_promotion()
 			);
-			if ( $entries === array() ) {
+		if ( $entries === array() ) {
+			return;
+		}
+
+		if ( OrderPromotionState::has_recorded_promotions( $order ) ) {
+			$all_exist = true;
+			foreach ( $entries as $entry ) {
+				if ( ! AppliedPromotionSession::is_valid_entry( $entry ) ) {
+					continue;
+				}
+				$pid = (int) $entry['promotion_id'];
+				if ( ! $this->redemptions->exists_for_order_and_promotion( $order_id, $pid ) ) {
+					$all_exist = false;
+					break;
+				}
+			}
+			if ( $all_exist ) {
 				return;
 			}
-
-			if ( OrderPromotionState::has_recorded_promotions( $order ) ) {
-				$all_exist = true;
-				foreach ( $entries as $entry ) {
-					if ( ! AppliedPromotionSession::is_valid_entry( $entry ) ) {
-						continue;
-					}
-					$pid = (int) $entry['promotion_id'];
-					if ( ! $this->redemptions->exists_for_order_and_promotion( $order_id, $pid ) ) {
-						$all_exist = false;
-						break;
-					}
-				}
-				if ( $all_exist ) {
-					return;
-				}
-			}
+		}
 
 			$cid         = (int) $order->get_customer_id();
 			$customer_id = $cid > 0 ? $cid : null;
@@ -159,23 +159,23 @@ final class OrderPromotionRecorder {
 
 			$recorded_meta = array();
 
-			foreach ( $entries as $entry ) {
-				$recorded = $this->record_single_entry(
-					$order,
-					$order_id,
-					$entry,
-					$customer_id,
-					$currency,
-					$now
-				);
-				if ( $recorded !== null ) {
-					$recorded_meta[] = $recorded;
-				}
+		foreach ( $entries as $entry ) {
+			$recorded = $this->record_single_entry(
+				$order,
+				$order_id,
+				$entry,
+				$customer_id,
+				$currency,
+				$now
+			);
+			if ( $recorded !== null ) {
+				$recorded_meta[] = $recorded;
 			}
+		}
 
-			if ( $recorded_meta === array() ) {
-				return;
-			}
+		if ( $recorded_meta === array() ) {
+			return;
+		}
 
 			OrderPromotionState::save_applied_promotions( $order, $recorded_meta );
 
@@ -298,8 +298,8 @@ final class OrderPromotionRecorder {
 	}
 
 	/**
-	 * @param \WC_Order              $order
-	 * @param array<string, mixed>   $entry
+	 * @param \WC_Order            $order
+	 * @param array<string, mixed> $entry
 	 * @return array<string, mixed>|null Summary for applied promotions meta.
 	 */
 	private function record_single_entry(

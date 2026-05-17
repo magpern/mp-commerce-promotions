@@ -49,10 +49,10 @@ final class PromotionOperationalRecovery {
 	 */
 	public function recalculate_budget_spent_from_redemptions( bool $dry_run = true ): array {
 		$result = array(
-			'dry_run'  => $dry_run,
-			'changed'  => array(),
-			'skipped'  => array(),
-			'errors'   => array(),
+			'dry_run' => $dry_run,
+			'changed' => array(),
+			'skipped' => array(),
+			'errors'  => array(),
 		);
 
 		$promotions = $this->promotions->find_filtered(

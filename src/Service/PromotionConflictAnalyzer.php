@@ -18,19 +18,19 @@ use MP\CommercePromotions\Engine\RuleTypes;
 
 final class PromotionConflictAnalyzer {
 
-	public const TYPE_MUTUAL_EXCLUSION          = 'mutual_exclusion';
-	public const TYPE_EXCLUSION_CONFLICT        = 'exclusion_conflict';
-	public const TYPE_EXCLUSIVE_VS_STACKABLE    = 'exclusive_vs_stackable';
-	public const TYPE_SCOPE_OVERLAP             = 'scope_overlap';
-	public const TYPE_MAX_APPLICATION_CONFLICT  = 'max_application_conflict';
-	public const TYPE_FREE_SHIPPING_OVERLAP     = 'free_shipping_overlap';
-	public const TYPE_GIFT_OVERLAP              = 'gift_overlap';
-	public const TYPE_USAGE_LIMIT_CONFLICT      = 'usage_limit_conflict';
-	public const TYPE_PRIORITY_SHADOWING        = 'priority_shadowing';
+	public const TYPE_MUTUAL_EXCLUSION         = 'mutual_exclusion';
+	public const TYPE_EXCLUSION_CONFLICT       = 'exclusion_conflict';
+	public const TYPE_EXCLUSIVE_VS_STACKABLE   = 'exclusive_vs_stackable';
+	public const TYPE_SCOPE_OVERLAP            = 'scope_overlap';
+	public const TYPE_MAX_APPLICATION_CONFLICT = 'max_application_conflict';
+	public const TYPE_FREE_SHIPPING_OVERLAP    = 'free_shipping_overlap';
+	public const TYPE_GIFT_OVERLAP             = 'gift_overlap';
+	public const TYPE_USAGE_LIMIT_CONFLICT     = 'usage_limit_conflict';
+	public const TYPE_PRIORITY_SHADOWING       = 'priority_shadowing';
 
-	public const TYPE_ORCHESTRATION_CONGESTION  = 'orchestration_congestion';
+	public const TYPE_ORCHESTRATION_CONGESTION = 'orchestration_congestion';
 
-	public const TYPE_TIER_CONGESTION           = 'tier_congestion';
+	public const TYPE_TIER_CONGESTION = 'tier_congestion';
 
 	/**
 	 * @param list<Promotion> $promotions
@@ -261,7 +261,7 @@ final class PromotionConflictAnalyzer {
 				continue;
 			}
 
-			$product_ids = isset( $action['product_ids'] ) && is_array( $action['product_ids'] )
+			$product_ids  = isset( $action['product_ids'] ) && is_array( $action['product_ids'] )
 				? CartItemSelector::normalize_positive_int_list( $action['product_ids'] )
 				: array();
 			$category_ids = isset( $action['category_ids'] ) && is_array( $action['category_ids'] )
@@ -287,7 +287,7 @@ final class PromotionConflictAnalyzer {
 			$category_ids = isset( $condition['category_ids'] ) && is_array( $condition['category_ids'] )
 				? CartItemSelector::normalize_positive_int_list( $condition['category_ids'] )
 				: array();
-			$product_ids = isset( $condition['product_ids'] ) && is_array( $condition['product_ids'] )
+			$product_ids  = isset( $condition['product_ids'] ) && is_array( $condition['product_ids'] )
 				? CartItemSelector::normalize_positive_int_list( $condition['product_ids'] )
 				: array();
 			foreach ( $category_ids as $cid ) {

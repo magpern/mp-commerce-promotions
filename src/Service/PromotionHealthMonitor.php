@@ -33,8 +33,8 @@ final class PromotionHealthMonitor {
 		PromotionRepository $promotions,
 		?PromotionConflictAnalyzer $conflict_analyzer = null
 	) {
-		$this->promotions         = $promotions;
-		$this->conflict_analyzer  = $conflict_analyzer ?? new PromotionConflictAnalyzer();
+		$this->promotions        = $promotions;
+		$this->conflict_analyzer = $conflict_analyzer ?? new PromotionConflictAnalyzer();
 	}
 
 	/**

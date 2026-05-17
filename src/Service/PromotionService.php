@@ -29,8 +29,8 @@ final class PromotionService {
 		AuditLogger $audit
 	) {
 		$this->promotions = $promotions;
-		$this->factory     = $factory;
-		$this->audit       = $audit;
+		$this->factory    = $factory;
+		$this->audit      = $audit;
 	}
 
 	public function create_draft( string $name, ?int $created_by = null ): Promotion {
@@ -463,7 +463,12 @@ final class PromotionService {
 			}
 		}
 
-		$all = $this->promotions->find_filtered( array( 'status' => PromotionStatus::ARCHIVED, 'limit' => 500 ) );
+		$all = $this->promotions->find_filtered(
+			array(
+				'status' => PromotionStatus::ARCHIVED,
+				'limit'  => 500,
+			)
+		);
 		$now = strtotime( current_time( 'mysql' ) );
 		foreach ( $all as $promotion ) {
 			$id = $promotion->get_id();

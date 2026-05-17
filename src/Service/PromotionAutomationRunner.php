@@ -41,71 +41,86 @@ final class PromotionAutomationRunner {
 	 * @return array<string, mixed>
 	 */
 	public function run_all( ?int $actor_user_id = null ): array {
-		return $this->execute( self::RUN_TYPE_ALL, function () use ( $actor_user_id ): array {
-			$summary = array(
-				'actions' => array(),
-			);
+		return $this->execute(
+			self::RUN_TYPE_ALL,
+			function () use ( $actor_user_id ): array {
+				$summary = array(
+					'actions' => array(),
+				);
 
-			$summary['actions']['activate_scheduled']       = $this->activate_scheduled( $actor_user_id );
-			$summary['actions']['archive_expired']          = $this->archive_expired( $actor_user_id );
-			$summary['actions']['pause_budget_exhausted']   = $this->pause_budget_exhausted( $actor_user_id );
-			$summary['actions']['normalize_states']         = $this->normalize_states( $actor_user_id );
+				$summary['actions']['activate_scheduled']     = $this->activate_scheduled( $actor_user_id );
+				$summary['actions']['archive_expired']        = $this->archive_expired( $actor_user_id );
+				$summary['actions']['pause_budget_exhausted'] = $this->pause_budget_exhausted( $actor_user_id );
+				$summary['actions']['normalize_states']       = $this->normalize_states( $actor_user_id );
 
-			return $summary;
-		} );
+				return $summary;
+			}
+		);
 	}
 
 	/**
 	 * @return array<string, mixed>
 	 */
 	public function activate_scheduled( ?int $actor_user_id = null ): array {
-		return $this->execute( self::RUN_TYPE_ACTIVATE_SCHEDULED, function () use ( $actor_user_id ): array {
-			return array(
-				'actions' => array(
-					'activate_scheduled' => $this->promotions->activate_scheduled_promotions( $actor_user_id ),
-				),
-			);
-		} );
+		return $this->execute(
+			self::RUN_TYPE_ACTIVATE_SCHEDULED,
+			function () use ( $actor_user_id ): array {
+				return array(
+					'actions' => array(
+						'activate_scheduled' => $this->promotions->activate_scheduled_promotions( $actor_user_id ),
+					),
+				);
+			}
+		);
 	}
 
 	/**
 	 * @return array<string, mixed>
 	 */
 	public function archive_expired( ?int $actor_user_id = null ): array {
-		return $this->execute( self::RUN_TYPE_ARCHIVE_EXPIRED, function () use ( $actor_user_id ): array {
-			return array(
-				'actions' => array(
-					'archive_expired_active' => $this->promotions->archive_expired_active_promotions( $actor_user_id ),
-					'archive_expired_paused' => $this->promotions->archive_expired_paused_promotions( $actor_user_id ),
-				),
-			);
-		} );
+		return $this->execute(
+			self::RUN_TYPE_ARCHIVE_EXPIRED,
+			function () use ( $actor_user_id ): array {
+				return array(
+					'actions' => array(
+						'archive_expired_active' => $this->promotions->archive_expired_active_promotions( $actor_user_id ),
+						'archive_expired_paused' => $this->promotions->archive_expired_paused_promotions( $actor_user_id ),
+					),
+				);
+			}
+		);
 	}
 
 	/**
 	 * @return array<string, mixed>
 	 */
 	public function pause_budget_exhausted( ?int $actor_user_id = null ): array {
-		return $this->execute( self::RUN_TYPE_PAUSE_BUDGET, function () use ( $actor_user_id ): array {
-			return array(
-				'actions' => array(
-					'pause_budget_exhausted' => $this->promotions->pause_budget_exhausted_promotions( $actor_user_id ),
-				),
-			);
-		} );
+		return $this->execute(
+			self::RUN_TYPE_PAUSE_BUDGET,
+			function () use ( $actor_user_id ): array {
+				return array(
+					'actions' => array(
+						'pause_budget_exhausted' => $this->promotions->pause_budget_exhausted_promotions( $actor_user_id ),
+					),
+				);
+			}
+		);
 	}
 
 	/**
 	 * @return array<string, mixed>
 	 */
 	public function normalize_states( ?int $actor_user_id = null ): array {
-		return $this->execute( self::RUN_TYPE_NORMALIZE, function () use ( $actor_user_id ): array {
-			return array(
-				'actions' => array(
-					'normalize_states' => $this->promotions->normalize_invalid_promotion_states( $actor_user_id ),
-				),
-			);
-		} );
+		return $this->execute(
+			self::RUN_TYPE_NORMALIZE,
+			function () use ( $actor_user_id ): array {
+				return array(
+					'actions' => array(
+						'normalize_states' => $this->promotions->normalize_invalid_promotion_states( $actor_user_id ),
+					),
+				);
+			}
+		);
 	}
 
 	/**
@@ -152,11 +167,11 @@ final class PromotionAutomationRunner {
 		$status = AutomationRun::STATUS_COMPLETED;
 
 		try {
-			$result            = $runner();
+			$result             = $runner();
 			$summary['actions'] = $result['actions'] ?? array();
-			$summary           = array_merge( $summary, $this->collect_warnings_and_errors( $summary['actions'] ) );
+			$summary            = array_merge( $summary, $this->collect_warnings_and_errors( $summary['actions'] ) );
 		} catch ( Throwable $e ) {
-			$status             = AutomationRun::STATUS_FAILED;
+			$status              = AutomationRun::STATUS_FAILED;
 			$summary['errors'][] = array(
 				'message' => $e->getMessage(),
 			);

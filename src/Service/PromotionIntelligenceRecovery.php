@@ -25,8 +25,8 @@ final class PromotionIntelligenceRecovery {
 		PlannerTelemetryRepository $telemetry,
 		SimulationScenarioRepository $scenarios
 	) {
-		$this->telemetry  = $telemetry;
-		$this->scenarios  = $scenarios;
+		$this->telemetry = $telemetry;
+		$this->scenarios = $scenarios;
 	}
 
 	/**
@@ -34,7 +34,10 @@ final class PromotionIntelligenceRecovery {
 	 */
 	public function reset_telemetry( bool $dry_run = true ): array {
 		if ( $dry_run ) {
-			return array( 'dry_run' => true, 'deleted_rows' => 0 );
+			return array(
+				'dry_run'      => true,
+				'deleted_rows' => 0,
+			);
 		}
 
 		return array(
@@ -51,9 +54,9 @@ final class PromotionIntelligenceRecovery {
 	 * @return array{dry_run: bool, scenarios_checked: int, valid: int, invalid: list<array{id: int, reason: string}>}
 	 */
 	public function validate_scenario_payloads( bool $dry_run = true ): array {
-		$invalid  = array();
-		$valid    = 0;
-		$records  = $this->scenarios->find_all_active( 500 );
+		$invalid = array();
+		$valid   = 0;
+		$records = $this->scenarios->find_all_active( 500 );
 
 		foreach ( $records as $record ) {
 			$scenario = ScenarioValue::from_array( $record->get_scenario_json() );

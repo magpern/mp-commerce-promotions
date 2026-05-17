@@ -958,7 +958,15 @@ final class DiagnosticsPage {
 			if ( ! $dry_run ) {
 				$this->intelligence_recovery->reset_forecast_cache();
 			}
-			$this->redirect_with_notice( 'success', 'intel_reset_forecast_done', array( 'promotions' => 1, 'codes' => 0, 'errors' => 0 ) );
+			$this->redirect_with_notice(
+				'success',
+				'intel_reset_forecast_done',
+				array(
+					'promotions' => 1,
+					'codes'      => 0,
+					'errors'     => 0,
+				)
+			);
 		}
 
 		if ( isset( $_POST[ self::INTEL_RECALC_METRICS_SUBMIT ] ) ) {
@@ -966,7 +974,15 @@ final class DiagnosticsPage {
 			if ( ! $dry_run ) {
 				$this->intelligence_recovery->recalculate_simulation_metrics();
 			}
-			$this->redirect_with_notice( 'success', 'intel_recalc_metrics_done', array( 'promotions' => 1, 'codes' => 0, 'errors' => 0 ) );
+			$this->redirect_with_notice(
+				'success',
+				'intel_recalc_metrics_done',
+				array(
+					'promotions' => 1,
+					'codes'      => 0,
+					'errors'     => 0,
+				)
+			);
 		}
 
 		if ( isset( $_POST[ self::INTEL_VALIDATE_SCENARIOS_SUBMIT ] ) ) {
@@ -1225,25 +1241,57 @@ final class DiagnosticsPage {
 		if ( isset( $_POST['mp_cp_rebuild_allocation_submit'] ) ) {
 			$this->verify_recovery_nonce( 'mp_cp_rebuild_allocation_nonce', 'mp_cp_rebuild_allocation' );
 			$result = $this->pricing_recovery->rebuild_allocation_summaries( $dry_run );
-			$this->redirect_with_notice( 'success', 'pricing_rebuild_done', array( 'promotions' => (int) ( $result['promotions_processed'] ?? 0 ), 'codes' => 0, 'errors' => 0 ) );
+			$this->redirect_with_notice(
+				'success',
+				'pricing_rebuild_done',
+				array(
+					'promotions' => (int) ( $result['promotions_processed'] ?? 0 ),
+					'codes'      => 0,
+					'errors'     => 0,
+				)
+			);
 		}
 
 		if ( isset( $_POST['mp_cp_normalize_tiers_submit'] ) ) {
 			$this->verify_recovery_nonce( 'mp_cp_normalize_tiers_nonce', 'mp_cp_normalize_tiers' );
 			$result = $this->pricing_recovery->normalize_invalid_priority_tiers( $dry_run );
-			$this->redirect_with_notice( 'success', 'pricing_tiers_done', array( 'promotions' => (int) ( $result['changed'] ?? 0 ), 'codes' => 0, 'errors' => 0 ) );
+			$this->redirect_with_notice(
+				'success',
+				'pricing_tiers_done',
+				array(
+					'promotions' => (int) ( $result['changed'] ?? 0 ),
+					'codes'      => 0,
+					'errors'     => 0,
+				)
+			);
 		}
 
 		if ( isset( $_POST['mp_cp_repair_coexistence_submit'] ) ) {
 			$this->verify_recovery_nonce( 'mp_cp_repair_coexistence_nonce', 'mp_cp_repair_coexistence' );
 			$result = $this->pricing_recovery->repair_malformed_coexistence_configs( $dry_run );
-			$this->redirect_with_notice( 'success', 'pricing_coexistence_done', array( 'promotions' => (int) ( $result['changed'] ?? 0 ), 'codes' => 0, 'errors' => 0 ) );
+			$this->redirect_with_notice(
+				'success',
+				'pricing_coexistence_done',
+				array(
+					'promotions' => (int) ( $result['changed'] ?? 0 ),
+					'codes'      => 0,
+					'errors'     => 0,
+				)
+			);
 		}
 
 		if ( isset( $_POST['mp_cp_recalc_profitability_submit'] ) ) {
 			$this->verify_recovery_nonce( 'mp_cp_recalc_profitability_nonce', 'mp_cp_recalc_profitability' );
 			$this->pricing_recovery->recalculate_profitability_metrics();
-			$this->redirect_with_notice( 'success', 'pricing_profitability_done', array( 'promotions' => 0, 'codes' => 0, 'errors' => 0 ) );
+			$this->redirect_with_notice(
+				'success',
+				'pricing_profitability_done',
+				array(
+					'promotions' => 0,
+					'codes'      => 0,
+					'errors'     => 0,
+				)
+			);
 		}
 
 		if ( isset( $_POST['mp_cp_validate_alloc_snapshots_submit'] ) ) {

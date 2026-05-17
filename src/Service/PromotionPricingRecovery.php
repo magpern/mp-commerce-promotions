@@ -124,28 +124,28 @@ final class PromotionPricingRecovery {
 				continue;
 			}
 			foreach ( $this->snapshots->find_latest_for_promotion( $pid, 5 ) as $snapshot ) {
-			$notes = $snapshot->get_notes();
-			if ( $notes === null || trim( $notes ) === '' ) {
-				++$valid;
-				continue;
-			}
-
-			$decoded = json_decode( $notes, true );
-			if ( ! is_array( $decoded ) || ! isset( $decoded['mp_cp_intel']['allocation_summary'] ) ) {
-				++$valid;
-				continue;
-			}
-
-			$summary = $decoded['mp_cp_intel']['allocation_summary'];
-			if ( ! is_array( $summary ) || ! isset( $summary['total_allocated'] ) ) {
-				$id = $snapshot->get_id();
-				if ( $id !== null ) {
-					$invalid[] = $id;
+				$notes = $snapshot->get_notes();
+				if ( $notes === null || trim( $notes ) === '' ) {
+					++$valid;
+					continue;
 				}
-				continue;
-			}
 
-			++$valid;
+				$decoded = json_decode( $notes, true );
+				if ( ! is_array( $decoded ) || ! isset( $decoded['mp_cp_intel']['allocation_summary'] ) ) {
+					++$valid;
+					continue;
+				}
+
+				$summary = $decoded['mp_cp_intel']['allocation_summary'];
+				if ( ! is_array( $summary ) || ! isset( $summary['total_allocated'] ) ) {
+					$id = $snapshot->get_id();
+					if ( $id !== null ) {
+						$invalid[] = $id;
+					}
+					continue;
+				}
+
+				++$valid;
 			}
 		}
 

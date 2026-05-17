@@ -224,7 +224,7 @@ final class SimpleRuleBuilder {
 				'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
 				'percentage' => $percentage,
 			);
-			$config = self::append_optional_action_scope( $config, $post, true );
+			$config     = self::append_optional_action_scope( $config, $post, true );
 			PercentageDiscountAction::from_config( $config );
 
 			return $config;

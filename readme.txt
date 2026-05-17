@@ -54,6 +54,7 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * Reports tab — redemption summaries and CSV export (5,000 row cap; no raw promotion codes)
 * Settings kill switch for cart discount application
 * Production hardening — performance profiler, safe mode, degraded storefront fallback, optional WP-Cron cleanup (off by default), telemetry retention, concurrency locks, compatibility confidence on Reports
+* Beta certification — BETA_READINESS docs, blocks compatibility investigation (not declared), extracted POT, CI PHPCS visibility (non-blocking)
 
 == Current MVP limitations ==
 

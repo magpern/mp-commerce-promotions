@@ -18,6 +18,7 @@ Commerce Promotions is suitable for **staged rollouts and merchant pilots**. It 
 - Opt-in uninstall data deletion
 - PHPUnit and WP-CLI smoke scripts for core workflows
 - Production hardening — profiler, safe mode, degraded storefront mode, concurrency locks, retention cleanup, `scripts/release-audit.sh`
+- Beta certification docs — [BETA_READINESS.md](BETA_READINESS.md), blocks investigation, browser QA matrix, extracted POT
 
 ## What is not production-certified
 
@@ -50,7 +51,7 @@ See **Reports → Compatibility status** or **Diagnostics → Compatibility stat
 - [ ] Block checkout QA and optional `cart_checkout_blocks` declaration
 - [ ] Merchant-facing documentation and SLA
 - [ ] Full i18n extraction and at least one locale
-- [ ] PHPCS/CI gating policy agreed
+- [ ] PHPCS gating enabled in CI (currently **informational only** — see [BETA_READINESS.md](BETA_READINESS.md))
 - [ ] Backup/restore runbook for opt-in uninstall deletion
 
 ## Required before WordPress.org marketplace

@@ -53,15 +53,15 @@ final class PromotionForecastEngine {
 		$promotions = $this->load_promotions( $promotion_ids );
 		$rows       = array();
 
-		$total_exposure          = 0.0;
-		$total_projected_volume  = 0;
-		$total_cooldown_blocks   = 0;
-		$total_orchestration     = 0;
-		$discount_samples        = array();
+		$total_exposure         = 0.0;
+		$total_projected_volume = 0;
+		$total_cooldown_blocks  = 0;
+		$total_orchestration    = 0;
+		$discount_samples       = array();
 
 		foreach ( $promotions as $promotion ) {
-			$row = $this->forecast_promotion( $promotion );
-			$rows[] = $row;
+			$row                     = $this->forecast_promotion( $promotion );
+			$rows[]                  = $row;
 			$total_exposure         += (float) ( $row['estimated_discount_exposure'] ?? 0 );
 			$total_projected_volume += (int) ( $row['projected_redemption_volume'] ?? 0 );
 			$total_cooldown_blocks  += (int) ( $row['projected_cooldown_blocks'] ?? 0 );
@@ -72,17 +72,17 @@ final class PromotionForecastEngine {
 		}
 
 		$summary = array(
-			'generated_at'                     => current_time( 'mysql' ),
-			'promotion_count'                  => count( $rows ),
-			'estimated_discount_exposure'      => round( $total_exposure, 2 ),
-			'projected_redemption_volume'    => $total_projected_volume,
-			'projected_cooldown_blocks'      => $total_cooldown_blocks,
+			'generated_at'                      => current_time( 'mysql' ),
+			'promotion_count'                   => count( $rows ),
+			'estimated_discount_exposure'       => round( $total_exposure, 2 ),
+			'projected_redemption_volume'       => $total_projected_volume,
+			'projected_cooldown_blocks'         => $total_cooldown_blocks,
 			'projected_orchestration_conflicts' => $total_orchestration,
-			'estimated_average_discount'     => $discount_samples !== array()
+			'estimated_average_discount'        => $discount_samples !== array()
 				? round( array_sum( $discount_samples ) / count( $discount_samples ), 2 )
 				: 0.0,
-			'promotions'                     => $rows,
-			'from_cache'                     => false,
+			'promotions'                        => $rows,
+			'from_cache'                        => false,
 		);
 
 		update_option( self::OPTION_CACHE, $summary, false );
@@ -117,7 +117,7 @@ final class PromotionForecastEngine {
 		$blocked_group      = (int) ( $telemetry['blocked_by_group_count'] ?? 0 );
 		$blocked_cooldown   = (int) ( $telemetry['blocked_by_cooldown_count'] ?? 0 );
 
-		$weekly_rate = max( 1, (int) ceil( $recorded / 4 ) );
+		$weekly_rate      = max( 1, (int) ceil( $recorded / 4 ) );
 		$projected_volume = $weekly_rate * 4;
 
 		$exposure = $avg * $projected_volume;
@@ -126,7 +126,7 @@ final class PromotionForecastEngine {
 		if ( $promotion->has_budget_cap() && $promotion->get_budget_amount() !== null ) {
 			$remaining = (float) $promotion->get_budget_amount() - $promotion->get_budget_spent();
 			if ( $avg > 0 && $remaining > 0 ) {
-				$days = (int) ceil( $remaining / max( 0.01, $avg * max( 1, $weekly_rate / 7 ) ) );
+				$days                 = (int) ceil( $remaining / max( 0.01, $avg * max( 1, $weekly_rate / 7 ) ) );
 				$budget_exhaustion_at = gmdate( 'Y-m-d H:i:s', strtotime( '+' . $days . ' days' ) );
 			} elseif ( $remaining <= 0 ) {
 				$budget_exhaustion_at = current_time( 'mysql' );
@@ -134,15 +134,15 @@ final class PromotionForecastEngine {
 		}
 
 		return array(
-			'promotion_id'                    => $id,
-			'name'                            => $promotion->get_name(),
-			'estimated_discount_exposure'     => round( $exposure, 2 ),
-			'projected_budget_exhaustion_at'  => $budget_exhaustion_at,
-			'projected_redemption_volume'     => $projected_volume,
-			'projected_cooldown_blocks'       => $blocked_cooldown,
+			'promotion_id'                      => $id,
+			'name'                              => $promotion->get_name(),
+			'estimated_discount_exposure'       => round( $exposure, 2 ),
+			'projected_budget_exhaustion_at'    => $budget_exhaustion_at,
+			'projected_redemption_volume'       => $projected_volume,
+			'projected_cooldown_blocks'         => $blocked_cooldown,
 			'projected_orchestration_conflicts' => $blocked_group > 0 ? 1 : 0,
-			'estimated_avg_discount'          => round( $avg, 2 ),
-			'telemetry_selected'              => $selected_telemetry,
+			'estimated_avg_discount'            => round( $avg, 2 ),
+			'telemetry_selected'                => $selected_telemetry,
 		);
 	}
 

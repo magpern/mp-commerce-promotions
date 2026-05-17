@@ -42,6 +42,10 @@ jobs:
       - name: PHPUnit unit tests
         run: composer run test
 
+      - name: PHPCS (informational, non-blocking)
+        continue-on-error: true
+        run: composer run lint:phpcs
+
       - name: Build release zip
         run: bash scripts/build-zip.sh
 
@@ -55,4 +59,4 @@ jobs:
           fi
           echo "OK: ${ZIP_PATH}"
 
-      # PHPCS baseline is not clean; tracked locally but not gating CI yet (see docs/DEVELOPMENT.md).
+      # PHPCS is informational only (continue-on-error). Not gating merges yet — see docs/BETA_READINESS.md.

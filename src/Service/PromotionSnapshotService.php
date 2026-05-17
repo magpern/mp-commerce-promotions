@@ -125,7 +125,7 @@ final class PromotionSnapshotService {
 			throw new RuntimeException( 'Promotion not found for snapshot.' );
 		}
 
-		$data = $snapshot->get_snapshot_data();
+		$data       = $snapshot->get_snapshot_data();
 		$data['id'] = $promotion_id;
 
 		$restored = Promotion::from_array( $data );
@@ -180,13 +180,13 @@ final class PromotionSnapshotService {
 		?string $simulation_label = null
 	): ?string {
 		$meta = array(
-			'lifecycle_phase'   => PromotionLifecycle::primary_phase( $promotion ),
-			'campaign_label'    => $promotion->get_campaign_label(),
-			'orchestration'     => $promotion->get_orchestration_group(),
-			'simulation_label'  => $simulation_label,
-			'priority_tier'     => $promotion->get_priority_tier(),
-			'coupon_behavior'   => $promotion->get_coupon_behavior(),
-			'allocation_mode'   => $promotion->get_allocation_mode(),
+			'lifecycle_phase'  => PromotionLifecycle::primary_phase( $promotion ),
+			'campaign_label'   => $promotion->get_campaign_label(),
+			'orchestration'    => $promotion->get_orchestration_group(),
+			'simulation_label' => $simulation_label,
+			'priority_tier'    => $promotion->get_priority_tier(),
+			'coupon_behavior'  => $promotion->get_coupon_behavior(),
+			'allocation_mode'  => $promotion->get_allocation_mode(),
 		);
 
 		$decoded = array();
