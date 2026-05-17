@@ -627,6 +627,16 @@ final class DiagnosticsPage {
 				return sprintf( __( 'Allocation summary rebuild processed %d promotion(s).', 'mp-commerce-promotions' ), $promotions );
 			case 'pricing_tiers_done':
 				return sprintf( __( 'Normalized %d invalid priority tier(s).', 'mp-commerce-promotions' ), $promotions );
+			case 'pricing_coexistence_done':
+				return sprintf( __( 'Repaired %d malformed coupon coexistence config(s).', 'mp-commerce-promotions' ), $promotions );
+			case 'pricing_profitability_done':
+				return __( 'Profitability metric cache recalculated.', 'mp-commerce-promotions' );
+			case 'pricing_snapshots_done':
+				return sprintf(
+					__( 'Allocation snapshot validation: %1$d valid, %2$d invalid.', 'mp-commerce-promotions' ),
+					$promotions,
+					$codes
+				);
 			case 'repair_done':
 				return sprintf(
 					/* translators: 1: promotions repaired count, 2: codes repaired count */
@@ -1119,6 +1129,32 @@ final class DiagnosticsPage {
 			$result = $this->pricing_recovery->normalize_invalid_priority_tiers( $dry_run );
 			$this->redirect_with_notice( 'success', 'pricing_tiers_done', array( 'promotions' => (int) ( $result['changed'] ?? 0 ), 'codes' => 0, 'errors' => 0 ) );
 		}
+
+		if ( isset( $_POST['mp_cp_repair_coexistence_submit'] ) ) {
+			$this->verify_recovery_nonce( 'mp_cp_repair_coexistence_nonce', 'mp_cp_repair_coexistence' );
+			$result = $this->pricing_recovery->repair_malformed_coexistence_configs( $dry_run );
+			$this->redirect_with_notice( 'success', 'pricing_coexistence_done', array( 'promotions' => (int) ( $result['changed'] ?? 0 ), 'codes' => 0, 'errors' => 0 ) );
+		}
+
+		if ( isset( $_POST['mp_cp_recalc_profitability_submit'] ) ) {
+			$this->verify_recovery_nonce( 'mp_cp_recalc_profitability_nonce', 'mp_cp_recalc_profitability' );
+			$this->pricing_recovery->recalculate_profitability_metrics();
+			$this->redirect_with_notice( 'success', 'pricing_profitability_done', array( 'promotions' => 0, 'codes' => 0, 'errors' => 0 ) );
+		}
+
+		if ( isset( $_POST['mp_cp_validate_alloc_snapshots_submit'] ) ) {
+			$this->verify_recovery_nonce( 'mp_cp_validate_alloc_snapshots_nonce', 'mp_cp_validate_alloc_snapshots' );
+			$result = $this->pricing_recovery->validate_allocation_snapshots();
+			$this->redirect_with_notice(
+				'success',
+				'pricing_snapshots_done',
+				array(
+					'promotions' => (int) ( $result['valid'] ?? 0 ),
+					'codes'      => (int) ( $result['invalid'] ?? 0 ),
+					'errors'     => 0,
+				)
+			);
+		}
 	}
 
 	private function render_pricing_recovery_section(): void {
@@ -1129,7 +1165,10 @@ final class DiagnosticsPage {
 		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Pricing engine recovery', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p class="description">' . esc_html__( 'Rebuild allocation summaries and normalize priority tiers. Dry-run unless apply is checked.', 'mp-commerce-promotions' ) . '</p>';
 		$this->render_recovery_form( 'mp_cp_rebuild_allocation_submit', 'mp_cp_rebuild_allocation', 'mp_cp_rebuild_allocation_nonce', __( 'Rebuild allocation summaries', 'mp-commerce-promotions' ), 'mp-cp-pricing-rebuild' );
+		$this->render_recovery_form( 'mp_cp_repair_coexistence_submit', 'mp_cp_repair_coexistence', 'mp_cp_repair_coexistence_nonce', __( 'Repair malformed coexistence configs', 'mp-commerce-promotions' ), 'mp-cp-pricing-coexistence' );
 		$this->render_recovery_form( 'mp_cp_normalize_tiers_submit', 'mp_cp_normalize_tiers', 'mp_cp_normalize_tiers_nonce', __( 'Normalize invalid priority tiers', 'mp-commerce-promotions' ), 'mp-cp-pricing-tiers' );
+		$this->render_recovery_form( 'mp_cp_recalc_profitability_submit', 'mp_cp_recalc_profitability', 'mp_cp_recalc_profitability_nonce', __( 'Recalculate profitability metrics', 'mp-commerce-promotions' ), 'mp-cp-pricing-profitability' );
+		$this->render_recovery_form( 'mp_cp_validate_alloc_snapshots_submit', 'mp_cp_validate_alloc_snapshots', 'mp_cp_validate_alloc_snapshots_nonce', __( 'Validate allocation snapshots', 'mp-commerce-promotions' ), 'mp-cp-pricing-snapshots' );
 	}
 
 	private function render_recommendations_section(): void {
