@@ -38,6 +38,9 @@ final class PromotionFactory {
 			array(),
 			array(),
 			array(),
+			null,
+			null,
+			null,
 			$created_by,
 			null,
 			null
@@ -71,6 +74,9 @@ final class PromotionFactory {
 			$source->get_excluded_promotion_ids(),
 			$source->get_excluded_product_ids(),
 			$source->get_excluded_category_ids(),
+			$source->get_campaign_label(),
+			$source->get_internal_notes(),
+			$source->get_admin_color(),
 			$created_by,
 			null,
 			null

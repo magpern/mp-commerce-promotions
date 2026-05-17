@@ -198,4 +198,100 @@ final class PromotionService {
 
 		return $saved;
 	}
+
+	/**
+	 * Archive active promotions whose ends_at is in the past.
+	 *
+	 * @return array{changed: list<array{id: int, name: string}>, skipped: list<array{id: int, reason: string}>, errors: list<array{id: int, message: string}>}
+	 */
+	public function archive_expired_active_promotions( ?int $actor_user_id = null ): array {
+		$result = array(
+			'changed' => array(),
+			'skipped' => array(),
+			'errors'  => array(),
+		);
+
+		$candidates = $this->promotions->find_expired_active( 500 );
+		foreach ( $candidates as $promotion ) {
+			$id = $promotion->get_id();
+			if ( $id === null || $id <= 0 ) {
+				continue;
+			}
+
+			if ( $promotion->get_status() !== PromotionStatus::ACTIVE ) {
+				$result['skipped'][] = array(
+					'id'     => $id,
+					'reason' => 'not_active',
+				);
+				continue;
+			}
+
+			if ( ! self::is_allowed_status_transition( PromotionStatus::ACTIVE, PromotionStatus::ARCHIVED ) ) {
+				$result['skipped'][] = array(
+					'id'     => $id,
+					'reason' => 'transition_not_allowed',
+				);
+				continue;
+			}
+
+			try {
+				$this->change_status( $promotion, PromotionStatus::ARCHIVED, $actor_user_id );
+				$result['changed'][] = array(
+					'id'   => $id,
+					'name' => $promotion->get_name(),
+				);
+			} catch ( RuntimeException $e ) {
+				$result['errors'][] = array(
+					'id'      => $id,
+					'message' => $e->getMessage(),
+				);
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Archive draft promotions older than N days (by created_at).
+	 *
+	 * @return array{changed: list<array{id: int, name: string}>, skipped: list<array{id: int, reason: string}>, errors: list<array{id: int, message: string}>}
+	 */
+	public function archive_old_drafts( int $days, ?int $actor_user_id = null ): array {
+		$result = array(
+			'changed' => array(),
+			'skipped' => array(),
+			'errors'  => array(),
+		);
+
+		$candidates = $this->promotions->find_old_drafts( $days, 500 );
+		foreach ( $candidates as $promotion ) {
+			$id = $promotion->get_id();
+			if ( $id === null || $id <= 0 ) {
+				continue;
+			}
+
+			if ( $promotion->get_status() !== PromotionStatus::DRAFT ) {
+				$result['skipped'][] = array(
+					'id'     => $id,
+					'reason' => 'not_draft',
+				);
+				continue;
+			}
+
+			try {
+				$this->change_status( $promotion, PromotionStatus::ARCHIVED, $actor_user_id );
+				$result['changed'][] = array(
+					'id'   => $id,
+					'name' => $promotion->get_name(),
+				);
+			} catch ( RuntimeException $e ) {
+				$result['errors'][] = array(
+					'id'      => $id,
+					'message' => $e->getMessage(),
+				);
+			}
+		}
+
+		return $result;
+	}
 }

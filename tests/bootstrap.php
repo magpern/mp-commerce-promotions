@@ -70,6 +70,21 @@ if ( ! function_exists( 'sanitize_key' ) ) {
 	}
 }
 
+if ( ! function_exists( 'sanitize_textarea_field' ) ) {
+	/**
+	 * @param string $str
+	 * @return string
+	 */
+	function sanitize_textarea_field( $str ) {
+		if ( ! is_scalar( $str ) ) {
+			return '';
+		}
+		$str = (string) $str;
+		$str = wp_strip_all_tags( $str );
+		return trim( $str );
+	}
+}
+
 if ( ! function_exists( 'sanitize_text_field' ) ) {
 	/**
 	 * @param string $str

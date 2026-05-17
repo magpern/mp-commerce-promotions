@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.8.0';
+	public const SCHEMA_VERSION = '1.9.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -68,6 +68,9 @@ max_applications int(10) unsigned NULL,
 excluded_promotion_ids longtext NULL,
 excluded_product_ids longtext NULL,
 excluded_category_ids longtext NULL,
+campaign_label varchar(191) NULL,
+internal_notes longtext NULL,
+admin_color varchar(20) NULL,
 created_by bigint(20) unsigned NULL,
 created_at datetime NOT NULL default CURRENT_TIMESTAMP,
 updated_at datetime NOT NULL default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

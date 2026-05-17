@@ -133,6 +133,9 @@ final class PromotionRepository {
 			'excluded_promotion_ids' => $this->encode_json( $promotion->get_excluded_promotion_ids() ),
 			'excluded_product_ids'   => $this->encode_json( $promotion->get_excluded_product_ids() ),
 			'excluded_category_ids'  => $this->encode_json( $promotion->get_excluded_category_ids() ),
+			'campaign_label'         => $promotion->get_campaign_label(),
+			'internal_notes'         => $promotion->get_internal_notes(),
+			'admin_color'            => $promotion->get_admin_color(),
 			'created_by'             => $promotion->get_created_by(),
 			'created_at'             => $promotion->get_created_at() ?? $now,
 			'updated_at'             => $promotion->get_updated_at() ?? $now,
@@ -155,6 +158,9 @@ final class PromotionRepository {
 			'%s',
 			'%d',
 			'%d',
+			'%s',
+			'%s',
+			'%s',
 			'%s',
 			'%s',
 			'%s',
@@ -209,6 +215,9 @@ final class PromotionRepository {
 			'excluded_promotion_ids' => $this->encode_json( $promotion->get_excluded_promotion_ids() ),
 			'excluded_product_ids'   => $this->encode_json( $promotion->get_excluded_product_ids() ),
 			'excluded_category_ids'  => $this->encode_json( $promotion->get_excluded_category_ids() ),
+			'campaign_label'         => $promotion->get_campaign_label(),
+			'internal_notes'         => $promotion->get_internal_notes(),
+			'admin_color'            => $promotion->get_admin_color(),
 			'created_by'             => $promotion->get_created_by(),
 			'updated_at'             => $now,
 		);
@@ -230,6 +239,9 @@ final class PromotionRepository {
 			'%s',
 			'%d',
 			'%d',
+			'%s',
+			'%s',
+			'%s',
 			'%s',
 			'%s',
 			'%s',
@@ -293,6 +305,7 @@ final class PromotionRepository {
 	 * @param array{
 	 *     status?: string|null,
 	 *     search?: string|null,
+	 *     campaign_label?: string|null,
 	 *     limit?: int,
 	 *     offset?: int
 	 * } $args
@@ -322,6 +335,7 @@ final class PromotionRepository {
 	 * @param array{
 	 *     status?: string|null,
 	 *     search?: string|null,
+	 *     campaign_label?: string|null,
 	 *     limit?: int,
 	 *     offset?: int
 	 * } $args
@@ -341,6 +355,94 @@ final class PromotionRepository {
 	}
 
 	/**
+	 * @return list<string>
+	 */
+	public function find_distinct_campaign_labels( int $limit = 50 ): array {
+		$limit = max( 1, min( 100, $limit ) );
+		$table = $this->promotions_table();
+
+		$sql = "SELECT DISTINCT campaign_label FROM {$table}
+			WHERE campaign_label IS NOT NULL AND campaign_label <> ''
+			ORDER BY campaign_label ASC
+			LIMIT %d";
+
+		$rows = DbQuery::get_results( $this->wpdb, $sql, array( $limit ) );
+
+		$labels = array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$label = isset( $row['campaign_label'] ) ? trim( (string) $row['campaign_label'] ) : '';
+			if ( $label !== '' ) {
+				$labels[] = $label;
+			}
+		}
+
+		return $labels;
+	}
+
+	/**
+	 * Active promotions with ends_at in the past (site timezone).
+	 *
+	 * @return list<Promotion>
+	 */
+	public function find_expired_active( int $limit = 500 ): array {
+		$limit = max( 1, min( 500, $limit ) );
+		$table = $this->promotions_table();
+		$now   = current_time( 'mysql' );
+
+		$sql = "SELECT * FROM {$table}
+			WHERE status = %s
+			AND ends_at IS NOT NULL
+			AND ends_at < %s
+			ORDER BY ends_at ASC, id ASC
+			LIMIT %d";
+
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			$sql,
+			array(
+				PromotionStatus::ACTIVE,
+				$now,
+				$limit,
+			)
+		);
+
+		return $this->rows_to_promotions( $rows );
+	}
+
+	/**
+	 * Draft promotions older than N days (by created_at).
+	 *
+	 * @return list<Promotion>
+	 */
+	public function find_old_drafts( int $days, int $limit = 500 ): array {
+		$days  = max( 1, min( 3650, $days ) );
+		$limit = max( 1, min( 500, $limit ) );
+		$table = $this->promotions_table();
+		$cutoff = gmdate( 'Y-m-d H:i:s', strtotime( '-' . $days . ' days', strtotime( current_time( 'mysql' ) ) ) );
+
+		$sql = "SELECT * FROM {$table}
+			WHERE status = %s
+			AND created_at < %s
+			ORDER BY created_at ASC, id ASC
+			LIMIT %d";
+
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			$sql,
+			array(
+				PromotionStatus::DRAFT,
+				$cutoff,
+				$limit,
+			)
+		);
+
+		return $this->rows_to_promotions( $rows );
+	}
+
+	/**
 	 * Validated promotions table name from Schema.
 	 */
 	private function promotions_table(): string {
@@ -351,6 +453,7 @@ final class PromotionRepository {
 	 * @param array{
 	 *     status?: string|null,
 	 *     search?: string|null,
+	 *     campaign_label?: string|null,
 	 *     limit?: int,
 	 *     offset?: int
 	 * } $args
@@ -369,10 +472,17 @@ final class PromotionRepository {
 			$params[]  = $status;
 		}
 
+		$campaign_label = isset( $args['campaign_label'] ) ? trim( (string) $args['campaign_label'] ) : '';
+		if ( $campaign_label !== '' ) {
+			$clauses[] = 'campaign_label = %s';
+			$params[]  = Promotion::normalize_campaign_label( $campaign_label );
+		}
+
 		$search = isset( $args['search'] ) ? trim( (string) $args['search'] ) : '';
 		if ( $search !== '' ) {
 			$like      = '%' . $this->wpdb->esc_like( $search ) . '%';
-			$clauses[] = '( name LIKE %s OR uuid LIKE %s )';
+			$clauses[] = '( name LIKE %s OR uuid LIKE %s OR campaign_label LIKE %s )';
+			$params[]  = $like;
 			$params[]  = $like;
 			$params[]  = $like;
 		}

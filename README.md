@@ -17,6 +17,7 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 - [docs/manual-checkout-integrity-test.md](docs/manual-checkout-integrity-test.md) — idempotency, reversal, free gift sync
 - [docs/manual-stacking-test.md](docs/manual-stacking-test.md) — stackable fees, caps, exclusions, and max applications
 - [docs/manual-conflict-analysis-test.md](docs/manual-conflict-analysis-test.md) — conflict heuristics, planner explainability, admin debugging workflow
+- [docs/manual-campaign-operations-test.md](docs/manual-campaign-operations-test.md) — campaign labels, colors, notes, archive hygiene
 - [docs/manual-cheapest-item-test.md](docs/manual-cheapest-item-test.md) — cheapest item / BOGO fee-offset storefront verification
 - [docs/manual-free-gift-test.md](docs/manual-free-gift-test.md) — free gift product cart line storefront verification
 - [docs/manual-redemption-limits-test.md](docs/manual-redemption-limits-test.md) — usage limits, per-customer caps, dates, cart quantity conditions
@@ -54,7 +55,7 @@ Provide a structured foundation for commerce promotions using:
 
 ## Database
 
-- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.8.0`** (see `Schema::SCHEMA_VERSION`).
+- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.9.0`** (see `Schema::SCHEMA_VERSION`).
 - **Tables** (after activation / migration), using the site table prefix (e.g. `wp_`):
   - `{prefix}mp_cp_promotions` — promotion definitions (JSON-like rules in `LONGTEXT` columns).
   - `{prefix}mp_cp_redemptions` — usage against orders; **unique** `(order_id, promotion_id)` as **`order_promotion_unique`** (MySQL allows multiple `NULL` `order_id` rows; real checkouts use non-null `order_id`). Migration to **1.1.0** **refuses** `dbDelta` / version bump if duplicate non-null `(order_id, promotion_id)` pairs already exist (see `MigrationRunner`).

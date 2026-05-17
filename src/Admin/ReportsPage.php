@@ -25,9 +25,12 @@ final class ReportsPage {
 
 	private PromotionPicker $picker;
 
+	private PromotionRepository $promotions;
+
 	public function __construct( PromotionReports $reports, PromotionRepository $promotions ) {
-		$this->reports = $reports;
-		$this->picker  = new PromotionPicker( $promotions );
+		$this->reports    = $reports;
+		$this->promotions = $promotions;
+		$this->picker     = new PromotionPicker( $promotions );
 	}
 
 	public function render(): void {
@@ -99,7 +102,8 @@ final class ReportsPage {
 				'date_from'    => isset( $source['date_from'] ) ? wp_unslash( (string) $source['date_from'] ) : null,
 				'date_to'      => isset( $source['date_to'] ) ? wp_unslash( (string) $source['date_to'] ) : null,
 				'promotion_id' => isset( $source['promotion_id'] ) ? wp_unslash( (string) $source['promotion_id'] ) : null,
-				'status'       => isset( $source['status'] ) ? wp_unslash( (string) $source['status'] ) : null,
+				'status'         => isset( $source['status'] ) ? wp_unslash( (string) $source['status'] ) : null,
+				'campaign_label' => isset( $source['campaign_label'] ) ? wp_unslash( (string) $source['campaign_label'] ) : null,
 			)
 		);
 	}
@@ -139,6 +143,19 @@ final class ReportsPage {
 			)
 		);
 		echo '</td></tr>';
+
+		$labels = $this->promotions->find_distinct_campaign_labels( 50 );
+		if ( $labels !== array() ) {
+			echo '<tr><th scope="row"><label for="mp_cp_reports_campaign_label">' . esc_html__( 'Campaign label', 'mp-commerce-promotions' ) . '</label></th><td>';
+			echo '<select id="mp_cp_reports_campaign_label" name="campaign_label">';
+			echo '<option value="">' . esc_html__( 'All campaigns', 'mp-commerce-promotions' ) . '</option>';
+			foreach ( $labels as $label ) {
+				echo '<option value="' . esc_attr( $label ) . '"';
+				selected( $filters['campaign_label'] ?? '', $label );
+				echo '>' . esc_html( $label ) . '</option>';
+			}
+			echo '</select></td></tr>';
+		}
 
 		echo '<tr><th scope="row"><label for="mp_cp_reports_status">' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<select id="mp_cp_reports_status" name="status">';
@@ -208,6 +225,7 @@ final class ReportsPage {
 		echo '<table class="widefat striped"><thead><tr>';
 		echo '<th scope="col">' . esc_html__( 'ID', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Name', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Campaign', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Recorded', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Reversed', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Recorded discount', 'mp-commerce-promotions' ) . '</th>';
@@ -221,6 +239,8 @@ final class ReportsPage {
 			echo '<tr>';
 			echo '<td>' . esc_html( (string) $row['promotion_id'] ) . '</td>';
 			echo '<td>' . esc_html( $row['name'] ) . '</td>';
+			$campaign = isset( $row['campaign_label'] ) ? (string) $row['campaign_label'] : '';
+			echo '<td>' . esc_html( $campaign !== '' ? $campaign : '—' ) . '</td>';
 			echo '<td>' . esc_html( (string) $row['recorded_count'] ) . '</td>';
 			echo '<td>' . esc_html( (string) $row['reversed_count'] ) . '</td>';
 			echo '<td>' . esc_html( $discount ) . '</td>';
@@ -254,6 +274,9 @@ final class ReportsPage {
 		}
 		if ( $filters['status'] !== null ) {
 			echo '<input type="hidden" name="status" value="' . esc_attr( $filters['status'] ) . '" />';
+		}
+		if ( ! empty( $filters['campaign_label'] ) ) {
+			echo '<input type="hidden" name="campaign_label" value="' . esc_attr( (string) $filters['campaign_label'] ) . '" />';
 		}
 
 		echo '<p class="description">';

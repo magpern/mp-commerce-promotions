@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Domain;
 
 use InvalidArgumentException;
+use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Infrastructure\Database\DbQuery;
 use MP\CommercePromotions\Infrastructure\Database\Schema;
 use MP\CommercePromotions\Infrastructure\Database\TableName;
@@ -395,13 +396,14 @@ final class RedemptionRepository {
 
 		$sql = "SELECT r.promotion_id,
 			p.name AS promotion_name,
+			p.campaign_label AS campaign_label,
 			SUM(CASE WHEN r.status = %s THEN 1 ELSE 0 END) AS recorded_count,
 			SUM(CASE WHEN r.status = %s THEN 1 ELSE 0 END) AS reversed_count,
 			COALESCE(SUM(CASE WHEN r.status = %s THEN r.discount_amount ELSE 0 END), 0) AS total_discount_amount
 			FROM {$r_table} r
 			INNER JOIN {$p_table} p ON p.id = r.promotion_id
 			{$where_sql}
-			GROUP BY r.promotion_id, p.name
+			GROUP BY r.promotion_id, p.name, p.campaign_label
 			ORDER BY recorded_count DESC, r.promotion_id ASC
 			LIMIT %d";
 
@@ -428,6 +430,7 @@ final class RedemptionRepository {
 			$out[] = array(
 				'promotion_id'          => $promotion_id,
 				'name'                  => isset( $row['promotion_name'] ) ? (string) $row['promotion_name'] : '',
+				'campaign_label'        => isset( $row['campaign_label'] ) ? (string) $row['campaign_label'] : '',
 				'recorded_count'        => isset( $row['recorded_count'] ) ? (int) $row['recorded_count'] : 0,
 				'reversed_count'        => isset( $row['reversed_count'] ) ? (int) $row['reversed_count'] : 0,
 				'total_discount_amount' => isset( $row['total_discount_amount'] ) ? (float) $row['total_discount_amount'] : 0.0,
@@ -543,6 +546,16 @@ final class RedemptionRepository {
 		if ( is_string( $date_to ) && $date_to !== '' ) {
 			$parts[]  = "{$prefix}redeemed_at <= %s";
 			$params[] = $date_to . ' 23:59:59';
+		}
+
+		$campaign_label = isset( $filters['campaign_label'] ) ? trim( (string) $filters['campaign_label'] ) : '';
+		if ( $campaign_label !== '' ) {
+			$normalized = Promotion::normalize_campaign_label( $campaign_label );
+			if ( $normalized !== null ) {
+				$p_table  = TableName::assert_valid( Schema::promotions_table( $this->wpdb ) );
+				$parts[]  = "{$prefix}promotion_id IN (SELECT id FROM {$p_table} WHERE campaign_label = %s)";
+				$params[] = $normalized;
+			}
 		}
 
 		return array(

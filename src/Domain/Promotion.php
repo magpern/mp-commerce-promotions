@@ -56,6 +56,12 @@ final class Promotion {
 	/** @var list<int> */
 	private array $excluded_category_ids;
 
+	private ?string $campaign_label;
+
+	private ?string $internal_notes;
+
+	private ?string $admin_color;
+
 	private ?int $created_by;
 
 	private ?string $created_at;
@@ -83,6 +89,9 @@ final class Promotion {
 		array $excluded_promotion_ids,
 		array $excluded_product_ids,
 		array $excluded_category_ids,
+		?string $campaign_label,
+		?string $internal_notes,
+		?string $admin_color,
 		?int $created_by,
 		?string $created_at,
 		?string $updated_at
@@ -122,6 +131,9 @@ final class Promotion {
 		$excluded_promotion_ids = self::normalize_excluded_promotion_ids( $excluded_promotion_ids, $id );
 		$excluded_product_ids   = self::normalize_positive_id_list( $excluded_product_ids );
 		$excluded_category_ids  = self::normalize_positive_id_list( $excluded_category_ids );
+		$campaign_label         = self::normalize_campaign_label( $campaign_label );
+		$internal_notes         = self::normalize_internal_notes( $internal_notes );
+		$admin_color            = self::normalize_admin_color( $admin_color );
 
 		$this->id           = $id;
 		$this->uuid         = $uuid;
@@ -143,6 +155,9 @@ final class Promotion {
 		$this->excluded_promotion_ids = $excluded_promotion_ids;
 		$this->excluded_product_ids   = $excluded_product_ids;
 		$this->excluded_category_ids  = $excluded_category_ids;
+		$this->campaign_label         = $campaign_label;
+		$this->internal_notes         = $internal_notes;
+		$this->admin_color            = $admin_color;
 		$this->created_by             = $created_by;
 		$this->created_at   = $created_at;
 		$this->updated_at   = $updated_at;
@@ -215,6 +230,9 @@ final class Promotion {
 			$excluded_raw,
 			$excluded_products_raw,
 			$excluded_categories_raw,
+			self::normalize_campaign_label( self::optional_string( $data['campaign_label'] ?? null ) ),
+			self::normalize_internal_notes( self::optional_string( $data['internal_notes'] ?? null ) ),
+			self::normalize_admin_color( self::optional_string( $data['admin_color'] ?? null ) ),
 			$created_by,
 			self::optional_string( $data['created_at'] ?? null ),
 			self::optional_string( $data['updated_at'] ?? null )
@@ -246,6 +264,9 @@ final class Promotion {
 			'excluded_promotion_ids' => $this->excluded_promotion_ids,
 			'excluded_product_ids'   => $this->excluded_product_ids,
 			'excluded_category_ids'  => $this->excluded_category_ids,
+			'campaign_label'         => $this->campaign_label,
+			'internal_notes'         => $this->internal_notes,
+			'admin_color'            => $this->admin_color,
 			'created_by'             => $this->created_by,
 			'created_at'   => $this->created_at,
 			'updated_at'   => $this->updated_at,
@@ -350,6 +371,18 @@ final class Promotion {
 		return $this->excluded_category_ids;
 	}
 
+	public function get_campaign_label(): ?string {
+		return $this->campaign_label;
+	}
+
+	public function get_internal_notes(): ?string {
+		return $this->internal_notes;
+	}
+
+	public function get_admin_color(): ?string {
+		return $this->admin_color;
+	}
+
 	public function get_created_by(): ?int {
 		return $this->created_by;
 	}
@@ -384,6 +417,9 @@ final class Promotion {
 			$this->excluded_promotion_ids,
 			$this->excluded_product_ids,
 			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -412,6 +448,9 @@ final class Promotion {
 			$this->excluded_promotion_ids,
 			$this->excluded_product_ids,
 			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -440,6 +479,9 @@ final class Promotion {
 			$this->excluded_promotion_ids,
 			$this->excluded_product_ids,
 			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -468,6 +510,9 @@ final class Promotion {
 			$this->excluded_promotion_ids,
 			$this->excluded_product_ids,
 			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -496,6 +541,9 @@ final class Promotion {
 			$this->excluded_promotion_ids,
 			$this->excluded_product_ids,
 			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -528,6 +576,9 @@ final class Promotion {
 			$this->excluded_promotion_ids,
 			$this->excluded_product_ids,
 			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -556,6 +607,9 @@ final class Promotion {
 			$this->excluded_promotion_ids,
 			$this->excluded_product_ids,
 			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -589,6 +643,9 @@ final class Promotion {
 			$this->excluded_promotion_ids,
 			$this->excluded_product_ids,
 			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -620,6 +677,9 @@ final class Promotion {
 			$ids,
 			$this->excluded_product_ids,
 			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -652,6 +712,40 @@ final class Promotion {
 			$this->excluded_promotion_ids,
 			self::normalize_positive_id_list( $product_ids ),
 			self::normalize_positive_id_list( $category_ids ),
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	public function with_campaign_metadata( ?string $label, ?string $notes, ?string $color ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->customer_usage_limit,
+			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
+			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
+			self::normalize_campaign_label( $label ),
+			self::normalize_internal_notes( $notes ),
+			self::normalize_admin_color( $color ),
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -684,10 +778,62 @@ final class Promotion {
 			$this->excluded_promotion_ids,
 			$this->excluded_product_ids,
 			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
 		);
+	}
+
+	public static function normalize_campaign_label( ?string $label ): ?string {
+		if ( $label === null ) {
+			return null;
+		}
+
+		$label = sanitize_text_field( $label );
+		if ( $label === '' ) {
+			return null;
+		}
+
+		if ( function_exists( 'mb_substr' ) ) {
+			$label = mb_substr( $label, 0, 191 );
+		} elseif ( strlen( $label ) > 191 ) {
+			$label = substr( $label, 0, 191 );
+		}
+
+		return $label;
+	}
+
+	public static function normalize_internal_notes( ?string $notes ): ?string {
+		if ( $notes === null ) {
+			return null;
+		}
+
+		$notes = sanitize_textarea_field( $notes );
+		if ( $notes === '' ) {
+			return null;
+		}
+
+		return $notes;
+	}
+
+	public static function normalize_admin_color( ?string $color ): ?string {
+		if ( $color === null ) {
+			return null;
+		}
+
+		$color = trim( $color );
+		if ( $color === '' ) {
+			return null;
+		}
+
+		if ( ! preg_match( '/^#[0-9a-fA-F]{6}$/', $color ) ) {
+			throw new InvalidArgumentException( 'admin_color must be empty or a 6-digit hex color like #336699.' );
+		}
+
+		return strtolower( $color );
 	}
 
 	/**

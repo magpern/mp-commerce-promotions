@@ -15,6 +15,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Campaign operations (schema 1.9.0)** — campaign_label/internal_notes/admin_color, admin UI, list/report filters, Diagnostics archive hygiene, smoke/docs
 - **Conflict analysis and planner explainability** — `PromotionConflictAnalyzer`, `PromotionPlanExplainer`, admin preview + list indicators, validator heuristics, PHPUnit + `scripts/conflict-analysis-smoke.php`, `docs/manual-conflict-analysis-test.md`
 - **Promotion templates** — `PromotionTemplate` presets, admin apply flow, smoke/docs (no new engine types)
 - **Scoped discount calculations** — `EligibleCartScope`, eligible subtotal conditions, scoped percentage/fixed previews, cheapest item refactor, smoke/docs

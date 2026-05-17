@@ -1220,6 +1220,20 @@ final class PromotionEditPage {
 			exit;
 		}
 
+		$campaign_meta = $this->parse_campaign_metadata_from_post();
+		if ( $campaign_meta === null ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_campaign_metadata',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
+			exit;
+		}
+
 		try {
 			$updated = $promotion
 				->with_name( $name )
@@ -1231,6 +1245,11 @@ final class PromotionEditPage {
 				->with_application_rules( $application_mode, $stop_processing, $max_apps )
 				->with_excluded_promotion_ids( $excluded_ids )
 				->with_excluded_product_targeting( $excluded_products, $excluded_categories )
+				->with_campaign_metadata(
+					$campaign_meta['campaign_label'],
+					$campaign_meta['internal_notes'],
+					$campaign_meta['admin_color']
+				)
 				->with_rules( $conditions, $actions, $restrictions );
 
 			$this->promotion_service->update_promotion( $updated, (int) get_current_user_id() );
@@ -1239,7 +1258,7 @@ final class PromotionEditPage {
 				add_query_arg(
 					array(
 						'promotion'   => (string) $pid,
-						'mp_cp_error' => 'invalid_excluded_promotion_ids',
+						'mp_cp_error' => 'invalid_campaign_metadata',
 					),
 					$this->edit_url( (string) $pid )
 				)
@@ -1268,6 +1287,34 @@ final class PromotionEditPage {
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * @return array<mixed>|null Null when invalid JSON or not an array (empty input → empty array).
+	 */
+	/**
+	 * @return array{campaign_label: ?string, internal_notes: ?string, admin_color: ?string}|null
+	 */
+	private function parse_campaign_metadata_from_post(): ?array {
+		$label = isset( $_POST['promotion_campaign_label'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['promotion_campaign_label'] ) )
+			: '';
+		$notes = isset( $_POST['promotion_internal_notes'] )
+			? sanitize_textarea_field( wp_unslash( (string) $_POST['promotion_internal_notes'] ) )
+			: '';
+		$color = isset( $_POST['promotion_admin_color'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['promotion_admin_color'] ) )
+			: '';
+
+		try {
+			return array(
+				'campaign_label' => Promotion::normalize_campaign_label( $label === '' ? null : $label ),
+				'internal_notes' => Promotion::normalize_internal_notes( $notes === '' ? null : $notes ),
+				'admin_color'    => Promotion::normalize_admin_color( $color === '' ? null : $color ),
+			);
+		} catch ( InvalidArgumentException $e ) {
+			return null;
+		}
 	}
 
 	/**
@@ -1543,6 +1590,8 @@ final class PromotionEditPage {
 				return __( 'Excluded product IDs must be a comma-separated list of positive integers.', 'mp-commerce-promotions' );
 			case 'invalid_excluded_category_ids':
 				return __( 'Excluded category IDs must be a comma-separated list of positive integers.', 'mp-commerce-promotions' );
+			case 'invalid_campaign_metadata':
+				return __( 'Campaign label, admin color (hex), or internal notes are invalid.', 'mp-commerce-promotions' );
 			case 'invalid_json':
 				return __( 'Conditions, actions, and restrictions must be valid JSON arrays.', 'mp-commerce-promotions' );
 			case 'update_failed':
@@ -1568,13 +1617,56 @@ final class PromotionEditPage {
 		}
 	}
 
+	private function render_campaign_color_badge( Promotion $promotion ): void {
+		$color = $promotion->get_admin_color();
+		if ( $color === null || $color === '' ) {
+			return;
+		}
+
+		echo '<span style="display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.15);background-color:' . esc_attr( $color ) . ';" title="' . esc_attr( $color ) . '"></span>';
+	}
+
+	private function render_campaign_metadata_fields( Promotion $promotion ): void {
+		echo '<h2 class="mp-cp-edit-section-title" style="margin:1.5em 0 0.5em;">' . esc_html__( 'Campaign metadata', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:0 0 16px;">';
+		echo '<p class="description">' . esc_html__(
+			'Internal labels and notes for organizing promotions. Not shown to customers on the storefront.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<table class="form-table" role="presentation"><tbody>';
+
+		$label = $promotion->get_campaign_label() ?? '';
+		echo '<tr><th scope="row"><label for="mp_cp_campaign_label">' . esc_html__( 'Campaign label', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_campaign_label" name="promotion_campaign_label" maxlength="191" value="' . esc_attr( $label ) . '" />';
+		echo '<p class="description">' . esc_html__( 'Short tag for grouping promotions (e.g. Summer Sale).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		$color = $promotion->get_admin_color() ?? '';
+		echo '<tr><th scope="row"><label for="mp_cp_admin_color">' . esc_html__( 'Admin color', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_admin_color" name="promotion_admin_color" maxlength="7" value="' . esc_attr( $color ) . '" placeholder="#336699" />';
+		echo '<p class="description">' . esc_html__( 'Optional 6-digit hex color for list badges (e.g. #336699).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		$notes = $promotion->get_internal_notes() ?? '';
+		echo '<tr><th scope="row"><label for="mp_cp_internal_notes">' . esc_html__( 'Internal notes', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<textarea class="large-text" rows="4" id="mp_cp_internal_notes" name="promotion_internal_notes">' . esc_textarea( $notes ) . '</textarea>';
+		echo '<p class="description">' . esc_html__( 'Private notes for your team; never shown to shoppers.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '</tbody></table></div>';
+	}
+
 	private function render_edit_header_summary( Promotion $promotion ): void {
 		$id = $promotion->get_id();
 		if ( $id === null || $id <= 0 ) {
 			return;
 		}
 
-		echo '<h1 style="margin-bottom:0.25em;">' . esc_html( $promotion->get_name() ) . '</h1>';
+		echo '<h1 style="margin-bottom:0.25em;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+		echo '<span>' . esc_html( $promotion->get_name() ) . '</span>';
+		$this->render_campaign_color_badge( $promotion );
+		$campaign_label = $promotion->get_campaign_label();
+		if ( $campaign_label !== null && $campaign_label !== '' ) {
+			echo '<span class="description" style="font-size:14px;font-weight:normal;">(' . esc_html( $campaign_label ) . ')</span>';
+		}
+		echo '</h1>';
 		$usage_label = (string) $promotion->get_usage_count();
 		$usage_limit = $promotion->get_usage_limit();
 		if ( $usage_limit !== null ) {
@@ -2825,6 +2917,8 @@ final class PromotionEditPage {
 		echo '<p class="description">' . esc_html__( 'Maximum successful redemptions per customer account. Guests cannot satisfy per-customer limits. Leave empty for unlimited.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '</tbody></table></div>';
+
+		$this->render_campaign_metadata_fields( $promotion );
 
 		echo '<h2 class="mp-cp-edit-section-title" style="margin:1.5em 0 0.5em;">' . esc_html__( 'Application rules', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:0 0 16px;">';

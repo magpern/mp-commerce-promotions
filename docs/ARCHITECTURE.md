@@ -357,6 +357,12 @@ Read-only services help merchants understand planner behavior without changing r
 
 Operational workflow: [manual-conflict-analysis-test.md](manual-conflict-analysis-test.md). Smoke: `scripts/conflict-analysis-smoke.php`.
 
+### Campaign operations (schema 1.9.0)
+
+Promotion rows store optional **`campaign_label`** (varchar 191), **`internal_notes`** (longtext), and **`admin_color`** (hex `#RRGGBB`). Admin-only: edit form **Campaign metadata** section, list column/filter/search, Reports campaign filter, color badges. No storefront exposure.
+
+**Archive hygiene** (Diagnostics tab): `PromotionService::archive_expired_active_promotions()` archives active promotions with `ends_at` in the past; `archive_old_drafts( $days )` archives drafts older than N days by `created_at`. Uses `change_status()` → `archived` with audit; no hard deletes. See [manual-campaign-operations-test.md](manual-campaign-operations-test.md).
+
 ---
 
 ## WooCommerce Integration

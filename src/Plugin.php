@@ -184,7 +184,7 @@ final class Plugin {
 				$this->redemption_repository,
 				$this->audit_logger
 			);
-			$diagnostics_page = new DiagnosticsPage( $usage_diagnostics );
+			$diagnostics_page = new DiagnosticsPage( $usage_diagnostics, $this->promotion_service );
 		}
 
 		$reports_page = null;

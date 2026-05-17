@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Admin;
 
+use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Service\UsageDiagnostics;
 
 final class DiagnosticsPage {
@@ -19,10 +20,25 @@ final class DiagnosticsPage {
 
 	private const REPAIR_SUBMIT = 'mp_cp_repair_usage_submit';
 
+	private const ARCHIVE_EXPIRED_NONCE_ACTION = 'mp_cp_archive_expired_active';
+
+	private const ARCHIVE_EXPIRED_NONCE_FIELD = 'mp_cp_archive_expired_nonce';
+
+	private const ARCHIVE_EXPIRED_SUBMIT = 'mp_cp_archive_expired_submit';
+
+	private const ARCHIVE_DRAFTS_NONCE_ACTION = 'mp_cp_archive_old_drafts';
+
+	private const ARCHIVE_DRAFTS_NONCE_FIELD = 'mp_cp_archive_old_drafts_nonce';
+
+	private const ARCHIVE_DRAFTS_SUBMIT = 'mp_cp_archive_old_drafts_submit';
+
 	private UsageDiagnostics $diagnostics;
 
-	public function __construct( UsageDiagnostics $diagnostics ) {
-		$this->diagnostics = $diagnostics;
+	private ?PromotionService $promotion_service;
+
+	public function __construct( UsageDiagnostics $diagnostics, ?PromotionService $promotion_service = null ) {
+		$this->diagnostics        = $diagnostics;
+		$this->promotion_service  = $promotion_service;
 	}
 
 	public function render(): void {
@@ -31,6 +47,7 @@ final class DiagnosticsPage {
 		}
 
 		$this->handle_post_repair();
+		$this->handle_post_archive_hygiene();
 
 		$report = $this->diagnostics->analyze();
 
@@ -41,6 +58,7 @@ final class DiagnosticsPage {
 		echo '<p>' . esc_html__( 'Compare stored usage_count values against redemption and order-meta records. Use the repair action to recalculate mismatched counters from recorded redemptions.', 'mp-commerce-promotions' ) . '</p>';
 
 		$this->render_repair_form();
+		$this->render_archive_hygiene_section();
 		$this->render_integrity_notes();
 		$this->render_promotions_table( $report['promotions'] );
 		$this->render_codes_table( $report['codes'] );
@@ -81,6 +99,93 @@ final class DiagnosticsPage {
 		);
 		echo '</p>';
 		echo '</form>';
+	}
+
+	private function render_archive_hygiene_section(): void {
+		if ( $this->promotion_service === null ) {
+			return;
+		}
+
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Archive hygiene', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="description">' . esc_html__(
+			'Safe maintenance: moves promotions to archived status. Nothing is deleted.',
+			'mp-commerce-promotions'
+		) . '</p>';
+
+		$confirm_expired = esc_js( __( 'Archive all active promotions whose end date is in the past?', 'mp-commerce-promotions' ) );
+		echo '<form method="post" action="" style="margin:0 0 1em;">';
+		wp_nonce_field( self::ARCHIVE_EXPIRED_NONCE_ACTION, self::ARCHIVE_EXPIRED_NONCE_FIELD );
+		echo '<p><button type="submit" name="' . esc_attr( self::ARCHIVE_EXPIRED_SUBMIT ) . '" value="1" class="button button-secondary" onclick="return confirm(\'' . $confirm_expired . '\');">';
+		echo esc_html__( 'Archive expired active promotions', 'mp-commerce-promotions' );
+		echo '</button></p>';
+		echo '<p class="description">' . esc_html__( 'Active promotions with ends_at before now are archived (audited).', 'mp-commerce-promotions' ) . '</p>';
+		echo '</form>';
+
+		$confirm_drafts = esc_js( __( 'Archive old draft promotions?', 'mp-commerce-promotions' ) );
+		echo '<form method="post" action="" style="margin:0 0 1em;">';
+		wp_nonce_field( self::ARCHIVE_DRAFTS_NONCE_ACTION, self::ARCHIVE_DRAFTS_NONCE_FIELD );
+		echo '<p><label for="mp_cp_archive_draft_days">' . esc_html__( 'Draft age (days)', 'mp-commerce-promotions' ) . '</label> ';
+		echo '<input type="number" class="small-text" id="mp_cp_archive_draft_days" name="mp_cp_archive_draft_days" min="1" max="3650" value="90" /> ';
+		echo '<button type="submit" name="' . esc_attr( self::ARCHIVE_DRAFTS_SUBMIT ) . '" value="1" class="button button-secondary" onclick="return confirm(\'' . $confirm_drafts . '\');">';
+		echo esc_html__( 'Archive old drafts', 'mp-commerce-promotions' );
+		echo '</button></p>';
+		echo '<p class="description">' . esc_html__( 'Draft promotions created before the cutoff are archived (audited).', 'mp-commerce-promotions' ) . '</p>';
+		echo '</form>';
+	}
+
+	private function handle_post_archive_hygiene(): void {
+		if ( $this->promotion_service === null || ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		$actor = (int) get_current_user_id();
+
+		if ( isset( $_POST[ self::ARCHIVE_EXPIRED_SUBMIT ] ) ) {
+			if ( ! isset( $_POST[ self::ARCHIVE_EXPIRED_NONCE_FIELD ] )
+				|| ! wp_verify_nonce(
+					sanitize_text_field( wp_unslash( (string) $_POST[ self::ARCHIVE_EXPIRED_NONCE_FIELD ] ) ),
+					self::ARCHIVE_EXPIRED_NONCE_ACTION
+				) ) {
+				$this->redirect_with_notice( 'error', 'invalid_nonce' );
+			}
+
+			$result = $this->promotion_service->archive_expired_active_promotions( $actor );
+			$this->redirect_with_notice(
+				'success',
+				'archive_hygiene_done',
+				array(
+					'promotions' => count( $result['changed'] ),
+					'codes'      => count( $result['skipped'] ),
+					'errors'     => count( $result['errors'] ),
+				)
+			);
+		}
+
+		if ( isset( $_POST[ self::ARCHIVE_DRAFTS_SUBMIT ] ) ) {
+			if ( ! isset( $_POST[ self::ARCHIVE_DRAFTS_NONCE_FIELD ] )
+				|| ! wp_verify_nonce(
+					sanitize_text_field( wp_unslash( (string) $_POST[ self::ARCHIVE_DRAFTS_NONCE_FIELD ] ) ),
+					self::ARCHIVE_DRAFTS_NONCE_ACTION
+				) ) {
+				$this->redirect_with_notice( 'error', 'invalid_nonce' );
+			}
+
+			$days = isset( $_POST['mp_cp_archive_draft_days'] ) ? (int) $_POST['mp_cp_archive_draft_days'] : 90;
+			if ( $days < 1 ) {
+				$days = 90;
+			}
+
+			$result = $this->promotion_service->archive_old_drafts( $days, $actor );
+			$this->redirect_with_notice(
+				'success',
+				'archive_hygiene_done',
+				array(
+					'promotions' => count( $result['changed'] ),
+					'codes'      => count( $result['skipped'] ),
+					'errors'     => count( $result['errors'] ),
+				)
+			);
+		}
 	}
 
 	private function handle_post_repair(): void {
@@ -142,8 +247,11 @@ final class DiagnosticsPage {
 		$codes      = isset( $_GET['mp_cp_diag_codes'] )
 			? (int) $_GET['mp_cp_diag_codes']
 			: 0;
+		$errors     = isset( $_GET['mp_cp_diag_errors'] )
+			? (int) $_GET['mp_cp_diag_errors']
+			: 0;
 
-		$message = $this->notice_message_for_code( $code, $promotions, $codes );
+		$message = $this->notice_message_for_code( $code, $promotions, $codes, $errors );
 		if ( $message === '' ) {
 			return;
 		}
@@ -156,8 +264,16 @@ final class DiagnosticsPage {
 		AdminNotice::error( $message );
 	}
 
-	private function notice_message_for_code( string $code, int $promotions, int $codes ): string {
+	private function notice_message_for_code( string $code, int $promotions, int $codes, int $errors = 0 ): string {
 		switch ( $code ) {
+			case 'archive_hygiene_done':
+				return sprintf(
+					/* translators: 1: archived count, 2: skipped count, 3: error count */
+					__( 'Archive hygiene: %1$d archived, %2$d skipped, %3$d errors.', 'mp-commerce-promotions' ),
+					$promotions,
+					$codes,
+					$errors
+				);
 			case 'repair_done':
 				return sprintf(
 					/* translators: 1: promotions repaired count, 2: codes repaired count */
@@ -183,7 +299,7 @@ final class DiagnosticsPage {
 	}
 
 	/**
-	 * @param array{promotions?: int, codes?: int} $counts
+	 * @param array{promotions?: int, codes?: int, errors?: int} $counts
 	 */
 	private function redirect_with_notice( string $type, string $code, array $counts = array() ): void {
 		$args = array(
@@ -196,6 +312,9 @@ final class DiagnosticsPage {
 		}
 		if ( isset( $counts['codes'] ) ) {
 			$args['mp_cp_diag_codes'] = (int) $counts['codes'];
+		}
+		if ( isset( $counts['errors'] ) ) {
+			$args['mp_cp_diag_errors'] = (int) $counts['errors'];
 		}
 
 		wp_safe_redirect( AdminUrl::diagnostics( $args ) );

@@ -82,10 +82,11 @@ final class PromotionsPage {
 		$this->handle_post_bulk( $list_query );
 		$this->handle_post_create();
 		$repo_args  = array(
-			'status' => $list_query['status'],
-			'search' => $list_query['search'],
-			'limit'  => self::PER_PAGE,
-			'offset' => $list_query['offset'],
+			'status'         => $list_query['status'],
+			'search'         => $list_query['search'],
+			'campaign_label' => $list_query['campaign_label'],
+			'limit'          => self::PER_PAGE,
+			'offset'         => $list_query['offset'],
 		);
 
 		try {
@@ -125,6 +126,7 @@ final class PromotionsPage {
 	 * @return array{
 	 *     status: string|null,
 	 *     search: string|null,
+	 *     campaign_label: string|null,
 	 *     paged: int,
 	 *     offset: int
 	 * }
@@ -146,21 +148,30 @@ final class PromotionsPage {
 			}
 		}
 
+		$campaign_label = null;
+		if ( isset( $_GET['campaign_label'] ) ) {
+			$raw = sanitize_text_field( wp_unslash( (string) $_GET['campaign_label'] ) );
+			if ( $raw !== '' ) {
+				$campaign_label = $raw;
+			}
+		}
+
 		$paged = isset( $_GET['paged'] ) ? (int) $_GET['paged'] : 1;
 		if ( $paged < 1 ) {
 			$paged = 1;
 		}
 
 		return array(
-			'status' => $status,
-			'search' => $search,
-			'paged'  => $paged,
-			'offset' => ( $paged - 1 ) * self::PER_PAGE,
+			'status'         => $status,
+			'search'         => $search,
+			'campaign_label' => $campaign_label,
+			'paged'          => $paged,
+			'offset'         => ( $paged - 1 ) * self::PER_PAGE,
 		);
 	}
 
 	/**
-	 * @param array{status: string|null, search: string|null, paged: int, offset: int} $list_query
+	 * @param array{status: string|null, search: string|null, campaign_label: string|null, paged: int, offset: int} $list_query
 	 */
 	private function render_list_filters( array $list_query ): void {
 		$current_status = $list_query['status'];
@@ -186,6 +197,9 @@ final class PromotionsPage {
 			if ( $list_query['search'] !== null && $list_query['search'] !== '' ) {
 				$query['s'] = $list_query['search'];
 			}
+			if ( $list_query['campaign_label'] !== null && $list_query['campaign_label'] !== '' ) {
+				$query['campaign_label'] = $list_query['campaign_label'];
+			}
 			$url          = $this->list_url( $query );
 			$class        = ( $current_status === $status_key ) || ( $status_key === null && $current_status === null )
 				? 'current'
@@ -201,6 +215,21 @@ final class PromotionsPage {
 		if ( $current_status !== null ) {
 			echo '<input type="hidden" name="promotion_status" value="' . esc_attr( $current_status ) . '" />';
 		}
+		if ( $list_query['campaign_label'] !== null && $list_query['campaign_label'] !== '' ) {
+			echo '<input type="hidden" name="campaign_label" value="' . esc_attr( $list_query['campaign_label'] ) . '" />';
+		}
+
+		$labels = $this->promotions->find_distinct_campaign_labels( 50 );
+		if ( $labels !== array() ) {
+			echo '<label for="mp_cp_campaign_label_filter" class="screen-reader-text">' . esc_html__( 'Campaign label', 'mp-commerce-promotions' ) . '</label>';
+			echo '<select name="campaign_label" id="mp_cp_campaign_label_filter" style="margin-right:8px;">';
+			echo '<option value="">' . esc_html__( 'All campaigns', 'mp-commerce-promotions' ) . '</option>';
+			foreach ( $labels as $label ) {
+				echo '<option value="' . esc_attr( $label ) . '"' . selected( $list_query['campaign_label'] ?? '', $label, false ) . '>' . esc_html( $label ) . '</option>';
+			}
+			echo '</select>';
+		}
+
 		echo '<label class="screen-reader-text" for="mp_cp_promotion_search">' . esc_html__( 'Search promotions', 'mp-commerce-promotions' ) . '</label>';
 		echo '<input type="search" id="mp_cp_promotion_search" name="s" value="' . esc_attr( $search_value ) . '" />';
 		echo '<button type="submit" class="button">' . esc_html__( 'Search', 'mp-commerce-promotions' ) . '</button>';
@@ -259,6 +288,7 @@ final class PromotionsPage {
 		$headers = array(
 			__( 'ID', 'mp-commerce-promotions' ),
 			__( 'Name', 'mp-commerce-promotions' ),
+			__( 'Campaign', 'mp-commerce-promotions' ),
 			__( 'Status', 'mp-commerce-promotions' ),
 			__( 'Codes', 'mp-commerce-promotions' ),
 			__( 'Batches', 'mp-commerce-promotions' ),
@@ -302,6 +332,7 @@ final class PromotionsPage {
 			echo '</th>';
 			echo '<td>' . esc_html( (string) ( $pid ?? '' ) ) . '</td>';
 			echo '<td>' . esc_html( $promo->get_name() ) . $edit . '</td>';
+			echo '<td>' . $this->format_campaign_list_cell( $promo ) . '</td>';
 			echo '<td>' . esc_html( $promo->get_status() ) . '</td>';
 			echo '<td>' . esc_html( $this->format_codes_summary( $pid ) ) . '</td>';
 			echo '<td>' . esc_html( $this->format_batches_summary( $pid ) ) . '</td>';
@@ -331,6 +362,9 @@ final class PromotionsPage {
 		}
 		if ( $list_query['search'] !== null && $list_query['search'] !== '' ) {
 			echo '<input type="hidden" name="s" value="' . esc_attr( $list_query['search'] ) . '" />';
+		}
+		if ( $list_query['campaign_label'] !== null && $list_query['campaign_label'] !== '' ) {
+			echo '<input type="hidden" name="campaign_label" value="' . esc_attr( $list_query['campaign_label'] ) . '" />';
 		}
 		if ( $list_query['paged'] > 1 ) {
 			echo '<input type="hidden" name="paged" value="' . esc_attr( (string) $list_query['paged'] ) . '" />';
@@ -500,10 +534,32 @@ final class PromotionsPage {
 		if ( $list_query['search'] !== null && $list_query['search'] !== '' ) {
 			$args['s'] = $list_query['search'];
 		}
+		if ( $list_query['campaign_label'] !== null && $list_query['campaign_label'] !== '' ) {
+			$args['campaign_label'] = $list_query['campaign_label'];
+		}
 		if ( $list_query['paged'] > 1 ) {
 			$args['paged'] = (string) $list_query['paged'];
 		}
 		return $args;
+	}
+
+	private function format_campaign_list_cell( Promotion $promotion ): string {
+		$label = $promotion->get_campaign_label();
+		$color = $promotion->get_admin_color();
+
+		if ( ( $label === null || $label === '' ) && ( $color === null || $color === '' ) ) {
+			return esc_html( '—' );
+		}
+
+		$html = '';
+		if ( $color !== null && $color !== '' ) {
+			$html .= '<span style="display:inline-block;width:10px;height:10px;border-radius:2px;border:1px solid rgba(0,0,0,.15);background-color:' . esc_attr( $color ) . ';margin-right:4px;vertical-align:middle;"></span>';
+		}
+		if ( $label !== null && $label !== '' ) {
+			$html .= esc_html( $label );
+		}
+
+		return $html;
 	}
 
 	/**

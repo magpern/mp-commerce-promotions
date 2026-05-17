@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Service;
 
+use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\Redemption;
@@ -137,7 +138,8 @@ final class PromotionReports {
 	 *     date_from: string|null,
 	 *     date_to: string|null,
 	 *     promotion_id: int|null,
-	 *     status: string|null
+	 *     status: string|null,
+	 *     campaign_label: string|null
 	 * }
 	 */
 	public static function sanitize_filters( array $args ): array {
@@ -166,11 +168,24 @@ final class PromotionReports {
 			}
 		}
 
+		$campaign_label = null;
+		if ( isset( $args['campaign_label'] ) && is_string( $args['campaign_label'] ) ) {
+			$raw = trim( $args['campaign_label'] );
+			if ( $raw !== '' ) {
+				try {
+					$campaign_label = Promotion::normalize_campaign_label( $raw );
+				} catch ( \InvalidArgumentException $e ) {
+					$campaign_label = null;
+				}
+			}
+		}
+
 		return array(
-			'date_from'    => $date_from,
-			'date_to'      => $date_to,
-			'promotion_id' => $promotion_id,
-			'status'       => $status,
+			'date_from'      => $date_from,
+			'date_to'        => $date_to,
+			'promotion_id'   => $promotion_id,
+			'status'         => $status,
+			'campaign_label' => $campaign_label,
 		);
 	}
 
