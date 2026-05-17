@@ -14,12 +14,16 @@ namespace MP\CommercePromotions\Service;
 use MP\CommercePromotions\Domain\AutomationRunRepository;
 use MP\CommercePromotions\Domain\PlannerTelemetryRepository;
 use MP\CommercePromotions\Domain\Promotion;
+use MP\CommercePromotions\Domain\PromotionCouponBehavior;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Domain\SimulationScenarioRepository;
+use MP\CommercePromotions\Engine\AllocationContextCache;
 use MP\CommercePromotions\Engine\PlannerContextCache;
+use MP\CommercePromotions\Woo\CouponCoexistenceEvaluator;
+use MP\CommercePromotions\Woo\PricingCompatibilityAnalyzer;
 
 final class PromotionReports {
 
@@ -104,14 +108,20 @@ final class PromotionReports {
 				continue;
 			}
 			$rows[] = array(
-				'promotion_id'              => $id,
-				'name'                      => $promotion->get_name(),
-				'campaign_label'            => $promotion->get_campaign_label(),
-				'orchestration_group'       => $promotion->get_orchestration_group(),
-				'budget_utilization_percent'=> $promotion->get_budget_utilization_percent(),
-				'lifecycle_phase'           => PromotionLifecycle::primary_phase( $promotion ),
-				'starts_at'                 => $promotion->get_starts_at(),
-				'ends_at'                   => $promotion->get_ends_at(),
+				'promotion_id'               => $id,
+				'name'                       => $promotion->get_name(),
+				'campaign_label'             => $promotion->get_campaign_label(),
+				'orchestration_group'        => $promotion->get_orchestration_group(),
+				'priority_tier'              => $promotion->get_priority_tier(),
+				'tier_color'                 => $this->tier_color( $promotion->get_priority_tier() ),
+				'coupon_conflict_indicator'  => $promotion->get_coupon_behavior() !== PromotionCouponBehavior::COEXIST ? '!' : '',
+				'budget_risk_indicator'      => $promotion->is_budget_exhausted()
+					? 'exhausted'
+					: ( ( ( $promotion->get_budget_utilization_percent() ?? 0 ) >= 80 ) ? 'high' : '' ),
+				'budget_utilization_percent' => $promotion->get_budget_utilization_percent(),
+				'lifecycle_phase'            => PromotionLifecycle::primary_phase( $promotion ),
+				'starts_at'                  => $promotion->get_starts_at(),
+				'ends_at'                    => $promotion->get_ends_at(),
 			);
 		}
 
@@ -221,10 +231,100 @@ final class PromotionReports {
 	 * @return array{request: array<string, int>, persisted: array<string, int>}
 	 */
 	public function planner_performance(): array {
+		$allocation = AllocationContextCache::request_metrics();
+		$persisted  = AllocationContextCache::get_persisted_metrics();
+
 		return array(
-			'request'   => PlannerContextCache::request_counters(),
-			'persisted' => PlannerContextCache::get_persisted_counters(),
+			'request'   => array_merge( PlannerContextCache::request_counters(), $allocation ),
+			'persisted' => array_merge( PlannerContextCache::get_persisted_counters(), $persisted ),
 		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function profitability_analytics(): array {
+		$redemptions = $this->redemptions->find_redemptions_for_export( array(), 500 );
+		$total_discount = 0.0;
+		$count          = 0;
+		foreach ( $redemptions as $row ) {
+			$total_discount += (float) ( $row['discount_amount'] ?? 0 );
+			++$count;
+		}
+
+		$avg_rate = 0.0;
+		$active   = $this->promotions->find_active( 100 );
+		foreach ( $active as $promotion ) {
+			if ( $promotion->has_budget_cap() && $promotion->get_budget_amount() > 0 ) {
+				$avg_rate = max(
+					$avg_rate,
+					( $promotion->get_budget_spent() / (float) $promotion->get_budget_amount() ) * 100
+				);
+			}
+		}
+
+		$highest_cost = array();
+		foreach ( $active as $promotion ) {
+			$highest_cost[] = array(
+				'promotion_id' => $promotion->get_id(),
+				'name'         => $promotion->get_name(),
+				'budget_spent' => $promotion->get_budget_spent(),
+				'tier'         => $promotion->get_priority_tier(),
+			);
+		}
+		usort(
+			$highest_cost,
+			static fn ( array $a, array $b ): int => ( (float) ( $b['budget_spent'] ?? 0 ) ) <=> ( (float) ( $a['budget_spent'] ?? 0 ) )
+		);
+
+		return array(
+			'estimated_margin_impact'      => round( $total_discount * 0.35, 2 ),
+			'average_discount_rate'        => $count > 0 ? round( ( $total_discount / max( 1, $count ) ), 2 ) : 0.0,
+			'shipping_discount_exposure'   => $this->shipping_discount_exposure(),
+			'highest_cost_campaigns'       => array_slice( $highest_cost, 0, 10 ),
+			'highest_effective_savings'    => $this->intelligence_analytics()['highest_roi_campaigns'] ?? array(),
+			'estimated_revenue_influence'  => round( $total_discount * 2.5, 2 ),
+			'budget_burn_percent_peak'     => round( $avg_rate, 2 ),
+		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function pricing_analytics(): array {
+		$tiers = array();
+		foreach ( $this->promotions->find_filtered( array( 'limit' => 500 ) ) as $promotion ) {
+			$tier = $promotion->get_priority_tier();
+			if ( ! isset( $tiers[ $tier ] ) ) {
+				$tiers[ $tier ] = 0;
+			}
+			++$tiers[ $tier ];
+		}
+
+		$coupon_eval = ( new CouponCoexistenceEvaluator() )->evaluate_cart();
+
+		return array(
+			'allocation_metrics'       => AllocationContextCache::get_persisted_metrics(),
+			'shipping_analytics'       => array(
+				'exposure' => $this->shipping_discount_exposure(),
+			),
+			'coupon_coexistence'       => $coupon_eval,
+			'priority_tier_counts'     => $tiers,
+			'compatibility_issues'     => ( new PricingCompatibilityAnalyzer() )->analyze(),
+		);
+	}
+
+	private function shipping_discount_exposure(): float {
+		$total = 0.0;
+		foreach ( $this->promotions->find_active( 100 ) as $promotion ) {
+			foreach ( $promotion->get_actions() as $action ) {
+				if ( is_array( $action ) && ( $action['type'] ?? '' ) === 'free_shipping' ) {
+					$total += 10.0;
+				}
+			}
+		}
+
+		return round( $total, 2 );
 	}
 
 	/**
@@ -472,6 +572,11 @@ final class PromotionReports {
 				'planner_simulated_runs',
 				'planner_cache_hits',
 				'planner_cache_misses',
+				'effective_discount_rate',
+				'estimated_tax_impact',
+				'allocation_total',
+				'priority_tier',
+				'coupon_behavior',
 			)
 		);
 
@@ -486,6 +591,10 @@ final class PromotionReports {
 		$misses   = (string) (int) ( $planner['persisted']['cache_misses'] ?? 0 );
 
 		foreach ( $rows as $row ) {
+			$promotion_row = isset( $row['promotion_id'] ) ? $this->promotions->find( (int) $row['promotion_id'] ) : null;
+			$tier          = $promotion_row instanceof Promotion ? $promotion_row->get_priority_tier() : '';
+			$coupon_beh    = $promotion_row instanceof Promotion ? $promotion_row->get_coupon_behavior() : '';
+			$alloc_total   = (string) ( $row['discount_amount'] ?? '' );
 			$lines[] = implode(
 				',',
 				array(
@@ -509,11 +618,26 @@ final class PromotionReports {
 					self::escape_csv_cell( $sim_runs ),
 					self::escape_csv_cell( $hits ),
 					self::escape_csv_cell( $misses ),
+					self::escape_csv_cell( '' ),
+					self::escape_csv_cell( '' ),
+					self::escape_csv_cell( $alloc_total ),
+					self::escape_csv_cell( $tier ),
+					self::escape_csv_cell( $coupon_beh ),
 				)
 			);
 		}
 
 		return implode( "\n", $lines ) . "\n";
+	}
+
+	private function tier_color( string $tier ): string {
+		return match ( $tier ) {
+			'override' => '#b32d2e',
+			'recovery' => '#d63638',
+			'loyalty'  => '#2271b1',
+			'campaign' => '#00a32a',
+			default    => '#787c82',
+		};
 	}
 
 	/**

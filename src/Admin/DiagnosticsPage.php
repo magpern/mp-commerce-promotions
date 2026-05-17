@@ -14,6 +14,7 @@ use MP\CommercePromotions\Domain\AutomationRunRepository;
 use MP\CommercePromotions\Service\PromotionAutomationRunner;
 use MP\CommercePromotions\Service\PromotionHealthMonitor;
 use MP\CommercePromotions\Service\PromotionIntelligenceRecovery;
+use MP\CommercePromotions\Service\PromotionPricingRecovery;
 use MP\CommercePromotions\Service\PromotionOperationalRecovery;
 use MP\CommercePromotions\Service\PromotionRecommendationEngine;
 use MP\CommercePromotions\Service\PromotionService;
@@ -139,6 +140,8 @@ final class DiagnosticsPage {
 
 	private ?PromotionRecommendationEngine $recommendations;
 
+	private ?PromotionPricingRecovery $pricing_recovery;
+
 	public function __construct(
 		UsageDiagnostics $diagnostics,
 		?PromotionService $promotion_service = null,
@@ -147,7 +150,8 @@ final class DiagnosticsPage {
 		?PromotionOperationalRecovery $operational_recovery = null,
 		?AutomationRunRepository $automation_runs = null,
 		?PromotionIntelligenceRecovery $intelligence_recovery = null,
-		?PromotionRecommendationEngine $recommendations = null
+		?PromotionRecommendationEngine $recommendations = null,
+		?PromotionPricingRecovery $pricing_recovery = null
 	) {
 		$this->diagnostics           = $diagnostics;
 		$this->promotion_service     = $promotion_service;
@@ -157,6 +161,7 @@ final class DiagnosticsPage {
 		$this->automation_runs       = $automation_runs;
 		$this->intelligence_recovery = $intelligence_recovery;
 		$this->recommendations       = $recommendations;
+		$this->pricing_recovery      = $pricing_recovery;
 	}
 
 	public function render(): void {
@@ -169,6 +174,7 @@ final class DiagnosticsPage {
 		$this->handle_post_automation();
 		$this->handle_post_operational_recovery();
 		$this->handle_post_intelligence_recovery();
+		$this->handle_post_pricing_recovery();
 
 		$report = $this->diagnostics->analyze();
 
@@ -183,6 +189,7 @@ final class DiagnosticsPage {
 		$this->render_promotion_health_section();
 		$this->render_operational_recovery_section();
 		$this->render_intelligence_recovery_section();
+		$this->render_pricing_recovery_section();
 		$this->render_recommendations_section();
 		$this->render_automation_history_section();
 		$this->render_archive_hygiene_section();
@@ -616,6 +623,10 @@ final class DiagnosticsPage {
 					$promotions,
 					$codes
 				);
+			case 'pricing_rebuild_done':
+				return sprintf( __( 'Allocation summary rebuild processed %d promotion(s).', 'mp-commerce-promotions' ), $promotions );
+			case 'pricing_tiers_done':
+				return sprintf( __( 'Normalized %d invalid priority tier(s).', 'mp-commerce-promotions' ), $promotions );
 			case 'repair_done':
 				return sprintf(
 					/* translators: 1: promotions repaired count, 2: codes repaired count */
@@ -1088,6 +1099,37 @@ final class DiagnosticsPage {
 			__( 'Repair malformed simulation rows (soft-archive)', 'mp-commerce-promotions' ),
 			'mp-cp-intel-repair'
 		);
+	}
+
+	private function handle_post_pricing_recovery(): void {
+		if ( $this->pricing_recovery === null || ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		$dry_run = ! isset( $_POST['mp_cp_pricing_recovery_apply'] ) || sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_pricing_recovery_apply'] ) ) !== '1';
+
+		if ( isset( $_POST['mp_cp_rebuild_allocation_submit'] ) ) {
+			$this->verify_recovery_nonce( 'mp_cp_rebuild_allocation_nonce', 'mp_cp_rebuild_allocation' );
+			$result = $this->pricing_recovery->rebuild_allocation_summaries( $dry_run );
+			$this->redirect_with_notice( 'success', 'pricing_rebuild_done', array( 'promotions' => (int) ( $result['promotions_processed'] ?? 0 ), 'codes' => 0, 'errors' => 0 ) );
+		}
+
+		if ( isset( $_POST['mp_cp_normalize_tiers_submit'] ) ) {
+			$this->verify_recovery_nonce( 'mp_cp_normalize_tiers_nonce', 'mp_cp_normalize_tiers' );
+			$result = $this->pricing_recovery->normalize_invalid_priority_tiers( $dry_run );
+			$this->redirect_with_notice( 'success', 'pricing_tiers_done', array( 'promotions' => (int) ( $result['changed'] ?? 0 ), 'codes' => 0, 'errors' => 0 ) );
+		}
+	}
+
+	private function render_pricing_recovery_section(): void {
+		if ( $this->pricing_recovery === null ) {
+			return;
+		}
+
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Pricing engine recovery', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="description">' . esc_html__( 'Rebuild allocation summaries and normalize priority tiers. Dry-run unless apply is checked.', 'mp-commerce-promotions' ) . '</p>';
+		$this->render_recovery_form( 'mp_cp_rebuild_allocation_submit', 'mp_cp_rebuild_allocation', 'mp_cp_rebuild_allocation_nonce', __( 'Rebuild allocation summaries', 'mp-commerce-promotions' ), 'mp-cp-pricing-rebuild' );
+		$this->render_recovery_form( 'mp_cp_normalize_tiers_submit', 'mp_cp_normalize_tiers', 'mp_cp_normalize_tiers_nonce', __( 'Normalize invalid priority tiers', 'mp-commerce-promotions' ), 'mp-cp-pricing-tiers' );
 	}
 
 	private function render_recommendations_section(): void {

@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Woo;
 
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionCode;
+use MP\CommercePromotions\Domain\PromotionPriorityTier;
 use MP\CommercePromotions\Domain\PromotionCodeRepository;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Engine\EvaluationContext;
@@ -219,7 +220,7 @@ final class CartPromotionApplier {
 	 * @param object $cart WooCommerce cart.
 	 */
 	private function apply_automatic_promotions( $cart, EvaluationContext $context, float $subtotal ): void {
-		$active    = $this->promotions->find_active( 50 );
+		$active    = PromotionPriorityTier::sort_promotions( $this->promotions->find_active( 50 ) );
 		$plan      = $this->planner->plan( $active, $context );
 		$this->record_plan_telemetry( $plan );
 		$decisions = $plan->get_selected_decisions();

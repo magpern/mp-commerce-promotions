@@ -9,6 +9,10 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Domain;
 
+use MP\CommercePromotions\Domain\PromotionAllocationMode;
+use MP\CommercePromotions\Domain\PromotionCouponBehavior;
+use MP\CommercePromotions\Domain\PromotionPriorityTier;
+
 final class PromotionFactory {
 
 	public function create_draft( string $name, ?int $created_by = null ): Promotion {
@@ -46,6 +50,9 @@ final class PromotionFactory {
 			null,
 			null,
 			null,
+			PromotionPriorityTier::DEFAULT_TIER,
+			PromotionCouponBehavior::DEFAULT_BEHAVIOR,
+			PromotionAllocationMode::DEFAULT_MODE,
 			$created_by,
 			null,
 			null
@@ -87,6 +94,9 @@ final class PromotionFactory {
 			$source->get_budget_currency(),
 			$source->get_cooldown_hours(),
 			$source->get_orchestration_group(),
+			$source->get_priority_tier(),
+			$source->get_coupon_behavior(),
+			$source->get_allocation_mode(),
 			$created_by,
 			null,
 			null

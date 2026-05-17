@@ -10,6 +10,9 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Domain;
 
 use InvalidArgumentException;
+use MP\CommercePromotions\Domain\PromotionAllocationMode;
+use MP\CommercePromotions\Domain\PromotionCouponBehavior;
+use MP\CommercePromotions\Domain\PromotionPriorityTier;
 
 final class Promotion {
 
@@ -72,6 +75,12 @@ final class Promotion {
 
 	private ?string $orchestration_group;
 
+	private string $priority_tier;
+
+	private string $coupon_behavior;
+
+	private string $allocation_mode;
+
 	private ?int $created_by;
 
 	private ?string $created_at;
@@ -107,9 +116,12 @@ final class Promotion {
 		?string $budget_currency,
 		?int $cooldown_hours,
 		?string $orchestration_group,
-		?int $created_by,
-		?string $created_at,
-		?string $updated_at
+		string $priority_tier = PromotionPriorityTier::DEFAULT_TIER,
+		string $coupon_behavior = PromotionCouponBehavior::DEFAULT_BEHAVIOR,
+		string $allocation_mode = PromotionAllocationMode::DEFAULT_MODE,
+		?int $created_by = null,
+		?string $created_at = null,
+		?string $updated_at = null
 	) {
 		$uuid = trim( $uuid );
 		$name = trim( $name );
@@ -157,6 +169,9 @@ final class Promotion {
 		$budget_currency        = self::normalize_budget_currency( $budget_currency );
 		$cooldown_hours         = self::normalize_cooldown_hours( $cooldown_hours );
 		$orchestration_group    = self::normalize_orchestration_group( $orchestration_group );
+		$priority_tier          = PromotionPriorityTier::normalize( $priority_tier );
+		$coupon_behavior        = PromotionCouponBehavior::normalize( $coupon_behavior );
+		$allocation_mode        = PromotionAllocationMode::normalize( $allocation_mode );
 
 		$this->id           = $id;
 		$this->uuid         = $uuid;
@@ -186,6 +201,9 @@ final class Promotion {
 		$this->budget_currency        = $budget_currency;
 		$this->cooldown_hours         = $cooldown_hours;
 		$this->orchestration_group    = $orchestration_group;
+		$this->priority_tier          = $priority_tier;
+		$this->coupon_behavior        = $coupon_behavior;
+		$this->allocation_mode        = $allocation_mode;
 		$this->created_by             = $created_by;
 		$this->created_at   = $created_at;
 		$this->updated_at   = $updated_at;
@@ -266,6 +284,9 @@ final class Promotion {
 			self::normalize_budget_currency( self::optional_string( $data['budget_currency'] ?? null ) ),
 			self::normalize_cooldown_hours( self::optional_int( $data['cooldown_hours'] ?? null ) ),
 			self::normalize_orchestration_group( self::optional_string( $data['orchestration_group'] ?? null ) ),
+			PromotionPriorityTier::normalize( self::optional_string( $data['priority_tier'] ?? null ) ),
+			PromotionCouponBehavior::normalize( self::optional_string( $data['coupon_behavior'] ?? null ) ),
+			PromotionAllocationMode::normalize( self::optional_string( $data['allocation_mode'] ?? null ) ),
 			$created_by,
 			self::optional_string( $data['created_at'] ?? null ),
 			self::optional_string( $data['updated_at'] ?? null )
@@ -305,6 +326,9 @@ final class Promotion {
 			'budget_currency'        => $this->budget_currency,
 			'cooldown_hours'         => $this->cooldown_hours,
 			'orchestration_group'    => $this->orchestration_group,
+			'priority_tier'          => $this->priority_tier,
+			'coupon_behavior'        => $this->coupon_behavior,
+			'allocation_mode'        => $this->allocation_mode,
 			'created_by'             => $this->created_by,
 			'created_at'   => $this->created_at,
 			'updated_at'   => $this->updated_at,
@@ -441,6 +465,57 @@ final class Promotion {
 		return $this->orchestration_group;
 	}
 
+	public function get_priority_tier(): string {
+		return $this->priority_tier;
+	}
+
+	public function get_coupon_behavior(): string {
+		return $this->coupon_behavior;
+	}
+
+	public function get_allocation_mode(): string {
+		return $this->allocation_mode;
+	}
+
+	public function with_pricing_fields( ?string $priority_tier, ?string $coupon_behavior, ?string $allocation_mode ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->customer_usage_limit,
+			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
+			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
+			$priority_tier !== null ? PromotionPriorityTier::normalize( $priority_tier ) : $this->priority_tier,
+			$coupon_behavior !== null ? PromotionCouponBehavior::normalize( $coupon_behavior ) : $this->coupon_behavior,
+			$allocation_mode !== null ? PromotionAllocationMode::normalize( $allocation_mode ) : $this->allocation_mode,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
 	public function has_budget_cap(): bool {
 		return $this->budget_amount !== null && $this->budget_amount > 0;
 	}
@@ -510,6 +585,9 @@ final class Promotion {
 			$this->budget_currency,
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -546,6 +624,9 @@ final class Promotion {
 			$this->budget_currency,
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -582,6 +663,9 @@ final class Promotion {
 			$this->budget_currency,
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -618,6 +702,9 @@ final class Promotion {
 			$this->budget_currency,
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -654,6 +741,9 @@ final class Promotion {
 			$this->budget_currency,
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -697,6 +787,9 @@ final class Promotion {
 			$this->budget_currency,
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -733,6 +826,9 @@ final class Promotion {
 			$this->budget_currency,
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -774,6 +870,9 @@ final class Promotion {
 			$this->budget_currency,
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -813,6 +912,9 @@ final class Promotion {
 			$this->budget_currency,
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -853,6 +955,9 @@ final class Promotion {
 			$this->budget_currency,
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -889,6 +994,9 @@ final class Promotion {
 			self::normalize_budget_currency( $currency ),
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -925,6 +1033,9 @@ final class Promotion {
 			$this->budget_currency,
 			self::normalize_cooldown_hours( $cooldown_hours ),
 			self::normalize_orchestration_group( $orchestration_group ),
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -965,6 +1076,9 @@ final class Promotion {
 			$this->budget_currency,
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -1005,6 +1119,9 @@ final class Promotion {
 			$this->budget_currency,
 			$this->cooldown_hours,
 			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at

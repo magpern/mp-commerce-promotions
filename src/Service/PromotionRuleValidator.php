@@ -12,6 +12,8 @@ namespace MP\CommercePromotions\Service;
 use InvalidArgumentException;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
+use MP\CommercePromotions\Domain\PromotionCouponBehavior;
+use MP\CommercePromotions\Domain\PromotionPriorityTier;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\PromotionDateHelper;
 use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
@@ -59,6 +61,7 @@ final class PromotionRuleValidator {
 		$this->append_conflict_heuristic_issues( $promotion, $issues );
 		$this->append_operational_maturity_issues( $promotion, $issues );
 		$this->append_intelligence_issues( $promotion, $issues );
+		$this->append_pricing_issues( $promotion, $issues );
 
 		return $issues;
 	}
@@ -409,6 +412,55 @@ final class PromotionRuleValidator {
 	/**
 	 * @param list<array<string, mixed>> $actions
 	 */
+	/**
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function append_pricing_issues( Promotion $promotion, array &$issues ): void {
+		if ( ! PromotionCouponBehavior::is_valid( $promotion->get_coupon_behavior() ) ) {
+			$issues[] = $this->error(
+				__( 'Corrupted coupon_behavior configuration; repair via Diagnostics.', 'mp-commerce-promotions' )
+			);
+		}
+
+		if ( ! PromotionPriorityTier::is_valid( $promotion->get_priority_tier() ) ) {
+			$issues[] = $this->error(
+				__( 'Invalid priority_tier value.', 'mp-commerce-promotions' )
+			);
+		}
+
+		$free_shipping = 0;
+		$percent_count = 0;
+		foreach ( $promotion->get_actions() as $action ) {
+			if ( ! is_array( $action ) ) {
+				continue;
+			}
+			$type = (string) ( $action['type'] ?? '' );
+			if ( $type === RuleTypes::ACTION_FREE_SHIPPING ) {
+				++$free_shipping;
+			}
+			if ( $type === RuleTypes::ACTION_PERCENTAGE_DISCOUNT ) {
+				$pct = (float) ( $action['percentage'] ?? 0 );
+				if ( $pct >= 50 ) {
+					++$percent_count;
+				}
+			}
+		}
+
+		if ( $free_shipping > 0 && $percent_count > 0 && $promotion->get_application_mode() === PromotionApplicationMode::STACKABLE ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __( 'Shipping plus high percentage discounts may exceed profitable margins (heuristic).', 'mp-commerce-promotions' ),
+			);
+		}
+
+		if ( $promotion->get_coupon_behavior() === PromotionCouponBehavior::COEXIST && $free_shipping > 0 ) {
+			$issues[] = array(
+				'level'   => 'warning',
+				'message' => __( 'Coupon coexistence with free shipping may overload checkout discounts.', 'mp-commerce-promotions' ),
+			);
+		}
+	}
+
 	private function estimate_max_action_discount( array $actions ): float {
 		$max = 0.0;
 		foreach ( $actions as $action ) {

@@ -19,6 +19,7 @@ use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Service\PromotionBulkCampaignWorkflow;
+use MP\CommercePromotions\Service\PromotionBulkPricingWorkflow;
 use MP\CommercePromotions\Service\PromotionHealthMonitor;
 use MP\CommercePromotions\Service\PromotionLifecycle;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
@@ -57,6 +58,8 @@ final class PromotionsPage {
 
 	private ?PromotionBulkCampaignWorkflow $campaign_bulk;
 
+	private ?PromotionBulkPricingWorkflow $pricing_bulk;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionService $promotion_service,
@@ -66,7 +69,8 @@ final class PromotionsPage {
 		?RedemptionRepository $redemptions = null,
 		?PromotionRuleValidator $rule_validator = null,
 		?PromotionHealthMonitor $health_monitor = null,
-		?PromotionBulkCampaignWorkflow $campaign_bulk = null
+		?PromotionBulkCampaignWorkflow $campaign_bulk = null,
+		?PromotionBulkPricingWorkflow $pricing_bulk = null
 	) {
 		$this->promotions        = $promotions;
 		$this->promotion_service = $promotion_service;
@@ -77,6 +81,7 @@ final class PromotionsPage {
 		$this->rule_validator    = $rule_validator ?? new PromotionRuleValidator();
 		$this->health_monitor    = $health_monitor;
 		$this->campaign_bulk     = $campaign_bulk;
+		$this->pricing_bulk      = $pricing_bulk;
 	}
 
 	public function render(): void {
@@ -676,6 +681,11 @@ final class PromotionsPage {
 		echo '<option value="label">' . esc_html__( 'Campaign label', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="budget">' . esc_html__( 'Budget amount', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="cooldown">' . esc_html__( 'Cooldown hours', 'mp-commerce-promotions' ) . '</option>';
+		if ( $this->pricing_bulk !== null ) {
+			echo '<option value="tier">' . esc_html__( 'Priority tier', 'mp-commerce-promotions' ) . '</option>';
+			echo '<option value="coupon_behavior">' . esc_html__( 'Coupon behavior', 'mp-commerce-promotions' ) . '</option>';
+			echo '<option value="allocation_mode">' . esc_html__( 'Allocation mode', 'mp-commerce-promotions' ) . '</option>';
+		}
 		echo '</select></label></p>';
 		echo '<p><label>' . esc_html__( 'Starts at (Y-m-d H:i:s)', 'mp-commerce-promotions' ) . ' <input type="text" name="mp_cp_bulk_starts_at" class="regular-text" /></label></p>';
 		echo '<p><label>' . esc_html__( 'Ends at', 'mp-commerce-promotions' ) . ' <input type="text" name="mp_cp_bulk_ends_at" class="regular-text" /></label></p>';
@@ -683,6 +693,9 @@ final class PromotionsPage {
 		echo '<p><label>' . esc_html__( 'Campaign label', 'mp-commerce-promotions' ) . ' <input type="text" name="mp_cp_bulk_campaign_label" class="regular-text" /></label></p>';
 		echo '<p><label>' . esc_html__( 'Budget amount', 'mp-commerce-promotions' ) . ' <input type="number" step="0.01" name="mp_cp_bulk_budget_amount" class="small-text" /></label></p>';
 		echo '<p><label>' . esc_html__( 'Cooldown (hours)', 'mp-commerce-promotions' ) . ' <input type="number" name="mp_cp_bulk_cooldown_hours" class="small-text" /></label></p>';
+		echo '<p><label>' . esc_html__( 'Priority tier', 'mp-commerce-promotions' ) . ' <input type="text" name="mp_cp_bulk_priority_tier" class="regular-text" placeholder="storefront" /></label></p>';
+		echo '<p><label>' . esc_html__( 'Coupon behavior', 'mp-commerce-promotions' ) . ' <input type="text" name="mp_cp_bulk_coupon_behavior" class="regular-text" placeholder="coexist" /></label></p>';
+		echo '<p><label>' . esc_html__( 'Allocation mode', 'mp-commerce-promotions' ) . ' <input type="text" name="mp_cp_bulk_allocation_mode" class="regular-text" placeholder="proportional" /></label></p>';
 		wp_nonce_field( self::CAMPAIGN_BULK_NONCE_ACTION, self::CAMPAIGN_BULK_NONCE_FIELD );
 		echo '<button type="submit" name="mp_cp_campaign_bulk_submit" value="1" class="button button-secondary">';
 		echo esc_html__( 'Apply campaign bulk update', 'mp-commerce-promotions' );
@@ -694,7 +707,7 @@ final class PromotionsPage {
 	 * @param array{status: string|null, search: string|null, paged: int, offset: int} $list_query
 	 */
 	private function handle_post_campaign_bulk( array $list_query ): void {
-		if ( $this->campaign_bulk === null || ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+		if ( ( $this->campaign_bulk === null && $this->pricing_bulk === null ) || ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
 			return;
 		}
 
@@ -721,6 +734,27 @@ final class PromotionsPage {
 			: 'schedule';
 		$actor    = (int) get_current_user_id();
 
+		if ( $this->pricing_bulk !== null && in_array( $workflow, array( 'tier', 'coupon_behavior', 'allocation_mode' ), true ) ) {
+			$result = match ( $workflow ) {
+				'coupon_behavior' => $this->pricing_bulk->bulk_assign_coupon_behavior(
+					$ids,
+					$this->optional_post_string( 'mp_cp_bulk_coupon_behavior' ),
+					$actor
+				),
+				'allocation_mode' => $this->pricing_bulk->bulk_assign_allocation_mode(
+					$ids,
+					$this->optional_post_string( 'mp_cp_bulk_allocation_mode' ),
+					$actor
+				),
+				default => $this->pricing_bulk->bulk_assign_tier(
+					$ids,
+					$this->optional_post_string( 'mp_cp_bulk_priority_tier' ),
+					$actor
+				),
+			};
+		} elseif ( $this->campaign_bulk === null ) {
+			return;
+		} else {
 		$result = match ( $workflow ) {
 			'orchestration' => $this->campaign_bulk->bulk_assign_orchestration(
 				$ids,
@@ -751,6 +785,7 @@ final class PromotionsPage {
 				$actor
 			),
 		};
+		}
 
 		wp_safe_redirect(
 			add_query_arg(

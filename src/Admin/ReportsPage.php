@@ -75,6 +75,8 @@ final class ReportsPage {
 		$this->render_promotion_calendar_section();
 		$this->render_recommendations_section();
 		$this->render_intelligence_analytics_section();
+		$this->render_profitability_analytics_section();
+		$this->render_pricing_analytics_section();
 		$this->render_simulation_section();
 		$this->render_orchestration_section( $summary );
 		$this->render_economics_sections( $filters );
@@ -677,6 +679,34 @@ final class ReportsPage {
 		}
 		echo '<p>' . esc_html__( 'Scenario run count (saved scenarios):', 'mp-commerce-promotions' ) . ' ';
 		echo esc_html( (string) (int) ( $analytics['most_simulated_scenarios_runs'] ?? 0 ) ) . '</p>';
+	}
+
+	private function render_profitability_analytics_section(): void {
+		$data = $this->reports->profitability_analytics();
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Profitability analytics (heuristic)', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p>' . esc_html__(
+			'Estimated margin impact and campaign cost signals. Not accounting-grade.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<ul>';
+		printf( '<li>%s</li>', esc_html( sprintf( __( 'Estimated margin impact: %s', 'mp-commerce-promotions' ), (string) ( $data['estimated_margin_impact'] ?? 0 ) ) ) );
+		printf( '<li>%s</li>', esc_html( sprintf( __( 'Average discount rate: %s', 'mp-commerce-promotions' ), (string) ( $data['average_discount_rate'] ?? 0 ) ) ) );
+		printf( '<li>%s</li>', esc_html( sprintf( __( 'Shipping discount exposure: %s', 'mp-commerce-promotions' ), (string) ( $data['shipping_discount_exposure'] ?? 0 ) ) ) );
+		echo '</ul>';
+	}
+
+	private function render_pricing_analytics_section(): void {
+		$data = $this->reports->pricing_analytics();
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Pricing & allocation analytics', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p><strong>' . esc_html__( 'Priority tiers', 'mp-commerce-promotions' ) . '</strong></p><ul>';
+		foreach ( (array) ( $data['priority_tier_counts'] ?? array() ) as $tier => $count ) {
+			echo '<li>' . esc_html( $tier ) . ': ' . esc_html( (string) $count ) . '</li>';
+		}
+		echo '</ul>';
+		$coupon = $data['coupon_coexistence'] ?? array();
+		if ( is_array( $coupon ) && (int) ( $coupon['native_coupon_count'] ?? 0 ) > 0 ) {
+			echo '<p class="description">' . esc_html( (string) ( $coupon['message'] ?? '' ) ) . '</p>';
+		}
 	}
 
 	private function render_simulation_section(): void {

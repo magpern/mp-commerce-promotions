@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.13.0';
+	public const SCHEMA_VERSION = '1.14.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -92,6 +92,9 @@ budget_spent decimal(18,2) NOT NULL default 0,
 budget_currency varchar(10) NULL,
 cooldown_hours int(10) unsigned NULL,
 orchestration_group varchar(191) NULL,
+priority_tier varchar(32) NOT NULL default 'storefront',
+coupon_behavior varchar(32) NOT NULL default 'coexist',
+allocation_mode varchar(32) NOT NULL default 'proportional',
 created_by bigint(20) unsigned NULL,
 created_at datetime NOT NULL default CURRENT_TIMESTAMP,
 updated_at datetime NOT NULL default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

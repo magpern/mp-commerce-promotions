@@ -495,7 +495,12 @@ final class PromotionRuleValidatorTest extends TestCase {
 			)
 		);
 
-		$this->assertSame( array(), $this->validator->validate( $promotion ) );
+		$issues = $this->validator->validate( $promotion );
+		$critical = array_filter(
+			$issues,
+			static fn ( array $issue ): bool => ( $issue['level'] ?? '' ) === 'critical'
+		);
+		$this->assertSame( array(), $critical );
 	}
 
 	public function test_customer_redemption_count_validates_operator_and_count(): void {

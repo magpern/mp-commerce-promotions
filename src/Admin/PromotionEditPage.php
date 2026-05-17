@@ -19,7 +19,11 @@ use MP\CommercePromotions\Domain\PromotionCodeBatch;
 use MP\CommercePromotions\Domain\PromotionCodeBatchRepository;
 use MP\CommercePromotions\Domain\PromotionCodeFactory;
 use MP\CommercePromotions\Domain\PromotionCodeRepository;
+use MP\CommercePromotions\Domain\PromotionAllocationMode;
+use MP\CommercePromotions\Domain\PromotionCouponBehavior;
+use MP\CommercePromotions\Domain\PromotionPriorityTier;
 use MP\CommercePromotions\Domain\PromotionRepository;
+use MP\CommercePromotions\Engine\DiscountAllocationEngine;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\RedemptionRepository;
@@ -64,6 +68,9 @@ final class PromotionEditPage {
 	private ?EvaluationResult $cart_preview_result = null;
 
 	private ?PromotionEvaluationPlan $cart_preview_plan = null;
+
+	/** @var array<string, mixed>|null */
+	private ?array $cart_preview_explained = null;
 
 	/** @var list<array{type: string, severity: string, promotion_ids: list<int>, message: string}>|null */
 	private ?array $cart_preview_conflicts = null;
@@ -146,6 +153,7 @@ final class PromotionEditPage {
 
 		$this->cart_preview_result      = null;
 		$this->cart_preview_plan        = null;
+		$this->cart_preview_explained   = null;
 		$this->cart_preview_conflicts   = null;
 		$this->cart_preview_error       = null;
 		$this->batch_generation_outcome = null;
@@ -692,8 +700,15 @@ final class PromotionEditPage {
 			$context                   = $this->cart_context_builder->build_from_cart();
 			$this->cart_preview_result = $this->promotion_evaluator->evaluate( $promotion, $context );
 
-			$active = $this->promotions->find_active( 50 );
+			$active = PromotionPriorityTier::sort_promotions( $this->promotions->find_active( 50 ) );
 			$this->cart_preview_plan      = $this->promotion_planner->plan( $active, $context );
+			$allocation                   = ( new DiscountAllocationEngine() )->allocate( $context, $this->cart_preview_plan->get_selected_decisions() );
+			$this->cart_preview_explained = PromotionPlanExplainer::enrich_explanation(
+				PromotionPlanExplainer::explain( $this->cart_preview_plan ),
+				$this->cart_preview_plan,
+				$context,
+				$allocation
+			);
 			$this->cart_preview_conflicts = ( new PromotionConflictAnalyzer() )->analyze( $active );
 		} catch ( Throwable $e ) {
 			$this->cart_preview_error = __( 'Preview failed.', 'mp-commerce-promotions' );
@@ -1438,6 +1453,54 @@ final class PromotionEditPage {
 			exit;
 		}
 
+		$priority_tier = isset( $_POST['promotion_priority_tier'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['promotion_priority_tier'] ) )
+			: PromotionPriorityTier::DEFAULT_TIER;
+		if ( ! PromotionPriorityTier::is_valid( $priority_tier ) ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_priority_tier',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
+			exit;
+		}
+
+		$coupon_behavior = isset( $_POST['promotion_coupon_behavior'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['promotion_coupon_behavior'] ) )
+			: PromotionCouponBehavior::DEFAULT_BEHAVIOR;
+		if ( ! PromotionCouponBehavior::is_valid( $coupon_behavior ) ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_coupon_behavior',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
+			exit;
+		}
+
+		$allocation_mode = isset( $_POST['promotion_allocation_mode'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['promotion_allocation_mode'] ) )
+			: PromotionAllocationMode::DEFAULT_MODE;
+		if ( ! PromotionAllocationMode::is_valid( $allocation_mode ) ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'promotion'   => (string) $pid,
+						'mp_cp_error' => 'invalid_allocation_mode',
+					),
+					$this->edit_url( (string) $pid )
+				)
+			);
+			exit;
+		}
+
 		$orchestration_meta = $this->parse_orchestration_metadata_from_post();
 		if ( $orchestration_meta === null ) {
 			wp_safe_redirect(
@@ -1477,6 +1540,7 @@ final class PromotionEditPage {
 					$orchestration_meta['cooldown_hours'],
 					$orchestration_meta['orchestration_group']
 				)
+				->with_pricing_fields( $priority_tier, $coupon_behavior, $allocation_mode )
 				->with_rules( $conditions, $actions, $restrictions );
 
 			$this->promotion_service->update_promotion( $updated, (int) get_current_user_id() );
@@ -2588,7 +2652,7 @@ final class PromotionEditPage {
 	}
 
 	private function render_plan_explanation_summary( PromotionEvaluationPlan $plan ): void {
-		$explanation = PromotionPlanExplainer::explain( $plan );
+		$explanation = $this->cart_preview_explained ?? PromotionPlanExplainer::explain( $plan );
 		$lines       = $explanation['summary_lines'] ?? array();
 
 		if ( $lines === array() ) {
@@ -2606,6 +2670,24 @@ final class PromotionEditPage {
 			echo '<li>' . esc_html( (string) $line ) . '</li>';
 		}
 		echo '</ul>';
+
+		if ( isset( $explanation['allocation_summary'] ) && is_array( $explanation['allocation_summary'] ) ) {
+			echo '<p><strong>' . esc_html__( 'Where the discount went (allocation estimate)', 'mp-commerce-promotions' ) . '</strong></p>';
+			echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Target', 'mp-commerce-promotions' ) . '</th><th>' . esc_html__( 'Promotion', 'mp-commerce-promotions' ) . '</th><th>' . esc_html__( 'Amount', 'mp-commerce-promotions' ) . '</th></tr></thead><tbody>';
+			foreach ( $explanation['line_impact_estimates'] ?? array() as $slice ) {
+				if ( ! is_array( $slice ) ) {
+					continue;
+				}
+				echo '<tr><td>' . esc_html( (string) ( $slice['line_key'] ?? 'line' ) ) . '</td>';
+				echo '<td>' . esc_html( (string) ( $slice['promotion_id'] ?? '' ) ) . '</td>';
+				echo '<td>' . esc_html( number_format( (float) ( $slice['amount'] ?? 0 ), 2 ) ) . '</td></tr>';
+			}
+			echo '</tbody></table>';
+			echo '<p class="description">' . esc_html__(
+				'Fee-based storefront application remains authoritative; allocation is read-only planning metadata.',
+				'mp-commerce-promotions'
+			) . '</p>';
+		}
 	}
 
 	/**
@@ -3467,6 +3549,52 @@ final class PromotionEditPage {
 
 		echo '<tr><th scope="row"><label for="mp_cp_priority">' . esc_html__( 'Priority', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="number" class="small-text" id="mp_cp_priority" name="promotion_priority" min="0" step="1" value="' . esc_attr( (string) $promotion->get_priority() ) . '" /></td></tr>';
+
+		$tier = $promotion->get_priority_tier();
+		echo '<tr><th scope="row"><label for="mp_cp_priority_tier">' . esc_html__( 'Priority tier', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select id="mp_cp_priority_tier" name="promotion_priority_tier">';
+		foreach (
+			array(
+				PromotionPriorityTier::STOREFRONT => __( 'Storefront', 'mp-commerce-promotions' ),
+				PromotionPriorityTier::CAMPAIGN   => __( 'Campaign', 'mp-commerce-promotions' ),
+				PromotionPriorityTier::LOYALTY    => __( 'Loyalty', 'mp-commerce-promotions' ),
+				PromotionPriorityTier::RECOVERY   => __( 'Recovery', 'mp-commerce-promotions' ),
+				PromotionPriorityTier::OVERRIDE   => __( 'Override', 'mp-commerce-promotions' ),
+			) as $value => $label
+		) {
+			echo '<option value="' . esc_attr( $value ) . '"' . selected( $tier, $value, false ) . '>' . esc_html( $label ) . '</option>';
+		}
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Planner evaluates promotions by tier first, then numeric priority.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		$coupon_behavior = $promotion->get_coupon_behavior();
+		echo '<tr><th scope="row"><label for="mp_cp_coupon_behavior">' . esc_html__( 'Coupon behavior', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select id="mp_cp_coupon_behavior" name="promotion_coupon_behavior">';
+		foreach (
+			array(
+				PromotionCouponBehavior::COEXIST           => __( 'Coexist with native coupons', 'mp-commerce-promotions' ),
+				PromotionCouponBehavior::BLOCK_NATIVE      => __( 'Block when native coupon applied', 'mp-commerce-promotions' ),
+				PromotionCouponBehavior::REQUIRE_NO_COUPON => __( 'Require native coupon (diagnostic)', 'mp-commerce-promotions' ),
+			) as $value => $label
+		) {
+			echo '<option value="' . esc_attr( $value ) . '"' . selected( $coupon_behavior, $value, false ) . '>' . esc_html( $label ) . '</option>';
+		}
+		echo '</select></td></tr>';
+
+		$allocation_mode = $promotion->get_allocation_mode();
+		echo '<tr><th scope="row"><label for="mp_cp_allocation_mode">' . esc_html__( 'Allocation mode', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select id="mp_cp_allocation_mode" name="promotion_allocation_mode">';
+		foreach (
+			array(
+				PromotionAllocationMode::PROPORTIONAL    => __( 'Proportional (lines + shipping)', 'mp-commerce-promotions' ),
+				PromotionAllocationMode::LINE_EQUAL      => __( 'Equal per line', 'mp-commerce-promotions' ),
+				PromotionAllocationMode::SHIPPING_FIRST  => __( 'Shipping first', 'mp-commerce-promotions' ),
+			) as $value => $label
+		) {
+			echo '<option value="' . esc_attr( $value ) . '"' . selected( $allocation_mode, $value, false ) . '>' . esc_html( $label ) . '</option>';
+		}
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Metadata for allocation explainability; storefront discounts still apply as cart fees.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_starts">' . esc_html__( 'Starts at', 'mp-commerce-promotions' ) . '</label></th><td>';
 		$starts = $promotion->get_starts_at() ?? '';

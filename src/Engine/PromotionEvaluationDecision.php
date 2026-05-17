@@ -24,6 +24,10 @@ final class PromotionEvaluationDecision {
 
 	public const REASON_BLOCKED_BY_COOLDOWN         = 'blocked_by_cooldown';
 
+	public const REASON_BLOCKED_BY_COUPON             = 'blocked_by_coupon';
+
+	public const REASON_COUPON_REQUIRED_ABSENT        = 'coupon_required_absent';
+
 	private ?int $promotion_id;
 
 	private string $promotion_uuid;

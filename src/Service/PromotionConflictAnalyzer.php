@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Service;
 
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
+use MP\CommercePromotions\Domain\PromotionPriorityTier;
 use MP\CommercePromotions\Engine\CartItemSelector;
 use MP\CommercePromotions\Engine\PromotionDateHelper;
 use MP\CommercePromotions\Engine\RuleTypes;
@@ -28,6 +29,8 @@ final class PromotionConflictAnalyzer {
 	public const TYPE_PRIORITY_SHADOWING        = 'priority_shadowing';
 
 	public const TYPE_ORCHESTRATION_CONGESTION  = 'orchestration_congestion';
+
+	public const TYPE_TIER_CONGESTION           = 'tier_congestion';
 
 	/**
 	 * @param list<Promotion> $promotions
@@ -49,6 +52,7 @@ final class PromotionConflictAnalyzer {
 		$conflicts = array_merge( $conflicts, $this->detect_usage_limit_conflict( $indexed ) );
 		$conflicts = array_merge( $conflicts, $this->detect_priority_shadowing( $indexed ) );
 		$conflicts = array_merge( $conflicts, $this->detect_orchestration_congestion( $indexed ) );
+		$conflicts = array_merge( $conflicts, $this->detect_tier_congestion( $indexed ) );
 
 		return $conflicts;
 	}
@@ -585,6 +589,50 @@ final class PromotionConflictAnalyzer {
 		}
 
 		return array();
+	}
+
+	/**
+	 * @param array<int, Promotion> $indexed
+	 * @return list<array{type: string, severity: string, promotion_ids: list<int>, message: string}>
+	 */
+	private function detect_tier_congestion( array $indexed ): array {
+		/** @var array<string, list<Promotion>> $tier_to_promotions */
+		$tier_to_promotions = array();
+
+		foreach ( $indexed as $promotion ) {
+			$tier = PromotionPriorityTier::normalize( $promotion->get_priority_tier() );
+			if ( ! isset( $tier_to_promotions[ $tier ] ) ) {
+				$tier_to_promotions[ $tier ] = array();
+			}
+			$tier_to_promotions[ $tier ][] = $promotion;
+		}
+
+		$conflicts = array();
+		foreach ( $tier_to_promotions as $tier => $promotions ) {
+			if ( count( $promotions ) < 3 ) {
+				continue;
+			}
+
+			$overlapping_ids = $this->promotion_ids_with_overlapping_windows( $promotions );
+			if ( count( $overlapping_ids ) < 3 ) {
+				continue;
+			}
+
+			$conflicts[] = $this->row(
+				self::TYPE_TIER_CONGESTION,
+				'warning',
+				$overlapping_ids,
+				sprintf(
+					/* translators: 1: priority tier, 2: promotion IDs, 3: count */
+					__( 'Priority tier "%1$s" has %3$d overlapping promotions (%2$s); planner evaluates tier first then numeric priority.', 'mp-commerce-promotions' ),
+					$tier,
+					implode( ', ', array_map( 'strval', $overlapping_ids ) ),
+					count( $overlapping_ids )
+				)
+			);
+		}
+
+		return $conflicts;
 	}
 
 	private function promotions_overlap_in_time( Promotion $a, Promotion $b ): bool {

@@ -309,7 +309,8 @@ final class PromotionPlanExplainer {
 	public static function enrich_explanation(
 		array $explained,
 		PromotionEvaluationPlan $plan,
-		EvaluationContext $context
+		EvaluationContext $context,
+		?AllocationResult $allocation = null
 	): array {
 		$subtotal = $context->get_cart_subtotal() ?? 0.0;
 		$selected = $plan->get_selected_decisions();
@@ -367,6 +368,34 @@ final class PromotionPlanExplainer {
 
 		if ( ! isset( $explained['why_lost_summaries'] ) ) {
 			$explained['why_lost_summaries'] = array();
+		}
+
+		if ( $allocation instanceof AllocationResult ) {
+			$explained['allocation_summary']      = $allocation->to_array();
+			$explained['effective_savings_rate'] = $allocation->get_effective_discount_rate();
+			$explained['line_impact_estimates']   = array_map(
+				static fn ( AllocatedDiscount $slice ): array => $slice->to_array(),
+				$allocation->get_line_allocations()
+			);
+			$ship_rows = $allocation->to_array()['shipping_allocations'] ?? array();
+			$ship_sum  = 0.0;
+			foreach ( $ship_rows as $row ) {
+				if ( is_array( $row ) && isset( $row['amount'] ) ) {
+					$ship_sum += (float) $row['amount'];
+				}
+			}
+			$explained['shipping_impact_estimate'] = round( $ship_sum, 4 );
+			if ( is_array( $allocation->get_tax_metadata() ) ) {
+				$explained['tax_impact_estimate'] = $allocation->get_tax_metadata();
+			}
+		}
+
+		$meta = $context->to_array()['metadata'] ?? array();
+		if ( is_array( $meta ) && ! empty( $meta['native_coupon_codes'] ) ) {
+			$explained['coupon_coexistence'] = array(
+				'native_coupons' => $meta['native_coupon_codes'],
+				'message'        => __( 'Native Woo coupons present; promotion coupon_behavior rules apply.', 'mp-commerce-promotions' ),
+			);
 		}
 
 		return $explained;

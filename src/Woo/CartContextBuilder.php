@@ -130,6 +130,7 @@ final class CartContextBuilder {
 		}
 
 		$this->enrich_billing_metadata( $customer_id, $metadata );
+		$this->enrich_shipping_and_coupon_metadata( $cart, $metadata );
 
 		return new EvaluationContext( $customer_id, $subtotal, $currency, $items, $metadata );
 	}
@@ -223,6 +224,28 @@ final class CartContextBuilder {
 	/**
 	 * @param array<string, mixed> $metadata
 	 */
+	/**
+	 * @param object|null          $cart WooCommerce cart.
+	 * @param array<string, mixed> $metadata
+	 */
+	private function enrich_shipping_and_coupon_metadata( $cart, array &$metadata ): void {
+		if ( $cart !== null && is_object( $cart ) ) {
+			if ( method_exists( $cart, 'get_shipping_total' ) ) {
+				$metadata['shipping_total'] = max( 0.0, (float) $cart->get_shipping_total() );
+			}
+			if ( method_exists( $cart, 'get_applied_coupons' ) ) {
+				$coupons = $cart->get_applied_coupons();
+				if ( is_array( $coupons ) ) {
+					$metadata['native_coupon_codes'] = array_values( array_map( 'strval', $coupons ) );
+				}
+			}
+		}
+
+		if ( function_exists( 'WC' ) && WC()->cart && $cart === null ) {
+			$this->enrich_shipping_and_coupon_metadata( WC()->cart, $metadata );
+		}
+	}
+
 	private function enrich_billing_metadata( ?int $customer_id, array &$metadata ): void {
 		$country = $this->resolve_billing_country( $customer_id );
 		if ( $country !== null && $country !== '' ) {

@@ -398,6 +398,16 @@ Promotion rows store optional **`campaign_label`** (varchar 191), **`internal_no
 - **Admin** — Reports: forecasting, calendar, recommendations, intelligence analytics, planner performance, simulation. Diagnostics: intelligence recovery + recommendations. Snapshots: intelligence metadata + simulate (read-only).
 - **Manual QA** — [manual-simulation-and-forecasting-test.md](manual-simulation-and-forecasting-test.md); smoke: `scripts/simulation-forecasting-smoke.php`.
 
+### Advanced pricing engine groundwork (schema 1.14.0)
+
+- **`DiscountAllocationEngine`** — proportional line/shipping allocation metadata (`AllocatedDiscount`, `AllocationResult`); no cart line mutation; storefront still fee-based.
+- **Promotion columns** — `priority_tier`, `coupon_behavior`, `allocation_mode`; planner sorts by tier then numeric priority.
+- **`TaxAwareDiscountCalculator`**, **`CouponCoexistenceEvaluator`**, **`PricingCompatibilityAnalyzer`** — admin/report heuristics only (no checkout tax mutation).
+- **`AllocationContextCache`** — request allocation memo + option metrics `mp_cp_allocation_performance_metrics`.
+- **Reports** — profitability/pricing/shipping analytics; CSV columns for effective rate, tax impact, tiers; calendar tier/coupon/budget indicators.
+- **Diagnostics** — `PromotionPricingRecovery` (rebuild allocation summaries, normalize tiers, etc.).
+- **Manual QA** — [manual-pricing-engine-test.md](manual-pricing-engine-test.md); smoke: `scripts/pricing-engine-smoke.php`.
+
 ### Economics and scheduling (schema 1.10.0)
 
 **Promotion budgets** — optional `budget_amount`, `budget_currency`, and running `budget_spent` on `{prefix}mp_cp_promotions`. Checkout recording increments `budget_spent` via `PromotionBudgetLedger` + `PromotionRepository::adjust_budget_spent()`; reversal subtracts the same discount amount. `PromotionRestrictionEvaluator` blocks exhausted caps with `promotion_budget_exhausted`. Diagnostics can pause exhausted actives via `PromotionService::pause_budget_exhausted_promotions()`.

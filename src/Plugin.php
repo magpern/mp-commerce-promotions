@@ -35,6 +35,7 @@ use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
 use MP\CommercePromotions\Service\PromotionConflictAnalyzer;
 use MP\CommercePromotions\Service\PromotionHealthMonitor;
 use MP\CommercePromotions\Service\PromotionIntelligenceRecovery;
+use MP\CommercePromotions\Service\PromotionPricingRecovery;
 use MP\CommercePromotions\Service\PromotionOperationalRecovery;
 use MP\CommercePromotions\Service\PromotionRecommendationEngine;
 use MP\CommercePromotions\Service\PromotionReports;
@@ -194,8 +195,13 @@ final class Plugin {
 			);
 
 			$campaign_bulk = null;
+			$pricing_bulk  = null;
 			if ( $wpdb instanceof wpdb && $this->audit_logger !== null ) {
 				$campaign_bulk = new \MP\CommercePromotions\Service\PromotionBulkCampaignWorkflow(
+					$this->promotion_repository,
+					$this->audit_logger
+				);
+				$pricing_bulk = new \MP\CommercePromotions\Service\PromotionBulkPricingWorkflow(
 					$this->promotion_repository,
 					$this->audit_logger
 				);
@@ -210,7 +216,8 @@ final class Plugin {
 				$this->redemption_repository,
 				$rule_validator,
 				$health_monitor,
-				$campaign_bulk
+				$campaign_bulk,
+				$pricing_bulk
 			);
 		}
 
@@ -253,11 +260,16 @@ final class Plugin {
 			}
 
 			$intelligence_recovery = null;
+			$pricing_recovery      = null;
 			$recommendation_engine = null;
 			if ( $wpdb instanceof wpdb ) {
 				$scenario_repo_intel = new SimulationScenarioRepository( $wpdb );
 				$telemetry_intel     = new PlannerTelemetryRepository( $wpdb );
 				$intelligence_recovery = new PromotionIntelligenceRecovery( $telemetry_intel, $scenario_repo_intel );
+				$pricing_recovery      = new PromotionPricingRecovery(
+					$this->promotion_repository,
+					new PromotionSnapshotRepository( $wpdb )
+				);
 				$recommendation_engine = new PromotionRecommendationEngine(
 					$this->promotion_repository,
 					$this->redemption_repository,
@@ -273,7 +285,8 @@ final class Plugin {
 				$operational_recovery,
 				$automation_runs_repo,
 				$intelligence_recovery,
-				$recommendation_engine
+				$recommendation_engine,
+				$pricing_recovery
 			);
 		}
 

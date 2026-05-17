@@ -10,7 +10,9 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Service;
 
 use MP\CommercePromotions\Domain\Promotion;
+use MP\CommercePromotions\Domain\PromotionPriorityTier;
 use MP\CommercePromotions\Domain\PromotionRepository;
+use MP\CommercePromotions\Engine\DiscountAllocationEngine;
 use MP\CommercePromotions\Engine\EligibleCartScope;
 use MP\CommercePromotions\Engine\EvaluationContext;
 use MP\CommercePromotions\Engine\PlannerContextCache;
@@ -28,14 +30,18 @@ final class PromotionSimulationEngine {
 
 	private PromotionEvaluator $evaluator;
 
+	private DiscountAllocationEngine $allocator;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		?PromotionPlanner $planner = null,
-		?PromotionEvaluator $evaluator = null
+		?PromotionEvaluator $evaluator = null,
+		?DiscountAllocationEngine $allocator = null
 	) {
 		$this->promotions = $promotions;
 		$this->evaluator  = $evaluator ?? new PromotionEvaluator();
 		$this->planner    = $planner ?? new PromotionPlanner( $this->evaluator );
+		$this->allocator  = $allocator ?? new DiscountAllocationEngine();
 	}
 
 	public function simulate( SimulationScenario $scenario, ?array $promotion_filter_ids = null ): SimulationResult {
@@ -53,8 +59,9 @@ final class PromotionSimulationEngine {
 		$promotions  = $this->sort_promotions( $promotions );
 
 		$plan        = $this->planner->plan( $promotions, $context );
+		$allocation  = $this->allocator->allocate( $context, $plan->get_selected_decisions() );
 		$explained   = PromotionPlanExplainer::explain( $plan );
-		$explained   = PromotionPlanExplainer::enrich_explanation( $explained, $plan, $context );
+		$explained   = PromotionPlanExplainer::enrich_explanation( $explained, $plan, $context, $allocation );
 
 		$eligible    = array();
 		$selected    = array();
@@ -161,21 +168,7 @@ final class PromotionSimulationEngine {
 	 * @return list<Promotion>
 	 */
 	private function sort_promotions( array $promotions ): array {
-		usort(
-			$promotions,
-			static function ( Promotion $a, Promotion $b ): int {
-				$pa = $a->get_priority();
-				$pb = $b->get_priority();
-				if ( $pa !== $pb ) {
-					return $pa <=> $pb;
-				}
-				$ia = $a->get_id() ?? 0;
-				$ib = $b->get_id() ?? 0;
-				return $ia <=> $ib;
-			}
-		);
-
-		return $promotions;
+		return PromotionPriorityTier::sort_promotions( $promotions );
 	}
 
 	private function estimate_discount_for_promotion( Promotion $promotion, EvaluationContext $context ): float {

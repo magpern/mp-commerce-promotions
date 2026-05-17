@@ -11,13 +11,20 @@ namespace MP\CommercePromotions\Engine;
 
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
+use MP\CommercePromotions\Woo\CouponCoexistenceEvaluator;
 
 final class PromotionPlanner {
 
 	private PromotionEvaluator $evaluator;
 
-	public function __construct( ?PromotionEvaluator $evaluator = null ) {
-		$this->evaluator = $evaluator ?? new PromotionEvaluator();
+	private ?CouponCoexistenceEvaluator $coupon_evaluator;
+
+	public function __construct(
+		?PromotionEvaluator $evaluator = null,
+		?CouponCoexistenceEvaluator $coupon_evaluator = null
+	) {
+		$this->evaluator        = $evaluator ?? new PromotionEvaluator();
+		$this->coupon_evaluator = $coupon_evaluator ?? new CouponCoexistenceEvaluator();
 	}
 
 	/**
@@ -36,8 +43,11 @@ final class PromotionPlanner {
 		$blocked_by_cooldown_count  = 0;
 		$blocked_by_budget_count    = 0;
 		$blocked_by_exclusion_count = 0;
+		$blocked_by_coupon_count    = 0;
 		/** @var array<string, int> $orchestration_group_winner */
 		$orchestration_group_winner = array();
+
+		$started = microtime( true );
 
 		foreach ( $promotions as $promotion ) {
 			if ( $stop_further_selection ) {
@@ -64,6 +74,18 @@ final class PromotionPlanner {
 					$skip_reason
 				);
 				continue;
+			}
+
+			if ( $this->coupon_evaluator !== null ) {
+				$coupon_check = $this->coupon_evaluator->evaluate_promotion( $promotion, $context, null );
+				if ( ! $coupon_check['allowed'] && ! empty( $coupon_check['reason'] ) ) {
+					$decisions[] = $this->build_skipped_decision(
+						$promotion,
+						(string) $coupon_check['reason']
+					);
+					++$blocked_by_coupon_count;
+					continue;
+				}
 			}
 
 			$promotion_id = $promotion->get_id();
@@ -147,15 +169,18 @@ final class PromotionPlanner {
 			}
 		}
 
+		AllocationContextCache::record_planner_timing( (int) round( ( microtime( true ) - $started ) * 1000 ) );
+
 		return new PromotionEvaluationPlan(
 			$decisions,
 			array(
-				'selected_count'            => $selected_count,
-				'skipped_count'             => $skipped_count,
-				'blocked_by_group_count'     => $blocked_by_group_count,
-				'blocked_by_cooldown_count'  => $blocked_by_cooldown_count,
-				'blocked_by_budget_count'    => $blocked_by_budget_count,
-				'blocked_by_exclusion_count' => $blocked_by_exclusion_count,
+				'selected_count'             => $selected_count,
+				'skipped_count'              => $skipped_count,
+				'blocked_by_group_count'      => $blocked_by_group_count,
+				'blocked_by_cooldown_count'   => $blocked_by_cooldown_count,
+				'blocked_by_budget_count'     => $blocked_by_budget_count,
+				'blocked_by_exclusion_count'  => $blocked_by_exclusion_count,
+				'blocked_by_coupon_count'     => $blocked_by_coupon_count,
 			)
 		);
 	}

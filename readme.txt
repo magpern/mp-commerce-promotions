@@ -34,6 +34,7 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * Conditions: minimum subtotal, minimum/maximum eligible subtotal (scoped line subtotals), product/category quantity, product in cart, category in cart, exclude sale items, min/max cart quantity, logged in, first order, customer role, billing country, customer email domain, customer redemption count (logged-in metadata when available)
 * Promotion-level excluded product/category IDs (schema 1.8.0) — narrow evaluation scope without removing cart lines
 * Actions: percentage discount and fixed amount discount (optional product/category/variation scope; percentage supports sale exclusion), free shipping (MVP fee offset), cheapest item discount (EligibleCartScope BOGO groundwork via negative fee), free gift product (adds cart line at zero price)
+* Advanced pricing groundwork (schema 1.14.0) — discount allocation metadata, priority tiers, coupon coexistence modes, tax/shipping heuristics (fee-based storefront unchanged)
 * Orchestration groups and per-promotion cooldown hours (schema 1.11.0); promotion snapshots for rollback
 * Customer segmentation conditions: lifetime spend, order count, average order value (logged-in + Woo metadata)
 * Promotion templates — ten admin presets including VIP, loyal, and returning customer segmentation
