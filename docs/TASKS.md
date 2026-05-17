@@ -4,7 +4,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Current milestone
 
-**Commercial readiness** — onboarding, settings governance, compatibility status, support bundle, uninstall policy, docs/POT placeholder, smoke/tests. Next: PHPCS gating in CI, block checkout QA, full i18n extraction.
+**Pre-beta stabilization** — production hardening closure (Reports UI, docs, PHPCS batch, checkout lock, optimizations). Next: block checkout QA, full i18n extraction, CI PHPCS gating.
 
 ## Manual QA (2026-05-17)
 
@@ -15,6 +15,9 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Production hardening closure** — Reports production dashboard, checkout recording lock, redemption memoization, simulation request cache, expanded `release-audit.sh`, closure smoke/tests, docs
+- **Performance and production hardening** — profiler, concurrency, optional cron, safe/degraded mode, retention cleanup, compatibility confidence
+- **Commercial readiness** — Getting Started, settings governance, compatibility panel, support bundle, uninstall opt-in
 - **Orchestration and segmentation (schema 1.11.0)** — cooldown/orchestration fields, snapshots, segmentation conditions, planner explainability, conflict congestion, reports, templates, admin UX, diagnostics automation, PHPUnit + smoke/docs
 - **Economics and scheduling (schema 1.10.0)** — promotion budgets, batch export metadata, lifecycle filters/badges, schedule analyzer, reports economics, diagnostics pause exhausted, PHPUnit + smoke/docs
 - **Campaign operations (schema 1.9.0)** — campaign_label/internal_notes/admin_color, admin UI, list/report filters, Diagnostics archive hygiene, smoke/docs

@@ -245,5 +245,32 @@ if ( ! function_exists( 'wp_strip_all_tags' ) ) {
 	}
 }
 
+if ( ! class_exists( 'wpdb', false ) ) {
+	/**
+	 * Minimal wpdb stub for repository unit tests.
+	 */
+	class wpdb {
+		/** @var string */
+		public $prefix = 'wp_';
+
+		/** @param string $query */
+		public function prepare( $query, ...$args ) {
+			return $query;
+		}
+
+		/** @param string $query */
+		public function get_var( $query ) {
+			unset( $query );
+			return '0';
+		}
+
+		/** @return list<array<string, mixed>> */
+		public function get_results( $query, $output = OBJECT ) {
+			unset( $query, $output );
+			return array();
+		}
+	}
+}
+
 require $plugin_root . 'src/autoload.php';
 require $plugin_root . 'tests/Support/PromotionTestFixtures.php';

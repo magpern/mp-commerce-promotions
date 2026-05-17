@@ -1,5 +1,11 @@
 # Manual test: performance and production hardening
 
+## Reports dashboard
+
+1. Open **WooCommerce → Promotions → Reports**.
+2. **Production hardening** — verify safe mode, automatic promotions, degraded mode, telemetry/simulation pause, emergency stop, cron flags, retention days, compatibility confidence.
+3. **Planner performance** — profiler aggregates, request/persisted cache counters, allocation hits/misses, slow planner runs table.
+
 ## Profiler
 
 1. Add products to cart and recalculate totals several times.
@@ -36,8 +42,29 @@ bash scripts/build-zip.sh
 bash scripts/verify-plugin.sh
 ```
 
+## Checkout recording lock
+
+1. Place a test order with an automatic promotion applied.
+2. Confirm a single redemption row per `(order_id, promotion_id)` even if checkout hooks fire twice (lock is transient per order, 60s TTL).
+
+## Remaining limitations
+
+- 100+ active promotions increase planner CPU; narrow with orchestration groups and safe mode under load.
+- Profiler aggregates are site-wide rolling options (not per-promotion time series).
+- Cart/Checkout Blocks not declared compatible.
+- PHPCS cleanup is incremental, not zero-violation.
+
 ## Smoke (WP-CLI)
 
 ```bash
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/performance-hardening-smoke.php
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/production-hardening-closure-smoke.php
 ```
+
+## Release audit
+
+```bash
+bash scripts/release-audit.sh
+```
+
+Validates plugin header, required docs (including `docs/COMMERCIAL_READINESS.md`), schema version in ARCHITECTURE/README, and release zip excludes `vendor/` and `.git/`.

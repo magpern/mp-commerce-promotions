@@ -407,6 +407,18 @@ Promotion rows store optional **`campaign_label`** (varchar 191), **`internal_no
 - **`UninstallDataCleaner`** — runs only when `mp_cp_delete_data_on_uninstall` is `yes`.
 - See [COMMERCIAL_READINESS.md](COMMERCIAL_READINESS.md).
 
+### Production hardening (schema 1.14.0, no migration)
+
+- **`PromotionPerformanceProfiler`** — rolling option aggregates (`mp_cp_performance_profiler_aggregates`): planner runtime, evaluator/condition counts, allocation cache hit rate, telemetry/simulation write timings, slow runs; degraded storefront flag (`mp_cp_storefront_degraded_state`).
+- **`PromotionConcurrencyGuard`** — transient locks for planner, automation, snapshot restore, and checkout recording (`mp_cp_checkout_record_{order_id}`, 60s TTL). Warnings stored in `mp_cp_concurrency_warnings`.
+- **`PromotionCronScheduler`** — optional WP-Cron (`mp_cp_cron_automation_enabled`, default **off**): hourly automation maintenance, daily retention cleanup + forecast/planner counter reset; audit `promotion.automation_cron_run`.
+- **`PromotionDataRetentionService`** — purges old automation runs and archives stale simulation scenarios by `mp_cp_telemetry_retention_days` (default 90).
+- **Production safety settings** — safe mode (disable automatic promotions; optional codes), telemetry/simulation pause, automation emergency stop.
+- **Storefront resilience** — planner try/catch in `CartPromotionApplier`; cart still loads on failure; optional `woocommerce_before_cart` notice when degraded.
+- **Reports** — `PromotionReports::production_hardening_dashboard()` surfaces profiler, compatibility confidence, cron schedule flags, and safety toggles without extra queries.
+- **Release tooling** — `scripts/release-audit.sh` validates headers, docs, schema documentation, and release zip exclusions.
+- Manual QA: [manual-performance-and-hardening-test.md](manual-performance-and-hardening-test.md); smokes: `scripts/performance-hardening-smoke.php`, `scripts/production-hardening-closure-smoke.php`.
+
 ### Advanced pricing engine groundwork (schema 1.14.0)
 
 - **`DiscountAllocationEngine`** — proportional line/shipping allocation metadata (`AllocatedDiscount`, `AllocationResult`); no cart line mutation; storefront still fee-based.

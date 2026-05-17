@@ -18,6 +18,7 @@ use MP\CommercePromotions\Service\PromotionLifecycle;
 use MP\CommercePromotions\Service\PromotionReports;
 use MP\CommercePromotions\Service\PromotionSimulationEngine;
 use MP\CommercePromotions\Service\Settings;
+use MP\CommercePromotions\Woo\PricingCompatibilityAnalyzer;
 use MP\CommercePromotions\Service\SimulationScenario;
 
 final class ReportsPage {
@@ -75,6 +76,7 @@ final class ReportsPage {
 		$this->render_telemetry_section();
 		$this->render_automation_history_section();
 		$this->render_health_summary_section();
+		$this->render_production_hardening_section();
 		$this->render_planner_performance_section();
 		$this->render_forecasting_section();
 		$this->render_promotion_calendar_section();
@@ -586,38 +588,140 @@ final class ReportsPage {
 		echo '</p>';
 	}
 
+	private function render_production_hardening_section(): void {
+		$dash = $this->reports->production_hardening_dashboard( $this->settings );
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Production hardening', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<table class="widefat striped" style="max-width:960px;"><tbody>';
+
+		$this->render_hardening_row(
+			__( 'Safe mode', 'mp-commerce-promotions' ),
+			! empty( $dash['safe_mode'] )
+				? __( 'ON — automatic promotions disabled', 'mp-commerce-promotions' )
+				: __( 'Off', 'mp-commerce-promotions' )
+		);
+		$this->render_hardening_row(
+			__( 'Automatic promotions', 'mp-commerce-promotions' ),
+			! empty( $dash['automatic_promotions'] ) ? __( 'Enabled', 'mp-commerce-promotions' ) : __( 'Disabled', 'mp-commerce-promotions' )
+		);
+		$this->render_hardening_row(
+			__( 'Storefront degraded mode', 'mp-commerce-promotions' ),
+			! empty( $dash['storefront_degraded'] )
+				? __( 'Active — see Diagnostics to clear', 'mp-commerce-promotions' )
+				: __( 'Not active', 'mp-commerce-promotions' )
+		);
+		$this->render_hardening_row(
+			__( 'Planner telemetry', 'mp-commerce-promotions' ),
+			! empty( $dash['telemetry_paused'] )
+				? __( 'Paused', 'mp-commerce-promotions' )
+				: __( 'Active', 'mp-commerce-promotions' )
+		);
+		$this->render_hardening_row(
+			__( 'Simulations', 'mp-commerce-promotions' ),
+			! empty( $dash['simulation_paused'] )
+				? __( 'Paused', 'mp-commerce-promotions' )
+				: __( 'Active', 'mp-commerce-promotions' )
+		);
+		$this->render_hardening_row(
+			__( 'Automation emergency stop', 'mp-commerce-promotions' ),
+			! empty( $dash['automation_emergency_stop'] ) ? __( 'ON', 'mp-commerce-promotions' ) : __( 'Off', 'mp-commerce-promotions' )
+		);
+		$this->render_hardening_row(
+			__( 'WP-Cron automation', 'mp-commerce-promotions' ),
+			! empty( $dash['cron_automation_enabled'] ) ? __( 'Enabled in settings', 'mp-commerce-promotions' ) : __( 'Disabled (default)', 'mp-commerce-promotions' )
+		);
+		$this->render_hardening_row(
+			__( 'Cron hooks scheduled', 'mp-commerce-promotions' ),
+			sprintf(
+				/* translators: 1: hourly yes/no, 2: daily yes/no */
+				__( 'Hourly: %1$s — Daily: %2$s', 'mp-commerce-promotions' ),
+				! empty( $dash['cron_hourly_scheduled'] ) ? __( 'yes', 'mp-commerce-promotions' ) : __( 'no', 'mp-commerce-promotions' ),
+				! empty( $dash['cron_daily_scheduled'] ) ? __( 'yes', 'mp-commerce-promotions' ) : __( 'no', 'mp-commerce-promotions' )
+			)
+		);
+		$this->render_hardening_row(
+			__( 'Telemetry retention', 'mp-commerce-promotions' ),
+			sprintf(
+				/* translators: %d: days */
+				__( '%d days', 'mp-commerce-promotions' ),
+				(int) ( $dash['telemetry_retention_days'] ?? 90 )
+			)
+		);
+
+		$confidence = (string) ( $dash['compatibility_confidence'] ?? PricingCompatibilityAnalyzer::CONFIDENCE_UNKNOWN );
+		$this->render_hardening_row( __( 'Compatibility confidence', 'mp-commerce-promotions' ), $confidence );
+
+		echo '</tbody></table>';
+	}
+
+	/**
+	 * @param array<string, mixed> $profiler
+	 */
 	private function render_planner_performance_section(): void {
-		$perf = $this->reports->planner_performance();
+		$perf     = $this->reports->planner_performance();
+		$profiler = is_array( $perf['profiler'] ?? null ) ? $perf['profiler'] : array();
+
 		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Planner performance', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p>' . esc_html__(
-			'In-request cache counters for simulations and cart planning (no Redis).',
+			'In-request cache counters, rolling profiler aggregates, and allocation cache metrics.',
 			'mp-commerce-promotions'
 		) . '</p>';
-		echo '<ul>';
-		printf(
-			'<li>%s</li>',
-			esc_html(
-				sprintf(
-					/* translators: 1: simulated runs, 2: hits, 3: misses */
-					__( 'This request — simulated: %1$d, cache hits: %2$d, misses: %3$d', 'mp-commerce-promotions' ),
-					(int) ( $perf['request']['simulated_runs'] ?? 0 ),
-					(int) ( $perf['request']['cache_hits'] ?? 0 ),
-					(int) ( $perf['request']['cache_misses'] ?? 0 )
-				)
+
+		echo '<h3>' . esc_html__( 'Request & persisted caches', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<table class="widefat striped" style="max-width:720px;"><tbody>';
+		$this->render_hardening_row(
+			__( 'This request — simulated runs', 'mp-commerce-promotions' ),
+			(string) (int) ( $perf['request']['simulated_runs'] ?? 0 )
+		);
+		$this->render_hardening_row(
+			__( 'This request — planner cache hits / misses', 'mp-commerce-promotions' ),
+			(int) ( $perf['request']['cache_hits'] ?? 0 ) . ' / ' . (int) ( $perf['request']['cache_misses'] ?? 0 )
+		);
+		$this->render_hardening_row(
+			__( 'Allocation cache hits / misses (request)', 'mp-commerce-promotions' ),
+			(int) ( $perf['request']['allocation_hits'] ?? 0 ) . ' / ' . (int) ( $perf['request']['allocation_misses'] ?? 0 )
+		);
+		$this->render_hardening_row(
+			__( 'Persisted planner counters', 'mp-commerce-promotions' ),
+			sprintf(
+				'simulated %d — hits %d — misses %d',
+				(int) ( $perf['persisted']['simulated_runs'] ?? 0 ),
+				(int) ( $perf['persisted']['cache_hits'] ?? 0 ),
+				(int) ( $perf['persisted']['cache_misses'] ?? 0 )
 			)
 		);
-		printf(
-			'<li>%s</li>',
-			esc_html(
-				sprintf(
-					__( 'Persisted totals — simulated: %1$d, hits: %2$d, misses: %3$d', 'mp-commerce-promotions' ),
-					(int) ( $perf['persisted']['simulated_runs'] ?? 0 ),
-					(int) ( $perf['persisted']['cache_hits'] ?? 0 ),
-					(int) ( $perf['persisted']['cache_misses'] ?? 0 )
-				)
-			)
-		);
-		echo '</ul>';
+		echo '</tbody></table>';
+
+		echo '<h3>' . esc_html__( 'Profiler aggregates', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<table class="widefat striped" style="max-width:720px;"><tbody>';
+		$this->render_hardening_row( __( 'Planner runs (rolling)', 'mp-commerce-promotions' ), (string) (int) ( $profiler['planner_runs'] ?? 0 ) );
+		$this->render_hardening_row( __( 'Average planner runtime (ms)', 'mp-commerce-promotions' ), (string) ( $profiler['average_planner_ms'] ?? 0 ) );
+		$this->render_hardening_row( __( 'Max planner runtime (ms)', 'mp-commerce-promotions' ), (string) ( $profiler['max_planner_ms'] ?? 0 ) );
+		$this->render_hardening_row( __( 'Allocation cache hit rate', 'mp-commerce-promotions' ), (string) ( $profiler['allocation_cache_hit_rate'] ?? 0 ) . '%' );
+		$this->render_hardening_row( __( 'Telemetry writes', 'mp-commerce-promotions' ), (string) (int) ( $profiler['telemetry_writes'] ?? 0 ) );
+		$this->render_hardening_row( __( 'Planner failures', 'mp-commerce-promotions' ), (string) (int) ( $profiler['planner_failures'] ?? 0 ) );
+		echo '</tbody></table>';
+
+		$slow = is_array( $perf['slow_runs'] ?? null ) ? $perf['slow_runs'] : array();
+		echo '<h3>' . esc_html__( 'Slow planner runs', 'mp-commerce-promotions' ) . '</h3>';
+		if ( $slow === array() ) {
+			echo '<p>' . esc_html__( 'No slow runs recorded yet.', 'mp-commerce-promotions' ) . '</p>';
+		} else {
+			echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Duration (ms)', 'mp-commerce-promotions' ) . '</th><th>' . esc_html__( 'Promotions', 'mp-commerce-promotions' ) . '</th><th>' . esc_html__( 'Selected', 'mp-commerce-promotions' ) . '</th><th>' . esc_html__( 'Recorded', 'mp-commerce-promotions' ) . '</th></tr></thead><tbody>';
+			foreach ( array_slice( $slow, 0, 10 ) as $run ) {
+				if ( ! is_array( $run ) ) {
+					continue;
+				}
+				echo '<tr><td>' . esc_html( (string) ( $run['duration_ms'] ?? '' ) ) . '</td>';
+				echo '<td>' . esc_html( (string) ( $run['promotions_considered'] ?? '' ) ) . '</td>';
+				echo '<td>' . esc_html( (string) ( $run['selected_count'] ?? '' ) ) . '</td>';
+				echo '<td>' . esc_html( (string) ( $run['recorded_at'] ?? '' ) ) . '</td></tr>';
+			}
+			echo '</tbody></table>';
+		}
+	}
+
+	private function render_hardening_row( string $label, string $value ): void {
+		echo '<tr><th scope="row" style="width:240px;">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';
 	}
 
 	private function render_forecasting_section(): void {

@@ -17,14 +17,15 @@ Commerce Promotions is suitable for **staged rollouts and merchant pilots**. It 
 - Support bundle export (redacted JSON)
 - Opt-in uninstall data deletion
 - PHPUnit and WP-CLI smoke scripts for core workflows
+- Production hardening — profiler, safe mode, degraded storefront mode, concurrency locks, retention cleanup, `scripts/release-audit.sh`
 
 ## What is not production-certified
 
 - Cart/Checkout **Blocks** compatibility not declared
 - Discounts remain **cart fees** (no catalog line-price mutation)
 - Tax, profitability, and allocation figures are **heuristics**
-- No WP-Cron automation (manual Diagnostics triggers only)
-- PHPCS baseline not zero-violation
+- WP-Cron automation is **optional and off by default** (hourly maintenance + daily cleanup when enabled)
+- PHPCS baseline not zero-violation (incremental cleanup ongoing)
 - No wordpress.org release pipeline in this repo
 
 ## Known limitations
@@ -36,6 +37,8 @@ Commerce Promotions is suitable for **staged rollouts and merchant pilots**. It 
 | Uninstall | Data retained unless explicit delete opt-in |
 | i18n | POT placeholder; not fully extracted |
 | REST/AJAX admin | Not implemented |
+| High volume | 100+ active promotions increase planner work; use safe mode and retention cleanup |
+| Cron | Disabled by default; enable only with monitoring |
 
 ## Compatibility status
 

@@ -12,7 +12,7 @@
 3. Scroll to **Automation run history** — latest row with type `run_all`, status Completed, JSON summary via **View summary**.
 4. Open **Reports** — **Automation history** table shows recent runs.
 
-**Note:** No WP-Cron hook yet; automation is manual/admin-triggered only.
+**WP-Cron (optional):** Enable **Settings → Enable WP-Cron automation** to schedule hourly maintenance (`mp_cp_cron_hourly_maintenance`) and daily cleanup (`mp_cp_cron_daily_cleanup`). Default is **off**. Hourly runs respect **Automation emergency stop** and **manual only**. Cron runs audit `promotion.automation_cron_run`. Diagnostics shows hook schedule state.
 
 ## Promotion health
 

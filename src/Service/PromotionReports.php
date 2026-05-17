@@ -246,6 +246,38 @@ final class PromotionReports {
 	}
 
 	/**
+	 * Production hardening dashboard data for Reports (no extra DB queries).
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function production_hardening_dashboard( Settings $settings ): array {
+		$perf     = $this->planner_performance();
+		$profiler = new PromotionPerformanceProfiler();
+
+		return array(
+			'planner_performance'      => $perf,
+			'profiler'                 => $perf['profiler'] ?? $profiler->get_report_summary(),
+			'compatibility_confidence' => (string) ( $perf['compatibility_confidence'] ?? PricingCompatibilityAnalyzer::CONFIDENCE_UNKNOWN ),
+			'slow_runs'                => (array) ( $perf['slow_runs'] ?? array() ),
+			'safe_mode'                => $settings->safe_mode_enabled(),
+			'automatic_promotions'     => $settings->automatic_promotions_enabled(),
+			'telemetry_paused'         => $settings->telemetry_paused(),
+			'simulation_paused'        => $settings->simulation_paused(),
+			'automation_emergency_stop' => $settings->automation_emergency_stop(),
+			'cron_automation_enabled'  => $settings->cron_automation_enabled(),
+			'cron_hourly_scheduled'    => function_exists( 'wp_next_scheduled' )
+				? (bool) wp_next_scheduled( PromotionCronScheduler::HOOK_HOURLY )
+				: false,
+			'cron_daily_scheduled'     => function_exists( 'wp_next_scheduled' )
+				? (bool) wp_next_scheduled( PromotionCronScheduler::HOOK_DAILY )
+				: false,
+			'telemetry_retention_days' => $settings->telemetry_retention_days(),
+			'degraded_state'           => $profiler->get_degraded_state(),
+			'storefront_degraded'      => $profiler->is_storefront_degraded(),
+		);
+	}
+
+	/**
 	 * @return array<string, mixed>
 	 */
 	public function profitability_analytics(): array {

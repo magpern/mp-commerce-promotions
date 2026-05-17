@@ -17,9 +17,13 @@ final class PromotionConcurrencyGuard {
 
 	public const TRANSIENT_SNAPSHOT_RESTORE_LOCK = 'mp_cp_snapshot_restore_lock';
 
+	public const TRANSIENT_CHECKOUT_RECORD_PREFIX = 'mp_cp_checkout_record_';
+
 	public const OPTION_WARNINGS = 'mp_cp_concurrency_warnings';
 
 	private const LOCK_TTL = 30;
+
+	private const CHECKOUT_LOCK_TTL = 60;
 
 	public function acquire_planner_lock(): bool {
 		if ( get_transient( self::TRANSIENT_PLANNER_LOCK ) ) {
@@ -68,6 +72,41 @@ final class PromotionConcurrencyGuard {
 
 	public function is_automation_running(): bool {
 		return (bool) get_transient( self::TRANSIENT_AUTOMATION_LOCK );
+	}
+
+	public function acquire_checkout_recording_lock( int $order_id ): bool {
+		if ( $order_id <= 0 ) {
+			return true;
+		}
+
+		$key = self::checkout_lock_key( $order_id );
+		if ( get_transient( $key ) ) {
+			$this->record_warning(
+				'checkout_record_overlap',
+				sprintf(
+					/* translators: %d: order ID */
+					__( 'Checkout recording lock held for order %d; skipping overlapping write.', 'mp-commerce-promotions' ),
+					$order_id
+				)
+			);
+			return false;
+		}
+
+		set_transient( $key, '1', self::CHECKOUT_LOCK_TTL );
+
+		return true;
+	}
+
+	public function release_checkout_recording_lock( int $order_id ): void {
+		if ( $order_id <= 0 ) {
+			return;
+		}
+
+		delete_transient( self::checkout_lock_key( $order_id ) );
+	}
+
+	private static function checkout_lock_key( int $order_id ): string {
+		return self::TRANSIENT_CHECKOUT_RECORD_PREFIX . $order_id;
 	}
 
 	public function record_warning( string $code, string $message ): void {

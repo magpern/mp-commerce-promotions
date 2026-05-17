@@ -53,6 +53,7 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * Diagnostics and manual usage counter repair
 * Reports tab — redemption summaries and CSV export (5,000 row cap; no raw promotion codes)
 * Settings kill switch for cart discount application
+* Production hardening — performance profiler, safe mode, degraded storefront fallback, optional WP-Cron cleanup (off by default), telemetry retention, concurrency locks, compatibility confidence on Reports
 
 == Current MVP limitations ==
 
@@ -70,6 +71,9 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * **No PDF/email** voucher delivery
 * **Diagnostics** — scans capped (100 promotions / 100 codes per run); repair is manual
 * **Uninstall** — custom tables and options are **retained** by default (see uninstall.php)
+* **Scale** — many active promotions increase planner work; use safe mode and retention cleanup under load
+* **Cron** — automation cron disabled by default; enable only with monitoring
+* **Blocks checkout** — not declared compatible with Cart/Checkout Blocks
 
 == Installation ==
 

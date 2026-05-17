@@ -20,6 +20,7 @@ use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PromotionBudgetLedger;
+use MP\CommercePromotions\Service\PromotionConcurrencyGuard;
 use Throwable;
 
 final class OrderPromotionRecorder {
@@ -73,6 +74,58 @@ final class OrderPromotionRecorder {
 			if ( $order_id <= 0 ) {
 				return;
 			}
+
+			$guard = new PromotionConcurrencyGuard();
+			if ( ! $guard->acquire_checkout_recording_lock( $order_id ) ) {
+				if ( OrderPromotionState::has_recorded_promotions( $order ) ) {
+					return;
+				}
+				$entries_check = AppliedPromotionSession::entries_from_session(
+					CartSessionHelper::get_applied_promotion()
+				);
+				if ( $entries_check !== array() ) {
+					$all_exist = true;
+					foreach ( $entries_check as $entry ) {
+						if ( ! AppliedPromotionSession::is_valid_entry( $entry ) ) {
+							continue;
+						}
+						$pid = (int) $entry['promotion_id'];
+						if ( ! $this->redemptions->exists_for_order_and_promotion( $order_id, $pid ) ) {
+							$all_exist = false;
+							break;
+						}
+					}
+					if ( $all_exist ) {
+						return;
+					}
+				}
+				return;
+			}
+
+			try {
+				$this->record_on_order_create_locked( $order, $data );
+			} finally {
+				$guard->release_checkout_recording_lock( $order_id );
+			}
+		} catch ( Throwable $e ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log(
+					sprintf(
+						'[mp-commerce-promotions] OrderPromotionRecorder: %s',
+						$e->getMessage()
+					)
+				);
+			}
+		}
+	}
+
+	/**
+	 * @param mixed $order WooCommerce order object.
+	 * @param mixed $data  Checkout posted data (unused).
+	 */
+	private function record_on_order_create_locked( $order, $data = null ): void {
+			$order_id = (int) $order->get_id();
 
 			$entries = AppliedPromotionSession::entries_from_session(
 				CartSessionHelper::get_applied_promotion()
@@ -132,17 +185,6 @@ final class OrderPromotionRecorder {
 			OrderPromotionState::mark_recorded( $order );
 			$order->save();
 			$this->clear_applied_promotion_session();
-		} catch ( Throwable $e ) {
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-				error_log(
-					sprintf(
-						'[mp-commerce-promotions] OrderPromotionRecorder: %s',
-						$e->getMessage()
-					)
-				);
-			}
-		}
 	}
 
 	/**

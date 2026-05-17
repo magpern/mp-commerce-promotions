@@ -19,6 +19,9 @@ final class CartContextBuilder {
 
 	private ?RedemptionRepository $redemptions;
 
+	/** @var array<string, int> */
+	private array $redemption_count_cache = array();
+
 	public function __construct( ?RedemptionRepository $redemptions = null ) {
 		$this->redemptions = $redemptions;
 	}
@@ -150,7 +153,7 @@ final class CartContextBuilder {
 			&& $promotion_id !== null
 			&& $promotion_id > 0
 		) {
-			$metadata['customer_promotion_redemption_count'] = $this->redemptions->count_recorded_for_customer_and_promotion(
+			$metadata['customer_promotion_redemption_count'] = $this->memoized_customer_promotion_redemption_count(
 				$customer_id,
 				$promotion_id
 			);
@@ -184,7 +187,7 @@ final class CartContextBuilder {
 		}
 
 		if ( $this->redemptions !== null ) {
-			$metadata['customer_redemption_count'] = $this->redemptions->count_recorded_for_customer( $customer_id );
+			$metadata['customer_redemption_count'] = $this->memoized_customer_redemption_count( $customer_id );
 		}
 
 		$stats = CustomerOrderStats::for_customer( $customer_id );
@@ -436,5 +439,33 @@ final class CartContextBuilder {
 		}
 
 		return array_values( array_unique( $ids, SORT_NUMERIC ) );
+	}
+
+	private function memoized_customer_redemption_count( int $customer_id ): int {
+		$key = 'c:' . $customer_id;
+		if ( isset( $this->redemption_count_cache[ $key ] ) ) {
+			return $this->redemption_count_cache[ $key ];
+		}
+
+		$count = $this->redemptions !== null
+			? $this->redemptions->count_recorded_for_customer( $customer_id )
+			: 0;
+		$this->redemption_count_cache[ $key ] = $count;
+
+		return $count;
+	}
+
+	private function memoized_customer_promotion_redemption_count( int $customer_id, int $promotion_id ): int {
+		$key = 'c:' . $customer_id . ':p:' . $promotion_id;
+		if ( isset( $this->redemption_count_cache[ $key ] ) ) {
+			return $this->redemption_count_cache[ $key ];
+		}
+
+		$count = $this->redemptions !== null
+			? $this->redemptions->count_recorded_for_customer_and_promotion( $customer_id, $promotion_id )
+			: 0;
+		$this->redemption_count_cache[ $key ] = $count;
+
+		return $count;
 	}
 }

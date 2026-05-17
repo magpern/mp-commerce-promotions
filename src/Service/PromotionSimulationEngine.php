@@ -24,6 +24,11 @@ use MP\CommercePromotions\Engine\RuleTypes;
 
 final class PromotionSimulationEngine {
 
+	/**
+	 * @var array<string, SimulationResult>
+	 */
+	private static $request_simulation_cache = array();
+
 	private PromotionRepository $promotions;
 
 	private PromotionPlanner $planner;
@@ -64,6 +69,11 @@ final class PromotionSimulationEngine {
 				array(),
 				array( __( 'Simulations are paused.', 'mp-commerce-promotions' ) )
 			);
+		}
+
+		$cache_key = $this->simulation_cache_key( $scenario, $promotion_filter_ids );
+		if ( isset( self::$request_simulation_cache[ $cache_key ] ) ) {
+			return self::$request_simulation_cache[ $cache_key ];
 		}
 
 		$started = microtime( true );
@@ -128,7 +138,7 @@ final class PromotionSimulationEngine {
 			$this->profiler->record_simulation_run( ( microtime( true ) - $started ) * 1000 );
 		}
 
-		return new SimulationResult(
+		$result = new SimulationResult(
 			$eligible,
 			$selected,
 			$skipped,
@@ -139,6 +149,23 @@ final class PromotionSimulationEngine {
 			$warnings,
 			$explained
 		);
+
+		self::$request_simulation_cache[ $cache_key ] = $result;
+
+		return $result;
+	}
+
+	/**
+	 * @param list<int>|null $promotion_filter_ids
+	 */
+	private function simulation_cache_key( SimulationScenario $scenario, ?array $promotion_filter_ids ): string {
+		$payload = array(
+			'scenario' => $scenario->to_array(),
+			'filter'   => $promotion_filter_ids,
+		);
+		$encoded = function_exists( 'wp_json_encode' ) ? wp_json_encode( $payload ) : json_encode( $payload );
+
+		return 'sim:' . md5( is_string( $encoded ) ? $encoded : '' );
 	}
 
 	private function build_context( SimulationScenario $scenario ): EvaluationContext {

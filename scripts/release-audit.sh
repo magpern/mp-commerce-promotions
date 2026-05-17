@@ -8,6 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PLUGIN_SLUG="mp-commerce-promotions"
 MAIN_FILE="${REPO_ROOT}/${PLUGIN_SLUG}.php"
+BUILD_ROOT="${MP_CP_BUILD_ROOT:-$(cd "${REPO_ROOT}/.." && pwd)/build}"
 
 echo "==> MP Commerce Promotions: release audit"
 echo "    Root: ${REPO_ROOT}"
@@ -15,6 +16,10 @@ echo "    Root: ${REPO_ROOT}"
 fail() {
 	echo "ERROR: $*" >&2
 	exit 1
+}
+
+warn() {
+	echo "    WARN: $*"
 }
 
 [[ -f "${MAIN_FILE}" ]] || fail "Missing main plugin file: ${MAIN_FILE}"
@@ -27,26 +32,37 @@ HEADER_VERSION="$(grep -E '^\s*\*\s*Version:\s*' "${MAIN_FILE}" | head -n1 | sed
 [[ -n "${VERSION_CONST}" ]] || fail "MP_COMMERCE_PROMOTIONS_VERSION not found"
 [[ "${VERSION_CONST}" == "${HEADER_VERSION}" ]] || fail "Version mismatch: header=${HEADER_VERSION} const=${VERSION_CONST}"
 
-[[ -f "${REPO_ROOT}/readme.txt" ]] || fail "Missing readme.txt"
-[[ -f "${REPO_ROOT}/README.md" ]] || fail "Missing README.md"
-[[ -f "${REPO_ROOT}/CHANGELOG.md" ]] || fail "Missing CHANGELOG.md"
-[[ -f "${REPO_ROOT}/docs/ARCHITECTURE.md" ]] || fail "Missing docs/ARCHITECTURE.md"
-[[ -f "${REPO_ROOT}/docs/BROWSER_QA_MATRIX.md" ]] || fail "Missing docs/BROWSER_QA_MATRIX.md"
-[[ -f "${REPO_ROOT}/docs/manual-performance-and-hardening-test.md" ]] || fail "Missing docs/manual-performance-and-hardening-test.md"
+for doc in \
+	readme.txt \
+	CHANGELOG.md \
+	README.md \
+	docs/ARCHITECTURE.md \
+	docs/COMMERCIAL_READINESS.md \
+	docs/BROWSER_QA_MATRIX.md \
+	docs/manual-performance-and-hardening-test.md \
+	docs/manual-automation-and-observability-test.md
+do
+	[[ -f "${REPO_ROOT}/${doc}" ]] || fail "Missing required doc: ${doc}"
+done
 
 if [[ -d "${REPO_ROOT}/vendor" ]]; then
-	echo "    WARN: vendor/ present in dev tree (excluded from release zip by build-zip.sh)"
+	warn "vendor/ present in dev tree (excluded from release zip by build-zip.sh)"
 fi
 
 if [[ -d "${REPO_ROOT}/languages" ]]; then
 	echo "    languages/: present"
 else
-	echo "    languages/: optional (not present)"
+	warn "languages/: optional (not present)"
 fi
 
 SCHEMA_FILE="${REPO_ROOT}/src/Infrastructure/Database/Schema.php"
 [[ -f "${SCHEMA_FILE}" ]] || fail "Missing Schema.php"
-grep -q "SCHEMA_VERSION" "${SCHEMA_FILE}" || fail "Schema version constant missing"
+SCHEMA_VERSION="$(grep -E "const SCHEMA_VERSION" "${SCHEMA_FILE}" | head -n1 | sed -E "s/.*'([^']+)'.*/\1/")"
+[[ -n "${SCHEMA_VERSION}" ]] || fail "Schema version constant missing"
+
+if ! grep -q "${SCHEMA_VERSION}" "${REPO_ROOT}/docs/ARCHITECTURE.md" && ! grep -q "${SCHEMA_VERSION}" "${REPO_ROOT}/README.md"; then
+	fail "Schema version ${SCHEMA_VERSION} not documented in ARCHITECTURE.md or README.md"
+fi
 
 echo "==> Required PHP entrypoints"
 for path in \
@@ -55,9 +71,39 @@ for path in \
 	"src/Service/PromotionConcurrencyGuard.php" \
 	"src/Service/PromotionCronScheduler.php" \
 	"src/Service/PromotionDataRetentionService.php" \
-	"scripts/performance-hardening-smoke.php"
+	"scripts/performance-hardening-smoke.php" \
+	"scripts/production-hardening-closure-smoke.php"
 do
 	[[ -f "${REPO_ROOT}/${path}" ]] || fail "Missing ${path}"
 done
 
-echo "==> Release audit passed (version ${VERSION_CONST})"
+ZIP_PATH="${BUILD_ROOT}/${PLUGIN_SLUG}-${VERSION_CONST}.zip"
+if [[ ! -f "${ZIP_PATH}" ]]; then
+	echo "==> Building release zip for artifact checks"
+	bash "${SCRIPT_DIR}/build-zip.sh"
+fi
+
+[[ -f "${ZIP_PATH}" ]] || fail "Release zip not found: ${ZIP_PATH}"
+
+echo "==> Verifying release zip contents"
+python3 - "${ZIP_PATH}" "${PLUGIN_SLUG}" <<'PY'
+import sys
+import zipfile
+
+zip_path = sys.argv[1]
+plugin_slug = sys.argv[2]
+forbidden = {".git", "vendor", "node_modules", ".phpcs-cache"}
+with zipfile.ZipFile(zip_path) as zf:
+    for name in zf.namelist():
+        parts = name.split("/")
+        if any(part in forbidden for part in parts):
+            print(f"ERROR: zip contains forbidden segment: {name}", file=sys.stderr)
+            sys.exit(1)
+    main = f"{plugin_slug}/{plugin_slug}.php"
+    if main not in zf.namelist():
+        print(f"ERROR: missing {main}", file=sys.stderr)
+        sys.exit(1)
+print(f"OK: zip artifact clean ({len(zf.namelist())} entries)")
+PY
+
+echo "==> Release audit passed (version ${VERSION_CONST}, schema ${SCHEMA_VERSION})"
