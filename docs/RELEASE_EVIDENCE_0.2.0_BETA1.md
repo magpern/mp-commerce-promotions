@@ -13,7 +13,7 @@
 | Item | Value |
 |------|--------|
 | **QA baseline commit** | `43d8b63` — classic checkout browser QA + recording fix |
-| **Release commit** | *(recorded after `chore: release 0.2.0-beta.1` push)* |
+| **Release commit** | `04000d7` — `chore: release 0.2.0-beta.1` |
 | **Repository** | https://github.com/magpern/mp-commerce-promotions |
 | **Branch** | `main` |
 

@@ -2,7 +2,7 @@
 
 **Decision date:** 2026-05-17  
 **Commit baseline:** `43d8b63` (classic checkout browser QA + recording fix)  
-**Release commit:** *(set after `chore: release 0.2.0-beta.1`)*  
+**Release commit:** `04000d7` — `chore: release 0.2.0-beta.1`  
 **Release artifact:** `/home/magpern/mp-commerce-promotions-staging/build/mp-commerce-promotions-0.2.0-beta.1.zip`  
 **Product owner approved:** **pending**
 **Environment:** Local Docker WooCommerce at https://www.biopentra.eu (bind-mounted plugin)  
