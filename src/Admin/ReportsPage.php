@@ -17,6 +17,7 @@ use MP\CommercePromotions\Domain\SimulationScenarioRepository;
 use MP\CommercePromotions\Service\PromotionLifecycle;
 use MP\CommercePromotions\Service\PromotionReports;
 use MP\CommercePromotions\Service\PromotionSimulationEngine;
+use MP\CommercePromotions\Service\Settings;
 use MP\CommercePromotions\Service\SimulationScenario;
 
 final class ReportsPage {
@@ -35,13 +36,17 @@ final class ReportsPage {
 
 	private ?SimulationScenarioRepository $scenarios;
 
+	private Settings $settings;
+
 	public function __construct(
 		PromotionReports $reports,
 		PromotionRepository $promotions,
+		Settings $settings,
 		?SimulationScenarioRepository $scenarios = null
 	) {
 		$this->reports    = $reports;
 		$this->promotions = $promotions;
+		$this->settings   = $settings;
 		$this->scenarios  = $scenarios;
 		$this->picker     = new PromotionPicker( $promotions );
 	}
@@ -77,16 +82,27 @@ final class ReportsPage {
 		$this->render_intelligence_analytics_section();
 		$this->render_profitability_analytics_section();
 		$this->render_pricing_analytics_section();
-		$this->render_simulation_section();
+		CompatibilityStatusPanel::render();
+		if ( $this->settings->simulations_enabled() ) {
+			$this->render_simulation_section();
+		}
 		$this->render_orchestration_section( $summary );
 		$this->render_economics_sections( $filters );
 		$this->render_top_promotions_table( $summary['top_promotions'] );
-		$this->render_export_form( $filters );
+		if ( $this->settings->csv_export_enabled() ) {
+			$this->render_export_form( $filters );
+		} else {
+			echo '<p class="description">' . esc_html__( 'CSV export is disabled in Promotion Settings.', 'mp-commerce-promotions' ) . '</p>';
+		}
 
 		echo '</div>';
 	}
 
 	private function maybe_send_csv_export(): void {
+		if ( ! $this->settings->csv_export_enabled() ) {
+			return;
+		}
+
 		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
 			return;
 		}

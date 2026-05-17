@@ -2,9 +2,8 @@
 /**
  * Uninstall handler for Commerce Promotions for WooCommerce.
  *
- * Data is retained on uninstall in the MVP to prevent accidental loss of
- * promotions, codes, redemptions, and audit history. Future versions may add
- * an explicit administrator setting to delete all plugin data on uninstall.
+ * Data is retained by default. Full deletion runs only when the administrator
+ * explicitly enabled "Delete all plugin data on uninstall" before removal.
  *
  * @package MP\CommercePromotions
  */
@@ -15,14 +14,25 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-/*
- * MVP policy: no destructive cleanup.
- *
- * Intentionally NOT performed on uninstall:
- * - DROP TABLE for wp_mp_cp_* custom tables
- * - DELETE FROM custom tables
- * - delete_option() for mp_cp_* options (e.g. mp_cp_schema_version, mp_cp_cart_discounts_enabled)
- *
- * When a "delete all data on uninstall" setting is added, gate destructive
- * operations behind that option and document the behavior in readme.txt.
- */
+$autoload = __DIR__ . '/src/autoload.php';
+if ( ! is_readable( $autoload ) ) {
+	return;
+}
+
+require_once $autoload;
+
+use MP\CommercePromotions\Infrastructure\UninstallDataCleaner;
+use MP\CommercePromotions\Service\Settings;
+
+$settings = new Settings();
+
+if ( ! $settings->delete_data_on_uninstall() ) {
+	return;
+}
+
+global $wpdb;
+if ( ! $wpdb instanceof wpdb ) {
+	return;
+}
+
+UninstallDataCleaner::run( $wpdb );

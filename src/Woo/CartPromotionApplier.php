@@ -487,6 +487,9 @@ final class CartPromotionApplier {
 			}
 
 			if ( $type === self::ACTION_FREE_SHIPPING ) {
+				if ( ! $this->settings->free_shipping_enabled() ) {
+					continue;
+				}
 				$applied = $this->apply_free_shipping_fee(
 					$promotion,
 					$cart,
@@ -513,6 +516,9 @@ final class CartPromotionApplier {
 			}
 
 			if ( $type === self::ACTION_FREE_GIFT_PRODUCT ) {
+				if ( ! $this->settings->free_gift_enabled() ) {
+					continue;
+				}
 				$applied = $this->apply_free_gift_product( $promotion, $payload, $cart );
 				if ( is_array( $applied ) ) {
 					return $applied;

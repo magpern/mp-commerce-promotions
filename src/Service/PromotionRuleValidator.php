@@ -45,6 +45,8 @@ final class PromotionRuleValidator {
 
 	private ?PromotionConflictAnalyzer $conflict_analyzer = null;
 
+	private ?Settings $settings = null;
+
 	/**
 	 * @return list<array{level: string, message: string}>
 	 */
@@ -62,6 +64,7 @@ final class PromotionRuleValidator {
 		$this->append_operational_maturity_issues( $promotion, $issues );
 		$this->append_intelligence_issues( $promotion, $issues );
 		$this->append_pricing_issues( $promotion, $issues );
+		$this->append_settings_gated_action_issues( $promotion->get_actions(), $issues );
 
 		return $issues;
 	}
@@ -458,6 +461,32 @@ final class PromotionRuleValidator {
 				'level'   => 'warning',
 				'message' => __( 'Coupon coexistence with free shipping may overload checkout discounts.', 'mp-commerce-promotions' ),
 			);
+		}
+	}
+
+	/**
+	 * @param list<array<string, mixed>>                    $actions
+	 * @param list<array{level: string, message: string}> $issues
+	 */
+	private function append_settings_gated_action_issues( array $actions, array &$issues ): void {
+		$settings = $this->settings ?? new Settings();
+		foreach ( $actions as $action ) {
+			if ( ! is_array( $action ) ) {
+				continue;
+			}
+			$type = (string) ( $action['type'] ?? '' );
+			if ( $type === RuleTypes::ACTION_FREE_GIFT_PRODUCT && ! $settings->free_gift_enabled() ) {
+				$issues[] = array(
+					'level'   => 'warning',
+					'message' => __( 'Free gift actions are disabled in Settings; this promotion will not add gift lines on the storefront.', 'mp-commerce-promotions' ),
+				);
+			}
+			if ( $type === RuleTypes::ACTION_FREE_SHIPPING && ! $settings->free_shipping_enabled() ) {
+				$issues[] = array(
+					'level'   => 'warning',
+					'message' => __( 'Free shipping actions are disabled in Settings; this promotion will not apply shipping offsets.', 'mp-commerce-promotions' ),
+				);
+			}
 		}
 	}
 

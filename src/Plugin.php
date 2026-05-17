@@ -15,6 +15,7 @@ use MP\CommercePromotions\Admin\DiagnosticsPage;
 use MP\CommercePromotions\Admin\ReportsPage;
 use MP\CommercePromotions\Admin\PromotionEditPage;
 use MP\CommercePromotions\Admin\PromotionsPage;
+use MP\CommercePromotions\Admin\GettingStartedPage;
 use MP\CommercePromotions\Admin\SettingsPage;
 use MP\CommercePromotions\Domain\AuditLogRepository;
 use MP\CommercePromotions\Domain\AutomationRunRepository;
@@ -42,6 +43,7 @@ use MP\CommercePromotions\Service\PromotionReports;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Service\Settings;
+use MP\CommercePromotions\Service\SupportBundleExporter;
 use MP\CommercePromotions\Service\UsageDiagnostics;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use MP\CommercePromotions\Woo\CartPromotionApplier;
@@ -116,7 +118,7 @@ final class Plugin {
 
 			$telemetry_recorder = null;
 			global $wpdb;
-			if ( $wpdb instanceof wpdb ) {
+			if ( $wpdb instanceof wpdb && $this->settings->planner_telemetry_enabled() ) {
 				$telemetry_recorder = new PlannerTelemetryRecorder(
 					new PlannerTelemetryRepository( $wpdb )
 				);
@@ -221,7 +223,8 @@ final class Plugin {
 			);
 		}
 
-		$settings_page = new SettingsPage( $this->settings );
+		$settings_page        = new SettingsPage( $this->settings );
+		$getting_started_page = new GettingStartedPage( $this->settings );
 
 		$diagnostics_page = null;
 		if (
@@ -277,8 +280,23 @@ final class Plugin {
 				);
 			}
 
+			$support_exporter = null;
+			if ( $wpdb instanceof wpdb && $this->promotion_code_repository !== null ) {
+				$batch_repo_support = new PromotionCodeBatchRepository( $wpdb );
+				$support_exporter     = new SupportBundleExporter(
+					$this->settings,
+					$this->promotion_repository,
+					$this->redemption_repository,
+					$this->promotion_code_repository,
+					$batch_repo_support,
+					$automation_runs_repo,
+					$health_monitor
+				);
+			}
+
 			$diagnostics_page = new DiagnosticsPage(
 				$usage_diagnostics,
+				$this->settings,
 				$this->promotion_service,
 				$automation_runner,
 				$health_monitor,
@@ -286,7 +304,8 @@ final class Plugin {
 				$automation_runs_repo,
 				$intelligence_recovery,
 				$recommendation_engine,
-				$pricing_recovery
+				$pricing_recovery,
+				$support_exporter
 			);
 		}
 
@@ -310,10 +329,21 @@ final class Plugin {
 				$health_monitor,
 				$scenario_repo
 			);
-			$reports_page = new ReportsPage( $promotion_reports, $this->promotion_repository, $scenario_repo );
+			$reports_page = new ReportsPage(
+				$promotion_reports,
+				$this->promotion_repository,
+				$this->settings,
+				$scenario_repo
+			);
 		}
 
-		$admin_router = new AdminRouter( $promotions_page, $settings_page, $diagnostics_page, $reports_page );
+		$admin_router = new AdminRouter(
+			$promotions_page,
+			$settings_page,
+			$getting_started_page,
+			$diagnostics_page,
+			$reports_page
+		);
 
 		if ( is_admin() ) {
 			$admin_router->register_legacy_redirects();

@@ -47,6 +47,7 @@ use MP\CommercePromotions\Service\PromotionCodeBatchGenerator;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Domain\PromotionSnapshot;
 use MP\CommercePromotions\Service\PromotionService;
+use MP\CommercePromotions\Service\Settings;
 use MP\CommercePromotions\Service\PromotionSimulationEngine;
 use MP\CommercePromotions\Service\PromotionSnapshotService;
 use MP\CommercePromotions\Service\SimulationScenario;
@@ -701,8 +702,12 @@ final class PromotionEditPage {
 			$this->cart_preview_result = $this->promotion_evaluator->evaluate( $promotion, $context );
 
 			$active = PromotionPriorityTier::sort_promotions( $this->promotions->find_active( 50 ) );
-			$this->cart_preview_plan      = $this->promotion_planner->plan( $active, $context );
-			$allocation                   = ( new DiscountAllocationEngine() )->allocate( $context, $this->cart_preview_plan->get_selected_decisions() );
+			$this->cart_preview_plan = $this->promotion_planner->plan( $active, $context );
+			$settings                = new Settings();
+			$allocation              = null;
+			if ( $settings->pricing_explainability_enabled() ) {
+				$allocation = ( new DiscountAllocationEngine() )->allocate( $context, $this->cart_preview_plan->get_selected_decisions() );
+			}
 			$this->cart_preview_explained = PromotionPlanExplainer::enrich_explanation(
 				PromotionPlanExplainer::explain( $this->cart_preview_plan ),
 				$this->cart_preview_plan,

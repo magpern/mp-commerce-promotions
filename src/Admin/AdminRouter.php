@@ -15,6 +15,8 @@ final class AdminRouter {
 
 	private SettingsPage $settings_page;
 
+	private GettingStartedPage $getting_started_page;
+
 	private ?DiagnosticsPage $diagnostics_page;
 
 	private ?ReportsPage $reports_page;
@@ -22,11 +24,13 @@ final class AdminRouter {
 	public function __construct(
 		?PromotionsPage $promotions_page,
 		SettingsPage $settings_page,
+		GettingStartedPage $getting_started_page,
 		?DiagnosticsPage $diagnostics_page = null,
 		?ReportsPage $reports_page = null
 	) {
-		$this->promotions_page  = $promotions_page;
-		$this->settings_page    = $settings_page;
+		$this->promotions_page       = $promotions_page;
+		$this->settings_page         = $settings_page;
+		$this->getting_started_page  = $getting_started_page;
 		$this->diagnostics_page = $diagnostics_page;
 		$this->reports_page     = $reports_page;
 	}
@@ -66,6 +70,10 @@ final class AdminRouter {
 		$tab = AdminNavigation::get_current_tab();
 
 		switch ( $tab ) {
+			case AdminNavigation::TAB_GETTING_STARTED:
+				$this->getting_started_page->render();
+				return;
+
 			case AdminNavigation::TAB_SETTINGS:
 				$this->settings_page->render();
 				return;

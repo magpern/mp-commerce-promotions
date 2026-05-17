@@ -18,6 +18,8 @@ use MP\CommercePromotions\Service\PromotionPricingRecovery;
 use MP\CommercePromotions\Service\PromotionOperationalRecovery;
 use MP\CommercePromotions\Service\PromotionRecommendationEngine;
 use MP\CommercePromotions\Service\PromotionService;
+use MP\CommercePromotions\Service\Settings;
+use MP\CommercePromotions\Service\SupportBundleExporter;
 use MP\CommercePromotions\Service\UsageDiagnostics;
 
 final class DiagnosticsPage {
@@ -142,8 +144,13 @@ final class DiagnosticsPage {
 
 	private ?PromotionPricingRecovery $pricing_recovery;
 
+	private Settings $settings;
+
+	private ?SupportBundleExporter $support_exporter;
+
 	public function __construct(
 		UsageDiagnostics $diagnostics,
+		Settings $settings,
 		?PromotionService $promotion_service = null,
 		?PromotionAutomationRunner $automation_runner = null,
 		?PromotionHealthMonitor $health_monitor = null,
@@ -151,9 +158,12 @@ final class DiagnosticsPage {
 		?AutomationRunRepository $automation_runs = null,
 		?PromotionIntelligenceRecovery $intelligence_recovery = null,
 		?PromotionRecommendationEngine $recommendations = null,
-		?PromotionPricingRecovery $pricing_recovery = null
+		?PromotionPricingRecovery $pricing_recovery = null,
+		?SupportBundleExporter $support_exporter = null
 	) {
 		$this->diagnostics           = $diagnostics;
+		$this->settings              = $settings;
+		$this->support_exporter      = $support_exporter;
 		$this->promotion_service     = $promotion_service;
 		$this->automation_runner     = $automation_runner;
 		$this->health_monitor        = $health_monitor;
@@ -175,6 +185,7 @@ final class DiagnosticsPage {
 		$this->handle_post_operational_recovery();
 		$this->handle_post_intelligence_recovery();
 		$this->handle_post_pricing_recovery();
+		$this->handle_post_support_export();
 
 		$report = $this->diagnostics->analyze();
 
@@ -185,6 +196,8 @@ final class DiagnosticsPage {
 		echo '<p>' . esc_html__( 'Compare stored usage_count values against redemption and order-meta records. Use the repair action to recalculate mismatched counters from recorded redemptions.', 'mp-commerce-promotions' ) . '</p>';
 
 		$this->render_repair_form();
+		CompatibilityStatusPanel::render();
+		$this->render_support_export_section();
 		$this->render_automation_runner_section();
 		$this->render_promotion_health_section();
 		$this->render_operational_recovery_section();
@@ -786,6 +799,10 @@ final class DiagnosticsPage {
 			return;
 		}
 
+		if ( ! $this->settings->automation_manual_only() ) {
+			return;
+		}
+
 		if ( ! isset( $_POST[ self::RUN_ALL_AUTOMATION_SUBMIT ] ) ) {
 			return;
 		}
@@ -960,16 +977,69 @@ final class DiagnosticsPage {
 		}
 
 		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Promotion automation', 'mp-commerce-promotions' ) . '</h2>';
+		if ( $this->settings->automation_manual_only() ) {
+			echo '<p class="description">' . esc_html__(
+				'Runs activate-scheduled, archive-expired, pause-budget-exhausted, and normalize-states in one pass. Manual trigger only (no WP-Cron in this release). Each run is stored in automation history.',
+				'mp-commerce-promotions'
+			) . '</p>';
+
+			$confirm = esc_js( __( 'Run full promotion automation now?', 'mp-commerce-promotions' ) );
+			echo '<form method="post" action="" style="margin:0 0 1em;">';
+			wp_nonce_field( self::RUN_ALL_AUTOMATION_NONCE_ACTION, self::RUN_ALL_AUTOMATION_NONCE_FIELD );
+			echo '<p><button type="submit" name="' . esc_attr( self::RUN_ALL_AUTOMATION_SUBMIT ) . '" value="1" class="button button-primary" onclick="return confirm(\'' . $confirm . '\');">';
+			echo esc_html__( 'Run all automation', 'mp-commerce-promotions' );
+			echo '</button></p>';
+			echo '</form>';
+		} else {
+			echo '<p class="description">' . esc_html__(
+				'Automatic WP-Cron scheduling is not available in this release. Re-enable “Automation runner: manual only” in Settings to use Diagnostics triggers.',
+				'mp-commerce-promotions'
+			) . '</p>';
+		}
+	}
+
+	private function handle_post_support_export(): void {
+		if ( $this->support_exporter === null || ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_support_bundle_submit'] ) ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['mp_cp_support_bundle_nonce'] ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'mp-commerce-promotions' ) );
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_support_bundle_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, 'mp_cp_support_bundle' ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'mp-commerce-promotions' ) );
+		}
+
+		$json     = $this->support_exporter->to_json();
+		$filename = 'mp-cp-support-bundle-' . gmdate( 'Y-m-d' ) . '.json';
+
+		header( 'Content-Type: application/json; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON attachment.
+		echo $json;
+		exit;
+	}
+
+	private function render_support_export_section(): void {
+		if ( $this->support_exporter === null ) {
+			return;
+		}
+
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Export support bundle', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p class="description">' . esc_html__(
-			'Runs activate-scheduled, archive-expired, pause-budget-exhausted, and normalize-states in one pass. Manual trigger only (no WP-Cron yet). Each run is stored in automation history.',
+			'Download a JSON snapshot for support (versions, settings, counts, health issues). No customer PII or raw promotion codes.',
 			'mp-commerce-promotions'
 		) . '</p>';
-
-		$confirm = esc_js( __( 'Run full promotion automation now?', 'mp-commerce-promotions' ) );
-		echo '<form method="post" action="" style="margin:0 0 1em;">';
-		wp_nonce_field( self::RUN_ALL_AUTOMATION_NONCE_ACTION, self::RUN_ALL_AUTOMATION_NONCE_FIELD );
-		echo '<p><button type="submit" name="' . esc_attr( self::RUN_ALL_AUTOMATION_SUBMIT ) . '" value="1" class="button button-primary" onclick="return confirm(\'' . $confirm . '\');">';
-		echo esc_html__( 'Run all automation', 'mp-commerce-promotions' );
+		echo '<form method="post" action="">';
+		wp_nonce_field( 'mp_cp_support_bundle', 'mp_cp_support_bundle_nonce' );
+		echo '<p><button type="submit" name="mp_cp_support_bundle_submit" value="1" class="button">';
+		echo esc_html__( 'Download support bundle', 'mp-commerce-promotions' );
 		echo '</button></p>';
 		echo '</form>';
 	}

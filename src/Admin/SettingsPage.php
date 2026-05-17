@@ -30,8 +30,6 @@ final class SettingsPage {
 
 		$this->handle_post_save();
 
-		$enabled = $this->settings->cart_discounts_enabled();
-
 		echo '<div class="wrap">';
 		$this->render_notices();
 		echo '<h1>' . esc_html__( 'Promotion Settings', 'mp-commerce-promotions' ) . '</h1>';
@@ -40,26 +38,84 @@ final class SettingsPage {
 		echo '<form method="post" action="">';
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 
+		echo '<h2 class="title">' . esc_html__( 'Storefront', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<table class="form-table" role="presentation"><tbody>';
-		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Cart discounts', 'mp-commerce-promotions' ) . '</th>';
-		echo '<td>';
-		echo '<label for="mp_cp_cart_discounts_enabled">';
-		echo '<input type="checkbox" id="mp_cp_cart_discounts_enabled" name="mp_cp_cart_discounts_enabled" value="yes"';
-		if ( $enabled ) {
-			echo ' checked="checked"';
-		}
-		echo ' /> ';
-		echo esc_html__( 'Enable cart discounts', 'mp-commerce-promotions' );
-		echo '</label>';
-		echo '<p class="description">';
-		echo esc_html__(
-			'When disabled, commerce promotions are not applied as negative cart fees and the applied-promotion session is cleared.',
-			'mp-commerce-promotions'
+		$this->checkbox_row(
+			'mp_cp_cart_discounts_enabled',
+			__( 'Enable cart discounts', 'mp-commerce-promotions' ),
+			__( 'When disabled, promotions are not applied as cart fees and the applied-promotion session is cleared.', 'mp-commerce-promotions' ),
+			$this->settings->cart_discounts_enabled()
 		);
-		echo '</p>';
-		echo '</td>';
-		echo '</tr>';
+		$this->checkbox_row(
+			'mp_cp_free_gift_enabled',
+			__( 'Enable free gift actions', 'mp-commerce-promotions' ),
+			__( 'When disabled, free_gift_product actions do not add cart lines (validator warns).', 'mp-commerce-promotions' ),
+			$this->settings->free_gift_enabled()
+		);
+		$this->checkbox_row(
+			'mp_cp_free_shipping_enabled',
+			__( 'Enable free shipping action', 'mp-commerce-promotions' ),
+			__( 'When disabled, free_shipping actions do not apply shipping fee offsets.', 'mp-commerce-promotions' ),
+			$this->settings->free_shipping_enabled()
+		);
+		echo '</tbody></table>';
+
+		echo '<h2 class="title">' . esc_html__( 'Admin & reporting', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<table class="form-table" role="presentation"><tbody>';
+		$this->checkbox_row(
+			'mp_cp_planner_telemetry_enabled',
+			__( 'Enable planner telemetry', 'mp-commerce-promotions' ),
+			__( 'Records aggregate planner outcomes (no PII). Disable to stop telemetry writes.', 'mp-commerce-promotions' ),
+			$this->settings->planner_telemetry_enabled()
+		);
+		$this->checkbox_row(
+			'mp_cp_csv_export_enabled',
+			__( 'Enable redemption CSV export', 'mp-commerce-promotions' ),
+			__( 'When disabled, the Reports export form is hidden.', 'mp-commerce-promotions' ),
+			$this->settings->csv_export_enabled()
+		);
+		$this->checkbox_row(
+			'mp_cp_simulations_enabled',
+			__( 'Enable simulation features', 'mp-commerce-promotions' ),
+			__( 'When disabled, Reports simulation section is hidden.', 'mp-commerce-promotions' ),
+			$this->settings->simulations_enabled()
+		);
+		$this->checkbox_row(
+			'mp_cp_pricing_explainability_enabled',
+			__( 'Enable advanced pricing explainability', 'mp-commerce-promotions' ),
+			__( 'When disabled, allocation tables and summaries are hidden in cart preview.', 'mp-commerce-promotions' ),
+			$this->settings->pricing_explainability_enabled()
+		);
+		echo '</tbody></table>';
+
+		echo '<h2 class="title">' . esc_html__( 'Automation', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<table class="form-table" role="presentation"><tbody>';
+		$this->checkbox_row(
+			'mp_cp_automation_manual_only',
+			__( 'Automation runner: manual only', 'mp-commerce-promotions' ),
+			__( 'Lifecycle automation runs only from Diagnostics (no WP-Cron integration in this release).', 'mp-commerce-promotions' ),
+			$this->settings->automation_manual_only()
+		);
+		echo '</tbody></table>';
+
+		echo '<h2 class="title">' . esc_html__( 'Data retention', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="description">' . esc_html__(
+			'By default, uninstalling the plugin retains promotions, codes, redemptions, and settings. Full deletion is opt-in and irreversible.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<table class="form-table" role="presentation"><tbody>';
+		$this->checkbox_row(
+			'mp_cp_retain_data_on_uninstall',
+			__( 'Retain data on uninstall', 'mp-commerce-promotions' ),
+			__( 'Recommended. Keeps custom tables and mp_cp_* options when the plugin is removed.', 'mp-commerce-promotions' ),
+			$this->settings->retain_data_on_uninstall()
+		);
+		$this->checkbox_row(
+			'mp_cp_delete_data_on_uninstall',
+			__( 'Delete all plugin data on uninstall', 'mp-commerce-promotions' ),
+			__( 'Dangerous: drops custom tables and deletes all mp_cp_* options when uninstall runs. Requires explicit opt-in.', 'mp-commerce-promotions' ),
+			$this->settings->delete_data_on_uninstall()
+		);
 		echo '</tbody></table>';
 
 		echo '<p class="submit">';
@@ -69,6 +125,22 @@ final class SettingsPage {
 		echo '</p>';
 		echo '</form>';
 		echo '</div>';
+	}
+
+	private function checkbox_row( string $name, string $label, string $description, bool $checked ): void {
+		echo '<tr><th scope="row">' . esc_html( $label ) . '</th><td>';
+		echo '<label for="' . esc_attr( $name ) . '">';
+		printf(
+			'<input type="checkbox" id="%1$s" name="%1$s" value="yes"%2$s /> %3$s',
+			esc_attr( $name ),
+			checked( $checked, true, false ),
+			esc_html( $label )
+		);
+		echo '</label>';
+		if ( $description !== '' ) {
+			echo '<p class="description">' . esc_html( $description ) . '</p>';
+		}
+		echo '</td></tr>';
 	}
 
 	private function handle_post_save(): void {
@@ -89,11 +161,23 @@ final class SettingsPage {
 			$this->redirect_with_notice( 'error', 'invalid_nonce' );
 		}
 
-		$enabled = isset( $_POST['mp_cp_cart_discounts_enabled'] )
-			&& sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_cart_discounts_enabled'] ) ) === 'yes';
+		$this->settings->set_cart_discounts_enabled( $this->post_yes( 'mp_cp_cart_discounts_enabled' ) );
+		$this->settings->set_free_gift_enabled( $this->post_yes( 'mp_cp_free_gift_enabled' ) );
+		$this->settings->set_free_shipping_enabled( $this->post_yes( 'mp_cp_free_shipping_enabled' ) );
+		$this->settings->set_planner_telemetry_enabled( $this->post_yes( 'mp_cp_planner_telemetry_enabled' ) );
+		$this->settings->set_csv_export_enabled( $this->post_yes( 'mp_cp_csv_export_enabled' ) );
+		$this->settings->set_simulations_enabled( $this->post_yes( 'mp_cp_simulations_enabled' ) );
+		$this->settings->set_pricing_explainability_enabled( $this->post_yes( 'mp_cp_pricing_explainability_enabled' ) );
+		$this->settings->set_automation_manual_only( $this->post_yes( 'mp_cp_automation_manual_only' ) );
+		$this->settings->set_retain_data_on_uninstall( $this->post_yes( 'mp_cp_retain_data_on_uninstall' ) );
+		$this->settings->set_delete_data_on_uninstall( $this->post_yes( 'mp_cp_delete_data_on_uninstall' ) );
 
-		$this->settings->set_cart_discounts_enabled( $enabled );
 		$this->redirect_with_notice( 'success', 'saved' );
+	}
+
+	private function post_yes( string $field ): bool {
+		return isset( $_POST[ $field ] )
+			&& sanitize_text_field( wp_unslash( (string) $_POST[ $field ] ) ) === 'yes';
 	}
 
 	private function render_notices(): void {

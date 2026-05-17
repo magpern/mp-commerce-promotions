@@ -398,6 +398,15 @@ Promotion rows store optional **`campaign_label`** (varchar 191), **`internal_no
 - **Admin** — Reports: forecasting, calendar, recommendations, intelligence analytics, planner performance, simulation. Diagnostics: intelligence recovery + recommendations. Snapshots: intelligence metadata + simulate (read-only).
 - **Manual QA** — [manual-simulation-and-forecasting-test.md](manual-simulation-and-forecasting-test.md); smoke: `scripts/simulation-forecasting-smoke.php`.
 
+### Commercial readiness (admin polish)
+
+- **Getting Started** — onboarding tab (`tab=getting-started`): capabilities, limitations, workflow, links.
+- **`Settings`** — feature flags: cart discounts, telemetry, CSV export, simulations, free gift/shipping, pricing explainability, automation manual-only; data retention and opt-in uninstall deletion.
+- **`CompatibilityStatus`** — environment snapshot (WP/WC/PHP, HPOS, tax, gateways, discount strategy).
+- **`SupportBundleExporter`** — Diagnostics JSON download (redacted; no PII/raw codes).
+- **`UninstallDataCleaner`** — runs only when `mp_cp_delete_data_on_uninstall` is `yes`.
+- See [COMMERCIAL_READINESS.md](COMMERCIAL_READINESS.md).
+
 ### Advanced pricing engine groundwork (schema 1.14.0)
 
 - **`DiscountAllocationEngine`** — proportional line/shipping allocation metadata (`AllocatedDiscount`, `AllocationResult`); no cart line mutation; storefront still fee-based.

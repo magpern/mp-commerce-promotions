@@ -4,7 +4,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Current milestone
 
-**Quality & ops** — repository unit tests, remaining PHPCS batches, PHPCS gating in CI; follow-up browser checkout with non-crypto payment or manual order tools.
+**Commercial readiness** — onboarding, settings governance, compatibility status, support bundle, uninstall policy, docs/POT placeholder, smoke/tests. Next: PHPCS gating in CI, block checkout QA, full i18n extraction.
 
 ## Manual QA (2026-05-17)
 

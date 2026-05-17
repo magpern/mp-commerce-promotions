@@ -20,6 +20,43 @@ See [CHANGELOG.md](../CHANGELOG.md) for user-facing release notes and [DEVELOPME
 - [ ] `bash scripts/sync-to-live.sh` — never copies `.git` or `vendor` to live.
 - [ ] `bash scripts/verify-plugin.sh` — deactivate/activate cycle and `mp_cp_schema_version` printed.
 
+## Commercial beta checklist
+
+- [ ] [COMMERCIAL_READINESS.md](COMMERCIAL_READINESS.md) reviewed for release audience.
+- [ ] Getting Started tab loads (`tab=getting-started`).
+- [ ] Settings save/load; feature gates behave (telemetry, CSV, simulations, gift/shipping).
+- [ ] Compatibility status visible on Reports and Diagnostics.
+- [ ] Support bundle downloads from Diagnostics (no PII in JSON).
+- [ ] `./wp eval-file .../scripts/commercial-readiness-smoke.php` passes.
+
+## Compatibility checklist
+
+- [ ] WooCommerce active; HPOS state matches merchant expectation.
+- [ ] Cart/Checkout Blocks **not** declared — document for merchants using blocks.
+- [ ] Fee-based discount strategy confirmed in Compatibility status.
+
+## Uninstall / data retention checklist
+
+- [ ] Default: **retain data** on uninstall (`mp_cp_delete_data_on_uninstall` not set or `no`).
+- [ ] Opt-in deletion tested only on disposable environment.
+- [ ] readme.txt and Settings warn before enabling delete-on-uninstall.
+
+## Localization checklist
+
+- [ ] `languages/mp-commerce-promotions.pot` present (regenerate with `wp i18n make-pot` when available).
+- [ ] New admin strings use `__()` / `esc_html__()` with text domain `mp-commerce-promotions`.
+
+## Browser QA checklist
+
+- [ ] Promotions nav tabs (All, Getting Started, Settings, Diagnostics, Reports).
+- [ ] Promotion edit: cart preview, templates, save.
+- [ ] Reports filters and sections (simulation hidden when disabled).
+
+## PHPCS status
+
+- [ ] `composer run lint:phpcs` — record error/warning count in release notes (not CI-gating unless policy changes).
+- [ ] `composer run lint:php` — must pass.
+
 ## Manual regression (MVP)
 
 - [ ] [manual-checkout-test.md](manual-checkout-test.md) — cart fee, redemption, reversal.

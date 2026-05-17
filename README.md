@@ -54,6 +54,13 @@ Provide a structured foundation for commerce promotions using:
 - PHP 7.4+
 - WooCommerce 8.0+ (required for cart integration, codes, and admin UI)
 
+## Commercial readiness (beta)
+
+- **Getting Started** admin tab (`?page=mp-commerce-promotions&tab=getting-started`) — onboarding, limitations, workflow.
+- **Settings** — feature gates (telemetry, CSV export, simulations, free gift/shipping, pricing explainability) and opt-in **delete all data on uninstall** (default: retain).
+- **Compatibility status** on Reports and Diagnostics; **support bundle** JSON export on Diagnostics (no PII).
+- See [docs/COMMERCIAL_READINESS.md](docs/COMMERCIAL_READINESS.md).
+
 ## Database
 
 - **Schema version (option):** `mp_cp_schema_version` — current target is **`1.14.0`** (see `Schema::SCHEMA_VERSION`).
