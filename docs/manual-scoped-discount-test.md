@@ -61,6 +61,8 @@ Existing `cheapest_item_discount` uses the same scope helper internally; traces 
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/scoped-discount-smoke.php
 ```
 
+**Related:** [manual-promotion-templates-test.md](manual-promotion-templates-test.md) for admin presets that generate scoped discount JSON.
+
 ## Known limitations
 
 - Fees do not appear as per-line discounts in WooCommerce totals breakdown.

@@ -14,6 +14,8 @@ Use this checklist to verify the end-to-end promotion flow on a real WooCommerce
 
 **Scoped discounts (eligible subtotal, category/product fees):** see [manual-scoped-discount-test.md](manual-scoped-discount-test.md) and `scripts/scoped-discount-smoke.php`.
 
+**Promotion templates (admin presets):** see [manual-promotion-templates-test.md](manual-promotion-templates-test.md) and `scripts/promotion-template-smoke.php`.
+
 **WP-CLI quick checks (optional):**
 
 ```bash
