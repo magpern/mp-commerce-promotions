@@ -56,14 +56,16 @@ Provide a structured foundation for commerce promotions using:
 
 ## Database
 
-- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.11.0`** (see `Schema::SCHEMA_VERSION`).
+- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.12.0`** (see `Schema::SCHEMA_VERSION`).
 - **Tables** (after activation / migration), using the site table prefix (e.g. `wp_`):
   - `{prefix}mp_cp_promotions` — promotion definitions (JSON-like rules in `LONGTEXT` columns).
   - `{prefix}mp_cp_redemptions` — usage against orders; **unique** `(order_id, promotion_id)` as **`order_promotion_unique`** (MySQL allows multiple `NULL` `order_id` rows; real checkouts use non-null `order_id`). Migration to **1.1.0** **refuses** `dbDelta` / version bump if duplicate non-null `(order_id, promotion_id)` pairs already exist (see `MigrationRunner`).
   - `{prefix}mp_cp_audit_log` — append-only audit trail.
   - `{prefix}mp_cp_promotion_codes` — manual promotion codes (hashed; **unique** `code_hash`). Optional **`batch_id`** links generated codes to **`mp_cp_code_batches`** (schema **1.4.0**; older rows may have `NULL`). Plain codes are **never** stored; admin UI shows only **`code_last4`** and **batch ID** after creation.
   - `{prefix}mp_cp_code_batches` — metadata for generated code batches (from schema **1.3.0**); plain codes are **not** stored on the batch row.
-  - `{prefix}mp_cp_promotion_snapshots` — serialized promotion rollback rows (schema **1.11.0**).
+  - `{prefix}mp_cp_promotion_snapshots` — serialized promotion rollback rows (label/source; schema **1.11.0+**).
+  - `{prefix}mp_cp_automation_runs` — automation execution history (schema **1.12.0**).
+  - `{prefix}mp_cp_planner_telemetry` — aggregate planner counters per promotion, no PII (schema **1.12.0**).
 - **Deactivation:** tables and `mp_cp_schema_version` are **not** removed; migrations are **additive** and intended to be **rollback-safe** (no `DROP TABLE` / data deletion in core flows).
 - **Migrations:** `MigrationRunner` runs `dbDelta()` from Schema DDL on activation when the stored version is behind `Schema::SCHEMA_VERSION`. **1.1.0** adds the redemptions unique guard; if duplicates exist, the option is **not** advanced until data is fixed (see `MigrationRunner` / `WP_DEBUG` log).
 
