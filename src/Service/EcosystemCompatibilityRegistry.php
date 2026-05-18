@@ -293,7 +293,7 @@ final class EcosystemCompatibilityRegistry {
 	 * @return array<string, mixed>
 	 */
 	private function row_object_cache(): array {
-		$detected = wp_using_ext_object_cache();
+		$detected = function_exists( 'wp_using_ext_object_cache' ) && (bool) wp_using_ext_object_cache();
 
 		return $this->build_row(
 			'object_cache',
