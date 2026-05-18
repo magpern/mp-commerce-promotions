@@ -322,6 +322,10 @@ final class ReportsPage {
 			__( 'Product-generated gift card liability', 'mp-commerce-promotions' ) => number_format_i18n( (float) ( $gc['product_generated_liability'] ?? 0 ), 2 ),
 			__( 'Product-generated issued total', 'mp-commerce-promotions' ) => number_format_i18n( (float) ( $gc['product_generated_issued_total'] ?? 0 ), 2 ),
 			__( 'Manually issued gift cards total', 'mp-commerce-promotions' ) => number_format_i18n( (float) ( $gc['manually_issued_total'] ?? 0 ), 2 ),
+			__( 'Product gift cards — email sent', 'mp-commerce-promotions' ) => (string) ( $gc['gift_cards_delivery_sent'] ?? 0 ),
+			__( 'Product gift cards — delivery failed', 'mp-commerce-promotions' ) => (string) ( $gc['gift_cards_delivery_failed'] ?? 0 ),
+			__( 'Product gift cards — delivery disabled', 'mp-commerce-promotions' ) => (string) ( $gc['gift_cards_delivery_disabled'] ?? 0 ),
+			__( 'Product gift cards — legacy/unknown delivery', 'mp-commerce-promotions' ) => (string) ( $gc['gift_cards_delivery_unknown'] ?? 0 ),
 		);
 		foreach ( $rows as $label => $value ) {
 			echo '<tr><th scope="row" style="width:50%;">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';

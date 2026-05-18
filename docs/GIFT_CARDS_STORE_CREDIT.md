@@ -10,7 +10,7 @@ Gift cards are **stored-value credit** with an append-only ledger. They are **no
 
 - **Issue** — create a card with amount, **currency** (WooCommerce dropdown, store default), optional expiry/recipient/note.
 - **Currency** — validated against WooCommerce currencies; optional `mp_cp_gift_card_allowed_currencies` filter restricts the dropdown.
-- **Plain code shown once** — only `code_hash` and `code_last4` are stored.
+- **Plain code shown once at manual issue** — only `code_hash` and `code_last4` are stored in the ledger. Product-generated codes are emailed once and **not** stored in order meta.
 - **List / detail** — balance, status, ledger, adjust (+/- with note), void.
 - **Statuses:** `active`, `depleted`, `expired`, `voided`.
 

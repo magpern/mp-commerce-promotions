@@ -8,7 +8,7 @@ Store credit is **customer-account balance** on the same ledger as gift cards. I
 
 | | Gift card | Store credit |
 |---|-----------|--------------|
-| Identity | Plain code (hashed at rest) | Customer ID + currency wallet |
+| Identity | Plain code (hashed at rest; product sales email code once, not stored in order meta) | Customer ID + currency wallet |
 | Checkout (logged in) | Enter code | Apply account balance (no code) |
 | Checkout (guest) | Code only | Not available |
 | Admin | Issue / adjust / void | Grant / deduct / refund-to-credit |

@@ -57,7 +57,7 @@ final class GiftCardOrderGenerator {
 	}
 
 	/**
-	 * @return list<array{gift_card_id: int, order_item_id: int, unit_index: int, plain_code?: string}>
+	 * @return list<array<string, mixed>>
 	 */
 	public function generate_for_order( $order ): array {
 		if ( ! is_object( $order ) || ! is_a( $order, 'WC_Order', false ) ) {
@@ -75,8 +75,8 @@ final class GiftCardOrderGenerator {
 		$billing_mail = method_exists( $order, 'get_billing_email' ) ? sanitize_email( (string) $order->get_billing_email() ) : '';
 		$paid_at      = $this->resolve_paid_at( $order );
 
-		$generated = GiftCardGeneratedOrderState::get_generated( $order );
-		$email_batch = array();
+		$generated    = GiftCardGeneratedOrderState::get_generated( $order );
+		$email_batch  = array();
 
 		foreach ( $order->get_items( 'line_item' ) as $item_id => $item ) {
 			if ( ! is_object( $item ) || ! is_a( $item, 'WC_Order_Item_Product', false ) ) {
@@ -95,7 +95,7 @@ final class GiftCardOrderGenerator {
 				continue;
 			}
 
-			$line_total = (float) $item->get_total();
+			$line_total  = (float) $item->get_total();
 			$unit_amount = $this->products->resolve_unit_amount( $config, $line_total, $qty );
 			$expires_at  = $this->products->resolve_expires_at( $config['expiry_days'], $paid_at );
 
@@ -115,25 +115,25 @@ final class GiftCardOrderGenerator {
 					'Product order line ' . $item_id_int . ' unit ' . $unit_index
 				);
 
-				$card = $result->get_card();
+				$card    = $result->get_card();
 				$card_id = $card->get_id();
 				if ( $card_id === null || $card_id <= 0 ) {
 					continue;
 				}
 
-				$entry = array(
-					'gift_card_id'  => $card_id,
-					'order_item_id' => $item_id_int,
-					'unit_index'    => $unit_index,
-					'plain_code'    => $result->get_plain_code(),
+				$generated[] = GiftCardGeneratedOrderState::row_from_card(
+					$card,
+					$item_id_int,
+					$unit_index,
+					GiftCardDeliveryStatus::PENDING
 				);
-				$generated[] = $entry;
 
 				$email_batch[] = array(
-					'plain_code' => $result->get_plain_code(),
-					'amount'     => $unit_amount,
-					'currency'   => $currency,
-					'expires_at' => $expires_at,
+					'plain_code'   => $result->get_plain_code(),
+					'amount'       => $unit_amount,
+					'currency'     => $currency,
+					'expires_at'   => $expires_at,
+					'gift_card_id' => $card_id,
 				);
 
 				$this->audit( $order_id, $card_id, $unit_amount );
@@ -141,17 +141,90 @@ final class GiftCardOrderGenerator {
 		}
 
 		GiftCardGeneratedOrderState::set_generated( $order, $generated );
-		GiftCardGeneratedOrderState::mark_generation_complete( $order );
 
-		if ( $billing_mail !== '' && $email_batch !== array() ) {
-			$this->mailer->send_to_billing_email( $billing_mail, $order_id, $email_batch );
+		if ( $email_batch !== array() ) {
+			$delivery = $this->mailer->deliver_batch( $billing_mail, $order_id, $email_batch );
+			$this->apply_delivery_results( $order, $delivery['results'] );
+			$this->add_delivery_order_note( $order, $delivery );
 		}
+
+		GiftCardGeneratedOrderState::mark_generation_complete( $order );
 
 		if ( method_exists( $order, 'save' ) ) {
 			$order->save();
 		}
 
-		return $generated;
+		return GiftCardGeneratedOrderState::get_generated( $order );
+	}
+
+	/**
+	 * @param list<array<string, mixed>> $delivery_results
+	 */
+	private function apply_delivery_results( $order, array $delivery_results ): void {
+		foreach ( $delivery_results as $result ) {
+			$gift_card_id = (int) ( $result['gift_card_id'] ?? 0 );
+			if ( $gift_card_id <= 0 ) {
+				continue;
+			}
+			$patch = array(
+				'delivery_status' => (string) ( $result['delivery_status'] ?? GiftCardDeliveryStatus::PENDING ),
+			);
+			if ( isset( $result['delivered_to'] ) ) {
+				$patch['delivered_to'] = (string) $result['delivered_to'];
+			}
+			if ( isset( $result['delivered_at'] ) ) {
+				$patch['delivered_at'] = (string) $result['delivered_at'];
+			}
+			if ( isset( $result['delivery_error'] ) ) {
+				$patch['delivery_error'] = (string) $result['delivery_error'];
+			}
+			GiftCardGeneratedOrderState::update_row( $order, $gift_card_id, $patch );
+		}
+	}
+
+	/**
+	 * @param array{enabled: bool, recipient_valid: bool, results: list<array<string, mixed>>} $delivery
+	 */
+	private function add_delivery_order_note( $order, array $delivery ): void {
+		if ( ! method_exists( $order, 'add_order_note' ) ) {
+			return;
+		}
+
+		$sent   = 0;
+		$failed = 0;
+		foreach ( $delivery['results'] as $row ) {
+			$status = (string) ( $row['delivery_status'] ?? '' );
+			if ( $status === GiftCardDeliveryStatus::SENT ) {
+				++$sent;
+			} elseif ( $status === GiftCardDeliveryStatus::FAILED ) {
+				++$failed;
+			}
+		}
+
+		if ( $sent > 0 && $failed === 0 ) {
+			$order->add_order_note(
+				__( 'Gift card code(s) emailed to billing address. Full codes are not stored; use Reissue if delivery failed.', 'mp-commerce-promotions' ),
+				false
+			);
+			return;
+		}
+
+		if ( $failed > 0 ) {
+			$order->add_order_note(
+				__( 'Gift card email delivery failed for one or more cards. Full codes are not stored — use Reissue delivery on this order.', 'mp-commerce-promotions' ),
+				false
+			);
+		} elseif ( ! $delivery['enabled'] ) {
+			$order->add_order_note(
+				__( 'Gift cards generated. Email delivery is disabled in settings; codes are not stored.', 'mp-commerce-promotions' ),
+				false
+			);
+		} elseif ( ! $delivery['recipient_valid'] ) {
+			$order->add_order_note(
+				__( 'Gift cards generated but billing email was invalid. Use Reissue delivery after fixing the email.', 'mp-commerce-promotions' ),
+				false
+			);
+		}
 	}
 
 	/**

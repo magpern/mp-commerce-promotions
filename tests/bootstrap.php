@@ -99,6 +99,33 @@ if ( ! function_exists( 'sanitize_textarea_field' ) ) {
 	}
 }
 
+if ( ! function_exists( 'is_email' ) ) {
+	/**
+	 * @param string $email
+	 * @return bool
+	 */
+	function is_email( $email ) {
+		return filter_var( (string) $email, FILTER_VALIDATE_EMAIL ) !== false;
+	}
+}
+
+/** @var bool $mp_cp_test_wp_mail_result */
+$GLOBALS['mp_cp_test_wp_mail_result'] = true;
+
+if ( ! function_exists( 'wp_mail' ) ) {
+	/**
+	 * @param string       $to
+	 * @param string       $subject
+	 * @param string       $message
+	 * @param string|array $headers
+	 * @return bool
+	 */
+	function wp_mail( $to, $subject, $message, $headers = '' ) {
+		unset( $to, $subject, $message, $headers );
+		return (bool) ( $GLOBALS['mp_cp_test_wp_mail_result'] ?? true );
+	}
+}
+
 if ( ! function_exists( 'sanitize_email' ) ) {
 	/**
 	 * @param string $email

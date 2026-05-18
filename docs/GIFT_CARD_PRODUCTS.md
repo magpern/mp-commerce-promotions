@@ -40,8 +40,11 @@ For each qualifying line item and each unit index `0 … qty-1`:
 ## Delivery MVP
 
 - **No** scheduled delivery, recipient form, or branded templates.
-- When **Settings → Gift cards → Send gift card codes by email** is enabled (default on), a plain `wp_mail()` is sent to the **billing email** with each new code, amount, and expiry.
-- Order admin meta box shows last4, balance, status, link to Gift Cards tab; full code only if still present in order meta (`plain_code`).
+- **Full gift card codes are not stored** after generation — only `code_last4`, masked `****1234`, amount, currency, status, and delivery metadata in order meta.
+- When **Settings → Gift cards → Send gift card codes by email** is enabled (default on), a plain `wp_mail()` sends each new code once to the **billing email** (subject: “Your gift card from {store_name}”). Codes are never written to audit logs.
+- **Delivery status** per card in order meta: `pending`, `sent`, `failed`, `disabled`, or `unknown` (legacy).
+- Order admin shows masked code, delivery status, and **Reissue delivery** (voids unused card, issues a new code, emails again). Partially used cards cannot be reissued automatically.
+- If email fails, use **Reissue delivery** — the old code cannot be revealed or resent.
 
 ## Cancellation / refund
 
@@ -69,7 +72,7 @@ On `cancelled`, `refunded`, or `failed`:
 ```bash
 composer run lint:php
 composer run test
-./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-smoke.php
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-delivery-security-smoke.php
 ```
 
 See also [GIFT_CARDS_STORE_CREDIT.md](GIFT_CARDS_STORE_CREDIT.md), [STORE_CREDIT.md](STORE_CREDIT.md), [MERCHANT_WORKFLOWS.md](MERCHANT_WORKFLOWS.md).

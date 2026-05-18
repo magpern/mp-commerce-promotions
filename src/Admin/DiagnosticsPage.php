@@ -211,6 +211,7 @@ final class DiagnosticsPage {
 
 		$this->handle_post_gift_card_integrity_repair();
 		$this->handle_post_gift_card_product_repair();
+		$this->handle_post_gift_card_delivery_repair();
 		$this->handle_post_repair();
 		$this->handle_post_archive_hygiene();
 		$this->handle_post_automation();
@@ -272,6 +273,7 @@ final class DiagnosticsPage {
 		$this->render_repair_form();
 		$this->render_gift_card_integrity_section();
 		$this->render_gift_card_product_section();
+		$this->render_gift_card_delivery_section();
 		CompatibilityStatusPanel::render();
 		if ( $this->profiler !== null && $this->concurrency !== null ) {
 			EcosystemCompatibilityPanel::render_system_health(
@@ -1702,6 +1704,84 @@ final class DiagnosticsPage {
 		echo '<p><button type="submit" class="button" name="mp_cp_gift_card_product_repair_apply" value="0">'
 			. esc_html__( 'Preview repair', 'mp-commerce-promotions' ) . '</button> ';
 		echo '<button type="submit" class="button button-primary" name="mp_cp_gift_card_product_repair_apply" value="1">'
+			. esc_html__( 'Apply repair', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form>';
+	}
+
+	private function handle_post_gift_card_delivery_repair(): void {
+		if ( ! isset( $_POST['mp_cp_gift_card_delivery_repair'] ) ) {
+			return;
+		}
+
+		if (
+			! isset( $_POST['_wpnonce'] )
+			|| ! wp_verify_nonce(
+				sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ),
+				'mp_cp_gift_card_delivery_repair'
+			)
+		) {
+			return;
+		}
+
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			return;
+		}
+
+		$apply = isset( $_POST['mp_cp_gift_card_delivery_repair_apply'] ) && (string) $_POST['mp_cp_gift_card_delivery_repair_apply'] === '1';
+		$diag  = new \MP\CommercePromotions\GiftCard\GiftCardDeliveryDiagnostics( $wpdb );
+		$result = $diag->repair( $apply );
+		if ( $apply ) {
+			AdminNotice::success(
+				sprintf(
+					/* translators: 1: plain_code removals, 2: legacy status marks */
+					__( 'Gift card delivery repair applied: %1$d plain_code fields removed, %2$d legacy statuses marked.', 'mp-commerce-promotions' ),
+					(int) $result['plain_code_removed'],
+					(int) $result['legacy_status_marked']
+				)
+			);
+		} else {
+			AdminNotice::info(
+				sprintf(
+					/* translators: 1: plain_code removals, 2: legacy status marks */
+					__( 'Gift card delivery repair preview: would remove %1$d plain_code fields, mark %2$d legacy statuses.', 'mp-commerce-promotions' ),
+					(int) $result['plain_code_removed'],
+					(int) $result['legacy_status_marked']
+				)
+			);
+		}
+	}
+
+	private function render_gift_card_delivery_section(): void {
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			return;
+		}
+
+		$diag   = new \MP\CommercePromotions\GiftCard\GiftCardDeliveryDiagnostics( $wpdb );
+		$issues = $diag->analyze();
+
+		echo '<h2 style="margin-top:2em;">' . esc_html__( 'Gift card delivery security', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Full gift card codes must not persist in order meta. Delivery status is tracked per generated card.', 'mp-commerce-promotions' ) . '</p>';
+
+		$counts = array(
+			__( 'Orders with legacy plain_code in meta', 'mp-commerce-promotions' ) => count( $issues['orders_with_plain_code'] ),
+			__( 'Delivery failed', 'mp-commerce-promotions' )                     => count( $issues['delivery_failed'] ),
+			__( 'Delivery disabled', 'mp-commerce-promotions' )                   => count( $issues['delivery_disabled'] ),
+			__( 'Missing/unknown delivery status', 'mp-commerce-promotions' )   => count( $issues['missing_delivery_status'] ),
+		);
+		echo '<ul>';
+		foreach ( $counts as $label => $count ) {
+			echo '<li>' . esc_html( $label ) . ': ' . esc_html( (string) $count ) . '</li>';
+		}
+		echo '</ul>';
+
+		echo '<form method="post" style="margin-top:12px;">';
+		wp_nonce_field( 'mp_cp_gift_card_delivery_repair' );
+		echo '<input type="hidden" name="mp_cp_gift_card_delivery_repair" value="1" />';
+		echo '<p><button type="submit" class="button" name="mp_cp_gift_card_delivery_repair_apply" value="0">'
+			. esc_html__( 'Preview repair', 'mp-commerce-promotions' ) . '</button> ';
+		echo '<button type="submit" class="button button-primary" name="mp_cp_gift_card_delivery_repair_apply" value="1">'
 			. esc_html__( 'Apply repair', 'mp-commerce-promotions' ) . '</button></p>';
 		echo '</form>';
 	}

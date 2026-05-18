@@ -69,7 +69,7 @@ Provide a structured foundation for commerce promotions using:
 - **Commerce Growth** admin shell — WooCommerce submenu label; slug remains `mp-commerce-promotions` for backward-compatible URLs.
 - **Campaign Builder** (`?page=mp-commerce-promotions` or `tab=campaign-builder`) — **default entrypoint**: guided goals, simple forms, draft creation.
 - **Advanced Promotions** (`tab=all`) — expert mode: list, raw JSON rules, orchestration, codes, cart simulation, and per-promotion **Advanced editor**.
-- **Gift Cards & Store Credit** (`tab=gift-cards`) — issue/adjust/void, hashed codes, ledger, checkout credit MVP, **sell via normal Woo products** ([docs/GIFT_CARDS_STORE_CREDIT.md](docs/GIFT_CARDS_STORE_CREDIT.md), [docs/GIFT_CARD_PRODUCTS.md](docs/GIFT_CARD_PRODUCTS.md)).
+- **Gift Cards & Store Credit** (`tab=gift-cards`) — issue/adjust/void, hashed codes, ledger, checkout credit MVP, **sell via normal Woo products** (codes emailed once, not stored in order meta; reissue on failure) ([docs/GIFT_CARDS_STORE_CREDIT.md](docs/GIFT_CARDS_STORE_CREDIT.md), [docs/GIFT_CARD_PRODUCTS.md](docs/GIFT_CARD_PRODUCTS.md)).
 - **Getting Started** (`tab=getting-started`) — legacy onboarding tab (hidden from nav bar; still reachable by URL).
 - **Settings** — feature gates (telemetry, CSV export, simulations, free gift/shipping, pricing explainability) and opt-in **delete all data on uninstall** (default: retain).
 - **Compatibility status** on Reports and Diagnostics; **support bundle** JSON export on Diagnostics (no PII).

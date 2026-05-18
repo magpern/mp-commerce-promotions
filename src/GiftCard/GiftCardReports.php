@@ -42,7 +42,11 @@ final class GiftCardReports {
 	 *   gift_cards_sold_from_products: int,
 	 *   product_generated_liability: float,
 	 *   product_generated_issued_total: float,
-	 *   manually_issued_total: float
+	 *   manually_issued_total: float,
+	 *   gift_cards_delivery_sent: int,
+	 *   gift_cards_delivery_failed: int,
+	 *   gift_cards_delivery_disabled: int,
+	 *   gift_cards_delivery_unknown: int
 	 * }
 	 */
 	public function summary(): array {
@@ -172,6 +176,8 @@ final class GiftCardReports {
 			array( GiftCardTransaction::TYPE_ISSUED, GiftCard::SOURCE_GIFT_CARD )
 		);
 
+		$delivery = GiftCardDeliverySummary::from_wpdb( $this->wpdb, 500 );
+
 		return array(
 			'active_outstanding_liability'      => GiftCard::money( $combined_liability ),
 			'gift_card_outstanding_liability'   => GiftCard::money( $gift_liability ),
@@ -192,6 +198,10 @@ final class GiftCardReports {
 			'product_generated_liability'       => GiftCard::money( $product_generated_liability ),
 			'product_generated_issued_total'    => GiftCard::money( $product_issued_total ),
 			'manually_issued_total'             => GiftCard::money( $manual_issued_total ),
+			'gift_cards_delivery_sent'          => max( 0, (int) ( $delivery['generated_sent'] ?? 0 ) ),
+			'gift_cards_delivery_failed'        => max( 0, (int) ( $delivery['delivery_failed'] ?? 0 ) ),
+			'gift_cards_delivery_disabled'      => max( 0, (int) ( $delivery['delivery_disabled'] ?? 0 ) ),
+			'gift_cards_delivery_unknown'         => max( 0, (int) ( $delivery['delivery_unknown'] ?? 0 ) ),
 		);
 	}
 

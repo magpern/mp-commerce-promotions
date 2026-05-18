@@ -243,7 +243,7 @@ final class Plugin {
 
 				if ( is_admin() ) {
 					( new GiftCardProductAdmin() )->register();
-					( new GiftCardOrderAdmin( $gift_card_repo ) )->register();
+					( new GiftCardOrderAdmin( $gift_card_repo, $gift_ledger, $this->settings, $this->audit_logger ) )->register();
 				}
 			}
 
