@@ -305,13 +305,19 @@ final class ReportsPage {
 		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Gift cards & store credit', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<table class="widefat striped" style="max-width:720px;"><tbody>';
 		$rows = array(
-			__( 'Active outstanding liability', 'mp-commerce-promotions' ) => number_format_i18n( $gc['active_outstanding_liability'], 2 ),
-			__( 'Total issued', 'mp-commerce-promotions' )                 => number_format_i18n( $gc['total_issued'], 2 ),
-			__( 'Total redeemed', 'mp-commerce-promotions' )               => number_format_i18n( $gc['total_redeemed'], 2 ),
-			__( 'Total adjusted (net)', 'mp-commerce-promotions' )        => number_format_i18n( $gc['total_adjusted'], 2 ),
-			__( 'Total voided (amount)', 'mp-commerce-promotions' )        => number_format_i18n( $gc['total_voided'], 2 ),
-			__( 'Depleted cards', 'mp-commerce-promotions' )              => (string) $gc['depleted_count'],
-			__( 'Expired cards', 'mp-commerce-promotions' )               => (string) $gc['expired_count'],
+			__( 'Combined outstanding liability', 'mp-commerce-promotions' )   => number_format_i18n( $gc['combined_outstanding_liability'], 2 ),
+			__( 'Gift card outstanding liability', 'mp-commerce-promotions' ) => number_format_i18n( $gc['gift_card_outstanding_liability'], 2 ),
+			__( 'Store credit outstanding liability', 'mp-commerce-promotions' ) => number_format_i18n( $gc['store_credit_outstanding_liability'], 2 ),
+			__( 'Gift cards issued', 'mp-commerce-promotions' )             => number_format_i18n( $gc['total_issued'], 2 ),
+			__( 'Gift cards redeemed', 'mp-commerce-promotions' )           => number_format_i18n( $gc['total_redeemed'], 2 ),
+			__( 'Store credit issued', 'mp-commerce-promotions' )           => number_format_i18n( $gc['store_credit_issued'], 2 ),
+			__( 'Store credit redeemed', 'mp-commerce-promotions' )           => number_format_i18n( $gc['store_credit_redeemed'], 2 ),
+			__( 'Refund to store credit', 'mp-commerce-promotions' )        => number_format_i18n( $gc['refund_to_credit_total'], 2 ),
+			__( 'Store credit manual adjustments (net)', 'mp-commerce-promotions' ) => number_format_i18n( $gc['manual_adjustment_total'], 2 ),
+			__( 'Gift card adjusted (net)', 'mp-commerce-promotions' )       => number_format_i18n( $gc['total_adjusted'], 2 ),
+			__( 'Gift cards voided (amount)', 'mp-commerce-promotions' )    => number_format_i18n( $gc['total_voided'], 2 ),
+			__( 'Depleted gift cards', 'mp-commerce-promotions' )           => (string) $gc['depleted_count'],
+			__( 'Expired gift cards', 'mp-commerce-promotions' )            => (string) $gc['expired_count'],
 		);
 		foreach ( $rows as $label => $value ) {
 			echo '<tr><th scope="row" style="width:50%;">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';

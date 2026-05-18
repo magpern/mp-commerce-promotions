@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.18.0';
+	public const SCHEMA_VERSION = '1.19.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -332,6 +332,9 @@ expires_at datetime NULL,
 created_order_id bigint(20) unsigned NULL,
 purchaser_customer_id bigint(20) unsigned NULL,
 recipient_email varchar(191) NULL,
+source_type varchar(32) NOT NULL default 'gift_card',
+owner_customer_id bigint(20) unsigned NULL,
+label varchar(191) NULL,
 created_at datetime NOT NULL default CURRENT_TIMESTAMP,
 updated_at datetime NOT NULL default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 PRIMARY KEY  (id),
@@ -340,7 +343,9 @@ UNIQUE KEY code_hash (code_hash),
 KEY status (status),
 KEY expires_at (expires_at),
 KEY created_order_id (created_order_id),
-KEY purchaser_customer_id (purchaser_customer_id)
+KEY purchaser_customer_id (purchaser_customer_id),
+KEY source_type (source_type),
+KEY owner_customer_id (owner_customer_id)
 ) {$collate};";
 	}
 

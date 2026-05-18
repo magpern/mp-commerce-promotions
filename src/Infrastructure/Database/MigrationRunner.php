@@ -291,6 +291,10 @@ final class MigrationRunner {
 			$required[] = Schema::gift_card_transactions_table( $this->wpdb );
 		}
 
+		if ( version_compare( Schema::SCHEMA_VERSION, '1.19.0', '>=' ) ) {
+			$required[] = Schema::gift_cards_table( $this->wpdb );
+		}
+
 		foreach ( $required as $table ) {
 			if ( ! is_string( $table ) || $table === '' ) {
 				return false;

@@ -1,6 +1,6 @@
 <?php
 /**
- * Stored-value gift card row (plain code never stored).
+ * Stored-value account row (gift card code or customer store credit wallet).
  *
  * @package MP\CommercePromotions
  */
@@ -13,6 +13,10 @@ use InvalidArgumentException;
 
 final class GiftCard {
 
+	public const SOURCE_GIFT_CARD = 'gift_card';
+
+	public const SOURCE_STORE_CREDIT = 'store_credit';
+
 	public const STATUS_ACTIVE = 'active';
 
 	public const STATUS_DEPLETED = 'depleted';
@@ -20,6 +24,8 @@ final class GiftCard {
 	public const STATUS_EXPIRED = 'expired';
 
 	public const STATUS_VOIDED = 'voided';
+
+	public const WALLET_CODE_LAST4 = 'WALL';
 
 	/**
 	 * @var list<string>
@@ -29,6 +35,14 @@ final class GiftCard {
 		self::STATUS_DEPLETED,
 		self::STATUS_EXPIRED,
 		self::STATUS_VOIDED,
+	);
+
+	/**
+	 * @var list<string>
+	 */
+	private const ALLOWED_SOURCES = array(
+		self::SOURCE_GIFT_CARD,
+		self::SOURCE_STORE_CREDIT,
 	);
 
 	private ?int $id;
@@ -55,6 +69,12 @@ final class GiftCard {
 
 	private ?string $recipient_email;
 
+	private string $source_type;
+
+	private ?int $owner_customer_id;
+
+	private ?string $label;
+
 	private ?string $created_at;
 
 	private ?string $updated_at;
@@ -73,7 +93,10 @@ final class GiftCard {
 		?int $purchaser_customer_id = null,
 		?string $recipient_email = null,
 		?string $created_at = null,
-		?string $updated_at = null
+		?string $updated_at = null,
+		string $source_type = self::SOURCE_GIFT_CARD,
+		?int $owner_customer_id = null,
+		?string $label = null
 	) {
 		$gift_card_uuid = trim( $gift_card_uuid );
 		if ( $gift_card_uuid === '' ) {
@@ -103,6 +126,14 @@ final class GiftCard {
 			throw new InvalidArgumentException( 'GiftCard status is invalid.' );
 		}
 
+		if ( ! in_array( $source_type, self::ALLOWED_SOURCES, true ) ) {
+			throw new InvalidArgumentException( 'GiftCard source_type is invalid.' );
+		}
+
+		if ( $source_type === self::SOURCE_STORE_CREDIT && ( $owner_customer_id === null || $owner_customer_id <= 0 ) ) {
+			throw new InvalidArgumentException( 'Store credit wallet requires owner_customer_id.' );
+		}
+
 		$this->id                    = $id;
 		$this->gift_card_uuid        = $gift_card_uuid;
 		$this->code_hash             = $code_hash;
@@ -117,6 +148,9 @@ final class GiftCard {
 		$this->recipient_email       = $recipient_email;
 		$this->created_at            = $created_at;
 		$this->updated_at            = $updated_at;
+		$this->source_type           = $source_type;
+		$this->owner_customer_id     = $owner_customer_id;
+		$this->label                 = $label !== null && $label !== '' ? $label : null;
 	}
 
 	public function get_id(): ?int {
@@ -167,12 +201,28 @@ final class GiftCard {
 		return $this->recipient_email;
 	}
 
+	public function get_source_type(): string {
+		return $this->source_type;
+	}
+
+	public function get_owner_customer_id(): ?int {
+		return $this->owner_customer_id;
+	}
+
+	public function get_label(): ?string {
+		return $this->label;
+	}
+
 	public function get_created_at(): ?string {
 		return $this->created_at;
 	}
 
 	public function get_updated_at(): ?string {
 		return $this->updated_at;
+	}
+
+	public function is_store_credit_wallet(): bool {
+		return $this->source_type === self::SOURCE_STORE_CREDIT;
 	}
 
 	public function with_balance_and_status( float $balance, string $status ): self {
@@ -190,7 +240,10 @@ final class GiftCard {
 			$this->purchaser_customer_id,
 			$this->recipient_email,
 			$this->created_at,
-			$this->updated_at
+			$this->updated_at,
+			$this->source_type,
+			$this->owner_customer_id,
+			$this->label
 		);
 	}
 
@@ -220,5 +273,15 @@ final class GiftCard {
 
 	public static function money( float $amount ): float {
 		return round( max( 0.0, $amount ), 2 );
+	}
+
+	public static function store_credit_wallet_hash( int $customer_id, string $currency ): string {
+		if ( $customer_id <= 0 ) {
+			throw new InvalidArgumentException( 'customer_id must be > 0.' );
+		}
+
+		$currency = strtoupper( trim( $currency ) );
+
+		return hash( 'sha256', 'mp_cp_store_credit_wallet:' . $customer_id . ':' . $currency );
 	}
 }

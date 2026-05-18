@@ -239,6 +239,66 @@ final class GiftCardLedger {
 	 * @throws InvalidArgumentException
 	 * @throws RuntimeException
 	 */
+	/**
+	 * Credit balance with a specific positive transaction type (store credit grants, refund-to-credit).
+	 *
+	 * @throws InvalidArgumentException
+	 * @throws RuntimeException
+	 */
+	public function credit_balance(
+		int $gift_card_id,
+		float $amount,
+		string $transaction_type,
+		?int $order_id = null,
+		?int $customer_id = null,
+		?string $note = null
+	): GiftCard {
+		$amount = GiftCard::money( $amount );
+		if ( $amount <= 0 ) {
+			throw new InvalidArgumentException( 'Credit amount must be greater than zero.' );
+		}
+
+		$allowed = array(
+			GiftCardTransaction::TYPE_ISSUED,
+			GiftCardTransaction::TYPE_ADJUSTED,
+			GiftCardTransaction::TYPE_REFUND_TO_CREDIT,
+		);
+		if ( ! in_array( $transaction_type, $allowed, true ) ) {
+			throw new InvalidArgumentException( 'Invalid credit transaction type.' );
+		}
+
+		$card = $this->require_card( $gift_card_id );
+		if ( $card->get_status() === GiftCard::STATUS_VOIDED ) {
+			throw new InvalidArgumentException( 'Voided accounts cannot be credited.' );
+		}
+
+		$new_balance = GiftCard::money( $card->get_balance() + $amount );
+		$status      = GiftCard::STATUS_ACTIVE;
+		if ( $new_balance <= 0 ) {
+			$status = GiftCard::STATUS_DEPLETED;
+		} elseif ( $card->get_status() === GiftCard::STATUS_DEPLETED ) {
+			$status = GiftCard::STATUS_ACTIVE;
+		}
+
+		$updated = $card->with_balance_and_status( $new_balance, $status );
+
+		if ( ! $this->cards->update( $updated ) ) {
+			throw new RuntimeException( 'Failed to update account after credit.' );
+		}
+
+		$this->append_transaction(
+			$gift_card_id,
+			$transaction_type,
+			$amount,
+			$new_balance,
+			$order_id,
+			$customer_id,
+			$note
+		);
+
+		return $this->require_card( $gift_card_id );
+	}
+
 	public function refund_redemption(
 		int $gift_card_id,
 		float $amount,

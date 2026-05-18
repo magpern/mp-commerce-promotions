@@ -25,6 +25,8 @@ final class GiftCardTransaction {
 
 	public const TYPE_VOIDED = 'voided';
 
+	public const TYPE_REFUND_TO_CREDIT = 'refund_to_credit';
+
 	/**
 	 * @var list<string>
 	 */
@@ -35,6 +37,7 @@ final class GiftCardTransaction {
 		self::TYPE_ADJUSTED,
 		self::TYPE_EXPIRED,
 		self::TYPE_VOIDED,
+		self::TYPE_REFUND_TO_CREDIT,
 	);
 
 	private ?int $id;

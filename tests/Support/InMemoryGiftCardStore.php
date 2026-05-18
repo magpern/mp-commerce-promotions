@@ -41,7 +41,12 @@ final class InMemoryGiftCardStore {
 			$card->get_expires_at(),
 			$card->get_created_order_id(),
 			$card->get_purchaser_customer_id(),
-			$card->get_recipient_email()
+			$card->get_recipient_email(),
+			null,
+			null,
+			$card->get_source_type(),
+			$card->get_owner_customer_id(),
+			$card->get_label()
 		);
 		$this->cards[ $id ] = $stored;
 
@@ -60,6 +65,13 @@ final class InMemoryGiftCardStore {
 
 	public function find_card( int $id ): ?GiftCard {
 		return $this->cards[ $id ] ?? null;
+	}
+
+	/**
+	 * @return list<GiftCard>
+	 */
+	public function all_cards(): array {
+		return array_values( $this->cards );
 	}
 
 	public function find_by_hash( string $hash ): ?GiftCard {

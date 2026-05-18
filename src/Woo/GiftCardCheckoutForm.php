@@ -92,7 +92,7 @@ final class GiftCardCheckoutForm {
 		}
 
 		$card = $this->ledger->find_by_plain_code( $plain );
-		if ( $card === null || ! $this->redemption->is_redeemable( $card ) ) {
+		if ( $card === null || $card->is_store_credit_wallet() || ! $this->redemption->is_redeemable( $card ) ) {
 			$this->add_notice( __( 'Gift card is not valid or cannot be used.', 'mp-commerce-promotions' ), 'error' );
 			return;
 		}

@@ -75,6 +75,16 @@ final class WooCommerceBridge {
 
 	private ?GiftCardCheckoutForm $gift_card_checkout_form = null;
 
+	private ?StoreCreditCartApplier $store_credit_cart_applier = null;
+
+	private bool $store_credit_fee_hook_registered = false;
+
+	private ?StoreCreditOrderRecorder $store_credit_order_recorder = null;
+
+	private bool $store_credit_order_hooks_registered = false;
+
+	private ?StoreCreditCheckoutForm $store_credit_checkout_form = null;
+
 	/**
 	 * Detect WooCommerce availability (call once during plugin bootstrap).
 	 */
@@ -157,6 +167,27 @@ final class WooCommerceBridge {
 		}
 	}
 
+	public function set_store_credit_cart_applier( ?StoreCreditCartApplier $applier ): void {
+		$this->store_credit_cart_applier = $applier;
+		if ( $this->store_credit_cart_applier !== null && $this->available ) {
+			$this->register_store_credit_fee_hook();
+		}
+	}
+
+	public function set_store_credit_order_recorder( ?StoreCreditOrderRecorder $recorder ): void {
+		$this->store_credit_order_recorder = $recorder;
+		if ( $this->store_credit_order_recorder !== null && $this->available ) {
+			$this->register_store_credit_order_hooks();
+		}
+	}
+
+	public function set_store_credit_checkout_form( ?StoreCreditCheckoutForm $form ): void {
+		$this->store_credit_checkout_form = $form;
+		if ( $this->store_credit_checkout_form !== null && $this->available ) {
+			$this->store_credit_checkout_form->register();
+		}
+	}
+
 	private function register_gift_card_fee_hook(): void {
 		if ( $this->gift_card_fee_hook_registered || $this->gift_card_cart_applier === null ) {
 			return;
@@ -187,6 +218,38 @@ final class WooCommerceBridge {
 		add_action( 'woocommerce_order_status_refunded', array( $recorder, 'reverse_on_order_status' ), 10, 1 );
 
 		$this->gift_card_order_hooks_registered = true;
+	}
+
+	private function register_store_credit_fee_hook(): void {
+		if ( $this->store_credit_fee_hook_registered || $this->store_credit_cart_applier === null ) {
+			return;
+		}
+
+		add_action(
+			'woocommerce_cart_calculate_fees',
+			array( $this->store_credit_cart_applier, 'apply_cart_fee' ),
+			26
+		);
+		$this->store_credit_fee_hook_registered = true;
+	}
+
+	private function register_store_credit_order_hooks(): void {
+		if ( $this->store_credit_order_hooks_registered || $this->store_credit_order_recorder === null ) {
+			return;
+		}
+
+		$recorder = $this->store_credit_order_recorder;
+
+		add_action( 'woocommerce_checkout_create_order', array( $recorder, 'stage_on_order_create' ), 10, 2 );
+		add_action( 'woocommerce_checkout_order_processed', array( $recorder, 'record_on_checkout_processed' ), 20, 1 );
+		add_action( 'woocommerce_payment_complete', array( $recorder, 'record_on_checkout_processed' ), 20, 1 );
+		add_action( 'woocommerce_store_api_checkout_order_processed', array( $recorder, 'record_on_checkout_processed' ), 20, 1 );
+
+		add_action( 'woocommerce_order_status_cancelled', array( $recorder, 'reverse_on_order_status' ), 10, 1 );
+		add_action( 'woocommerce_order_status_failed', array( $recorder, 'reverse_on_order_status' ), 10, 1 );
+		add_action( 'woocommerce_order_status_refunded', array( $recorder, 'reverse_on_order_status' ), 10, 1 );
+
+		$this->store_credit_order_hooks_registered = true;
 	}
 
 	/**

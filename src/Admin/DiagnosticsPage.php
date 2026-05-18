@@ -1614,10 +1614,12 @@ final class DiagnosticsPage {
 		echo '<p>' . esc_html__( 'Checks ledger consistency and status hygiene for stored-value gift cards.', 'mp-commerce-promotions' ) . '</p>';
 
 		$counts = array(
-			__( 'Negative balance', 'mp-commerce-promotions' )     => count( $issues['negative_balance'] ),
-			__( 'Active with zero balance', 'mp-commerce-promotions' ) => count( $issues['active_zero_balance'] ),
-			__( 'Balance mismatch', 'mp-commerce-promotions' )       => count( $issues['balance_mismatch'] ),
-			__( 'Expired but active', 'mp-commerce-promotions' )   => count( $issues['expired_still_active'] ),
+			__( 'Negative balance', 'mp-commerce-promotions' )              => count( $issues['negative_balance'] ),
+			__( 'Active with zero balance', 'mp-commerce-promotions' )      => count( $issues['active_zero_balance'] ),
+			__( 'Balance mismatch', 'mp-commerce-promotions' )            => count( $issues['balance_mismatch'] ),
+			__( 'Expired but active', 'mp-commerce-promotions' )            => count( $issues['expired_still_active'] ),
+			__( 'Store credit without owner', 'mp-commerce-promotions' )  => count( $issues['store_credit_missing_owner'] ),
+			__( 'Store credit unexpected code hash', 'mp-commerce-promotions' ) => count( $issues['store_credit_unexpected_code_hash'] ),
 		);
 		echo '<ul>';
 		foreach ( $counts as $label => $count ) {

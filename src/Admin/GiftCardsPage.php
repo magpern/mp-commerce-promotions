@@ -13,9 +13,15 @@ use InvalidArgumentException;
 use MP\CommercePromotions\GiftCard\GiftCard;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
+use MP\CommercePromotions\GiftCard\StoreCreditAccountService;
+use MP\CommercePromotions\GiftCard\StoreCreditWallet;
 use RuntimeException;
 
 final class GiftCardsPage {
+
+	private const PANEL_GIFT_CARDS = 'gift_cards';
+
+	private const PANEL_STORE_CREDIT = 'store_credit';
 
 	private const NONCE_ISSUE = 'mp_cp_issue_gift_card';
 
@@ -23,16 +29,36 @@ final class GiftCardsPage {
 
 	private const NONCE_VOID = 'mp_cp_void_gift_card';
 
+	private const NONCE_SC_GRANT = 'mp_cp_store_credit_grant';
+
+	private const NONCE_SC_DEDUCT = 'mp_cp_store_credit_deduct';
+
+	private const NONCE_SC_REFUND = 'mp_cp_store_credit_refund_order';
+
 	private GiftCardLedger $ledger;
 
 	private GiftCardRepository $cards;
 
+	private StoreCreditWallet $store_credit;
+
+	private StoreCreditAccountService $store_credit_accounts;
+
 	/** @var array{plain_code?: string, card_id?: int}|null */
 	private ?array $flash_issue = null;
 
-	public function __construct( GiftCardLedger $ledger, GiftCardRepository $cards ) {
-		$this->ledger = $ledger;
-		$this->cards  = $cards;
+	/** @var int|null */
+	private ?int $selected_customer_id = null;
+
+	public function __construct(
+		GiftCardLedger $ledger,
+		GiftCardRepository $cards,
+		StoreCreditWallet $store_credit,
+		StoreCreditAccountService $store_credit_accounts
+	) {
+		$this->ledger                 = $ledger;
+		$this->cards                  = $cards;
+		$this->store_credit           = $store_credit;
+		$this->store_credit_accounts  = $store_credit_accounts;
 	}
 
 	public function render(): void {
@@ -42,15 +68,23 @@ final class GiftCardsPage {
 
 		$this->handle_post();
 
+		$panel     = isset( $_GET['mp_cp_gc_panel'] ) ? sanitize_key( (string) $_GET['mp_cp_gc_panel'] ) : self::PANEL_GIFT_CARDS;
 		$detail_id = isset( $_GET['gift_card_id'] ) ? (int) $_GET['gift_card_id'] : 0;
+
+		if ( isset( $_GET['customer_id'] ) ) {
+			$this->selected_customer_id = max( 0, (int) $_GET['customer_id'] );
+		}
 
 		echo '<div class="wrap mp-cg-gift-cards-wrap">';
 		echo '<h1>' . esc_html__( 'Gift Cards & Store Credit', 'mp-commerce-promotions' ) . '</h1>';
 		AdminNavigation::render_tabs( AdminNavigation::TAB_GIFT_CARDS );
 
+		$this->render_panel_nav( $panel );
 		$this->render_notices();
 
-		if ( $detail_id > 0 ) {
+		if ( $panel === self::PANEL_STORE_CREDIT ) {
+			$this->render_store_credit_panel();
+		} elseif ( $detail_id > 0 ) {
 			$this->render_detail( $detail_id );
 		} else {
 			$this->render_issue_form();
@@ -61,6 +95,21 @@ final class GiftCardsPage {
 		}
 
 		echo '</div>';
+	}
+
+	private function render_panel_nav( string $active ): void {
+		$base = AdminUrl::tab( AdminNavigation::TAB_GIFT_CARDS );
+		$tabs = array(
+			self::PANEL_GIFT_CARDS   => __( 'Gift Cards', 'mp-commerce-promotions' ),
+			self::PANEL_STORE_CREDIT => __( 'Store Credit', 'mp-commerce-promotions' ),
+		);
+		echo '<nav class="nav-tab-wrapper" style="margin:1em 0;">';
+		foreach ( $tabs as $key => $label ) {
+			$url   = add_query_arg( 'mp_cp_gc_panel', $key, $base );
+			$class = $active === $key ? ' nav-tab nav-tab-active' : ' nav-tab';
+			echo '<a href="' . esc_url( $url ) . '" class="' . esc_attr( trim( $class ) ) . '">' . esc_html( $label ) . '</a>';
+		}
+		echo '</nav>';
 	}
 
 	private function handle_post(): void {
@@ -80,7 +129,260 @@ final class GiftCardsPage {
 
 		if ( isset( $_POST['mp_cp_gift_card_void'] ) ) {
 			$this->handle_void();
+			return;
 		}
+
+		if ( isset( $_POST['mp_cp_store_credit_grant'] ) ) {
+			$this->handle_store_credit_grant();
+			return;
+		}
+
+		if ( isset( $_POST['mp_cp_store_credit_deduct'] ) ) {
+			$this->handle_store_credit_deduct();
+			return;
+		}
+
+		if ( isset( $_POST['mp_cp_store_credit_refund_order'] ) ) {
+			$this->handle_store_credit_refund_order();
+		}
+	}
+
+	private function handle_store_credit_grant(): void {
+		if (
+			! isset( $_POST['_wpnonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ), self::NONCE_SC_GRANT )
+		) {
+			AdminNotice::error( __( 'Security check failed.', 'mp-commerce-promotions' ) );
+			return;
+		}
+
+		$customer_id = $this->resolve_post_customer_id();
+		$amount      = isset( $_POST['sc_amount'] ) ? (float) wp_unslash( (string) $_POST['sc_amount'] ) : 0.0;
+		$currency    = $this->resolve_post_currency();
+		$note        = isset( $_POST['sc_note'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['sc_note'] ) ) : '';
+
+		try {
+			$this->store_credit->grant_credit( $customer_id, $amount, $currency, $note );
+			AdminNotice::success( __( 'Store credit granted.', 'mp-commerce-promotions' ) );
+			$this->selected_customer_id = $customer_id;
+		} catch ( InvalidArgumentException | RuntimeException $e ) {
+			AdminNotice::error( esc_html( $e->getMessage() ) );
+		}
+	}
+
+	private function handle_store_credit_deduct(): void {
+		if (
+			! isset( $_POST['_wpnonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ), self::NONCE_SC_DEDUCT )
+		) {
+			AdminNotice::error( __( 'Security check failed.', 'mp-commerce-promotions' ) );
+			return;
+		}
+
+		$customer_id = $this->resolve_post_customer_id();
+		$amount      = isset( $_POST['sc_amount'] ) ? (float) wp_unslash( (string) $_POST['sc_amount'] ) : 0.0;
+		$currency    = $this->resolve_post_currency();
+		$note        = isset( $_POST['sc_note'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['sc_note'] ) ) : '';
+
+		try {
+			$this->store_credit->deduct_credit( $customer_id, $amount, $currency, $note );
+			AdminNotice::success( __( 'Store credit deducted.', 'mp-commerce-promotions' ) );
+			$this->selected_customer_id = $customer_id;
+		} catch ( InvalidArgumentException | RuntimeException $e ) {
+			AdminNotice::error( esc_html( $e->getMessage() ) );
+		}
+	}
+
+	private function handle_store_credit_refund_order(): void {
+		if (
+			! isset( $_POST['_wpnonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ), self::NONCE_SC_REFUND )
+		) {
+			AdminNotice::error( __( 'Security check failed.', 'mp-commerce-promotions' ) );
+			return;
+		}
+
+		$order_id = isset( $_POST['sc_order_id'] ) ? (int) $_POST['sc_order_id'] : 0;
+		$amount   = isset( $_POST['sc_refund_amount'] ) ? (float) wp_unslash( (string) $_POST['sc_refund_amount'] ) : 0.0;
+		$note     = isset( $_POST['sc_refund_note'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['sc_refund_note'] ) ) : '';
+
+		try {
+			$card = $this->store_credit->refund_order_to_credit( $order_id, $amount, $note );
+			AdminNotice::success( __( 'Order amount credited to customer store credit.', 'mp-commerce-promotions' ) );
+			$owner = $card->get_owner_customer_id();
+			if ( $owner !== null && $owner > 0 ) {
+				$this->selected_customer_id = $owner;
+			}
+		} catch ( InvalidArgumentException | RuntimeException $e ) {
+			AdminNotice::error( esc_html( $e->getMessage() ) );
+		}
+	}
+
+	private function resolve_post_customer_id(): int {
+		$query = isset( $_POST['sc_customer'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['sc_customer'] ) ) : '';
+		$id    = $this->store_credit_accounts->resolve_customer_id( $query );
+		if ( $id === null || $id <= 0 ) {
+			throw new InvalidArgumentException( __( 'Customer not found. Use ID, email, or login.', 'mp-commerce-promotions' ) );
+		}
+
+		return $id;
+	}
+
+	private function resolve_post_currency(): string {
+		$currency = isset( $_POST['sc_currency'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['sc_currency'] ) ) : '';
+		if ( $currency === '' && function_exists( 'get_woocommerce_currency' ) ) {
+			$currency = get_woocommerce_currency();
+		}
+
+		return $currency;
+	}
+
+	private function render_store_credit_panel(): void {
+		$currency = function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'EUR';
+		$customer = $this->selected_customer_id;
+		$balance  = 0.0;
+		$wallet   = null;
+
+		if ( $customer !== null && $customer > 0 ) {
+			$balance = $this->store_credit->get_balance( $customer, $currency );
+			$wallet  = $this->store_credit_accounts->find_wallet( $customer, $currency );
+		}
+
+		echo '<h2>' . esc_html__( 'Customer store credit', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Store credit is tied to a customer account (no code at checkout when logged in). Gift cards remain code-based.', 'mp-commerce-promotions' ) . '</p>';
+
+		$search_url = add_query_arg(
+			array(
+				'page'            => AdminNavigation::PAGE_SLUG,
+				'tab'             => AdminNavigation::TAB_GIFT_CARDS,
+				'mp_cp_gc_panel'  => self::PANEL_STORE_CREDIT,
+			),
+			admin_url( 'admin.php' )
+		);
+		echo '<form method="get" style="max-width:520px;margin-bottom:1.5em;">';
+		echo '<input type="hidden" name="page" value="' . esc_attr( AdminNavigation::PAGE_SLUG ) . '" />';
+		echo '<input type="hidden" name="tab" value="' . esc_attr( AdminNavigation::TAB_GIFT_CARDS ) . '" />';
+		echo '<input type="hidden" name="mp_cp_gc_panel" value="' . esc_attr( self::PANEL_STORE_CREDIT ) . '" />';
+		echo '<p><label for="sc_customer_lookup">' . esc_html__( 'Customer (ID, email, or login)', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<input type="text" class="regular-text" id="sc_customer_lookup" name="sc_customer_lookup" value="';
+		if ( $customer !== null && $customer > 0 ) {
+			echo esc_attr( (string) $customer );
+		}
+		echo '" /> ';
+		echo '<button type="submit" class="button">' . esc_html__( 'Look up', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form>';
+
+		if ( isset( $_GET['sc_customer_lookup'] ) && ( $customer === null || $customer <= 0 ) ) {
+			$lookup = sanitize_text_field( wp_unslash( (string) $_GET['sc_customer_lookup'] ) );
+			$found  = $this->store_credit_accounts->resolve_customer_id( $lookup );
+			if ( $found !== null && $found > 0 ) {
+				wp_safe_redirect(
+					add_query_arg(
+						array(
+							'customer_id'    => $found,
+							'mp_cp_gc_panel' => self::PANEL_STORE_CREDIT,
+						),
+						$search_url
+					)
+				);
+				exit;
+			}
+			echo '<div class="notice notice-error"><p>' . esc_html__( 'Customer not found.', 'mp-commerce-promotions' ) . '</p></div>';
+		}
+
+		if ( $customer === null || $customer <= 0 ) {
+			return;
+		}
+
+		$user = get_user_by( 'id', $customer );
+		$label = $user instanceof \WP_User
+			? sprintf( '#%d %s (%s)', $customer, $user->display_name, $user->user_email )
+			: '#' . $customer;
+
+		echo '<h3>' . esc_html( $label ) . '</h3>';
+		echo '<p><strong>' . esc_html__( 'Balance', 'mp-commerce-promotions' ) . ':</strong> '
+			. esc_html( number_format_i18n( $balance, 2 ) . ' ' . $currency ) . '</p>';
+
+		echo '<h3>' . esc_html__( 'Grant credit', 'mp-commerce-promotions' ) . '</h3>';
+		$this->render_store_credit_amount_form( self::NONCE_SC_GRANT, 'mp_cp_store_credit_grant', __( 'Grant credit', 'mp-commerce-promotions' ), $customer, $currency );
+
+		echo '<h3>' . esc_html__( 'Deduct credit', 'mp-commerce-promotions' ) . '</h3>';
+		$this->render_store_credit_amount_form( self::NONCE_SC_DEDUCT, 'mp_cp_store_credit_deduct', __( 'Deduct credit', 'mp-commerce-promotions' ), $customer, $currency );
+
+		echo '<h3>' . esc_html__( 'Refund order to store credit', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<form method="post" style="max-width:480px;">';
+		wp_nonce_field( self::NONCE_SC_REFUND );
+		echo '<input type="hidden" name="mp_cp_store_credit_refund_order" value="1" />';
+		echo '<input type="hidden" name="sc_customer" value="' . esc_attr( (string) $customer ) . '" />';
+		echo '<p><label>' . esc_html__( 'Order ID', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<input type="number" name="sc_order_id" class="regular-text" min="1" required /></p>';
+		echo '<p><label>' . esc_html__( 'Amount', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<input type="number" step="0.01" min="0.01" name="sc_refund_amount" class="regular-text" required /></p>';
+		echo '<p><label>' . esc_html__( 'Note (required)', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<textarea name="sc_refund_note" class="large-text" rows="2" required></textarea></p>';
+		submit_button( __( 'Refund to store credit', 'mp-commerce-promotions' ), 'secondary' );
+		echo '</form>';
+
+		echo '<h3>' . esc_html__( 'Ledger', 'mp-commerce-promotions' ) . '</h3>';
+		$txs = $this->store_credit->transactions_for_customer( $customer, $currency );
+		if ( $txs === array() ) {
+			echo '<p>' . esc_html__( 'No transactions yet.', 'mp-commerce-promotions' ) . '</p>';
+		} else {
+			echo '<table class="widefat striped"><thead><tr>';
+			echo '<th>' . esc_html__( 'Date', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th>' . esc_html__( 'Type', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th>' . esc_html__( 'Amount', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th>' . esc_html__( 'Balance after', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th>' . esc_html__( 'Order', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th>' . esc_html__( 'Note', 'mp-commerce-promotions' ) . '</th>';
+			echo '</tr></thead><tbody>';
+			foreach ( $txs as $tx ) {
+				echo '<tr>';
+				echo '<td>' . esc_html( $tx->get_created_at() ?? '' ) . '</td>';
+				echo '<td>' . esc_html( $tx->get_transaction_type() ) . '</td>';
+				echo '<td>' . esc_html( number_format_i18n( $tx->get_amount(), 2 ) ) . '</td>';
+				echo '<td>' . esc_html( number_format_i18n( $tx->get_balance_after(), 2 ) ) . '</td>';
+				echo '<td>' . esc_html( $tx->get_order_id() !== null ? (string) $tx->get_order_id() : '—' ) . '</td>';
+				echo '<td>' . esc_html( $tx->get_note() ?? '' ) . '</td>';
+				echo '</tr>';
+			}
+			echo '</tbody></table>';
+		}
+
+		if ( $wallet !== null && $wallet->get_id() !== null ) {
+			echo '<p style="margin-top:1em;"><a href="'
+				. esc_url(
+					add_query_arg(
+						array(
+							'page'         => AdminNavigation::PAGE_SLUG,
+							'tab'          => AdminNavigation::TAB_GIFT_CARDS,
+							'gift_card_id' => $wallet->get_id(),
+						),
+						admin_url( 'admin.php' )
+					)
+				)
+				. '">' . esc_html__( 'View wallet record', 'mp-commerce-promotions' ) . '</a></p>';
+		}
+	}
+
+	private function render_store_credit_amount_form(
+		string $nonce_action,
+		string $submit_name,
+		string $submit_label,
+		int $customer_id,
+		string $currency
+	): void {
+		echo '<form method="post" style="max-width:480px;margin-bottom:1.5em;">';
+		wp_nonce_field( $nonce_action );
+		echo '<input type="hidden" name="' . esc_attr( $submit_name ) . '" value="1" />';
+		echo '<input type="hidden" name="sc_customer" value="' . esc_attr( (string) $customer_id ) . '" />';
+		echo '<input type="hidden" name="sc_currency" value="' . esc_attr( $currency ) . '" />';
+		echo '<p><label>' . esc_html__( 'Amount', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<input type="number" step="0.01" min="0.01" name="sc_amount" class="regular-text" required /></p>';
+		echo '<p><label>' . esc_html__( 'Note (required)', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<textarea name="sc_note" class="large-text" rows="2" required></textarea></p>';
+		submit_button( $submit_label, 'primary', '', false );
+		echo '</form>';
 	}
 
 	private function handle_issue(): void {
@@ -209,7 +511,7 @@ final class GiftCardsPage {
 	}
 
 	private function render_list(): void {
-		$list = $this->cards->list_recent( 50, 0 );
+		$list = $this->cards->list_recent( 50, 0, GiftCard::SOURCE_GIFT_CARD );
 
 		echo '<h2 style="margin-top:2em;">' . esc_html__( 'Gift cards', 'mp-commerce-promotions' ) . '</h2>';
 		if ( $list === array() ) {
@@ -268,7 +570,10 @@ final class GiftCardsPage {
 		$list_url = AdminUrl::tab( AdminNavigation::TAB_GIFT_CARDS );
 		echo '<p><a href="' . esc_url( $list_url ) . '">' . esc_html__( '← Back to gift cards', 'mp-commerce-promotions' ) . '</a></p>';
 
-		echo '<h2>' . esc_html( sprintf( __( 'Gift card #%d', 'mp-commerce-promotions' ), $gift_card_id ) ) . '</h2>';
+		$title = $card->is_store_credit_wallet()
+			? sprintf( __( 'Store credit wallet #%d', 'mp-commerce-promotions' ), $gift_card_id )
+			: sprintf( __( 'Gift card #%d', 'mp-commerce-promotions' ), $gift_card_id );
+		echo '<h2>' . esc_html( $title ) . '</h2>';
 		echo '<table class="widefat" style="max-width:640px;"><tbody>';
 		$this->detail_row( __( 'Last 4', 'mp-commerce-promotions' ), '****' . $card->get_code_last4() );
 		$this->detail_row( __( 'Balance', 'mp-commerce-promotions' ), number_format_i18n( $card->get_balance(), 2 ) . ' ' . $card->get_currency() );

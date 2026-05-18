@@ -77,7 +77,7 @@ Provide a structured foundation for commerce promotions using:
 
 ## Database
 
-- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.18.0`** (gift card tables; prior **1.17.0** certification runs) (see `Schema::SCHEMA_VERSION`; adds `dry_run` on promotions; prior **1.15.0** added `discount_application_mode`).
+- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.19.0`** (store credit wallets on gift card tables; prior **1.18.0** gift card ledger; **1.17.0** certification runs) (see `Schema::SCHEMA_VERSION`; adds `dry_run` on promotions; prior **1.15.0** added `discount_application_mode`).
 - **Tables** (after activation / migration), using the site table prefix (e.g. `wp_`):
   - `{prefix}mp_cp_promotions` — promotion definitions (JSON-like rules in `LONGTEXT` columns).
   - `{prefix}mp_cp_redemptions` — usage against orders; **unique** `(order_id, promotion_id)` as **`order_promotion_unique`** (MySQL allows multiple `NULL` `order_id` rows; real checkouts use non-null `order_id`). Migration to **1.1.0** **refuses** `dbDelta` / version bump if duplicate non-null `(order_id, promotion_id)` pairs already exist (see `MigrationRunner`).
@@ -169,7 +169,7 @@ bash scripts/sync-to-live.sh
 bash scripts/verify-plugin.sh
 ```
 
-**Plugin version:** `0.3.0-pilot.2` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). **Pilot release** — see [docs/PILOT_RELEASE_0.3.0_PILOT2.md](docs/PILOT_RELEASE_0.3.0_PILOT2.md). **0.3.0-pilot.1 is superseded** — do not deploy. Database schema version is separate (`mp_cp_schema_version`, currently **1.18.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
+**Plugin version:** `0.3.0-pilot.2` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). **Pilot release** — see [docs/PILOT_RELEASE_0.3.0_PILOT2.md](docs/PILOT_RELEASE_0.3.0_PILOT2.md). **0.3.0-pilot.1 is superseded** — do not deploy. Database schema version is separate (`mp_cp_schema_version`, currently **1.19.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
 
 **Release zip** (no `.git` / `vendor`):
 

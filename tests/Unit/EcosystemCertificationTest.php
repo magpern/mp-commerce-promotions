@@ -20,7 +20,7 @@ use PHPUnit\Framework\TestCase;
 final class EcosystemCertificationTest extends TestCase {
 
 	public function test_schema_1_17_0(): void {
-		$this->assertSame( '1.18.0', Schema::SCHEMA_VERSION );
+		$this->assertSame( '1.19.0', Schema::SCHEMA_VERSION );
 	}
 
 	public function test_coupon_matrix_has_six_scenarios(): void {

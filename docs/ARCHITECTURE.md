@@ -610,6 +610,8 @@ Inside the plugin screen (default tab omitted → Campaign Builder):
 Campaign Builder | Advanced Promotions | Gift Cards & Store Credit | Reports | Diagnostics | Settings
 
 **Gift cards (schema 1.18.0):** Separate from the promotion engine — stored-value ledger (`mp_cp_gift_cards`, `mp_cp_gift_card_transactions`), admin issue/adjust/void, checkout negative fee + order redemption. See [GIFT_CARDS_STORE_CREDIT.md](GIFT_CARDS_STORE_CREDIT.md).
+
+**Store credit wallets (schema 1.19.0):** Customer-owned rows on the same ledger (`source_type = store_credit`), admin grant/deduct/refund-to-credit, logged-in checkout fee (session `mp_cp_applied_store_credit`). See [STORE_CREDIT.md](STORE_CREDIT.md).
 ```
 
 The main admin route is:

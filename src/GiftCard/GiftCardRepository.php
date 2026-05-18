@@ -42,6 +42,9 @@ class GiftCardRepository {
 			'created_order_id'      => $card->get_created_order_id(),
 			'purchaser_customer_id' => $card->get_purchaser_customer_id(),
 			'recipient_email'       => $card->get_recipient_email(),
+			'source_type'           => $card->get_source_type(),
+			'owner_customer_id'     => $card->get_owner_customer_id(),
+			'label'                 => $card->get_label(),
 			'created_at'            => $card->get_created_at() ?? $now,
 			'updated_at'            => $card->get_updated_at() ?? $now,
 		);
@@ -56,6 +59,9 @@ class GiftCardRepository {
 			'%s',
 			'%s',
 			'%d',
+			'%d',
+			'%s',
+			'%s',
 			'%d',
 			'%s',
 			'%s',
@@ -77,6 +83,14 @@ class GiftCardRepository {
 		if ( $data['recipient_email'] === null || $data['recipient_email'] === '' ) {
 			$data['recipient_email'] = null;
 			$formats[10]             = '%s';
+		}
+		if ( $data['owner_customer_id'] === null || $data['owner_customer_id'] <= 0 ) {
+			$data['owner_customer_id'] = null;
+			$formats[12]               = '%s';
+		}
+		if ( $data['label'] === null || $data['label'] === '' ) {
+			$data['label'] = null;
+			$formats[13]   = '%s';
 		}
 
 		$inserted = $this->wpdb->insert( $this->table(), $data, $formats );
@@ -127,6 +141,26 @@ class GiftCardRepository {
 		return $this->row_to_card( $row );
 	}
 
+	public function find_store_credit_wallet( int $customer_id, string $currency ): ?GiftCard {
+		if ( $customer_id <= 0 ) {
+			return null;
+		}
+
+		$currency = strtoupper( trim( $currency ) );
+		if ( $currency === '' ) {
+			return null;
+		}
+
+		$table = $this->table();
+		$row   = DbQuery::get_row(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE source_type = %s AND owner_customer_id = %d AND currency = %s LIMIT 1",
+			array( GiftCard::SOURCE_STORE_CREDIT, $customer_id, $currency )
+		);
+
+		return $this->row_to_card( $row );
+	}
+
 	public function find_by_plain_code( string $plain_code ): ?GiftCard {
 		$hash = self::hash_plain_code( $plain_code );
 		if ( strlen( $hash ) !== 64 ) {
@@ -146,16 +180,24 @@ class GiftCardRepository {
 	/**
 	 * @return list<GiftCard>
 	 */
-	public function list_recent( int $limit = 50, int $offset = 0 ): array {
+	public function list_recent( int $limit = 50, int $offset = 0, ?string $source_type = null ): array {
 		$limit  = max( 1, min( 200, $limit ) );
 		$offset = max( 0, $offset );
 		$table  = $this->table();
 
-		$rows = DbQuery::get_results(
-			$this->wpdb,
-			"SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d",
-			array( $limit, $offset )
-		);
+		if ( $source_type !== null && $source_type !== '' ) {
+			$rows = DbQuery::get_results(
+				$this->wpdb,
+				"SELECT * FROM {$table} WHERE source_type = %s ORDER BY id DESC LIMIT %d OFFSET %d",
+				array( $source_type, $limit, $offset )
+			);
+		} else {
+			$rows = DbQuery::get_results(
+				$this->wpdb,
+				"SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d",
+				array( $limit, $offset )
+			);
+		}
 
 		$out = array();
 		foreach ( $rows as $row ) {
@@ -200,7 +242,13 @@ class GiftCardRepository {
 					? (int) $row['purchaser_customer_id'] : null,
 				isset( $row['recipient_email'] ) && $row['recipient_email'] !== '' ? (string) $row['recipient_email'] : null,
 				isset( $row['created_at'] ) ? (string) $row['created_at'] : null,
-				isset( $row['updated_at'] ) ? (string) $row['updated_at'] : null
+				isset( $row['updated_at'] ) ? (string) $row['updated_at'] : null,
+				isset( $row['source_type'] ) && $row['source_type'] !== ''
+					? (string) $row['source_type']
+					: GiftCard::SOURCE_GIFT_CARD,
+				isset( $row['owner_customer_id'] ) && $row['owner_customer_id'] !== '' && $row['owner_customer_id'] !== null
+					? (int) $row['owner_customer_id'] : null,
+				isset( $row['label'] ) && $row['label'] !== '' ? (string) $row['label'] : null
 			);
 		} catch ( InvalidArgumentException $e ) {
 			return null;

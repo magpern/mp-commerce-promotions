@@ -65,6 +65,9 @@ use MP\CommercePromotions\GiftCard\GiftCardLedger;
 use MP\CommercePromotions\GiftCard\GiftCardReports;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
 use MP\CommercePromotions\GiftCard\GiftCardTransactionRepository;
+use MP\CommercePromotions\GiftCard\StoreCreditAccountService;
+use MP\CommercePromotions\GiftCard\StoreCreditCheckoutService;
+use MP\CommercePromotions\GiftCard\StoreCreditWallet;
 use MP\CommercePromotions\Woo\BlocksHookAudit;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use MP\CommercePromotions\Woo\CartPromotionApplier;
@@ -72,6 +75,9 @@ use MP\CommercePromotions\Woo\FreeGiftCartSynchronizer;
 use MP\CommercePromotions\Woo\GiftCardCartApplier;
 use MP\CommercePromotions\Woo\GiftCardCheckoutForm;
 use MP\CommercePromotions\Woo\GiftCardOrderRecorder;
+use MP\CommercePromotions\Woo\StoreCreditCartApplier;
+use MP\CommercePromotions\Woo\StoreCreditCheckoutForm;
+use MP\CommercePromotions\Woo\StoreCreditOrderRecorder;
 use MP\CommercePromotions\Woo\OrderPromotionRecorder;
 use MP\CommercePromotions\Woo\PromotionCodeCouponBridge;
 use MP\CommercePromotions\Woo\WooCommerceBridge;
@@ -208,6 +214,16 @@ final class Plugin {
 				$this->woo_bridge->set_gift_card_checkout_form(
 					new GiftCardCheckoutForm( $gift_ledger, $gift_applier )
 				);
+
+				$sc_accounts  = new StoreCreditAccountService( $gift_card_repo );
+				$sc_wallet    = new StoreCreditWallet( $sc_accounts, $gift_ledger, $this->audit_logger );
+				$sc_checkout  = new StoreCreditCheckoutService( $sc_accounts, $gift_ledger );
+				$sc_applier   = new StoreCreditCartApplier( $gift_ledger, $sc_checkout );
+				$this->woo_bridge->set_store_credit_cart_applier( $sc_applier );
+				$this->woo_bridge->set_store_credit_order_recorder( new StoreCreditOrderRecorder( $sc_wallet ) );
+				$this->woo_bridge->set_store_credit_checkout_form(
+					new StoreCreditCheckoutForm( $sc_checkout, $sc_applier )
+				);
 			}
 
 			BlocksHookAudit::register( $this->settings );
@@ -312,7 +328,9 @@ final class Plugin {
 		$gift_card_repo  = new GiftCardRepository( $wpdb );
 		$gift_card_tx    = new GiftCardTransactionRepository( $wpdb );
 		$gift_ledger     = new GiftCardLedger( $gift_card_repo, $gift_card_tx );
-		$gift_cards_page = new GiftCardsPage( $gift_ledger, $gift_card_repo );
+		$sc_accounts     = new StoreCreditAccountService( $gift_card_repo );
+		$sc_wallet       = new StoreCreditWallet( $sc_accounts, $gift_ledger, $this->audit_logger );
+		$gift_cards_page = new GiftCardsPage( $gift_ledger, $gift_card_repo, $sc_wallet, $sc_accounts );
 
 		$profiler_global     = new PromotionPerformanceProfiler();
 		$concurrency_global  = new PromotionConcurrencyGuard();

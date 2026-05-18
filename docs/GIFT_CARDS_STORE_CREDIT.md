@@ -1,6 +1,6 @@
 # Gift cards & store credit
 
-**Schema:** `1.18.0` adds `mp_cp_gift_cards` and `mp_cp_gift_card_transactions`.
+**Schema:** `1.18.0` adds `mp_cp_gift_cards` and `mp_cp_gift_card_transactions`. **`1.19.0`** adds customer store credit wallets on the same tables — see [STORE_CREDIT.md](STORE_CREDIT.md).
 
 Gift cards are **stored-value credit** with an append-only ledger. They are **not** promotion rules, promotion codes, or `PromotionEvaluator` actions.
 
@@ -31,7 +31,7 @@ Gift cards are **stored-value credit** with an append-only ledger. They are **no
 
 - Buy gift card WooCommerce product / auto-generation on purchase
 - Recipient email / scheduled delivery
-- Refund order to store credit
+- Customer store credit wallets (see [STORE_CREDIT.md](STORE_CREDIT.md)) — **done in 1.19.0**
 - Dedicated Blocks UI (fee/session path should not fatal on Blocks checkout)
 - REST/AJAX admin APIs
 

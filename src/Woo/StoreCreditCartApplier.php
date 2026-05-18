@@ -1,6 +1,6 @@
 <?php
 /**
- * Applies gift card store credit as a negative cart fee (preview only; ledger on order).
+ * Applies customer store credit as a negative cart fee (preview only; ledger on order).
  *
  * @package MP\CommercePromotions
  */
@@ -12,22 +12,35 @@ namespace MP\CommercePromotions\Woo;
 use MP\CommercePromotions\GiftCard\GiftCard;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
 use MP\CommercePromotions\GiftCard\GiftCardRedemptionService;
+use MP\CommercePromotions\GiftCard\StoreCreditCheckoutService;
 use Throwable;
 
-final class GiftCardCartApplier {
+final class StoreCreditCartApplier {
 
 	private GiftCardLedger $ledger;
 
+	private StoreCreditCheckoutService $checkout;
+
 	private GiftCardRedemptionService $redemption;
 
-	public function __construct( GiftCardLedger $ledger, ?GiftCardRedemptionService $redemption = null ) {
+	public function __construct(
+		GiftCardLedger $ledger,
+		StoreCreditCheckoutService $checkout,
+		?GiftCardRedemptionService $redemption = null
+	) {
 		$this->ledger     = $ledger;
+		$this->checkout   = $checkout;
 		$this->redemption = $redemption ?? new GiftCardRedemptionService( $ledger );
 	}
 
 	public function apply_cart_fee(): void {
 		try {
 			if ( is_admin() && ! wp_doing_ajax() ) {
+				return;
+			}
+
+			if ( ! $this->checkout->can_apply() ) {
+				StoreCreditSession::clear();
 				return;
 			}
 
@@ -45,50 +58,52 @@ final class GiftCardCartApplier {
 				return;
 			}
 
-			$session = GiftCardSession::get();
+			$session = StoreCreditSession::get();
 			if ( $session === null ) {
 				return;
 			}
 
-			$card = $this->ledger->find( $session['gift_card_id'] );
-			if ( $card === null || $card->is_store_credit_wallet() || ! $this->redemption->is_redeemable( $card ) ) {
-				GiftCardSession::clear();
+			$card = $this->ledger->find( $session['account_id'] );
+			if ( $card === null || ! $card->is_store_credit_wallet() || ! $this->redemption->is_redeemable( $card ) ) {
+				StoreCreditSession::clear();
+				return;
+			}
+
+			$customer_id = $this->checkout->get_current_customer_id();
+			if ( $customer_id <= 0 || $card->get_owner_customer_id() !== $customer_id ) {
+				StoreCreditSession::clear();
 				return;
 			}
 
 			$payable = $this->estimate_cart_payable( $cart );
 			$amount  = $this->redemption->preview_apply_amount( $card, $payable );
 			if ( $amount <= 0 ) {
-				GiftCardSession::clear();
+				StoreCreditSession::clear();
 				return;
 			}
 
-			GiftCardSession::set(
+			StoreCreditSession::set(
 				array(
-					'gift_card_id'   => $session['gift_card_id'],
-					'code_last4'     => $card->get_code_last4(),
+					'account_id'     => $session['account_id'],
 					'applied_amount' => $amount,
+					'currency'       => $card->get_currency(),
 				)
 			);
 
-			$label = sprintf(
-				/* translators: %s: last four characters of the gift card code */
-				__( 'Store credit ****%s', 'mp-commerce-promotions' ),
-				$card->get_code_last4()
+			$cart->add_fee(
+				__( 'Store credit balance', 'mp-commerce-promotions' ),
+				-$amount,
+				false
 			);
-
-			$cart->add_fee( $label, -$amount, false );
 		} catch ( Throwable $e ) {
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-				error_log( '[mp-commerce-promotions] GiftCardCartApplier: ' . $e->getMessage() );
+				error_log( '[mp-commerce-promotions] StoreCreditCartApplier: ' . $e->getMessage() );
 			}
 		}
 	}
 
 	/**
-	 * Payable cart total before gift card fee (includes promotion fees).
-	 *
 	 * @param object $cart WC_Cart.
 	 */
 	public function estimate_cart_payable( $cart ): float {

@@ -1,6 +1,6 @@
 <?php
 /**
- * Gift card ledger integrity checks and safe repairs.
+ * Gift card and store credit ledger integrity checks and safe repairs.
  *
  * @package MP\CommercePromotions
  */
@@ -33,7 +33,9 @@ final class GiftCardIntegrityDiagnostics {
 	 *   negative_balance: list<array<string, mixed>>,
 	 *   active_zero_balance: list<array<string, mixed>>,
 	 *   balance_mismatch: list<array<string, mixed>>,
-	 *   expired_still_active: list<array<string, mixed>>
+	 *   expired_still_active: list<array<string, mixed>>,
+	 *   store_credit_missing_owner: list<array<string, mixed>>,
+	 *   store_credit_unexpected_code_hash: list<array<string, mixed>>
 	 * }
 	 */
 	public function analyze(): array {
@@ -42,20 +44,44 @@ final class GiftCardIntegrityDiagnostics {
 
 		$negative_rows = DbQuery::get_results(
 			$this->wpdb,
-			"SELECT id, code_last4, balance, status FROM {$table} WHERE balance < 0 LIMIT 50"
+			"SELECT id, code_last4, balance, status, source_type FROM {$table} WHERE balance < 0 LIMIT 50"
 		);
 
 		$active_zero_rows = DbQuery::get_results(
 			$this->wpdb,
-			"SELECT id, code_last4, balance, status FROM {$table} WHERE status = %s AND balance <= 0 LIMIT 50",
+			"SELECT id, code_last4, balance, status, source_type FROM {$table} WHERE status = %s AND balance <= 0 LIMIT 50",
 			array( GiftCard::STATUS_ACTIVE )
 		);
 
 		$expired_active_rows = DbQuery::get_results(
 			$this->wpdb,
-			"SELECT id, code_last4, balance, status, expires_at FROM {$table} WHERE status = %s AND expires_at IS NOT NULL AND expires_at < %s LIMIT 50",
+			"SELECT id, code_last4, balance, status, expires_at, source_type FROM {$table} WHERE status = %s AND expires_at IS NOT NULL AND expires_at < %s LIMIT 50",
 			array( GiftCard::STATUS_ACTIVE, $now )
 		);
+
+		$missing_owner = DbQuery::get_results(
+			$this->wpdb,
+			"SELECT id, code_last4, balance, status FROM {$table} WHERE source_type = %s AND (owner_customer_id IS NULL OR owner_customer_id = 0) LIMIT 50",
+			array( GiftCard::SOURCE_STORE_CREDIT )
+		);
+
+		$unexpected_hash = array();
+		$store_rows      = DbQuery::get_results(
+			$this->wpdb,
+			"SELECT id, owner_customer_id, currency, code_hash, code_last4 FROM {$table} WHERE source_type = %s LIMIT 100",
+			array( GiftCard::SOURCE_STORE_CREDIT )
+		);
+		foreach ( $store_rows as $row ) {
+			$owner = (int) ( $row['owner_customer_id'] ?? 0 );
+			$cur   = (string) ( $row['currency'] ?? '' );
+			if ( $owner <= 0 || $cur === '' ) {
+				continue;
+			}
+			$expected = GiftCard::store_credit_wallet_hash( $owner, $cur );
+			if ( (string) ( $row['code_hash'] ?? '' ) !== $expected ) {
+				$unexpected_hash[] = $row;
+			}
+		}
 
 		$mismatch = array();
 		foreach ( $this->cards->list_recent( 100, 0 ) as $card ) {
@@ -72,6 +98,7 @@ final class GiftCardIntegrityDiagnostics {
 				$mismatch[] = array(
 					'id'             => $id,
 					'code_last4'     => $card->get_code_last4(),
+					'source_type'    => $card->get_source_type(),
 					'card_balance'   => $card->get_balance(),
 					'ledger_balance' => $last->get_balance_after(),
 				);
@@ -79,10 +106,12 @@ final class GiftCardIntegrityDiagnostics {
 		}
 
 		return array(
-			'negative_balance'     => $negative_rows,
-			'active_zero_balance'  => $active_zero_rows,
-			'balance_mismatch'     => $mismatch,
-			'expired_still_active' => $expired_active_rows,
+			'negative_balance'                  => $negative_rows,
+			'active_zero_balance'               => $active_zero_rows,
+			'balance_mismatch'                  => $mismatch,
+			'expired_still_active'              => $expired_active_rows,
+			'store_credit_missing_owner'        => $missing_owner,
+			'store_credit_unexpected_code_hash' => $unexpected_hash,
 		);
 	}
 
@@ -96,7 +125,6 @@ final class GiftCardIntegrityDiagnostics {
 		);
 
 		$issues = $this->analyze();
-		$now    = current_time( 'mysql' );
 
 		foreach ( $issues['active_zero_balance'] as $row ) {
 			++$preview['depleted_marked'];
@@ -113,6 +141,9 @@ final class GiftCardIntegrityDiagnostics {
 		}
 
 		foreach ( $issues['expired_still_active'] as $row ) {
+			if ( ( $row['source_type'] ?? GiftCard::SOURCE_GIFT_CARD ) !== GiftCard::SOURCE_GIFT_CARD ) {
+				continue;
+			}
 			++$preview['expired_marked'];
 			if ( $apply ) {
 				$id = (int) ( $row['id'] ?? 0 );

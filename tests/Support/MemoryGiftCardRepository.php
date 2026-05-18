@@ -40,4 +40,19 @@ final class MemoryGiftCardRepository extends GiftCardRepository {
 	public function find_by_plain_code( string $plain_code ): ?GiftCard {
 		return $this->store->find_by_hash( self::hash_plain_code( $plain_code ) );
 	}
+
+	public function find_store_credit_wallet( int $customer_id, string $currency ): ?GiftCard {
+		$currency = strtoupper( trim( $currency ) );
+		foreach ( $this->store->all_cards() as $card ) {
+			if (
+				$card->get_source_type() === GiftCard::SOURCE_STORE_CREDIT
+				&& $card->get_owner_customer_id() === $customer_id
+				&& $card->get_currency() === $currency
+			) {
+				return $card;
+			}
+		}
+
+		return null;
+	}
 }
