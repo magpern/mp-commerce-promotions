@@ -1,5 +1,7 @@
 # Commerce Promotions for WooCommerce 0.3.0-pilot.1
 
+> **Superseded by [0.3.0-pilot.2](https://github.com/magpern/mp-commerce-promotions/releases/tag/v0.3.0-pilot.2)** — do not deploy pilot.1. Default Campaign Builder route did not load builder assets.
+
 **Pilot release** — staged merchant pilots only. Not GA or marketplace-ready.
 
 ## Highlights

@@ -4,7 +4,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Current milestone
 
-**Pilot release 0.3.0-pilot.1** — Campaign Builder default entrypoint, pilot docs, GitHub Actions release ZIP on `v*` tags. See [PILOT_RELEASE_0.3.0_PILOT1.md](PILOT_RELEASE_0.3.0_PILOT1.md).
+**Pilot release 0.3.0-pilot.2** — supersedes pilot.1 (default-route fix). See [PILOT_RELEASE_0.3.0_PILOT2.md](PILOT_RELEASE_0.3.0_PILOT2.md).
 
 **Line discount stabilization** (complete) — fee-based default; line/hybrid experimental per `docs/manual-line-discount-engine-test.md`.
 
@@ -17,7 +17,8 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
-- **0.3.0-pilot.1 packaging** — version bump, pilot + GitHub release notes, `pilot-release-smoke.php`, `release.yml`, build-zip root-folder validation
+- **0.3.0-pilot.2** — supersedes pilot.1; routing regression fix; pilot.2 release notes
+- **0.3.0-pilot.1 packaging** — superseded by pilot.2
 - **Campaign Builder default entrypoint** — Promotions menu opens Campaign Builder; Advanced Promotions tab for expert mode; Create campaign shortcuts across admin
 - **Campaign Builder QA pass** — all 10 goals, smoke expansion, UX/a11y polish (`docs/CAMPAIGN_BUILDER_QA_EVIDENCE.md`)
 - **Merchant Campaign Builder** — `tab=campaign-builder`, goal→template mapping, draft creation, preview warnings, smoke + `docs/manual-campaign-builder-test.md` (no new engine behavior)

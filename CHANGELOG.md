@@ -9,7 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-pilot.2] - 2026-05-18
+
+**Replacement pilot release** — supersedes **0.3.0-pilot.1** (do not deploy pilot.1). **Schema 1.17.0** unchanged.
+
+### Fixed
+
+- **Campaign Builder default route** — WooCommerce → Promotions without `tab` now loads Campaign Builder CSS/JS and matches `tab=campaign-builder` (`AdminNavigation::normalize_tab()`, asset enqueue uses `get_current_tab()`). Commit `10b95f2`.
+
+### Added
+
+- `docs/PILOT_RELEASE_0.3.0_PILOT2.md`, `docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT2.md`, `scripts/commerce-growth-navigation-smoke.php`.
+
+### Changed
+
+- Pilot.1 marked superseded in release docs; upgrade to **0.3.0-pilot.2** for all new pilots.
+
 ## [0.3.0-pilot.1] - 2026-05-16
+
+**Superseded by [0.3.0-pilot.2](0.3.0-pilot.2)** — Campaign Builder default admin route (`?page=mp-commerce-promotions` without `tab`) did not enqueue builder assets; use pilot.2 instead. The GitHub Release for pilot.1 remains for audit history only.
 
 **Pilot release** for merchant pilots. **Schema 1.17.0** unchanged. **Classic + Blocks** checkout supported (fee-based default). **Campaign Builder** is the recommended admin entrypoint. **Line discount modes** remain experimental. **PHPCS** is advisory only in CI.
 
@@ -112,7 +130,8 @@ First **public beta** for technical pilot users on **classic shortcode** cart an
 - Database schema version is tracked separately (`mp_cp_schema_version`; see `Schema::SCHEMA_VERSION` in code).
 - PHPCS baseline is not clean; automated tests and CI are not yet in place.
 
-[Unreleased]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.1...HEAD
+[Unreleased]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.2...HEAD
+[0.3.0-pilot.2]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.1...v0.3.0-pilot.2
 [0.3.0-pilot.1]: https://github.com/magpern/mp-commerce-promotions/compare/v0.2.0-beta.1...v0.3.0-pilot.1
 [0.2.0-beta.1]: https://github.com/magpern/mp-commerce-promotions/compare/v0.1.0...v0.2.0-beta.1
 [0.1.0]: https://github.com/magpern/mp-commerce-promotions/releases/tag/v0.1.0

@@ -28,7 +28,7 @@ function pilot_smoke_assert( bool $ok, string $label ): void {
 	WP_CLI::warning( 'FAIL: ' . $label );
 }
 
-$expected_version = '0.3.0-pilot.1';
+$expected_version = '0.3.0-pilot.2';
 
 pilot_smoke_assert(
 	defined( 'MP_COMMERCE_PROMOTIONS_VERSION' )
@@ -56,10 +56,11 @@ pilot_smoke_assert( count( CampaignBuilderGoal::all() ) === 10, 'ten campaign go
 
 $repo_root = dirname( __DIR__ );
 $docs      = array(
-	'docs/PILOT_RELEASE_0.3.0_PILOT1.md',
-	'docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT1.md',
+	'docs/PILOT_RELEASE_0.3.0_PILOT2.md',
+	'docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT2.md',
 	'docs/CAMPAIGN_BUILDER_QA_EVIDENCE.md',
 	'docs/manual-campaign-builder-test.md',
+	'scripts/commerce-growth-navigation-smoke.php',
 );
 foreach ( $docs as $rel ) {
 	pilot_smoke_assert( is_readable( $repo_root . '/' . $rel ), 'doc exists: ' . $rel );

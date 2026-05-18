@@ -1,6 +1,6 @@
 # GA readiness delta
 
-**Plugin:** 0.3.0-pilot.1 · **Schema:** 1.17.0
+**Plugin:** 0.3.0-pilot.2 · **Schema:** 1.17.0
 
 ## GA-ready (ecosystem certification closure)
 
@@ -19,7 +19,8 @@
 
 ## Still pilot / pre-GA (0.3.x)
 
-- **0.3.0-pilot.1** — merchant pilot packaging; Campaign Builder default entrypoint; GitHub Release ZIP automation
+- **0.3.0-pilot.2** — supersedes pilot.1; Campaign Builder default-route asset fix
+- **0.3.0-pilot.1** — superseded (default-route regression)
 - Line-item / hybrid discount application (experimental; global disable available)
 - Cart/Checkout Blocks certified for fee path; line mode certification is manual/recorded
 - Ecosystem matrix is detection + operational tooling — not live proof on every merchant stack

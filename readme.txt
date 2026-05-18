@@ -4,11 +4,11 @@ Tags: woocommerce, promotions, discounts, coupons, vouchers
 Requires at least: 6.5
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 0.3.0-pilot.1
+Stable tag: 0.3.0-pilot.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Pilot release 0.3.0-pilot.1** — Campaign Builder default entrypoint; classic + Blocks checkout; not GA.
+Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Pilot release 0.3.0-pilot.2** — supersedes pilot.1; Campaign Builder default route fixed; not GA.
 
 == Description ==
 
@@ -116,7 +116,12 @@ No. Full codes are displayed once after generation. Download the CSV before leav
 
 == Changelog ==
 
+= 0.3.0-pilot.2 =
+* Supersedes 0.3.0-pilot.1. Fixes Campaign Builder rendering when opening Promotions without tab=campaign-builder.
+* Schema 1.17.0 unchanged. See docs/PILOT_RELEASE_0.3.0_PILOT2.md.
+
 = 0.3.0-pilot.1 =
+* Superseded by 0.3.0-pilot.2 — default-route asset regression; do not deploy.
 * Pilot release: Campaign Builder default entrypoint; Advanced Promotions expert mode; classic + Blocks checkout; schema 1.17.0 unchanged.
 * GitHub Actions release workflow attaches `mp-commerce-promotions-0.3.0-pilot.1.zip` on version tags.
 * Line discount modes experimental; PHPCS advisory only in CI. See docs/PILOT_RELEASE_0.3.0_PILOT1.md.

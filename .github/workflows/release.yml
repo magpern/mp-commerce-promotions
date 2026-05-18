@@ -92,6 +92,9 @@ jobs:
           if [[ ! -f "${NOTES}" ]] && [[ "${VERSION}" == "0.3.0-pilot.1" ]]; then
             NOTES="docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT1.md"
           fi
+          if [[ ! -f "${NOTES}" ]] && [[ "${VERSION}" == "0.3.0-pilot.2" ]]; then
+            NOTES="docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT2.md"
+          fi
           if [[ ! -f "${NOTES}" ]]; then
             echo "ERROR: No release notes file for version ${VERSION}" >&2
             exit 1

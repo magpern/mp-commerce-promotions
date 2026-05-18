@@ -1,7 +1,7 @@
 # Commercial readiness
 
 **Schema:** 1.17.0  
-**Plugin version:** 0.3.0-pilot.1 (pilot — not GA)
+**Plugin version:** 0.3.0-pilot.2 (pilot — not GA; supersedes pilot.1)
 
 ## Current maturity
 
@@ -14,7 +14,7 @@ Commerce Promotions is suitable for **staged rollouts and merchant pilots**. It 
 - Getting Started onboarding tab (points to Campaign Builder first)
 - **Campaign Builder** as default Promotions landing tab (guided goals → draft promotions) — **0.3.0-pilot.1**
 - **Advanced Promotions** tab for expert mode (raw JSON, orchestration, codes, cart simulation)
-- Pilot release doc: [PILOT_RELEASE_0.3.0_PILOT1.md](PILOT_RELEASE_0.3.0_PILOT1.md)
+- Pilot release doc: [PILOT_RELEASE_0.3.0_PILOT2.md](PILOT_RELEASE_0.3.0_PILOT2.md) (pilot.1 superseded)
 - Settings governance (telemetry, CSV, simulations, gift/shipping actions, pricing explainability)
 - Compatibility status panel (environment snapshot)
 - Support bundle export (redacted JSON)

@@ -1,5 +1,9 @@
 # Pilot release: 0.3.0-pilot.1
 
+> **Superseded by [0.3.0-pilot.2](PILOT_RELEASE_0.3.0_PILOT2.md)** — do not deploy.  
+> **Reason:** Campaign Builder default admin route did not enqueue CSS/JS when `tab` was omitted from the URL.  
+> **Upgrade:** Install [0.3.0-pilot.2](https://github.com/magpern/mp-commerce-promotions/releases/tag/v0.3.0-pilot.2) instead. This document is retained for audit history.
+
 **Plugin version:** `0.3.0-pilot.1`  
 **Schema version:** `1.17.0` (unchanged — no migration in this release)  
 **Release type:** Pilot (pre-GA)  
