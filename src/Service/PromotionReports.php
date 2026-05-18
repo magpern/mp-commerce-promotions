@@ -719,13 +719,20 @@ final class PromotionReports {
 	}
 
 	private function tier_color( string $tier ): string {
-		return match ( $tier ) {
-			'override' => '#b32d2e',
-			'recovery' => '#d63638',
-			'loyalty'  => '#2271b1',
-			'campaign' => '#00a32a',
-			default    => '#787c82',
-		};
+		if ( $tier === 'override' ) {
+			return '#b32d2e';
+		}
+		if ( $tier === 'recovery' ) {
+			return '#d63638';
+		}
+		if ( $tier === 'loyalty' ) {
+			return '#2271b1';
+		}
+		if ( $tier === 'campaign' ) {
+			return '#00a32a';
+		}
+
+		return '#787c82';
 	}
 
 	/**

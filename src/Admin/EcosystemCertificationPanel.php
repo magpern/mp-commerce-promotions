@@ -166,15 +166,20 @@ final class EcosystemCertificationPanel {
 		$dry_run = ! isset( $_POST['mp_cp_emergency_apply'] );
 		$service = new EmergencyOperationsService( $settings, $promotions, $profiler, $intelligence_recovery, $audit );
 
-		$result = match ( $action ) {
-			'disable_automatic' => $service->disable_automatic_promotions( $dry_run ),
-			'disable_line_mode' => $service->disable_line_item_mode_globally( $dry_run ),
-			'pause_stackable'   => $service->pause_stackable_promotions( $dry_run ),
-			'rebuild_caches'    => $service->rebuild_promotion_caches( $dry_run ),
-			'clear_telemetry'   => $service->clear_planner_telemetry( $dry_run ),
-			'reset_degraded'    => $service->reset_degraded_mode( $dry_run ),
-			default             => null,
-		};
+		$result = null;
+		if ( $action === 'disable_automatic' ) {
+			$result = $service->disable_automatic_promotions( $dry_run );
+		} elseif ( $action === 'disable_line_mode' ) {
+			$result = $service->disable_line_item_mode_globally( $dry_run );
+		} elseif ( $action === 'pause_stackable' ) {
+			$result = $service->pause_stackable_promotions( $dry_run );
+		} elseif ( $action === 'rebuild_caches' ) {
+			$result = $service->rebuild_promotion_caches( $dry_run );
+		} elseif ( $action === 'clear_telemetry' ) {
+			$result = $service->clear_planner_telemetry( $dry_run );
+		} elseif ( $action === 'reset_degraded' ) {
+			$result = $service->reset_degraded_mode( $dry_run );
+		}
 
 		if ( $result === null ) {
 			return;

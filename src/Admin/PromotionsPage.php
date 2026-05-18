@@ -736,56 +736,62 @@ final class PromotionsPage {
 		$actor    = (int) get_current_user_id();
 
 		if ( $this->pricing_bulk !== null && in_array( $workflow, array( 'tier', 'coupon_behavior', 'allocation_mode' ), true ) ) {
-			$result = match ( $workflow ) {
-				'coupon_behavior' => $this->pricing_bulk->bulk_assign_coupon_behavior(
+			if ( $workflow === 'coupon_behavior' ) {
+				$result = $this->pricing_bulk->bulk_assign_coupon_behavior(
 					$ids,
 					$this->optional_post_string( 'mp_cp_bulk_coupon_behavior' ),
 					$actor
-				),
-				'allocation_mode' => $this->pricing_bulk->bulk_assign_allocation_mode(
+				);
+			} elseif ( $workflow === 'allocation_mode' ) {
+				$result = $this->pricing_bulk->bulk_assign_allocation_mode(
 					$ids,
 					$this->optional_post_string( 'mp_cp_bulk_allocation_mode' ),
 					$actor
-				),
-				default => $this->pricing_bulk->bulk_assign_tier(
+				);
+			} else {
+				$result = $this->pricing_bulk->bulk_assign_tier(
 					$ids,
 					$this->optional_post_string( 'mp_cp_bulk_priority_tier' ),
 					$actor
-				),
-			};
+				);
+			}
 		} elseif ( $this->campaign_bulk === null ) {
 			return;
 		} else {
-		$result = match ( $workflow ) {
-			'orchestration' => $this->campaign_bulk->bulk_assign_orchestration(
-				$ids,
-				$this->optional_post_string( 'mp_cp_bulk_orchestration_group' ),
-				$this->optional_post_int( 'mp_cp_bulk_cooldown_hours' ),
-				$actor
-			),
-			'label' => $this->campaign_bulk->bulk_assign_campaign_label(
-				$ids,
-				$this->optional_post_string( 'mp_cp_bulk_campaign_label' ),
-				$actor
-			),
-			'budget' => $this->campaign_bulk->bulk_adjust_budget(
-				$ids,
-				$this->optional_post_float( 'mp_cp_bulk_budget_amount' ),
-				null,
-				$actor
-			),
-			'cooldown' => $this->campaign_bulk->bulk_assign_cooldown(
-				$ids,
-				$this->optional_post_int( 'mp_cp_bulk_cooldown_hours' ),
-				$actor
-			),
-			default => $this->campaign_bulk->bulk_update_schedule(
-				$ids,
-				$this->optional_post_string( 'mp_cp_bulk_starts_at' ),
-				$this->optional_post_string( 'mp_cp_bulk_ends_at' ),
-				$actor
-			),
-		};
+			if ( $workflow === 'orchestration' ) {
+				$result = $this->campaign_bulk->bulk_assign_orchestration(
+					$ids,
+					$this->optional_post_string( 'mp_cp_bulk_orchestration_group' ),
+					$this->optional_post_int( 'mp_cp_bulk_cooldown_hours' ),
+					$actor
+				);
+			} elseif ( $workflow === 'label' ) {
+				$result = $this->campaign_bulk->bulk_assign_campaign_label(
+					$ids,
+					$this->optional_post_string( 'mp_cp_bulk_campaign_label' ),
+					$actor
+				);
+			} elseif ( $workflow === 'budget' ) {
+				$result = $this->campaign_bulk->bulk_adjust_budget(
+					$ids,
+					$this->optional_post_float( 'mp_cp_bulk_budget_amount' ),
+					null,
+					$actor
+				);
+			} elseif ( $workflow === 'cooldown' ) {
+				$result = $this->campaign_bulk->bulk_assign_cooldown(
+					$ids,
+					$this->optional_post_int( 'mp_cp_bulk_cooldown_hours' ),
+					$actor
+				);
+			} else {
+				$result = $this->campaign_bulk->bulk_update_schedule(
+					$ids,
+					$this->optional_post_string( 'mp_cp_bulk_starts_at' ),
+					$this->optional_post_string( 'mp_cp_bulk_ends_at' ),
+					$actor
+				);
+			}
 		}
 
 		wp_safe_redirect(

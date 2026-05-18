@@ -29,6 +29,7 @@ define( 'MP_COMMERCE_PROMOTIONS_FILE', __FILE__ );
 define( 'MP_COMMERCE_PROMOTIONS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MP_COMMERCE_PROMOTIONS_URL', plugin_dir_url( __FILE__ ) );
 
+require_once MP_COMMERCE_PROMOTIONS_PATH . 'src/php74-compat.php';
 require_once MP_COMMERCE_PROMOTIONS_PATH . 'src/autoload.php';
 
 \MP\CommercePromotions\Woo\WooCompatibility::register();

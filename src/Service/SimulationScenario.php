@@ -40,8 +40,8 @@ final class SimulationScenario {
 	public static function from_preset( string $preset ): self {
 		$preset = sanitize_key( $preset );
 
-		return match ( $preset ) {
-			self::PRESET_SCOPED_PRODUCTS => new self(
+		if ( $preset === self::PRESET_SCOPED_PRODUCTS ) {
+			return new self(
 				array(
 					'preset'   => $preset,
 					'items'    => array(
@@ -60,8 +60,11 @@ final class SimulationScenario {
 					),
 					'metadata' => array( 'customer_lifetime_spend' => 250.0 ),
 				)
-			),
-			self::PRESET_CATEGORY_CART => new self(
+			);
+		}
+
+		if ( $preset === self::PRESET_CATEGORY_CART ) {
+			return new self(
 				array(
 					'preset'   => $preset,
 					'items'    => array(
@@ -74,8 +77,11 @@ final class SimulationScenario {
 					),
 					'metadata' => array( 'customer_order_count' => 5 ),
 				)
-			),
-			self::PRESET_HIGH_QUANTITY => new self(
+			);
+		}
+
+		if ( $preset === self::PRESET_HIGH_QUANTITY ) {
+			return new self(
 				array(
 					'preset' => $preset,
 					'items'  => array(
@@ -87,8 +93,11 @@ final class SimulationScenario {
 						),
 					),
 				)
-			),
-			self::PRESET_VIP_CUSTOMER => new self(
+			);
+		}
+
+		if ( $preset === self::PRESET_VIP_CUSTOMER ) {
+			return new self(
 				array(
 					'preset'      => $preset,
 					'customer_id' => 42,
@@ -105,8 +114,11 @@ final class SimulationScenario {
 						'customer_average_order_value' => 200.0,
 					),
 				)
-			),
-			self::PRESET_GUEST_CUSTOMER => new self(
+			);
+		}
+
+		if ( $preset === self::PRESET_GUEST_CUSTOMER ) {
+			return new self(
 				array(
 					'preset'      => $preset,
 					'customer_id' => null,
@@ -118,8 +130,11 @@ final class SimulationScenario {
 						),
 					),
 				)
-			),
-			self::PRESET_COOLDOWN_ACTIVE => new self(
+			);
+		}
+
+		if ( $preset === self::PRESET_COOLDOWN_ACTIVE ) {
+			return new self(
 				array(
 					'preset'      => $preset,
 					'customer_id' => 99,
@@ -132,27 +147,28 @@ final class SimulationScenario {
 					),
 					'metadata'    => array( 'simulate_cooldown_active' => true ),
 				)
-			),
-			default => new self(
-				array(
-					'preset' => self::PRESET_WHOLE_CART,
-					'items'  => array(
-						array(
-							'product_id'    => 1,
-							'quantity'      => 2,
-							'line_subtotal' => 100.0,
-							'unit_price'    => 50.0,
-						),
-						array(
-							'product_id'    => 2,
-							'quantity'      => 1,
-							'line_subtotal' => 25.0,
-							'unit_price'    => 25.0,
-						),
+			);
+		}
+
+		return new self(
+			array(
+				'preset' => self::PRESET_WHOLE_CART,
+				'items'  => array(
+					array(
+						'product_id'    => 1,
+						'quantity'      => 2,
+						'line_subtotal' => 100.0,
+						'unit_price'    => 50.0,
 					),
-				)
-			),
-		};
+					array(
+						'product_id'    => 2,
+						'quantity'      => 1,
+						'line_subtotal' => 25.0,
+						'unit_price'    => 25.0,
+					),
+				),
+			)
+		);
 	}
 
 	/**

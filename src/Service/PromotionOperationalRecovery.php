@@ -103,15 +103,17 @@ final class PromotionOperationalRecovery {
 						continue;
 					}
 
-					$this->audit?->log(
-						'promotion.budget_spent_recalculated',
-						$id,
-						array(
-							'old_spent' => $current,
-							'new_spent' => $computed,
-						),
-						null
-					);
+					if ( $this->audit !== null ) {
+						$this->audit->log(
+							'promotion.budget_spent_recalculated',
+							$id,
+							array(
+								'old_spent' => $current,
+								'new_spent' => $computed,
+							),
+							null
+						);
+					}
 				}
 
 				$result['changed'][] = array(
@@ -249,15 +251,17 @@ final class PromotionOperationalRecovery {
 					$normalized
 				);
 				$this->promotions->update( $updated );
-				$this->audit?->log(
-					'promotion.orchestration_group_repaired',
-					$id,
-					array(
-						'old_group' => $group,
-						'new_group' => $normalized,
-					),
-					null
-				);
+				if ( $this->audit !== null ) {
+					$this->audit->log(
+						'promotion.orchestration_group_repaired',
+						$id,
+						array(
+							'old_group' => $group,
+							'new_group' => $normalized,
+						),
+						null
+					);
+				}
 			}
 
 			$result['changed'][] = array(

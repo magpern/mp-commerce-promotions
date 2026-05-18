@@ -76,7 +76,7 @@ final class BlocksHookAudit {
 		);
 
 		if ( isset( $args[0] ) && is_object( $args[0] ) ) {
-			$summary['arg0_class'] = $args[0]::class;
+			$summary['arg0_class'] = get_class( $args[0] );
 		}
 
 		wc_get_logger()->debug(

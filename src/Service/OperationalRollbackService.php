@@ -59,7 +59,7 @@ final class OperationalRollbackService {
 		$snapshot = $this->snapshot_repo->find( $snapshot_id );
 		$summary  = array(
 			'snapshot_id'   => $snapshot_id,
-			'promotion_id'  => $snapshot?->get_promotion_id(),
+			'promotion_id'  => $snapshot !== null ? $snapshot->get_promotion_id() : null,
 			'restored'      => false,
 		);
 
