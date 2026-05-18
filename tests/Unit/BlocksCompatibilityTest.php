@@ -76,16 +76,6 @@ final class BlocksCompatibilityTest extends TestCase {
 	}
 
 	public function test_factory_create_draft_includes_discount_application_mode(): void {
-		$GLOBALS['mp_cp_test_uuid'] = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
-		if ( ! function_exists( 'wp_generate_uuid4' ) ) {
-			/**
-			 * @return string
-			 */
-			function wp_generate_uuid4() {
-				return (string) ( $GLOBALS['mp_cp_test_uuid'] ?? '' );
-			}
-		}
-
 		$promo = ( new PromotionFactory() )->create_draft( 'Draft test' );
 		$this->assertSame( PromotionDiscountApplicationMode::DEFAULT_MODE, $promo->get_discount_application_mode() );
 	}

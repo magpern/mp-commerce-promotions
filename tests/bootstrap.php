@@ -217,6 +217,20 @@ if ( ! function_exists( 'delete_transient' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_generate_uuid4' ) ) {
+	/**
+	 * @return string
+	 */
+	function wp_generate_uuid4() {
+		$seed = $GLOBALS['mp_cp_test_uuid'] ?? null;
+		if ( is_string( $seed ) && $seed !== '' ) {
+			return $seed;
+		}
+
+		return '00000000-0000-4000-8000-000000000001';
+	}
+}
+
 if ( ! function_exists( 'wp_generate_password' ) ) {
 	/**
 	 * @param int  $length
