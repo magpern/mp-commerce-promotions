@@ -2,28 +2,24 @@
 
 **Plugin:** MP Commerce Promotions `0.2.0-beta.1`  
 **Schema:** `1.15.0`  
-**Investigation milestone:** 2026-05-17 (post line-discount stabilization)  
-**Declaration:** `cart_checkout_blocks` remains **not declared** in `WooCompatibility::declare_feature_compatibility()`.
+**Investigation milestone:** 2026-05-17 (setup) · **Manual QA:** 2026-05-18  
+**Declaration:** `cart_checkout_blocks` remains **not declared**.  
+**Status:** `mp_cp_block_compatibility_status` = **`partial`** — [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md)
 
 ## Summary
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Draft block QA pages | **Pass** | Cart **4333**, checkout **4334** (draft, not live cart/checkout) |
-| Hook audit (documented) | **Pass** | See [Technical hook audit](#technical-hook-audit) |
-| Optional hook debug log | **Available** | `WP_DEBUG` + `mp_cp_blocks_hook_debug=yes` |
-| Block cart fees (fee-based) | **Not run** | Manual browser |
-| Block stacked fees | **Not run** | Manual browser |
-| Promotion code in block coupon UI | **Not run** | Virtual coupon filters untested on blocks |
-| Free shipping fee offset | **Not run** | Manual browser |
-| Free gift add/remove | **Not run** | `woocommerce_before_calculate_totals` path |
-| Line item mode prices | **Not run** | Experimental; block cart line display unverified |
-| Hybrid fallback | **Not run** | Fee path + line path |
-| Checkout order recording | **Not run** | `woocommerce_checkout_create_order` likely; not browser-verified |
-| Redemptions / reversal | **Not run** | Same hooks as classic; not block-verified |
-| Native coupon coexistence | **Not run** | |
-| Guest / logged-in checkout | **Not run** | |
-| **Declare `cart_checkout_blocks`** | **No** | Until matrix below is Pass |
+| Block QA pages | **Pass** | **4333**, **4334** published for guest URLs (live cart/checkout unchanged) |
+| Hook audit | **Partial** | Cart fees + checkout hooks verified; logger empty (WP_DEBUG off) |
+| Block cart fees (fee-based) | **Partial** | CLI Pass; browser Blocked (block UI missing) |
+| Block stacked fees | **Blocked** | QA promos `exclusive` |
+| Promotion code in block coupon UI | **Blocked** | No block checkout UI |
+| Free shipping fee offset | **Partial** | CLI: no offset fee observed |
+| Free gift | **Partial** | CLI Pass |
+| Line item mode | **Partial** | Not verified in block UI |
+| Checkout / reversal | **Partial** | CLI Pass (order 4342) |
+| **Declare `cart_checkout_blocks`** | **No** | Block UI + codes/stacking incomplete |
 
 Update `mp_cp_block_compatibility_status` (`not_tested` | `partial` | `passed` | `failed`) and notes after manual QA:
 
@@ -81,20 +77,20 @@ Record **Pass** | **Fail** | **Partial** | **Not run** in [BROWSER_QA_MATRIX.md]
 
 | # | Scenario | Mode / notes | Expected | Status |
 |---|----------|--------------|----------|--------|
-| 1 | Fee-based **percentage** discount | Activate `MP CP Blocks QA — Fee 10%` | Negative fee or discount line in block cart totals | Not run |
-| 2 | Fee-based **fixed** discount | `MP CP Blocks QA — Fixed 5` | Fixed fee discount visible | Not run |
-| 3 | **Stacked** fees (2+ stackable promos) | Custom or duplicate QA promos | Both fees; subtotal correct | Not run |
-| 4 | **Promotion code** via block coupon field | Code linked to paused promo → activate | Virtual coupon valid; native WC discount 0; fee applies | Not run |
-| 5 | **Free shipping** fee offset | `MP CP Blocks QA — Free shipping` | Shipping reduced / free shipping fee line | Not run |
-| 6 | **Free gift** add/remove | `MP CP Blocks QA — Free gift` | Gift line $0; qty sync on recalc; no orphan lines | Not run |
-| 7 | **Line item** mode (experimental) | `MP CP Blocks QA — Line 10%` | Line unit/subtotal reduced in block cart if supported | Not run |
-| 8 | **Hybrid** fallback | Promo with line + gift/shipping | Line actions apply; gift/shipping stay fee-based | Not run |
-| 9 | **Checkout** order recording | COD or test gateway on block checkout | Order meta + `mp_cp_redemptions` row | Not run |
-| 10 | **Redemptions** count | After order | `usage_count` incremented | Not run |
-| 11 | **Reversal** | Cancel/refund order | Redemption reversed; usage decremented | Not run |
-| 12 | **Native coupon coexistence** | WC coupon + MP promotion | Per `coupon_behavior` on promotion | Not run |
-| 13 | **Guest checkout** | Incognito block checkout | Same as classic recording path | Not run |
-| 14 | **Logged-in checkout** | Customer account | Per-customer limits respected | Not run |
+| 1 | Fee-based **percentage** discount | Activate `MP CP Blocks QA — Fee 10%` (168) | Negative fee in totals | **Partial** (CLI Pass; browser Blocked) |
+| 2 | Fee-based **fixed** discount | `MP CP Blocks QA — Fixed 5` (169) | Fixed fee visible | **Partial** (CLI Pass; browser Blocked) |
+| 3 | **Stacked** fees (2+ stackable promos) | Set `application_mode` stackable on two QA promos | Both fees; subtotal correct | **Blocked** (QA promos exclusive) |
+| 4 | **Promotion code** via block coupon field | Code linked to paused promo → activate | Virtual coupon valid; fee applies | **Blocked** |
+| 5 | **Free shipping** fee offset | `MP CP Blocks QA — Free shipping` (170) | Shipping reduced / fee line | **Partial** (CLI: no offset seen) |
+| 6 | **Free gift** add/remove | `MP CP Blocks QA — Free gift` (171) | Gift line $0; qty sync | **Partial** (CLI Pass) |
+| 7 | **Line item** mode (experimental) | `MP CP Blocks QA — Line 10%` (172) | Line prices reduced in cart | **Partial** (not verified) |
+| 8 | **Hybrid** fallback | Promo with line + gift/shipping | Fee fallback for gift/shipping | **Not run** |
+| 9 | **Checkout** order recording | COD on block checkout | Order meta + redemption | **Partial** (CLI Pass order 4342) |
+| 10 | **Redemptions** count | After order | `usage_count` incremented | **Partial** (CLI Pass) |
+| 11 | **Reversal** | Cancel/refund order | Redemption reversed | **Partial** (CLI Pass) |
+| 12 | **Native coupon coexistence** | WC coupon + MP promotion | Per `coupon_behavior` | **Not run** |
+| 13 | **Guest checkout** | Incognito block checkout | Recording path | **Blocked** |
+| 14 | **Logged-in checkout** | Customer account | Per-customer limits | **Not run** |
 
 ---
 

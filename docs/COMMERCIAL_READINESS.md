@@ -48,7 +48,7 @@ See **Reports → Compatibility status** or **Diagnostics → Compatibility stat
 ## Required before paid release
 
 - [ ] Independent security review
-- [ ] Block checkout QA per [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md) (`blocks-compatibility-smoke.php`); optional `cart_checkout_blocks` declaration only after matrix Pass
+- [x] Block checkout QA **partial** — [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md); declare `cart_checkout_blocks` only after block UI matrix Pass
 - [ ] Merchant-facing documentation and SLA
 - [ ] Full i18n extraction and at least one locale
 - [ ] PHPCS gating enabled in CI (currently **informational only** — see [BETA_READINESS.md](BETA_READINESS.md))

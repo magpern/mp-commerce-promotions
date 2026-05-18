@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Woo;
 
+use MP\CommercePromotions\Engine\AppliedLineDiscount;
+
 final class LinePriceMutationGuard {
 
 	private static int $cycle = 0;

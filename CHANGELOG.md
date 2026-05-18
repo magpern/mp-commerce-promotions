@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Line discount cart fatal** — `LinePriceMutationGuard` now imports `Engine\AppliedLineDiscount` (wrong namespace caused fatal on `woocommerce_before_calculate_totals`, breaking all cart recalculation including Blocks Store API backend).
+
 ### Added
+
+- **Cart/Checkout Blocks manual QA (2026-05-18)** — Partial certification: server-side fees, gift, checkout record/reversal Pass; block cart/checkout UI blocked on Blocksy QA pages; `block_compatibility_status` = partial; `docs/BLOCKS_QA_EVIDENCE_2026-05-18.md`. **`cart_checkout_blocks` not declared.**
 
 - **Cart/Checkout Blocks compatibility investigation** — Draft block QA pages (cart **4333**, checkout **4334**); `scripts/blocks-compatibility-smoke.php`; expanded `docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md` test matrix and hook audit; `BlockTestPages`, `BlockQaPromotionSetup`, optional `BlocksHookAudit` debug logging (`WP_DEBUG` + `mp_cp_blocks_hook_debug`); `CompatibilityStatus` block fields exposed in Reports/Diagnostics and support bundle. **`cart_checkout_blocks` remains undeclared.**
 - **Native line discount groundwork (schema 1.15.0)** — `PromotionDiscountApplicationMode` (`fee_based`, `line_item`, `hybrid`); `LineItemDiscountApplier` + `LinePriceMutationGuard` on `woocommerce_before_calculate_totals`; line allocation persistence (`AppliedLineDiscount`, session/order meta); hybrid fee fallback with telemetry; admin **Discount application** field; compatibility audit for line mode. **Fee-based remains the default**; line mode is experimental.

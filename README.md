@@ -141,7 +141,7 @@ Each promotion has **application rules** (`exclusive` or `stackable`, **stop pro
 ## WooCommerce compatibility
 
 - **HPOS (High-Performance Order Storage)** — compatibility with `custom_order_tables` is declared to WooCommerce via `FeaturesUtil` when available. Order promotion metadata is written through `WC_Order` CRUD (`update_meta_data` / `save`), which works with HPOS and legacy post-based orders.
-- **Cart & Checkout Blocks** — **not** declared compatible yet. Use draft QA pages (IDs stored in `mp_cp_block_cart_page_id` / `mp_cp_block_checkout_page_id`, default **4333** / **4334**) and `scripts/blocks-compatibility-smoke.php`. See [docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md). Do not point live `woocommerce_cart_page_id` / `woocommerce_checkout_page_id` at QA pages.
+- **Cart & Checkout Blocks** — **not** declared compatible (`partial` QA 2026-05-18). QA pages **4333** / **4334** (published for testing; not live cart/checkout). Server-side cart fees and checkout recording pass; block cart/checkout UI did not render on Blocksy. See [docs/BLOCKS_QA_EVIDENCE_2026-05-18.md](docs/BLOCKS_QA_EVIDENCE_2026-05-18.md).
 
 ## Known limitations (MVP)
 

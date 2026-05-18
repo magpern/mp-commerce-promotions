@@ -29,6 +29,22 @@ final class LineDiscountEngineTest extends TestCase {
 		LinePriceMutationGuard::reset_cycle();
 	}
 
+	public function test_line_price_mutation_guard_uses_engine_applied_line_discount_meta(): void {
+		$product = new class() {
+			public float $price = 0.0;
+
+			public function set_price( $price ): void {
+				$this->price = (float) $price;
+			}
+		};
+		$item = array(
+			'data'                                   => $product,
+			AppliedLineDiscount::META_ORIGINAL_PRICE => 25.0,
+		);
+		LinePriceMutationGuard::restore_line_price( $item );
+		$this->assertSame( 25.0, $product->price );
+	}
+
 	public function test_discount_application_mode_defaults_to_fee_based(): void {
 		$this->assertSame(
 			PromotionDiscountApplicationMode::FEE_BASED,

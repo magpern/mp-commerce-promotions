@@ -2,6 +2,8 @@
 
 Evidence bundle for high-risk promotion paths after admin UX polish (`e8da1f1`). This milestone documents verification only; no feature changes.
 
+**Cart/Checkout Blocks (2026-05-18):** See [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md) — partial; `cart_checkout_blocks` not declared.
+
 ## Environment
 
 | Item | Value |

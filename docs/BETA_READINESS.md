@@ -18,7 +18,7 @@
 
 | Area | Status |
 |------|--------|
-| Cart/Checkout Blocks | **Not declared** — investigation bundle: [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md), `scripts/blocks-compatibility-smoke.php`, draft pages **4333** / **4334** |
+| Cart/Checkout Blocks | **Not declared** — **partial** QA 2026-05-18 ([BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md)); server hooks OK; block UI blocked on Blocksy |
 | Marketplace / wordpress.org | Not submitted |
 | Accounting / tax correctness | Heuristic only |
 | Full browser checkout on production | Partial (BTCPay blocker on reference site) |

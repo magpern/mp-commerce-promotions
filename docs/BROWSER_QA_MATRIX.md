@@ -37,24 +37,24 @@ Legend: **Pass** | **Fail** | **Partial** | **Blocked** | **Not run**
 
 ## Storefront — Cart/Checkout Blocks
 
-Runbook: [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md). Setup: `./wp eval-file .../blocks-compatibility-smoke.php`.
+Runbook: [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md). Evidence: [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md).
 
 | Scenario | Status | Notes |
 |----------|--------|-------|
-| Fee-based % / fixed in block cart | **Not run** | QA promos `MP CP Blocks QA — *` (paused) |
-| Stacked fees | **Not run** | |
-| Promotion code (block coupon UI) | **Not run** | Virtual coupon hooks unverified on blocks |
-| Free shipping fee offset | **Not run** | |
-| Free gift add/remove | **Not run** | |
-| Line item mode (block cart prices) | **Not run** | Experimental |
+| Fee-based % / fixed in block cart | **Partial** | CLI fees OK; block UI does not render on 4333 |
+| Stacked fees | **Blocked** | QA promos exclusive |
+| Promotion code (block coupon UI) | **Blocked** | No block checkout UI |
+| Free shipping fee offset | **Partial** | CLI: no offset fee observed |
+| Free gift add/remove | **Partial** | CLI Pass (gift $0) |
+| Line item mode (block cart prices) | **Partial** | Not verified in browser |
 | Hybrid fallback | **Not run** | |
-| Checkout recording / redemptions | **Not run** | |
-| Reversal | **Not run** | |
+| Checkout recording / redemptions | **Partial** | CLI Pass order 4342 |
+| Reversal | **Partial** | CLI Pass on cancel |
 | Native coupon coexistence | **Not run** | |
-| Guest checkout (blocks) | **Not run** | |
+| Guest checkout (blocks) | **Blocked** | |
 | Logged-in checkout (blocks) | **Not run** | |
-| Hook audit (WP_DEBUG + option) | **Ready** | `mp_cp_blocks_hook_debug` |
-| **Declare `cart_checkout_blocks`** | **No** | `block_compatibility_status` = not_tested |
+| Hook audit (WP_DEBUG + option) | **Partial** | No logger output; hooks OK via cart/order tests |
+| **Declare `cart_checkout_blocks`** | **No** | `block_compatibility_status` = **partial** |
 
 ## Admin
 

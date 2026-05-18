@@ -1,0 +1,110 @@
+<?php
+/**
+ * WP-CLI helper: activate one Blocks QA promotion and report cart fee state.
+ *
+ * Usage:
+ *   ./wp eval-file .../blocks-qa-runner.php --promo_id=168
+ *
+ * @package MP\CommercePromotions
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 1 );
+}
+
+use MP\CommercePromotions\Domain\PromotionRepository;
+use MP\CommercePromotions\Domain\PromotionStatus;
+use MP\CommercePromotions\Service\PromotionService;
+
+$promo_id = 0;
+if ( isset( $args ) && is_array( $args ) && isset( $args[0] ) && is_numeric( $args[0] ) ) {
+	$promo_id = (int) $args[0];
+}
+if ( $promo_id <= 0 && getenv( 'MP_CP_BLOCK_QA_PROMO_ID' ) !== false ) {
+	$promo_id = (int) getenv( 'MP_CP_BLOCK_QA_PROMO_ID' );
+}
+
+$product_id = 3702;
+if ( getenv( 'MP_CP_BLOCK_QA_PRODUCT_ID' ) !== false ) {
+	$product_id = (int) getenv( 'MP_CP_BLOCK_QA_PRODUCT_ID' );
+}
+
+global $wpdb;
+$plugin = new \MP\CommercePromotions\Plugin();
+$plugin->init();
+
+$repo    = new PromotionRepository( $wpdb );
+$audit   = new \MP\CommercePromotions\Domain\AuditLogRepository( $wpdb );
+$audit_log = new \MP\CommercePromotions\Service\AuditLogger( $audit );
+$factory = new \MP\CommercePromotions\Domain\PromotionFactory();
+$service = new PromotionService( $repo, $factory, $audit_log );
+
+foreach ( $repo->find_filtered( array( 'search' => 'MP CP Blocks QA', 'limit' => 20 ) ) as $p ) {
+	$id = $p->get_id();
+	if ( $id === null || $id <= 0 ) {
+		continue;
+	}
+	if ( $p->get_status() === PromotionStatus::ACTIVE && $id !== $promo_id ) {
+		try {
+			$service->change_status( $p, PromotionStatus::PAUSED );
+			echo "Paused competing promo {$id}\n";
+		} catch ( Throwable $e ) { // phpcs:ignore
+		}
+	}
+}
+
+if ( $promo_id <= 0 ) {
+	echo "Set MP_CP_BLOCK_QA_PROMO_ID or pass promo id as first arg.\n";
+	exit( 1 );
+}
+
+$promo = $repo->find( $promo_id );
+if ( $promo === null ) {
+	echo "Promotion {$promo_id} not found.\n";
+	exit( 1 );
+}
+
+if ( $promo->get_status() === PromotionStatus::PAUSED ) {
+	$service->change_status( $promo, PromotionStatus::ACTIVE );
+	$promo = $repo->find( $promo_id );
+}
+
+if ( ! function_exists( 'wc_load_cart' ) || ! function_exists( 'WC' ) ) {
+	echo "WooCommerce cart unavailable.\n";
+	exit( 1 );
+}
+
+wc_load_cart();
+$cart = WC()->cart;
+$cart->empty_cart();
+$key = $cart->add_to_cart( $product_id, 1 );
+if ( ! $key ) {
+	echo "add_to_cart failed for product {$product_id}\n";
+	exit( 1 );
+}
+
+$cart->calculate_totals();
+
+$fees = array();
+foreach ( $cart->get_fees() as $fee ) {
+	if ( is_object( $fee ) ) {
+		$fees[] = array(
+			'name'   => (string) ( $fee->name ?? '' ),
+			'amount' => (float) ( $fee->amount ?? 0 ),
+		);
+	}
+}
+
+echo 'Promotion: ' . $promo->get_name() . ' (' . $promo->get_status() . ")\n";
+echo 'Mode: ' . $promo->get_discount_application_mode() . "\n";
+echo 'Cart subtotal: ' . (string) $cart->get_subtotal() . "\n";
+echo 'Cart total: ' . (string) $cart->get_total( 'edit' ) ) . "\n";
+echo 'Fees: ' . wp_json_encode( $fees ) . "\n";
+
+$session = \MP\CommercePromotions\Woo\CartSessionHelper::get_applied_promotions();
+echo 'Session promos: ' . wp_json_encode( is_array( $session ) ? count( $session ) : 0 ) . "\n";
+
+$line_alloc = \MP\CommercePromotions\Woo\CartSessionHelper::get_line_allocations();
+if ( is_array( $line_alloc ) && ! empty( $line_alloc['line_discounts'] ) ) {
+	echo 'Line allocations: yes' . "\n";
+}
