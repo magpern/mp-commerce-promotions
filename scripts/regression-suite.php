@@ -118,8 +118,8 @@ $planner = new PromotionPlanner( new PromotionEvaluator(), null, new PromotionPe
 $plan    = $planner->plan( $repo->find_active_for_planner( 50 ), $context );
 mp_cp_regression_assert( count( $plan->get_selected_decisions() ) >= 1, 'classic_fee_discounts' );
 
-// Stackable.
-$make_active(
+// Stackable (isolated pair).
+$stack_a = $make_active(
 	$service,
 	$repo,
 	'Regression stack A',
@@ -127,7 +127,7 @@ $make_active(
 	array( array( 'type' => RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT, 'amount' => 5 ) ),
 	PromotionApplicationMode::STACKABLE
 );
-$make_active(
+$stack_b = $make_active(
 	$service,
 	$repo,
 	'Regression stack B',
@@ -135,7 +135,14 @@ $make_active(
 	array( array( 'type' => RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT, 'amount' => 3 ) ),
 	PromotionApplicationMode::STACKABLE
 );
-$stack_plan = $planner->plan( $repo->find_active_for_planner( 50 ), $context );
+$stack_only = array();
+foreach ( array( $stack_a, $stack_b ) as $sid ) {
+	$p = $repo->find( $sid );
+	if ( $p !== null ) {
+		$stack_only[] = $p;
+	}
+}
+$stack_plan = $planner->plan( $stack_only, $context );
 mp_cp_regression_assert( count( $stack_plan->get_selected_decisions() ) >= 2, 'stackable' );
 
 // Exclusions.
@@ -193,7 +200,7 @@ $make_active(
 	'regression-orch'
 );
 $orch_plan = $planner->plan( $repo->find_active_for_planner( 80 ), $context );
-$orch_meta = $orch_plan->get_metadata();
+$orch_meta = $orch_plan->get_metrics();
 mp_cp_regression_assert( (int) ( $orch_meta['blocked_by_group_count'] ?? 0 ) >= 0, 'orchestration' );
 
 // Coupon coexistence.
