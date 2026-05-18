@@ -12,6 +12,7 @@ namespace MP\CommercePromotions\Engine;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionAllocationMode;
 use MP\CommercePromotions\Engine\RuleTypes;
+use MP\CommercePromotions\Woo\CartItemSelector;
 use MP\CommercePromotions\Woo\TaxAwareDiscountCalculator;
 
 final class DiscountAllocationEngine {
@@ -227,15 +228,19 @@ final class DiscountAllocationEngine {
 			}
 
 			if ( $type === RuleTypes::ACTION_PERCENTAGE_DISCOUNT ) {
-				$pct = isset( $action['percentage'] ) ? (float) $action['percentage'] : 0.0;
-				$pct = max( 0.0, min( 100.0, $pct ) );
-				$this->distribute_amount( $line_amounts, $lines, $line_subtotal * ( $pct / 100 ), $mode );
+				$pct         = isset( $action['percentage'] ) ? (float) $action['percentage'] : 0.0;
+				$pct         = max( 0.0, min( 100.0, $pct ) );
+				$scope_lines = $this->scoped_lines_for_action( $lines, $action );
+				$scope_sub   = $this->sum_line_subtotals( $scope_lines );
+				$this->distribute_amount( $line_amounts, $scope_lines, $scope_sub * ( $pct / 100 ), $mode );
 				continue;
 			}
 
 			if ( $type === RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT ) {
-				$amount = isset( $action['amount'] ) ? (float) $action['amount'] : 0.0;
-				$this->distribute_amount( $line_amounts, $lines, $amount, $mode );
+				$amount      = isset( $action['amount'] ) ? (float) $action['amount'] : 0.0;
+				$scope_lines = $this->scoped_lines_for_action( $lines, $action );
+				$scope_sub   = $this->sum_line_subtotals( $scope_lines );
+				$this->distribute_amount( $line_amounts, $scope_lines, min( $amount, $scope_sub ), $mode );
 				continue;
 			}
 
@@ -243,7 +248,12 @@ final class DiscountAllocationEngine {
 				$scope_lines = $this->scoped_lines_for_action( $lines, $action );
 				$scope_sub   = $this->sum_line_subtotals( $scope_lines );
 				$pct         = isset( $action['discount_percentage'] ) ? (float) $action['discount_percentage'] : 100.0;
-				$this->distribute_amount( $line_amounts, $lines, $scope_sub * ( max( 0.0, min( 100.0, $pct ) ) / 100 ), $mode );
+				$this->distribute_amount(
+					$line_amounts,
+					$scope_lines,
+					$scope_sub * ( max( 0.0, min( 100.0, $pct ) ) / 100 ),
+					$mode
+				);
 			}
 		}
 
@@ -296,18 +306,27 @@ final class DiscountAllocationEngine {
 	 * @return list<array<string, mixed>>
 	 */
 	private function scoped_lines_for_action( array $lines, array $action ): array {
-		$product_ids  = isset( $action['product_ids'] ) && is_array( $action['product_ids'] ) ? $action['product_ids'] : array();
-		$category_ids = isset( $action['category_ids'] ) && is_array( $action['category_ids'] ) ? $action['category_ids'] : array();
+		$product_ids   = isset( $action['product_ids'] ) && is_array( $action['product_ids'] ) ? $action['product_ids'] : array();
+		$variation_ids = isset( $action['variation_ids'] ) && is_array( $action['variation_ids'] ) ? $action['variation_ids'] : array();
+		$category_ids  = isset( $action['category_ids'] ) && is_array( $action['category_ids'] ) ? $action['category_ids'] : array();
 
-		if ( $product_ids === array() && $category_ids === array() ) {
-			return array_values( $lines );
+		if ( $product_ids === array() && $variation_ids === array() && $category_ids === array() ) {
+			return $lines;
 		}
 
 		$scoped = array();
-		foreach ( $lines as $line ) {
-			$pid = isset( $line['product_id'] ) ? (int) $line['product_id'] : 0;
-			if ( $product_ids !== array() && ! in_array( $pid, array_map( 'intval', $product_ids ), true ) ) {
+		foreach ( $lines as $key => $line ) {
+			if ( ! is_array( $line ) ) {
 				continue;
+			}
+			if ( $product_ids !== array() || $variation_ids !== array() ) {
+				if ( ! CartItemSelector::item_matches_product_or_variation(
+					$line,
+					array_map( 'intval', $product_ids ),
+					array_map( 'intval', $variation_ids )
+				) ) {
+					continue;
+				}
 			}
 			if ( $category_ids !== array() ) {
 				$cats = isset( $line['category_ids'] ) && is_array( $line['category_ids'] ) ? $line['category_ids'] : array();
@@ -315,7 +334,7 @@ final class DiscountAllocationEngine {
 					continue;
 				}
 			}
-			$scoped[] = $line;
+			$scoped[ (string) $key ] = $line;
 		}
 
 		return $scoped;
