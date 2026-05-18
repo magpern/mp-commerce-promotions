@@ -28,6 +28,14 @@ final class GettingStartedPage {
 		echo '<h1>' . esc_html__( 'Getting Started', 'mp-commerce-promotions' ) . '</h1>';
 		AdminNavigation::render_tabs( AdminNavigation::TAB_GETTING_STARTED );
 
+		echo '<p class="description" style="max-width:720px;">' . esc_html__(
+			'Start in Campaign Builder for everyday offers. Use Advanced Promotions when you need raw JSON rules, orchestration, cart simulation, or diagnostics on a specific promotion.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<p style="margin:12px 0 20px;">';
+		AdminNavigation::render_create_campaign_button();
+		echo '</p>';
+
 		echo '<div class="card" style="max-width:900px;padding:16px 20px;margin:16px 0;">';
 		echo '<h2>' . esc_html__( 'What this plugin does', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p>' . esc_html__(
@@ -39,7 +47,7 @@ final class GettingStartedPage {
 		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Quick setup checklist', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<ol style="max-width:720px;">';
 		echo '<li>' . esc_html__( 'Confirm WooCommerce is active and cart discounts are enabled in Settings.', 'mp-commerce-promotions' ) . '</li>';
-		echo '<li>' . esc_html__( 'Create a draft promotion or apply a template on the edit screen.', 'mp-commerce-promotions' ) . '</li>';
+		echo '<li>' . esc_html__( 'Create a draft campaign in Campaign Builder (recommended) or a draft promotion in Advanced Promotions.', 'mp-commerce-promotions' ) . '</li>';
 		echo '<li>' . esc_html__( 'Use cart preview to validate eligibility and planner output.', 'mp-commerce-promotions' ) . '</li>';
 		echo '<li>' . esc_html__( 'Activate when ready; monitor Reports and Diagnostics.', 'mp-commerce-promotions' ) . '</li>';
 		echo '</ol>';
@@ -53,15 +61,12 @@ final class GettingStartedPage {
 
 		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Admin shortcuts', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p>';
-		printf(
-			'<a class="button button-primary" href="%1$s">%2$s</a> ',
-			esc_url( AdminUrl::tab( AdminNavigation::TAB_CAMPAIGN_BUILDER ) ),
-			esc_html__( 'Campaign Builder', 'mp-commerce-promotions' )
-		);
+		AdminNavigation::render_create_campaign_button();
+		echo ' ';
 		printf(
 			'<a class="button" href="%1$s">%2$s</a> ',
 			esc_url( AdminUrl::list_promotions() ),
-			esc_html__( 'All Promotions', 'mp-commerce-promotions' )
+			esc_html__( 'Advanced Promotions', 'mp-commerce-promotions' )
 		);
 		printf(
 			'<a class="button" href="%1$s">%2$s</a> ',
@@ -97,11 +102,11 @@ final class GettingStartedPage {
 
 		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Suggested workflow', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<ol style="max-width:720px;">';
-		echo '<li>' . esc_html__( 'Create draft', 'mp-commerce-promotions' ) . '</li>';
-		echo '<li>' . esc_html__( 'Apply template', 'mp-commerce-promotions' ) . '</li>';
-		echo '<li>' . esc_html__( 'Preview cart', 'mp-commerce-promotions' ) . '</li>';
-		echo '<li>' . esc_html__( 'Activate', 'mp-commerce-promotions' ) . '</li>';
-		echo '<li>' . esc_html__( 'Monitor reports and diagnostics', 'mp-commerce-promotions' ) . '</li>';
+		echo '<li>' . esc_html__( 'Create a draft campaign in Campaign Builder', 'mp-commerce-promotions' ) . '</li>';
+		echo '<li>' . esc_html__( 'Review rules in Advanced editor if needed', 'mp-commerce-promotions' ) . '</li>';
+		echo '<li>' . esc_html__( 'Preview cart on the promotion edit screen', 'mp-commerce-promotions' ) . '</li>';
+		echo '<li>' . esc_html__( 'Activate when ready', 'mp-commerce-promotions' ) . '</li>';
+		echo '<li>' . esc_html__( 'Monitor Reports and Diagnostics', 'mp-commerce-promotions' ) . '</li>';
 		echo '</ol>';
 
 		$flags = $this->settings->to_feature_flags();

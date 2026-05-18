@@ -208,10 +208,10 @@ final class CampaignBuilderPage {
 		echo '<header class="mp-cb-header">';
 		echo '<div class="mp-cb-header__title-row">';
 		echo '<h1 class="mp-cb-header__title">' . esc_html__( 'Campaign Builder', 'mp-commerce-promotions' ) . '</h1>';
-		echo '<span class="mp-cb-badge">' . esc_html__( 'Merchant-friendly', 'mp-commerce-promotions' ) . '</span>';
+		echo '<span class="mp-cb-badge">' . esc_html__( 'Recommended', 'mp-commerce-promotions' ) . '</span>';
 		echo '</div>';
 		echo '<p class="mp-cb-header__subtitle">'
-			. esc_html__( 'Guided campaign setup for your store — no JSON required.', 'mp-commerce-promotions' )
+			. esc_html__( 'Default way to create promotions — guided setup with no JSON required.', 'mp-commerce-promotions' )
 			. '</p>';
 		echo '</header>';
 	}
@@ -443,7 +443,7 @@ final class CampaignBuilderPage {
 					'Open it here: %s',
 					'mp-commerce-promotions'
 				),
-				'<a href="' . esc_url( AdminUrl::edit_promotion( $id ) ) . '">' . esc_html__( 'Advanced edit', 'mp-commerce-promotions' ) . '</a>'
+				'<a href="' . esc_url( AdminUrl::edit_promotion( $id ) ) . '">' . esc_html__( 'Advanced editor', 'mp-commerce-promotions' ) . '</a>'
 			);
 		echo '</p>';
 		if ( $plain !== '' ) {
@@ -1230,11 +1230,11 @@ final class CampaignBuilderPage {
 		echo '<div class="mp-cb-preview-box mp-cb-preview-box--power mp-cb-sidebar-escape">';
 		echo '<h4>' . esc_html__( 'Need more power?', 'mp-commerce-promotions' ) . '</h4>';
 		echo '<p class="description">' . esc_html__(
-			'Use the Advanced Editor for JSON rules, cart simulation, codes, and orchestration.',
+			'Use the Advanced editor (expert mode) for raw JSON rules, cart simulation, codes, and orchestration.',
 			'mp-commerce-promotions'
 		) . '</p>';
 		echo '<p><a class="button button-secondary" href="' . esc_url( AdminUrl::tab( AdminNavigation::TAB_ALL ) ) . '">'
-			. esc_html__( 'Open Advanced Editor', 'mp-commerce-promotions' ) . '</a></p>';
+			. esc_html__( 'Open Advanced editor', 'mp-commerce-promotions' ) . '</a></p>';
 		echo '</div>';
 	}
 
@@ -1288,7 +1288,7 @@ final class CampaignBuilderPage {
 			printf(
 				'<a class="button button-small" href="%1$s">%2$s</a> ',
 				esc_url( $edit_url ),
-				esc_html__( 'Advanced edit', 'mp-commerce-promotions' )
+				esc_html__( 'Advanced editor', 'mp-commerce-promotions' )
 			);
 			if ( $id !== null && $id > 0 ) {
 				$this->render_duplicate_form( $id );
@@ -1432,11 +1432,11 @@ final class CampaignBuilderPage {
 		echo '<div class="mp-cb-escape mp-cb-panel">';
 		echo '<h3>' . esc_html__( 'Need more power?', 'mp-commerce-promotions' ) . '</h3>';
 		echo '<p class="description">' . esc_html__(
-			'Campaign Builder creates standard promotions. For JSON rules, diagnostics, and cart simulation, use the Advanced Editor.',
+			'Campaign Builder creates standard promotions. For raw rules, orchestration, diagnostics, and cart simulation, use the Advanced editor.',
 			'mp-commerce-promotions'
 		) . '</p>';
 		echo '<p><a class="button button-secondary" href="' . esc_url( AdminUrl::tab( AdminNavigation::TAB_ALL ) ) . '">'
-			. esc_html__( 'Go to Advanced Editor', 'mp-commerce-promotions' ) . '</a></p>';
+			. esc_html__( 'Open Advanced editor', 'mp-commerce-promotions' ) . '</a></p>';
 		echo '</div>';
 	}
 
@@ -1758,11 +1758,11 @@ final class CampaignBuilderPage {
 		printf(
 			'<a class="mp-cb-mode-switch__item mp-cb-mode-switch__item--link" href="%s">%s</a>',
 			esc_url( AdminUrl::tab( AdminNavigation::TAB_ALL ) ),
-			esc_html__( 'Advanced Editor', 'mp-commerce-promotions' )
+			esc_html__( 'Advanced editor', 'mp-commerce-promotions' )
 		);
 		echo '<p class="mp-cb-mode-switch__hint description">'
 			. esc_html__(
-				'Need advanced targeting, orchestration, or JSON rules? Use Advanced Editor.',
+				'Expert mode: raw rules, orchestration, cart simulation, and diagnostics. Most merchants should stay in Campaign Builder.',
 				'mp-commerce-promotions'
 			)
 			. '</p></nav>';
@@ -2009,7 +2009,7 @@ final class CampaignBuilderPage {
 		$this->render_confidence_panel( $insights );
 		echo '<p class="description mp-cb-review-note">'
 			. esc_html__(
-				'This creates a draft only. Shoppers will not see the offer until you activate it in Advanced Editor or the promotions list.',
+				'This creates a draft only. Shoppers will not see the offer until you activate it in the Advanced editor or the promotions list.',
 				'mp-commerce-promotions'
 			)
 			. '</p>';

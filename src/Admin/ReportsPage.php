@@ -70,6 +70,9 @@ final class ReportsPage {
 			'Read-only summaries from redemption records. CSV export includes up to 5,000 rows and does not expose raw promotion codes.',
 			'mp-commerce-promotions'
 		) . '</p>';
+		echo '<p style="margin:8px 0 16px;">';
+		AdminNavigation::render_create_campaign_button( array( 'class' => 'button' ) );
+		echo '</p>';
 
 		$this->render_filter_form( $filters );
 		$this->render_summary_cards( $summary );

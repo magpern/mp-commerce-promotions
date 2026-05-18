@@ -27,6 +27,20 @@ final class AdminUrl {
 	}
 
 	/**
+	 * Recommended merchant entrypoint — guided Campaign Builder.
+	 *
+	 * @param array<string, string> $extra_query
+	 */
+	public static function create_campaign( array $extra_query = array() ): string {
+		$base = array(
+			'page' => AdminNavigation::PAGE_SLUG,
+			'tab'  => AdminNavigation::TAB_CAMPAIGN_BUILDER,
+		);
+
+		return add_query_arg( array_merge( $base, $extra_query ), admin_url( 'admin.php' ) );
+	}
+
+	/**
 	 * @param array<string, string> $extra_query
 	 */
 	public static function list_promotions( array $extra_query = array() ): string {

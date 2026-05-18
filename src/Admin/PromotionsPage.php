@@ -134,9 +134,15 @@ final class PromotionsPage {
 
 		echo '<div class="wrap">';
 		$this->render_notices();
-		echo '<h1>' . esc_html__( 'Commerce Promotions', 'mp-commerce-promotions' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'Advanced Promotions', 'mp-commerce-promotions' ) . '</h1>';
 		AdminNavigation::render_tabs( AdminNavigation::TAB_ALL );
-		echo '<p>' . esc_html__( 'Create draft promotions, then use Edit to change details, raw JSON rules, and status (via action buttons on the edit screen). Hard delete and visual rule builder are not implemented yet.', 'mp-commerce-promotions' ) . '</p>';
+		echo '<p class="description">' . esc_html__(
+			'Expert mode: list, filter, and edit promotions with raw JSON rules, orchestration, codes, and cart simulation. For everyday campaigns, use Campaign Builder first.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<p style="margin:12px 0 16px;">';
+		AdminNavigation::render_create_campaign_button();
+		echo '</p>';
 
 		$this->render_create_form();
 		$this->render_recently_modified_section();

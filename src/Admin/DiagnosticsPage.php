@@ -256,6 +256,17 @@ final class DiagnosticsPage {
 		AdminNavigation::render_tabs( AdminNavigation::TAB_DIAGNOSTICS );
 		echo '<p>' . esc_html__( 'Compare stored usage_count values against redemption and order-meta records. Use the repair action to recalculate mismatched counters from recorded redemptions.', 'mp-commerce-promotions' ) . '</p>';
 
+		global $wpdb;
+		if ( $wpdb instanceof \wpdb ) {
+			$promo_count = ( new \MP\CommercePromotions\Domain\PromotionRepository( $wpdb ) )->count_filtered( array() );
+			if ( $promo_count === 0 ) {
+				echo '<div class="notice notice-info"><p>';
+				echo esc_html__( 'No promotions yet.', 'mp-commerce-promotions' ) . ' ';
+				AdminNavigation::render_create_campaign_button( array( 'class' => 'button button-primary' ) );
+				echo '</p></div>';
+			}
+		}
+
 		$this->render_repair_form();
 		CompatibilityStatusPanel::render();
 		if ( $this->profiler !== null && $this->concurrency !== null ) {

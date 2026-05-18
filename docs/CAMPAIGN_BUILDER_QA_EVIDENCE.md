@@ -3,6 +3,7 @@
 **Pass:** 2026-05-16  
 **Base commit (Phase 3):** `7e4d44f`  
 **QA commit:** `d31dbb8`  
+**Default entrypoint commit:** _(after chore commit)_  
 **Environment:** WooCommerce Docker (`/home/magpern/woocommerce`), plugin synced from staging.
 
 ## Method
@@ -111,6 +112,12 @@ composer run test
 cd /home/magpern/woocommerce
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/campaign-builder-smoke.php
 ```
+
+## Merchant entrypoint (post-QA)
+
+- WooCommerce → **Promotions** opens **Campaign Builder** when `tab` is omitted.
+- **Advanced Promotions** (`tab=all`) remains for expert mode (raw rules, orchestration, diagnostics).
+- **Create campaign** shortcuts on Getting Started, Advanced Promotions, Reports, and Diagnostics (when no promotions exist).
 
 ## Known limitations (unchanged)
 

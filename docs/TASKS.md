@@ -17,6 +17,8 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Campaign Builder default entrypoint** — Promotions menu opens Campaign Builder; Advanced Promotions tab for expert mode; Create campaign shortcuts across admin
+- **Campaign Builder QA pass** — all 10 goals, smoke expansion, UX/a11y polish (`docs/CAMPAIGN_BUILDER_QA_EVIDENCE.md`)
 - **Merchant Campaign Builder** — `tab=campaign-builder`, goal→template mapping, draft creation, preview warnings, smoke + `docs/manual-campaign-builder-test.md` (no new engine behavior)
 - **Browser QA beta release prep** — runbook, classic certification, block draft pages, release evidence, beta-release-prep smoke
 - **Beta readiness certification** — BETA_READINESS, blocks doc (not declared), POT, PHPCBF on staging, CI PHPCS soft gate, beta smoke

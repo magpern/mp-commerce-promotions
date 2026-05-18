@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit( 1 );
 }
 
+use MP\CommercePromotions\Admin\AdminNavigation;
 use MP\CommercePromotions\Admin\CampaignBuilderAjax;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Domain\PromotionCodeFactory;
@@ -55,6 +56,14 @@ $creator       = new CampaignBuilderDraftCreator( $service, $code_factory, $code
 
 $goals = CampaignBuilderGoal::all();
 cb_smoke_assert( count( $goals ) === 10, 'ten campaign goals registered' );
+cb_smoke_assert(
+	AdminNavigation::DEFAULT_TAB === AdminNavigation::TAB_CAMPAIGN_BUILDER,
+	'Campaign Builder is default admin tab'
+);
+cb_smoke_assert(
+	AdminNavigation::sanitize_tab( null ) === AdminNavigation::TAB_CAMPAIGN_BUILDER,
+	'empty tab routes to Campaign Builder'
+);
 cb_smoke_assert(
 	CampaignBuilderStep::initial_after_goal( CampaignBuilderGoal::CATEGORY_DISCOUNT ) === CampaignBuilderStep::TARGETING,
 	'wizard initial step for category discount'
