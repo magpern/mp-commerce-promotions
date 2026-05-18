@@ -54,7 +54,8 @@ final class MerchantSafetyAdvisor {
 	public function analyze_catalog( int $limit = 200 ): array {
 		$all = array();
 		foreach ( $this->promotions->find_filtered( array( 'limit' => $limit ) ) as $promotion ) {
-			if ( $promotion->get_status() !== PromotionStatus::ACTIVE && $promotion->get_status() !== PromotionStatus::SCHEDULED ) {
+			$status = $promotion->get_status();
+			if ( $status !== PromotionStatus::ACTIVE && $status !== PromotionStatus::DRAFT ) {
 				continue;
 			}
 			$all = array_merge( $all, $this->analyze_promotion( $promotion ) );
