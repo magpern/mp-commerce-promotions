@@ -143,7 +143,20 @@ final class BlockQaPromotionSetup {
 			->with_pricing_fields( null, null, null, $application_mode );
 
 		$this->service->update_promotion( $model );
-		$this->service->change_status( $model, PromotionStatus::PAUSED );
+		$reloaded = $this->promotions->find( $id );
+		if ( $reloaded === null ) {
+			return array(
+				'id'     => $id,
+				'name'   => $name,
+				'status' => PromotionStatus::DRAFT,
+			);
+		}
+
+		$this->service->change_status( $reloaded, PromotionStatus::ACTIVE );
+		$active = $this->promotions->find( $id );
+		if ( $active !== null ) {
+			$this->service->change_status( $active, PromotionStatus::PAUSED );
+		}
 
 		return array(
 			'id'     => $id,
