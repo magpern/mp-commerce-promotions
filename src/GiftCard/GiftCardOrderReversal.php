@@ -38,7 +38,10 @@ final class GiftCardOrderReversal {
 				return;
 			}
 
-			if ( ! GiftCardGeneratedOrderState::is_generation_complete( $order ) ) {
+			$has_generated = GiftCardGeneratedOrderState::is_generation_complete( $order );
+			$has_pending   = GiftCardPendingDeliveryState::get_pending( $order ) !== array();
+
+			if ( ! $has_generated && ! $has_pending ) {
 				return;
 			}
 
@@ -48,6 +51,8 @@ final class GiftCardOrderReversal {
 
 			$order_id_int = (int) $order->get_id();
 			$warnings     = array();
+
+			$this->cancel_pending_deliveries( $order );
 
 			foreach ( GiftCardGeneratedOrderState::get_generated( $order ) as $row ) {
 				$card_id = (int) $row['gift_card_id'];
@@ -95,6 +100,28 @@ final class GiftCardOrderReversal {
 				error_log( '[mp-commerce-promotions] GiftCardOrderReversal: ' . $e->getMessage() );
 			}
 		}
+	}
+
+	/**
+	 * @param mixed $order_id
+	 * @return \WC_Order|null
+	 */
+	/**
+	 * @param \WC_Order $order
+	 */
+	private function cancel_pending_deliveries( $order ): void {
+		$pending   = GiftCardPendingDeliveryState::get_pending( $order );
+		$remaining = array();
+
+		foreach ( $pending as $row ) {
+			if ( (string) ( $row['delivery_status'] ?? '' ) === GiftCardDeliveryStatus::PENDING_SCHEDULED ) {
+				$row['delivery_status'] = GiftCardDeliveryStatus::CANCELLED;
+				$row['delivery_error']  = __( 'Order cancelled or refunded before scheduled delivery.', 'mp-commerce-promotions' );
+			}
+			$remaining[] = $row;
+		}
+
+		GiftCardPendingDeliveryState::set_pending( $order, $remaining );
 	}
 
 	/**

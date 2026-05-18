@@ -15,7 +15,9 @@ use MP\CommercePromotions\GiftCard\GiftCardDeliveryStatus;
 use MP\CommercePromotions\GiftCard\GiftCardGeneratedOrderState;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
 use MP\CommercePromotions\GiftCard\GiftCardOrderReissueService;
+use MP\CommercePromotions\GiftCard\GiftCardPendingDeliveryState;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
+use MP\CommercePromotions\GiftCard\GiftCardScheduledDeliveryService;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\Settings;
 
@@ -23,23 +25,30 @@ final class GiftCardOrderAdmin {
 
 	private const NONCE_REISSUE = 'mp_cp_reissue_gift_card';
 
+	private const NONCE_SEND_SCHEDULED = 'mp_cp_send_scheduled_gift_card';
+
 	private GiftCardRepository $cards;
 
 	private GiftCardOrderReissueService $reissue;
+
+	private GiftCardScheduledDeliveryService $scheduler;
 
 	public function __construct(
 		GiftCardRepository $cards,
 		GiftCardLedger $ledger,
 		?Settings $settings = null,
-		?AuditLogger $audit_logger = null
+		?AuditLogger $audit_logger = null,
+		?GiftCardScheduledDeliveryService $scheduler = null
 	) {
-		$this->cards   = $cards;
-		$this->reissue = new GiftCardOrderReissueService( $ledger, $cards, $settings, $audit_logger );
+		$this->cards     = $cards;
+		$this->reissue   = new GiftCardOrderReissueService( $ledger, $cards, $settings, $audit_logger );
+		$this->scheduler = $scheduler ?? new GiftCardScheduledDeliveryService( $ledger, null, $settings, $audit_logger );
 	}
 
 	public function register(): void {
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ) );
 		add_action( 'admin_post_mp_cp_reissue_gift_card', array( $this, 'handle_reissue_post' ) );
+		add_action( 'admin_post_mp_cp_send_scheduled_gift_cards', array( $this, 'handle_send_scheduled_post' ) );
 	}
 
 	public function add_meta_box(): void {
@@ -105,14 +114,35 @@ final class GiftCardOrderAdmin {
 			return;
 		}
 
-		$this->render_reissue_notice();
+		$this->render_admin_notices();
+
+		$pending = GiftCardPendingDeliveryState::get_pending( $order );
+		if ( $pending !== array() ) {
+			echo '<h4 style="margin:0 0 8px;">' . esc_html__( 'Scheduled / pending delivery', 'mp-commerce-promotions' ) . '</h4>';
+			echo '<table class="widefat" style="margin:0 0 12px;"><tbody>';
+			foreach ( $pending as $row ) {
+				$this->render_pending_row( $order, $row );
+			}
+			echo '</tbody></table>';
+			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="margin-bottom:12px;">';
+			wp_nonce_field( self::NONCE_SEND_SCHEDULED . '_' . $order->get_id() );
+			echo '<input type="hidden" name="action" value="mp_cp_send_scheduled_gift_cards" />';
+			echo '<input type="hidden" name="order_id" value="' . esc_attr( (string) $order->get_id() ) . '" />';
+			echo '<button type="submit" class="button button-small">' . esc_html__( 'Send due deliveries now', 'mp-commerce-promotions' ) . '</button>';
+			echo '</form>';
+		}
 
 		$rows = GiftCardGeneratedOrderState::get_generated( $order );
-		if ( $rows === array() ) {
-			echo '<p>' . esc_html__( 'No gift cards generated for this order.', 'mp-commerce-promotions' ) . '</p>';
+		if ( $rows === array() && $pending === array() ) {
+			echo '<p>' . esc_html__( 'No gift cards for this order.', 'mp-commerce-promotions' ) . '</p>';
 			return;
 		}
 
+		if ( $rows === array() ) {
+			return;
+		}
+
+		echo '<h4 style="margin:12px 0 8px;">' . esc_html__( 'Generated gift cards', 'mp-commerce-promotions' ) . '</h4>';
 		echo '<p class="description">' . esc_html__(
 			'Full codes are delivered by email and are not stored. Only the last four digits are shown here.',
 			'mp-commerce-promotions'
@@ -198,18 +228,79 @@ final class GiftCardOrderAdmin {
 		return abs( $card->get_balance() - $card->get_initial_amount() ) < 0.009 && $card->get_balance() > 0;
 	}
 
-	private function render_reissue_notice(): void {
-		if ( ! isset( $_GET['mp_cp_reissue'] ) ) {
-			return;
+	/**
+	 * @param array<string, mixed> $row
+	 */
+	private function render_pending_row( $order, array $row ): void {
+		$status = (string) ( $row['delivery_status'] ?? '' );
+		echo '<tr><td style="padding:8px;">';
+		echo '<strong>' . esc_html__( 'Pending', 'mp-commerce-promotions' ) . '</strong> ';
+		echo esc_html(
+			number_format_i18n( (float) ( $row['amount'] ?? 0 ), 2 ) . ' ' . (string) ( $row['currency'] ?? '' )
+		);
+		echo '<br /><span class="description">' . esc_html__( 'To:', 'mp-commerce-promotions' ) . ' ' . esc_html( (string) ( $row['recipient_email'] ?? '' ) ) . '</span>';
+		if ( (string) ( $row['scheduled_for'] ?? '' ) !== '' ) {
+			echo '<br /><span class="description">' . esc_html__( 'Scheduled:', 'mp-commerce-promotions' ) . ' ' . esc_html( (string) $row['scheduled_for'] ) . '</span>';
+		}
+		echo '<br /><span class="description">' . esc_html__( 'Status:', 'mp-commerce-promotions' ) . ' ' . esc_html( $status ) . '</span>';
+		echo '<br /><em class="description">' . esc_html__( 'Card is created when delivery runs; code is not stored until then.', 'mp-commerce-promotions' ) . '</em>';
+		echo '</td></tr>';
+	}
+
+	public function handle_send_scheduled_post(): void {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mp-commerce-promotions' ) );
 		}
 
-		$flag = sanitize_key( (string) $_GET['mp_cp_reissue'] );
-		if ( $flag === 'success' ) {
-			echo '<div class="notice notice-success inline"><p>' . esc_html__( 'Gift card delivery reissued.', 'mp-commerce-promotions' ) . '</p></div>';
-			return;
+		$order_id = isset( $_POST['order_id'] ) ? (int) $_POST['order_id'] : 0;
+		$redirect = admin_url( 'edit.php?post_type=shop_order' );
+		if ( $order_id > 0 && function_exists( 'wc_get_order' ) ) {
+			$order_for_url = wc_get_order( $order_id );
+			if ( is_object( $order_for_url ) && method_exists( $order_for_url, 'get_edit_order_url' ) ) {
+				$redirect = (string) $order_for_url->get_edit_order_url();
+			}
 		}
-		if ( $flag === 'failed' || $flag === 'error' ) {
-			echo '<div class="notice notice-error inline"><p>' . esc_html__( 'Gift card reissue could not be completed.', 'mp-commerce-promotions' ) . '</p></div>';
+
+		if (
+			$order_id <= 0
+			|| ! isset( $_POST['_wpnonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ), self::NONCE_SEND_SCHEDULED . '_' . $order_id )
+		) {
+			wp_safe_redirect( add_query_arg( 'mp_cp_scheduled', 'error', $redirect ) );
+			exit;
+		}
+
+		$order = wc_get_order( $order_id );
+		if ( ! is_object( $order ) || ! is_a( $order, 'WC_Order', false ) ) {
+			wp_safe_redirect( add_query_arg( 'mp_cp_scheduled', 'error', $redirect ) );
+			exit;
+		}
+
+		$result = $this->scheduler->fulfill_order_pending( $order, true );
+		$flag   = $result['fulfilled'] > 0 ? 'success' : ( $result['failed'] > 0 ? 'failed' : 'none' );
+		wp_safe_redirect( add_query_arg( 'mp_cp_scheduled', $flag, $redirect ) );
+		exit;
+	}
+
+	private function render_admin_notices(): void {
+		if ( isset( $_GET['mp_cp_reissue'] ) ) {
+			$flag = sanitize_key( (string) $_GET['mp_cp_reissue'] );
+			if ( $flag === 'success' ) {
+				echo '<div class="notice notice-success inline"><p>' . esc_html__( 'Gift card delivery reissued.', 'mp-commerce-promotions' ) . '</p></div>';
+			} elseif ( $flag === 'failed' || $flag === 'error' ) {
+				echo '<div class="notice notice-error inline"><p>' . esc_html__( 'Gift card reissue could not be completed.', 'mp-commerce-promotions' ) . '</p></div>';
+			}
+		}
+
+		if ( isset( $_GET['mp_cp_scheduled'] ) ) {
+			$flag = sanitize_key( (string) $_GET['mp_cp_scheduled'] );
+			if ( $flag === 'success' ) {
+				echo '<div class="notice notice-success inline"><p>' . esc_html__( 'Scheduled gift card deliveries processed.', 'mp-commerce-promotions' ) . '</p></div>';
+			} elseif ( $flag === 'failed' ) {
+				echo '<div class="notice notice-error inline"><p>' . esc_html__( 'Scheduled delivery failed.', 'mp-commerce-promotions' ) . '</p></div>';
+			} elseif ( $flag === 'none' ) {
+				echo '<div class="notice notice-info inline"><p>' . esc_html__( 'No due scheduled deliveries on this order.', 'mp-commerce-promotions' ) . '</p></div>';
+			}
 		}
 	}
 }

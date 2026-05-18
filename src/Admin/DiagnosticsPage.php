@@ -212,6 +212,7 @@ final class DiagnosticsPage {
 		$this->handle_post_gift_card_integrity_repair();
 		$this->handle_post_gift_card_product_repair();
 		$this->handle_post_gift_card_delivery_repair();
+		$this->handle_post_gift_card_scheduled_repair();
 		$this->handle_post_repair();
 		$this->handle_post_archive_hygiene();
 		$this->handle_post_automation();
@@ -274,6 +275,7 @@ final class DiagnosticsPage {
 		$this->render_gift_card_integrity_section();
 		$this->render_gift_card_product_section();
 		$this->render_gift_card_delivery_section();
+		$this->render_gift_card_scheduled_section();
 		CompatibilityStatusPanel::render();
 		if ( $this->profiler !== null && $this->concurrency !== null ) {
 			EcosystemCompatibilityPanel::render_system_health(
@@ -1783,6 +1785,93 @@ final class DiagnosticsPage {
 			. esc_html__( 'Preview repair', 'mp-commerce-promotions' ) . '</button> ';
 		echo '<button type="submit" class="button button-primary" name="mp_cp_gift_card_delivery_repair_apply" value="1">'
 			. esc_html__( 'Apply repair', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form>';
+	}
+
+	private function handle_post_gift_card_scheduled_repair(): void {
+		if ( ! isset( $_POST['mp_cp_gift_card_scheduled_repair'] ) ) {
+			return;
+		}
+
+		if (
+			! isset( $_POST['_wpnonce'] )
+			|| ! wp_verify_nonce(
+				sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ),
+				'mp_cp_gift_card_scheduled_repair'
+			)
+		) {
+			return;
+		}
+
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			return;
+		}
+
+		$apply = isset( $_POST['mp_cp_gift_card_scheduled_repair_apply'] ) && (string) $_POST['mp_cp_gift_card_scheduled_repair_apply'] === '1';
+		$repo  = new \MP\CommercePromotions\GiftCard\GiftCardRepository( $wpdb );
+		$tx    = new \MP\CommercePromotions\GiftCard\GiftCardTransactionRepository( $wpdb );
+		$ledger = new \MP\CommercePromotions\GiftCard\GiftCardLedger( $repo, $tx );
+		$scheduler = new \MP\CommercePromotions\GiftCard\GiftCardScheduledDeliveryService( $ledger );
+		$diag      = new \MP\CommercePromotions\GiftCard\GiftCardScheduledDiagnostics( $wpdb, $scheduler );
+		$result    = $diag->repair( $apply );
+
+		if ( $apply ) {
+			AdminNotice::success(
+				sprintf(
+					/* translators: 1: fulfilled, 2: cancelled */
+					__( 'Scheduled gift card repair: %1$d fulfilled, %2$d cancelled on unpaid orders.', 'mp-commerce-promotions' ),
+					(int) $result['fulfilled'],
+					(int) $result['cancelled']
+				)
+			);
+		} else {
+			AdminNotice::info(
+				sprintf(
+					/* translators: 1: would fulfill, 2: would cancel */
+					__( 'Scheduled repair preview: would fulfill due deliveries site-wide; would cancel %2$d unpaid pending rows.', 'mp-commerce-promotions' ),
+					(int) $result['fulfilled'],
+					(int) $result['cancelled']
+				)
+			);
+		}
+	}
+
+	private function render_gift_card_scheduled_section(): void {
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			return;
+		}
+
+		$repo      = new \MP\CommercePromotions\GiftCard\GiftCardRepository( $wpdb );
+		$tx        = new \MP\CommercePromotions\GiftCard\GiftCardTransactionRepository( $wpdb );
+		$ledger    = new \MP\CommercePromotions\GiftCard\GiftCardLedger( $repo, $tx );
+		$scheduler = new \MP\CommercePromotions\GiftCard\GiftCardScheduledDeliveryService( $ledger );
+		$diag      = new \MP\CommercePromotions\GiftCard\GiftCardScheduledDiagnostics( $wpdb, $scheduler );
+		$issues    = $diag->analyze();
+
+		echo '<h2 style="margin-top:2em;">' . esc_html__( 'Scheduled gift card delivery', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Scheduled sends generate the gift card at delivery time (codes are not stored before email).', 'mp-commerce-promotions' ) . '</p>';
+
+		$counts = array(
+			__( 'Overdue scheduled deliveries', 'mp-commerce-promotions' )       => count( $issues['overdue'] ),
+			__( 'Pending on unpaid/cancelled orders', 'mp-commerce-promotions' ) => count( $issues['unpaid_pending'] ),
+			__( 'Invalid recipient email', 'mp-commerce-promotions' )          => count( $issues['invalid_recipient'] ),
+			__( 'Failed scheduled rows', 'mp-commerce-promotions' )            => count( $issues['failed_scheduled'] ),
+		);
+		echo '<ul>';
+		foreach ( $counts as $label => $count ) {
+			echo '<li>' . esc_html( $label ) . ': ' . esc_html( (string) $count ) . '</li>';
+		}
+		echo '</ul>';
+
+		echo '<form method="post" style="margin-top:12px;">';
+		wp_nonce_field( 'mp_cp_gift_card_scheduled_repair' );
+		echo '<input type="hidden" name="mp_cp_gift_card_scheduled_repair" value="1" />';
+		echo '<p><button type="submit" class="button" name="mp_cp_gift_card_scheduled_repair_apply" value="0">'
+			. esc_html__( 'Preview repair', 'mp-commerce-promotions' ) . '</button> ';
+		echo '<button type="submit" class="button button-primary" name="mp_cp_gift_card_scheduled_repair_apply" value="1">'
+			. esc_html__( 'Run due deliveries + cleanup', 'mp-commerce-promotions' ) . '</button></p>';
 		echo '</form>';
 	}
 

@@ -19,6 +19,11 @@ final class GiftCardDeliveryStatus {
 
 	public const DISABLED = 'disabled';
 
+	/** Scheduled: card not generated yet; waiting for delivery date. */
+	public const PENDING_SCHEDULED = 'pending_scheduled';
+
+	public const CANCELLED = 'cancelled';
+
 	/** Legacy rows before delivery tracking was added. */
 	public const UNKNOWN = 'unknown';
 
@@ -31,6 +36,8 @@ final class GiftCardDeliveryStatus {
 			self::SENT,
 			self::FAILED,
 			self::DISABLED,
+			self::PENDING_SCHEDULED,
+			self::CANCELLED,
 			self::UNKNOWN,
 		);
 	}

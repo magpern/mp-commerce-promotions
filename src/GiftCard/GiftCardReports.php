@@ -46,7 +46,11 @@ final class GiftCardReports {
 	 *   gift_cards_delivery_sent: int,
 	 *   gift_cards_delivery_failed: int,
 	 *   gift_cards_delivery_disabled: int,
-	 *   gift_cards_delivery_unknown: int
+	 *   gift_cards_delivery_unknown: int,
+	 *   scheduled_pending: int,
+	 *   scheduled_sent: int,
+	 *   scheduled_failed: int,
+	 *   scheduled_cancelled: int
 	 * }
 	 */
 	public function summary(): array {
@@ -202,6 +206,10 @@ final class GiftCardReports {
 			'gift_cards_delivery_failed'        => max( 0, (int) ( $delivery['delivery_failed'] ?? 0 ) ),
 			'gift_cards_delivery_disabled'      => max( 0, (int) ( $delivery['delivery_disabled'] ?? 0 ) ),
 			'gift_cards_delivery_unknown'         => max( 0, (int) ( $delivery['delivery_unknown'] ?? 0 ) ),
+			'scheduled_pending'                   => max( 0, (int) ( $delivery['scheduled_pending'] ?? 0 ) ),
+			'scheduled_sent'                      => max( 0, (int) ( $delivery['scheduled_sent'] ?? 0 ) ),
+			'scheduled_failed'                    => max( 0, (int) ( $delivery['scheduled_failed'] ?? 0 ) ),
+			'scheduled_cancelled'                 => max( 0, (int) ( $delivery['scheduled_cancelled'] ?? 0 ) ),
 		);
 	}
 

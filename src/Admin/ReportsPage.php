@@ -326,6 +326,9 @@ final class ReportsPage {
 			__( 'Product gift cards — delivery failed', 'mp-commerce-promotions' ) => (string) ( $gc['gift_cards_delivery_failed'] ?? 0 ),
 			__( 'Product gift cards — delivery disabled', 'mp-commerce-promotions' ) => (string) ( $gc['gift_cards_delivery_disabled'] ?? 0 ),
 			__( 'Product gift cards — legacy/unknown delivery', 'mp-commerce-promotions' ) => (string) ( $gc['gift_cards_delivery_unknown'] ?? 0 ),
+			__( 'Scheduled deliveries pending', 'mp-commerce-promotions' ) => (string) ( $gc['scheduled_pending'] ?? 0 ),
+			__( 'Scheduled deliveries sent', 'mp-commerce-promotions' ) => (string) ( $gc['scheduled_sent'] ?? 0 ),
+			__( 'Scheduled deliveries failed', 'mp-commerce-promotions' ) => (string) ( $gc['scheduled_failed'] ?? 0 ),
 		);
 		foreach ( $rows as $label => $value ) {
 			echo '<tr><th scope="row" style="width:50%;">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';

@@ -42,6 +42,19 @@ if ( ! function_exists( '__' ) ) {
 	}
 }
 
+if ( ! function_exists( 'apply_filters' ) ) {
+	/**
+	 * @param string $hook
+	 * @param mixed  $value
+	 * @param mixed  ...$args
+	 * @return mixed
+	 */
+	function apply_filters( $hook, $value, ...$args ) {
+		unset( $hook, $args );
+		return $value;
+	}
+}
+
 if ( ! function_exists( 'selected' ) ) {
 	/**
 	 * @param mixed $selected
@@ -123,6 +136,16 @@ if ( ! function_exists( 'wp_mail' ) ) {
 	function wp_mail( $to, $subject, $message, $headers = '' ) {
 		unset( $to, $subject, $message, $headers );
 		return (bool) ( $GLOBALS['mp_cp_test_wp_mail_result'] ?? true );
+	}
+}
+
+if ( ! function_exists( 'esc_textarea' ) ) {
+	/**
+	 * @param string $text
+	 * @return string
+	 */
+	function esc_textarea( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
 	}
 }
 

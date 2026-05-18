@@ -20,7 +20,16 @@ final class GiftCardDeliveryMailer {
 	}
 
 	/**
-	 * @param list<array{plain_code: string, amount: float, currency: string, expires_at: ?string, gift_card_id?: int}> $cards
+	 * @param list<array{
+	 *   plain_code: string,
+	 *   amount: float,
+	 *   currency: string,
+	 *   expires_at: ?string,
+	 *   gift_card_id?: int,
+	 *   recipient_name?: string,
+	 *   purchaser_name?: string,
+	 *   message?: string
+	 * }> $cards
 	 * @return array{
 	 *   enabled: bool,
 	 *   recipient_valid: bool,
@@ -52,7 +61,7 @@ final class GiftCardDeliveryMailer {
 
 		$to_email = sanitize_email( $to_email );
 		if ( $to_email === '' || ! is_email( $to_email ) ) {
-			$error = __( 'Invalid billing email address.', 'mp-commerce-promotions' );
+			$error = __( 'Invalid recipient email address.', 'mp-commerce-promotions' );
 			foreach ( $results as $i => $row ) {
 				$results[ $i ]['delivery_status'] = GiftCardDeliveryStatus::FAILED;
 				$results[ $i ]['delivery_error']  = $error;
@@ -95,7 +104,7 @@ final class GiftCardDeliveryMailer {
 	}
 
 	/**
-	 * @param list<array{plain_code: string, amount: float, currency: string, expires_at: ?string}> $cards
+	 * @param list<array{plain_code: string, amount: float, currency: string, expires_at: ?string, recipient_name?: string, purchaser_name?: string, message?: string}> $cards
 	 */
 	private function send_email( string $to_email, int $order_id, array $cards ): bool {
 		$site_name = function_exists( 'wp_specialchars_decode' )
@@ -129,6 +138,32 @@ final class GiftCardDeliveryMailer {
 		);
 
 		foreach ( $cards as $card ) {
+			$recipient_name = trim( (string) ( $card['recipient_name'] ?? '' ) );
+			if ( $recipient_name !== '' ) {
+				$lines[] = sprintf(
+					/* translators: %s: recipient name */
+					__( 'Hi %s,', 'mp-commerce-promotions' ),
+					$recipient_name
+				);
+				$lines[] = '';
+			}
+
+			$purchaser = trim( (string) ( $card['purchaser_name'] ?? '' ) );
+			if ( $purchaser !== '' ) {
+				$lines[] = sprintf(
+					/* translators: %s: purchaser name */
+					__( 'From: %s', 'mp-commerce-promotions' ),
+					$purchaser
+				);
+			}
+
+			$message = trim( (string) ( $card['message'] ?? '' ) );
+			if ( $message !== '' ) {
+				$lines[] = __( 'Message:', 'mp-commerce-promotions' );
+				$lines[] = $message;
+				$lines[] = '';
+			}
+
 			$amount_str = function_exists( 'wc_price' )
 				? wp_strip_all_tags( wc_price( (float) $card['amount'], array( 'currency' => $card['currency'] ) ) )
 				: number_format( (float) $card['amount'], 2 ) . ' ' . $card['currency'];

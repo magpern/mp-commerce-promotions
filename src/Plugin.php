@@ -80,6 +80,8 @@ use MP\CommercePromotions\Woo\GiftCardCheckoutForm;
 use MP\CommercePromotions\Woo\GiftCardOrderAdmin;
 use MP\CommercePromotions\Woo\GiftCardOrderRecorder;
 use MP\CommercePromotions\Woo\GiftCardProductAdmin;
+use MP\CommercePromotions\Woo\GiftCardRecipientCheckout;
+use MP\CommercePromotions\GiftCard\GiftCardScheduledDeliveryService;
 use MP\CommercePromotions\Woo\StoreCreditCartApplier;
 use MP\CommercePromotions\Woo\StoreCreditCheckoutForm;
 use MP\CommercePromotions\Woo\StoreCreditOrderRecorder;
@@ -238,12 +240,26 @@ final class Plugin {
 					$this->audit_logger
 				);
 				$gift_order_reversal = new GiftCardOrderReversal( $gift_ledger, $gift_card_repo );
+				$gift_scheduled      = new GiftCardScheduledDeliveryService(
+					$gift_ledger,
+					$gift_product_service,
+					$this->settings,
+					$this->audit_logger
+				);
 				$gift_order_generator->register_hooks();
 				$gift_order_reversal->register_hooks();
+				$gift_scheduled->register_hooks();
+				( new GiftCardRecipientCheckout( $gift_product_service ) )->register();
 
 				if ( is_admin() ) {
 					( new GiftCardProductAdmin() )->register();
-					( new GiftCardOrderAdmin( $gift_card_repo, $gift_ledger, $this->settings, $this->audit_logger ) )->register();
+					( new GiftCardOrderAdmin(
+						$gift_card_repo,
+						$gift_ledger,
+						$this->settings,
+						$this->audit_logger,
+						$gift_scheduled
+					) )->register();
 				}
 			}
 

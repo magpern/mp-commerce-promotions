@@ -34,7 +34,7 @@ Merchants can mark **normal WooCommerce products** to sell gift cards; paid orde
 
 ## Future work (not in this milestone)
 
-- Recipient-entered email / scheduled delivery for product gift cards
+- Branded gift card email templates; cart-page recipient UI (checkout-only today)
 - Custom WooCommerce gift card product type
 - Customer store credit wallets (see [STORE_CREDIT.md](STORE_CREDIT.md)) — **done in 1.19.0**
 - Dedicated Blocks UI (fee/session path should not fatal on Blocks checkout)

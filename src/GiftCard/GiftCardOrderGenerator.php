@@ -2,6 +2,8 @@
 /**
  * Generate gift cards when gift-card products are purchased and paid.
  *
+ * Scheduled deliveries defer card generation until the scheduled runner fires.
+ *
  * @package MP\CommercePromotions
  */
 
@@ -19,7 +21,7 @@ final class GiftCardOrderGenerator {
 
 	private GiftCardProductService $products;
 
-	private GiftCardDeliveryMailer $mailer;
+	private GiftCardUnitFulfillment $fulfillment;
 
 	private ?AuditLogger $audit_logger;
 
@@ -31,7 +33,7 @@ final class GiftCardOrderGenerator {
 	) {
 		$this->ledger        = $ledger;
 		$this->products      = $products ?? new GiftCardProductService();
-		$this->mailer        = new GiftCardDeliveryMailer( $settings ?? new Settings() );
+		$this->fulfillment   = new GiftCardUnitFulfillment( $ledger, $settings, $audit_logger );
 		$this->audit_logger  = $audit_logger;
 	}
 
@@ -68,15 +70,14 @@ final class GiftCardOrderGenerator {
 			return GiftCardGeneratedOrderState::get_generated( $order );
 		}
 
-		$order_id     = (int) $order->get_id();
-		$currency     = method_exists( $order, 'get_currency' ) ? (string) $order->get_currency() : '';
-		$currency     = GiftCardCurrency::validate( $currency );
-		$customer_id  = (int) $order->get_customer_id();
-		$billing_mail = method_exists( $order, 'get_billing_email' ) ? sanitize_email( (string) $order->get_billing_email() ) : '';
-		$paid_at      = $this->resolve_paid_at( $order );
-
-		$generated    = GiftCardGeneratedOrderState::get_generated( $order );
-		$email_batch  = array();
+		$order_id        = (int) $order->get_id();
+		$currency        = GiftCardCurrency::validate( method_exists( $order, 'get_currency' ) ? (string) $order->get_currency() : '' );
+		$customer_id     = (int) $order->get_customer_id();
+		$billing_mail    = method_exists( $order, 'get_billing_email' ) ? sanitize_email( (string) $order->get_billing_email() ) : '';
+		$billing_name    = $this->billing_display_name( $order );
+		$paid_at         = $this->resolve_paid_at( $order );
+		$immediate_count = 0;
+		$scheduled_count = 0;
 
 		foreach ( $order->get_items( 'line_item' ) as $item_id => $item ) {
 			if ( ! is_object( $item ) || ! is_a( $item, 'WC_Order_Item_Product', false ) ) {
@@ -97,58 +98,56 @@ final class GiftCardOrderGenerator {
 
 			$line_total  = (float) $item->get_total();
 			$unit_amount = $this->products->resolve_unit_amount( $config, $line_total, $qty );
-			$expires_at  = $this->products->resolve_expires_at( $config['expiry_days'], $paid_at );
+			$delivery    = $this->resolve_line_delivery( $config, $item, $billing_mail );
 
 			for ( $unit_index = 0; $unit_index < $qty; ++$unit_index ) {
 				$item_id_int = (int) $item_id;
-				if ( GiftCardGeneratedOrderState::has_slot( $order, $item_id_int, $unit_index ) ) {
+				if ( GiftCardPendingDeliveryState::slot_fulfilled( $order, $item_id_int, $unit_index ) ) {
 					continue;
 				}
 
-				$result = $this->ledger->issue_from_order(
-					$unit_amount,
-					$currency,
+				if ( $delivery['delivery_timing'] === GiftCardLineItemMeta::TIMING_SEND_ON_DATE ) {
+					$pending = GiftCardPendingDeliveryState::build_row(
+						$item_id_int,
+						$unit_index,
+						$unit_amount,
+						$currency,
+						$delivery,
+						$paid_at,
+						$config['expiry_days']
+					);
+					GiftCardPendingDeliveryState::add_pending( $order, $pending );
+					++$scheduled_count;
+					continue;
+				}
+
+				$expires_at = $this->products->resolve_expires_at( $config['expiry_days'], $paid_at );
+				$to_email   = $delivery['recipient_email'] !== '' ? $delivery['recipient_email'] : $billing_mail;
+
+				$result = $this->fulfillment->issue_and_deliver(
 					$order_id,
-					$customer_id > 0 ? $customer_id : null,
-					$billing_mail !== '' ? $billing_mail : null,
-					$expires_at,
-					'Product order line ' . $item_id_int . ' unit ' . $unit_index
-				);
-
-				$card    = $result->get_card();
-				$card_id = $card->get_id();
-				if ( $card_id === null || $card_id <= 0 ) {
-					continue;
-				}
-
-				$generated[] = GiftCardGeneratedOrderState::row_from_card(
-					$card,
 					$item_id_int,
 					$unit_index,
-					GiftCardDeliveryStatus::PENDING
+					$unit_amount,
+					$currency,
+					$customer_id > 0 ? $customer_id : null,
+					$expires_at,
+					$to_email,
+					array(
+						'recipient_name'  => $delivery['recipient_name'],
+						'message'         => $delivery['message'],
+						'purchaser_name'  => $billing_name,
+						'delivery_timing' => GiftCardLineItemMeta::TIMING_SEND_NOW,
+					)
 				);
 
-				$email_batch[] = array(
-					'plain_code'   => $result->get_plain_code(),
-					'amount'       => $unit_amount,
-					'currency'     => $currency,
-					'expires_at'   => $expires_at,
-					'gift_card_id' => $card_id,
-				);
-
-				$this->audit( $order_id, $card_id, $unit_amount );
+				GiftCardGeneratedOrderState::append_generated( $order, $result['generated_row'] );
+				++$immediate_count;
 			}
 		}
 
-		GiftCardGeneratedOrderState::set_generated( $order, $generated );
-
-		if ( $email_batch !== array() ) {
-			$delivery = $this->mailer->deliver_batch( $billing_mail, $order_id, $email_batch );
-			$this->apply_delivery_results( $order, $delivery['results'] );
-			$this->add_delivery_order_note( $order, $delivery );
-		}
-
 		GiftCardGeneratedOrderState::mark_generation_complete( $order );
+		$this->add_processing_order_note( $order, $immediate_count, $scheduled_count );
 
 		if ( method_exists( $order, 'save' ) ) {
 			$order->save();
@@ -158,73 +157,73 @@ final class GiftCardOrderGenerator {
 	}
 
 	/**
-	 * @param list<array<string, mixed>> $delivery_results
+	 * @param array{sells: bool, amount_mode: string, fixed_amount: float, expiry_days: ?int, recipient_mode: string} $config
+	 * @return array{recipient_email: string, recipient_name: string, message: string, delivery_timing: string, scheduled_for: string}
 	 */
-	private function apply_delivery_results( $order, array $delivery_results ): void {
-		foreach ( $delivery_results as $result ) {
-			$gift_card_id = (int) ( $result['gift_card_id'] ?? 0 );
-			if ( $gift_card_id <= 0 ) {
-				continue;
-			}
-			$patch = array(
-				'delivery_status' => (string) ( $result['delivery_status'] ?? GiftCardDeliveryStatus::PENDING ),
+	private function resolve_line_delivery( array $config, $item, string $billing_email ): array {
+		$from_item = GiftCardLineItemMeta::read_from_order_item( $item );
+		$mode      = (string) $config['recipient_mode'];
+
+		if ( ! GiftCardProductMeta::allows_recipient_fields( $mode ) ) {
+			return array(
+				'recipient_email'  => $billing_email,
+				'recipient_name'   => '',
+				'message'          => '',
+				'delivery_timing'  => GiftCardLineItemMeta::TIMING_SEND_NOW,
+				'scheduled_for'    => '',
 			);
-			if ( isset( $result['delivered_to'] ) ) {
-				$patch['delivered_to'] = (string) $result['delivered_to'];
-			}
-			if ( isset( $result['delivered_at'] ) ) {
-				$patch['delivered_at'] = (string) $result['delivered_at'];
-			}
-			if ( isset( $result['delivery_error'] ) ) {
-				$patch['delivery_error'] = (string) $result['delivery_error'];
-			}
-			GiftCardGeneratedOrderState::update_row( $order, $gift_card_id, $patch );
+		}
+
+		if ( $from_item['recipient_email'] === '' ) {
+			$from_item['recipient_email'] = $billing_email;
+		}
+
+		try {
+			return GiftCardRecipientValidator::validate_for_product( $config, $from_item, $billing_email );
+		} catch ( \InvalidArgumentException $e ) {
+			return array(
+				'recipient_email'  => $billing_email,
+				'recipient_name'   => '',
+				'message'          => '',
+				'delivery_timing'  => GiftCardLineItemMeta::TIMING_SEND_NOW,
+				'scheduled_for'    => '',
+			);
 		}
 	}
 
-	/**
-	 * @param array{enabled: bool, recipient_valid: bool, results: list<array<string, mixed>>} $delivery
-	 */
-	private function add_delivery_order_note( $order, array $delivery ): void {
+	private function add_processing_order_note( $order, int $immediate, int $scheduled ): void {
 		if ( ! method_exists( $order, 'add_order_note' ) ) {
 			return;
 		}
 
-		$sent   = 0;
-		$failed = 0;
-		foreach ( $delivery['results'] as $row ) {
-			$status = (string) ( $row['delivery_status'] ?? '' );
-			if ( $status === GiftCardDeliveryStatus::SENT ) {
-				++$sent;
-			} elseif ( $status === GiftCardDeliveryStatus::FAILED ) {
-				++$failed;
-			}
+		if ( $immediate > 0 && $scheduled === 0 ) {
+			$order->add_order_note(
+				__( 'Gift card code(s) delivered by email. Full codes are not stored.', 'mp-commerce-promotions' ),
+				false
+			);
+		} elseif ( $scheduled > 0 && $immediate === 0 ) {
+			$order->add_order_note(
+				__( 'Gift card(s) scheduled for future delivery. Cards will be generated and emailed on the chosen date.', 'mp-commerce-promotions' ),
+				false
+			);
+		} elseif ( $immediate > 0 && $scheduled > 0 ) {
+			$order->add_order_note(
+				__( 'Some gift cards were sent immediately; others are scheduled for future delivery.', 'mp-commerce-promotions' ),
+				false
+			);
+		}
+	}
+
+	/**
+	 * @param \WC_Order $order
+	 */
+	private function billing_display_name( $order ): string {
+		if ( ! method_exists( $order, 'get_billing_first_name' ) ) {
+			return '';
 		}
 
-		if ( $sent > 0 && $failed === 0 ) {
-			$order->add_order_note(
-				__( 'Gift card code(s) emailed to billing address. Full codes are not stored; use Reissue if delivery failed.', 'mp-commerce-promotions' ),
-				false
-			);
-			return;
-		}
-
-		if ( $failed > 0 ) {
-			$order->add_order_note(
-				__( 'Gift card email delivery failed for one or more cards. Full codes are not stored — use Reissue delivery on this order.', 'mp-commerce-promotions' ),
-				false
-			);
-		} elseif ( ! $delivery['enabled'] ) {
-			$order->add_order_note(
-				__( 'Gift cards generated. Email delivery is disabled in settings; codes are not stored.', 'mp-commerce-promotions' ),
-				false
-			);
-		} elseif ( ! $delivery['recipient_valid'] ) {
-			$order->add_order_note(
-				__( 'Gift cards generated but billing email was invalid. Use Reissue delivery after fixing the email.', 'mp-commerce-promotions' ),
-				false
-			);
-		}
+		$name = trim( (string) $order->get_billing_first_name() . ' ' . (string) $order->get_billing_last_name() );
+		return sanitize_text_field( $name );
 	}
 
 	/**
@@ -264,22 +263,6 @@ final class GiftCardOrderGenerator {
 		}
 
 		return function_exists( 'current_time' ) ? current_time( 'mysql' ) : gmdate( 'Y-m-d H:i:s' );
-	}
-
-	private function audit( int $order_id, int $gift_card_id, float $amount ): void {
-		if ( $this->audit_logger === null ) {
-			return;
-		}
-
-		$this->audit_logger->log(
-			'gift_card.generated_from_order',
-			null,
-			array(
-				'order_id'     => $order_id,
-				'gift_card_id' => $gift_card_id,
-				'amount'       => $amount,
-			)
-		);
 	}
 
 	private function log( Throwable $e ): void {

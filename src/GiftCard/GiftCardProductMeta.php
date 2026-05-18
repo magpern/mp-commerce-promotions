@@ -27,6 +27,10 @@ final class GiftCardProductMeta {
 
 	public const RECIPIENT_PURCHASER_ONLY = 'purchaser_only';
 
+	public const RECIPIENT_EMAIL = 'recipient_email';
+
+	public const RECIPIENT_EMAIL_AND_MESSAGE = 'recipient_email_and_message';
+
 	public const VALUE_YES = 'yes';
 
 	public const VALUE_NO = 'no';
@@ -108,7 +112,7 @@ final class GiftCardProductMeta {
 		update_post_meta( $product_id, self::META_EXPIRY_DAYS, $expiry === 0 ? '' : (string) $expiry );
 
 		$recipient = isset( $input['recipient_mode'] ) ? sanitize_key( (string) $input['recipient_mode'] ) : self::RECIPIENT_PURCHASER_ONLY;
-		if ( $recipient !== self::RECIPIENT_PURCHASER_ONLY ) {
+		if ( ! in_array( $recipient, self::recipient_modes(), true ) ) {
 			$recipient = self::RECIPIENT_PURCHASER_ONLY;
 		}
 		update_post_meta( $product_id, self::META_RECIPIENT_MODE, $recipient );
@@ -117,6 +121,21 @@ final class GiftCardProductMeta {
 	/**
 	 * @return array{sells: bool, amount_mode: string, fixed_amount: float, expiry_days: ?int, recipient_mode: string}
 	 */
+	/**
+	 * @return list<string>
+	 */
+	public static function recipient_modes(): array {
+		return array(
+			self::RECIPIENT_PURCHASER_ONLY,
+			self::RECIPIENT_EMAIL,
+			self::RECIPIENT_EMAIL_AND_MESSAGE,
+		);
+	}
+
+	public static function allows_recipient_fields( string $mode ): bool {
+		return in_array( $mode, array( self::RECIPIENT_EMAIL, self::RECIPIENT_EMAIL_AND_MESSAGE ), true );
+	}
+
 	private static function defaults(): array {
 		return array(
 			'sells'          => false,

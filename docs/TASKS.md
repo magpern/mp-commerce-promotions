@@ -22,6 +22,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 - **Gift cards & store credit foundation** — schema 1.18.0, ledger, admin, checkout MVP, reports/diagnostics ([GIFT_CARDS_STORE_CREDIT.md](GIFT_CARDS_STORE_CREDIT.md))
 - **Customer store credit wallet** — schema 1.19.0, wallets, admin grant/deduct/refund-to-credit, logged-in checkout ([STORE_CREDIT.md](STORE_CREDIT.md))
 - **Gift cards from products** — mark Woo products, paid-order generation, email MVP, reversal, reports/diagnostics ([GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md))
+- **Gift card recipient & scheduled delivery** — recipient modes, checkout fields, send-on-date (generate at delivery), cron/diagnostics ([GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md))
 - **Commerce Growth admin rebrand** — WooCommerce submenu “Commerce Growth”; Gift Cards tab; nav copy cleanup
 - **Campaign Builder default entrypoint** — Commerce Growth opens Campaign Builder; Advanced Promotions tab for expert mode; Create campaign shortcuts across admin
 - **Campaign Builder QA pass** — all 10 goals, smoke expansion, UX/a11y polish (`docs/CAMPAIGN_BUILDER_QA_EVIDENCE.md`)

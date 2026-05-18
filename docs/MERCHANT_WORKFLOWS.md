@@ -67,12 +67,13 @@ Operational playbooks for real merchant pilots using Commerce Promotions for Woo
 
 1. Create a normal **simple** or **variable** WooCommerce product.
 2. Enable **This product sells a gift card** on the product (or variation).
-3. Choose **Same as product price** or **Fixed amount**; optional expiry days.
-4. Customer checks out as usual; codes generate when the order reaches **Processing** or **Completed**.
-5. Codes email to the **billing address** when delivery email is enabled in Settings.
-6. On cancellation/refund, unused generated cards are voided automatically; partially used cards need manual review (order note).
+3. Choose **Same as product price** or **Fixed amount**; optional expiry days; **Recipient mode** (purchaser only, recipient email, or email + message).
+4. Customer checks out; gift-card lines with recipient mode show **Gift card delivery** fields (email, optional name/message, send now or on a date).
+5. **Send now** — codes generate and email when the order reaches **Processing** or **Completed** (recipient or billing email).
+6. **Send on date** — no code at payment; generation and email run on the chosen date (hourly cron, Diagnostics, or order **Send due deliveries now**).
+7. On cancellation/refund, unused generated cards are voided; pending scheduled rows are cancelled; partially used cards need manual review (order note).
 
-Recipient mode is **purchaser only** (no separate recipient form yet). See [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md).
+Full codes are never stored after delivery. See [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md).
 
 ## Related scripts
 

@@ -75,19 +75,6 @@ final class GiftCardGeneratedOrderState {
 
 	/**
 	 * @param \WC_Order $order
-	 */
-	public static function has_slot( $order, int $order_item_id, int $unit_index ): bool {
-		foreach ( self::get_generated( $order ) as $row ) {
-			if ( (int) ( $row['order_item_id'] ?? 0 ) === $order_item_id && (int) ( $row['unit_index'] ?? 0 ) === $unit_index ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * @param \WC_Order $order
 	 * @return array<string, mixed>|null
 	 */
 	public static function find_row_by_gift_card_id( $order, int $gift_card_id ): ?array {
@@ -283,8 +270,52 @@ final class GiftCardGeneratedOrderState {
 		if ( isset( $row['reissued_from_gift_card_id'] ) && (int) $row['reissued_from_gift_card_id'] > 0 ) {
 			$clean['reissued_from_gift_card_id'] = (int) $row['reissued_from_gift_card_id'];
 		}
+		if ( isset( $row['recipient_email'] ) && (string) $row['recipient_email'] !== '' ) {
+			$clean['recipient_email'] = sanitize_email( (string) $row['recipient_email'] );
+		}
+		if ( isset( $row['recipient_name'] ) && (string) $row['recipient_name'] !== '' ) {
+			$clean['recipient_name'] = sanitize_text_field( (string) $row['recipient_name'] );
+		}
+		if ( isset( $row['message'] ) && (string) $row['message'] !== '' ) {
+			$clean['message'] = sanitize_textarea_field( (string) $row['message'] );
+		}
+		if ( isset( $row['delivery_timing'] ) && (string) $row['delivery_timing'] !== '' ) {
+			$clean['delivery_timing'] = sanitize_key( (string) $row['delivery_timing'] );
+		}
+		if ( isset( $row['scheduled_for'] ) && (string) $row['scheduled_for'] !== '' ) {
+			$clean['scheduled_for'] = sanitize_text_field( (string) $row['scheduled_for'] );
+		}
 
 		return $clean;
+	}
+
+	/**
+	 * @param \WC_Order $order
+	 */
+	public static function append_generated( $order, array $row ): void {
+		$rows   = self::get_generated( $order );
+		$rows[] = $row;
+		self::set_generated( $order, $rows );
+	}
+
+	/**
+	 * @param \WC_Order $order
+	 */
+	public static function has_slot( $order, int $order_item_id, int $unit_index ): bool {
+		return self::find_generated_slot( $order, $order_item_id, $unit_index ) !== null;
+	}
+
+	/**
+	 * @return array<string, mixed>|null
+	 */
+	public static function find_generated_slot( $order, int $order_item_id, int $unit_index ): ?array {
+		foreach ( self::get_generated( $order ) as $row ) {
+			if ( (int) ( $row['order_item_id'] ?? 0 ) === $order_item_id && (int) ( $row['unit_index'] ?? 0 ) === $unit_index ) {
+				return $row;
+			}
+		}
+
+		return null;
 	}
 
 	/**

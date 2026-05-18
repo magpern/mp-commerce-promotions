@@ -149,7 +149,19 @@ final class GiftCardProductAdmin {
 		echo '<input type="number" step="1" min="0" class="short" id="mp_cp_gift_card_expiry_days' . esc_attr( $suffix ) . '" name="' . esc_attr( $name_expiry ) . '" value="'
 			. esc_attr( $config['expiry_days'] !== null ? (string) $config['expiry_days'] : '' ) . '" /></p>';
 
-		echo '<p><em>' . esc_html__( 'Recipient: purchaser billing email only (MVP).', 'mp-commerce-promotions' ) . '</em></p>';
+		$name_recipient = $is_variation && $loop !== null ? 'mp_cp_gift_card_recipient_mode_var[' . (int) $loop . ']' : 'mp_cp_gift_card_recipient_mode';
+		$mode           = (string) ( $config['recipient_mode'] ?? GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY );
+
+		echo '<p><label for="mp_cp_gift_card_recipient_mode' . esc_attr( $suffix ) . '"><strong>' . esc_html__( 'Recipient mode', 'mp-commerce-promotions' ) . '</strong></label><br />';
+		echo '<select id="mp_cp_gift_card_recipient_mode' . esc_attr( $suffix ) . '" name="' . esc_attr( $name_recipient ) . '">';
+		echo '<option value="' . esc_attr( GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY ) . '" ' . selected( $mode, GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY, false ) . '>'
+			. esc_html__( 'Purchaser only (billing email)', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="' . esc_attr( GiftCardProductMeta::RECIPIENT_EMAIL ) . '" ' . selected( $mode, GiftCardProductMeta::RECIPIENT_EMAIL, false ) . '>'
+			. esc_html__( 'Recipient email', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="' . esc_attr( GiftCardProductMeta::RECIPIENT_EMAIL_AND_MESSAGE ) . '" ' . selected( $mode, GiftCardProductMeta::RECIPIENT_EMAIL_AND_MESSAGE, false ) . '>'
+			. esc_html__( 'Recipient email and message', 'mp-commerce-promotions' ) . '</option>';
+		echo '</select></p>';
+		echo '<p class="description">' . esc_html__( 'Recipient fields appear on cart/checkout for this gift card product.', 'mp-commerce-promotions' ) . '</p>';
 	}
 
 	/**
@@ -164,7 +176,7 @@ final class GiftCardProductAdmin {
 			'amount_mode'    => isset( $_POST['mp_cp_gift_card_amount_mode'] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_amount_mode'] ) ) : '',
 			'fixed_amount'   => isset( $_POST['mp_cp_gift_card_fixed_amount'] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_fixed_amount'] ) : '',
 			'expiry_days'    => isset( $_POST['mp_cp_gift_card_expiry_days'] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_expiry_days'] ) : '',
-			'recipient_mode' => GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY,
+			'recipient_mode' => isset( $_POST['mp_cp_gift_card_recipient_mode'] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_recipient_mode'] ) ) : '',
 		);
 	}
 
@@ -176,7 +188,7 @@ final class GiftCardProductAdmin {
 			'amount_mode'    => isset( $_POST['mp_cp_gift_card_amount_mode_var'][ $loop ] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_amount_mode_var'][ $loop ] ) ) : '',
 			'fixed_amount'   => isset( $_POST['mp_cp_gift_card_fixed_amount_var'][ $loop ] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_fixed_amount_var'][ $loop ] ) : '',
 			'expiry_days'    => isset( $_POST['mp_cp_gift_card_expiry_days_var'][ $loop ] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_expiry_days_var'][ $loop ] ) : '',
-			'recipient_mode' => GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY,
+			'recipient_mode' => isset( $_POST['mp_cp_gift_card_recipient_mode_var'][ $loop ] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_recipient_mode_var'][ $loop ] ) ) : '',
 		);
 	}
 }
