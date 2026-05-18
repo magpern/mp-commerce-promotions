@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Domain;
 
 use MP\CommercePromotions\Domain\PromotionAllocationMode;
 use MP\CommercePromotions\Domain\PromotionCouponBehavior;
+use MP\CommercePromotions\Domain\PromotionDiscountApplicationMode;
 use MP\CommercePromotions\Domain\PromotionPriorityTier;
 
 final class PromotionFactory {
@@ -53,6 +54,7 @@ final class PromotionFactory {
 			PromotionPriorityTier::DEFAULT_TIER,
 			PromotionCouponBehavior::DEFAULT_BEHAVIOR,
 			PromotionAllocationMode::DEFAULT_MODE,
+			PromotionDiscountApplicationMode::DEFAULT_MODE,
 			$created_by,
 			null,
 			null
