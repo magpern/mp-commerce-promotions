@@ -9,45 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [0.3.0-pilot.1] - 2026-05-16
 
-- **Campaign Builder as default entrypoint** — WooCommerce → Promotions opens Campaign Builder when `tab` is omitted; tab renamed to **Advanced Promotions** with expert-mode description; **Create campaign** shortcuts on Getting Started, Advanced Promotions, Reports, and Diagnostics (empty store); Getting Started and labels steer merchants to Campaign Builder first.
-- **Campaign Builder QA pass** — summary copy fixes (BOGO, first order, VIP roles); wizard UX (Continue, session-expired notice, review draft note, campaign name on non-targeting goals); accessibility (progress `aria-current`, picker labels, localized AJAX strings); expanded `campaign-builder-smoke.php` and `docs/CAMPAIGN_BUILDER_QA_EVIDENCE.md`.
-- **Minimum PHP 8.1** — dropped PHP 7.4 from CI and requirements (`composer.json`, plugin header, `readme.txt`, GitHub Actions matrix 8.1–8.3).
+**Pilot release** for merchant pilots. **Schema 1.17.0** unchanged. **Classic + Blocks** checkout supported (fee-based default). **Campaign Builder** is the recommended admin entrypoint. **Line discount modes** remain experimental. **PHPCS** is advisory only in CI.
 
 ### Added
 
-- **Merchant Campaign Builder** — new admin tab (`tab=campaign-builder`) with goal cards, simplified campaign form, plain-language preview, smart warnings, draft creation via `PromotionTemplate` / standard rules, optional coupon codes, latest-campaigns table, and Advanced Editor escape hatch; `scripts/campaign-builder-smoke.php`; `docs/manual-campaign-builder-test.md`.
-- **Campaign Builder UI polish** — merchant cockpit layout (header, horizontal summary cards, two-column preview sidebar, grouped form, status/health badges, scoped `admin-campaign-builder.css`).
-- **Campaign Builder Phase 3** — guided 5-step wizard (goal → targeting → offer → schedule → review), `CampaignSummaryFormatter` merchant copy, searchable product/category pickers (AJAX), confidence/risk panel via existing safety analyzers, lifecycle timeline + budget bars, goal color themes, Simple vs Advanced mode switch, `tests/Unit/CampaignSummaryFormatterTest.php`.
-
-- **Production pilot hardening** — `scripts/regression-suite.php`; snapshot diff preview; operational rollback + production profile presets; runtime anomaly heuristics; retention hardening (telemetry/certification/snapshots); expanded load harness; `docs/MERCHANT_WORKFLOWS.md`.
-
-- **Ecosystem certification tooling (schema 1.17.0)** — `mp_cp_certification_runs` table; coupon coexistence matrix + preview + telemetry counters; tax compatibility analyzer; multi-currency confidence snapshot; emergency operations (Diagnostics); `scripts/coupon-compatibility-smoke.php`, `scripts/load-harness.php`; ops docs (`OPERATIONS_RUNBOOK`, `PRODUCTION_DEPLOYMENT`, `INCIDENT_RESPONSE`, `COUPON_COMPATIBILITY`, `TAX_COMPATIBILITY`).
-
-- **GA stabilization closure (schema 1.16.0)** — Settings UI for global **promotion dry-run**; per-promotion `dry_run` column + edit checkbox + list badge; `PromotionDryRunGuard` (no fees/gifts/line/redemptions); `ScheduleConflictPreviewService` on edit + Diagnostics; `scripts/ga-stress-smoke.php`; `docs/GA_READINESS_DELTA.md`; `tests/Unit/GaClosureTest.php`.
-
-- **GA stabilization phase** — `EcosystemCompatibilityRegistry` matrix + `KnownLimitationsRegistry`; `SystemHealthService` score and recovery recommendations; `PromotionComplexityScorer` and `MerchantSafetyAdvisor`; promotion **dry-run** setting; planner **timing buckets**; request memoization for `find_active_for_planner()`; stale lock cleanup; Diagnostics ecosystem/health/safety panels; `scripts/ga-stabilization-smoke.php`; docs `COMPATIBILITY_MATRIX.md`, `KNOWN_LIMITATIONS.md`, `PERFORMANCE_GUIDE.md`, `MERCHANT_SAFETY.md`, `SCALING_GUIDE.md`, `TROUBLESHOOTING.md`.
-
-### Fixed
-
-- **Line discount cart fatal** — `LinePriceMutationGuard` now imports `Engine\AppliedLineDiscount` (wrong namespace caused fatal on `woocommerce_before_calculate_totals`, breaking all cart recalculation including Blocks Store API backend).
-- **Blocks QA setup** — `BlockQaPromotionSetup` provisions distinct cart-addable paid/gift simple products; stackable pair uses `stop_processing=false`; cert pauses all planner-active promos; line cert survives WooCommerce multi-pass totals (`CartPromotionApplier` early subtotal guard).
-- **Block checkout order recording** — `woocommerce_store_api_checkout_order_processed` hooks in `WooCommerceBridge` (block COD orders were missing `_mp_cp_applied_promotions` before this fix).
-- **`scripts/verify-plugin.sh`** — lifecycle/schema checks always run from live tree; release audit runs from staging build path (skipped with message when only sync copy present).
-
-### Added
-
-- **`scripts/blocks-browser-cert.php`** — WP-CLI + Store API certification harness for block QA promos (dynamic promo IDs, order/reversal checks).
-- **Cart/Checkout Blocks browser certification (2026-05-18)** — Final browser pass: fee + coupon COD orders **4362**/**4363**; coupon UI `BLOCKQA239`; CLI cert 8/8. **`cart_checkout_blocks` declared.**
+- **Pilot packaging** — `docs/PILOT_RELEASE_0.3.0_PILOT1.md`, `docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT1.md`, `scripts/pilot-release-smoke.php`.
+- **GitHub Actions release workflow** — `.github/workflows/release.yml` builds ZIP on `v*` tags, uploads artifact, attaches to GitHub Release (prerelease for `pilot`/`beta`/`rc` tags).
 
 ### Changed
 
-- **Cart/Checkout Blocks manual QA (2026-05-18)** — `block_compatibility_status` **passed**; `FeaturesUtil::declare_compatibility( 'cart_checkout_blocks' )`.
+- **Campaign Builder as default entrypoint** — WooCommerce → Promotions opens Campaign Builder when `tab` is omitted; tab renamed to **Advanced Promotions** with expert-mode description; **Create campaign** shortcuts on Getting Started, Advanced Promotions, Reports, and Diagnostics (empty store).
+- **Campaign Builder QA pass** — summary copy fixes; wizard UX and accessibility; expanded `campaign-builder-smoke.php` and `docs/CAMPAIGN_BUILDER_QA_EVIDENCE.md`.
+- **Release zip hardening** — `build-zip.sh` verifies all entries live under `mp-commerce-promotions/` root folder.
 
-- **Cart/Checkout Blocks compatibility investigation** — Draft block QA pages (cart **4333**, checkout **4334**); `scripts/blocks-compatibility-smoke.php`; expanded `docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md` test matrix and hook audit; `BlockTestPages`, `BlockQaPromotionSetup`, optional `BlocksHookAudit` debug logging (`WP_DEBUG` + `mp_cp_blocks_hook_debug`); `CompatibilityStatus` block fields exposed in Reports/Diagnostics and support bundle. **`cart_checkout_blocks` remains undeclared.**
-- **Native line discount groundwork (schema 1.15.0)** — `PromotionDiscountApplicationMode` (`fee_based`, `line_item`, `hybrid`); `LineItemDiscountApplier` + `LinePriceMutationGuard` on `woocommerce_before_calculate_totals`; line allocation persistence (`AppliedLineDiscount`, session/order meta); hybrid fee fallback with telemetry; admin **Discount application** field; compatibility audit for line mode. **Fee-based remains the default**; line mode is experimental.
-- **Line discount stabilization** — `docs/manual-line-discount-engine-test.md`; admin experimental warnings and Line/Hybrid list badges; Reports **Line discount mode** section; Diagnostics **Repair stuck line discount sessions** (dry-run); persisted fallback telemetry; expanded smoke and PHPUnit coverage.
+### Included since 0.2.0-beta.1 (no schema bump)
+
+- Guided **Campaign Builder** wizard (10 goals), merchant summaries, AJAX pickers, draft creation.
+- **Cart/Checkout Blocks** declared compatible; fee + coupon certification.
+- Production hardening, ecosystem certification tooling, GA stabilization features (dry-run, schedule conflict preview, emergency ops).
 
 ## [0.2.0-beta.1] - 2026-05-17
 
@@ -131,6 +112,7 @@ First **public beta** for technical pilot users on **classic shortcode** cart an
 - Database schema version is tracked separately (`mp_cp_schema_version`; see `Schema::SCHEMA_VERSION` in code).
 - PHPCS baseline is not clean; automated tests and CI are not yet in place.
 
-[Unreleased]: https://github.com/magpern/mp-commerce-promotions/compare/v0.2.0-beta.1...HEAD
+[Unreleased]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.1...HEAD
+[0.3.0-pilot.1]: https://github.com/magpern/mp-commerce-promotions/compare/v0.2.0-beta.1...v0.3.0-pilot.1
 [0.2.0-beta.1]: https://github.com/magpern/mp-commerce-promotions/compare/v0.1.0...v0.2.0-beta.1
 [0.1.0]: https://github.com/magpern/mp-commerce-promotions/releases/tag/v0.1.0

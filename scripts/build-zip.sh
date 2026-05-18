@@ -139,11 +139,16 @@ with zipfile.ZipFile(zip_path) as zf:
     if bad:
         print("ERROR: Zip contains excluded paths:", bad[:5], file=sys.stderr)
         sys.exit(1)
+    root_prefix = f"{plugin_slug}/"
+    non_root = [n for n in names if n and not n.startswith(root_prefix)]
+    if non_root:
+        print("ERROR: Zip entries must live under", root_prefix, non_root[:5], file=sys.stderr)
+        sys.exit(1)
     main = f"{plugin_slug}/{plugin_slug}.php"
     if main not in names:
         print(f"ERROR: Zip is missing {main}", file=sys.stderr)
         sys.exit(1)
-    print(f"OK: {len(names)} entries; {main} present; no .git/vendor/caches.")
+    print(f"OK: {len(names)} entries under {root_prefix}; {main} present; no .git/vendor/caches.")
 PY
 
 echo "==> ${ZIP_PATH}"

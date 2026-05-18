@@ -8,7 +8,9 @@ See [CHANGELOG.md](../CHANGELOG.md) for user-facing release notes and [DEVELOPME
 
 - [ ] Git working tree clean (`git status` shows no uncommitted changes you intend to ship).
 - [ ] On intended branch (usually `main`).
-- [ ] **GitHub Actions CI** passes on `main` for the commit you will tag (workflow: `.github/workflows/ci.yml` — syntax lint, PHPUnit, build zip; PHPCS runs but **does not fail** the job).
+- [ ] **GitHub Actions CI** passes on `main` for the commit you will tag (`.github/workflows/ci.yml` — syntax lint, PHPUnit, build zip; PHPCS **advisory only**).
+- [ ] For tagged releases: `.github/workflows/release.yml` runs on `v*` push (lint, test, zip, GitHub Release asset).
+- [ ] [PILOT_RELEASE_0.3.0_PILOT1.md](PILOT_RELEASE_0.3.0_PILOT1.md) reviewed for pilot audience.
 - [ ] `composer install` (dev dependencies for lint only).
 - [ ] `composer run lint:php` — must pass (syntax).
 - [ ] `composer run lint:phpcs` — record counts in release notes; **non-blocking** in CI (see [BETA_READINESS.md](BETA_READINESS.md)).
@@ -23,7 +25,7 @@ See [CHANGELOG.md](../CHANGELOG.md) for user-facing release notes and [DEVELOPME
 ## Beta certification checklist
 
 - [ ] [BETA_READINESS.md](BETA_READINESS.md) reviewed.
-- [ ] [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md) — confirm blocks still **not** declared unless block QA passed.
+- [ ] [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md) — blocks declared; re-verify before GA if checkout stack changes.
 - [ ] `./wp eval-file .../scripts/beta-readiness-smoke.php` passes.
 - [ ] `languages/mp-commerce-promotions.pot` regenerated if admin strings changed.
 
@@ -62,7 +64,9 @@ See [CHANGELOG.md](../CHANGELOG.md) for user-facing release notes and [DEVELOPME
 - [ ] `./wp eval-file .../scripts/beta-release-prep-smoke.php` passes.
 - [ ] [VERSION_BUMP_PLAN_0.2.0_BETA1.md](VERSION_BUMP_PLAN_0.2.0_BETA1.md) — do not tag until browser QA approved.
 
-- [ ] Promotions nav tabs (All, Getting Started, Settings, Diagnostics, Reports).
+- [ ] Promotions nav tabs (Getting Started, Campaign Builder, Advanced Promotions, Reports, Diagnostics, Settings).
+- [ ] `./wp eval-file .../scripts/pilot-release-smoke.php` passes.
+- [ ] `./wp eval-file .../scripts/campaign-builder-smoke.php` passes.
 - [ ] Promotion edit: cart preview, templates, save.
 - [ ] Reports filters and sections (simulation hidden when disabled).
 
@@ -93,7 +97,8 @@ Do **not** change `Schema::SCHEMA_VERSION` unless you have a deliberate schema m
 - [ ] Create annotated tag: `git tag -a vX.Y.Z -m "Release X.Y.Z"`
 - [ ] `git push origin main`
 - [ ] `git push origin vX.Y.Z`
-- [ ] Attach `mp-commerce-promotions-X.Y.Z.zip` to GitHub release (optional).
+- [ ] Push tag `vX.Y.Z` — release workflow uploads artifact and attaches `mp-commerce-promotions-X.Y.Z.zip` (prerelease when version contains `pilot`, `beta`, or `rc`).
+- [ ] Confirm GitHub Release asset and workflow run succeeded.
 
 ## Package contents reminder
 

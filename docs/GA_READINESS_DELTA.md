@@ -1,6 +1,6 @@
 # GA readiness delta
 
-**Plugin:** 0.2.0-beta.1 · **Schema:** 1.17.0
+**Plugin:** 0.3.0-pilot.1 · **Schema:** 1.17.0
 
 ## GA-ready (ecosystem certification closure)
 
@@ -17,12 +17,13 @@
 | Operations docs | [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md), [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md), [INCIDENT_RESPONSE.md](INCIDENT_RESPONSE.md) |
 | Stress smoke | `scripts/ga-stress-smoke.php` |
 
-## Still beta (0.2.x)
+## Still pilot / pre-GA (0.3.x)
 
+- **0.3.0-pilot.1** — merchant pilot packaging; Campaign Builder default entrypoint; GitHub Release ZIP automation
 - Line-item / hybrid discount application (experimental; global disable available)
 - Cart/Checkout Blocks certified for fee path; line mode certification is manual/recorded
 - Ecosystem matrix is detection + operational tooling — not live proof on every merchant stack
-- PHPCS full tree not gating
+- PHPCS full tree not gating (advisory in CI)
 
 ## Uncertified (explicit)
 

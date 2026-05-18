@@ -93,6 +93,10 @@ echo "    POT: ${POT_LINES} lines"
 [[ -f "${REPO_ROOT}/docs/CLASSIC_CHECKOUT_CERTIFICATION.md" ]] || fail "Missing docs/CLASSIC_CHECKOUT_CERTIFICATION.md"
 [[ -f "${REPO_ROOT}/docs/BLOCK_CHECKOUT_INVESTIGATION.md" ]] || fail "Missing docs/BLOCK_CHECKOUT_INVESTIGATION.md"
 [[ -f "${REPO_ROOT}/docs/RELEASE_EVIDENCE_0.2.0_BETA1.md" ]] || fail "Missing docs/RELEASE_EVIDENCE_0.2.0_BETA1.md"
+[[ -f "${REPO_ROOT}/docs/PILOT_RELEASE_0.3.0_PILOT1.md" ]] || fail "Missing docs/PILOT_RELEASE_0.3.0_PILOT1.md"
+[[ -f "${REPO_ROOT}/docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT1.md" ]] || fail "Missing docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT1.md"
+[[ -f "${REPO_ROOT}/scripts/pilot-release-smoke.php" ]] || fail "Missing scripts/pilot-release-smoke.php"
+[[ -f "${REPO_ROOT}/.github/workflows/release.yml" ]] || fail "Missing .github/workflows/release.yml"
 
 ZIP_PATH="${BUILD_ROOT}/${PLUGIN_SLUG}-${VERSION_CONST}.zip"
 if [[ ! -f "${ZIP_PATH}" ]]; then
@@ -119,6 +123,10 @@ with zipfile.ZipFile(zip_path) as zf:
     main = f"{plugin_slug}/{plugin_slug}.php"
     if main not in zf.namelist():
         print(f"ERROR: missing {main}", file=sys.stderr)
+        sys.exit(1)
+    root_prefix = f"{plugin_slug}/"
+    if any(n and not n.startswith(root_prefix) for n in zf.namelist()):
+        print(f"ERROR: zip entries must be under {root_prefix}", file=sys.stderr)
         sys.exit(1)
 print(f"OK: zip artifact clean ({len(zf.namelist())} entries)")
 PY

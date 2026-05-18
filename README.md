@@ -167,7 +167,7 @@ bash scripts/sync-to-live.sh
 bash scripts/verify-plugin.sh
 ```
 
-**Plugin version:** `0.2.0-beta.1` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). Database schema version is separate (`mp_cp_schema_version`, currently **1.17.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
+**Plugin version:** `0.3.0-pilot.1` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). **Pilot release** — see [docs/PILOT_RELEASE_0.3.0_PILOT1.md](docs/PILOT_RELEASE_0.3.0_PILOT1.md). Database schema version is separate (`mp_cp_schema_version`, currently **1.17.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
 
 **Release zip** (no `.git` / `vendor`):
 
@@ -175,7 +175,7 @@ bash scripts/verify-plugin.sh
 bash scripts/build-zip.sh
 ```
 
-Output: `/home/magpern/mp-commerce-promotions-staging/build/mp-commerce-promotions-0.2.0-beta.1.zip`. See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) and [docs/RELEASE_EVIDENCE_0.2.0_BETA1.md](docs/RELEASE_EVIDENCE_0.2.0_BETA1.md).
+Output: `/home/magpern/mp-commerce-promotions-staging/build/mp-commerce-promotions-0.3.0-pilot.1.zip`. See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) and [docs/PILOT_RELEASE_0.3.0_PILOT1.md](docs/PILOT_RELEASE_0.3.0_PILOT1.md). Pushing a `v*` tag runs [.github/workflows/release.yml](.github/workflows/release.yml) to attach the ZIP to a GitHub Release.
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for paths, exclusions (never copy `.git` or `vendor` to live), Composer lint/test commands (`composer run test` — pure PHP unit tests only; WordPress integration tests are future work).
 

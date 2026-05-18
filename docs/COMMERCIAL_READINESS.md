@@ -1,7 +1,7 @@
 # Commercial readiness
 
 **Schema:** 1.17.0  
-**Plugin version:** 0.2.0-beta.1 (beta / near-GA)
+**Plugin version:** 0.3.0-pilot.1 (pilot — not GA)
 
 ## Current maturity
 
@@ -12,8 +12,9 @@ Commerce Promotions is suitable for **staged rollouts and merchant pilots**. It 
 - Rule-driven promotions with planner orchestration, codes, redemptions, reports, diagnostics
 - HPOS compatibility declared (`custom_order_tables`)
 - Getting Started onboarding tab (points to Campaign Builder first)
-- **Campaign Builder** as default Promotions landing tab (guided goals → draft promotions)
+- **Campaign Builder** as default Promotions landing tab (guided goals → draft promotions) — **0.3.0-pilot.1**
 - **Advanced Promotions** tab for expert mode (raw JSON, orchestration, codes, cart simulation)
+- Pilot release doc: [PILOT_RELEASE_0.3.0_PILOT1.md](PILOT_RELEASE_0.3.0_PILOT1.md)
 - Settings governance (telemetry, CSV, simulations, gift/shipping actions, pricing explainability)
 - Compatibility status panel (environment snapshot)
 - Support bundle export (redacted JSON)
@@ -25,7 +26,7 @@ Commerce Promotions is suitable for **staged rollouts and merchant pilots**. It 
 
 ## What is not production-certified
 
-- Cart/Checkout **Blocks** compatibility not declared
+- Cart/Checkout **Blocks** declared for fee path; line mode UI still partial in blocks
 - **Line_item / hybrid** discount modes are **experimental** — fee-based remains default; complete [manual-line-discount-engine-test.md](manual-line-discount-engine-test.md) before pilot
 - Tax, profitability, and allocation figures are **heuristics**
 - WP-Cron automation is **optional and off by default** (hourly maintenance + daily cleanup when enabled)

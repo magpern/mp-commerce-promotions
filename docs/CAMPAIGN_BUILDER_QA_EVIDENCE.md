@@ -4,6 +4,7 @@
 **Base commit (Phase 3):** `7e4d44f`  
 **QA commit:** `d31dbb8`  
 **Default entrypoint commit:** `b0efa36`  
+**Pilot release:** `0.3.0-pilot.1` (see `docs/PILOT_RELEASE_0.3.0_PILOT1.md`)  
 **Environment:** WooCommerce Docker (`/home/magpern/woocommerce`), plugin synced from staging.
 
 ## Method

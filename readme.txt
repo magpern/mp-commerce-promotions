@@ -4,11 +4,11 @@ Tags: woocommerce, promotions, discounts, coupons, vouchers
 Requires at least: 6.5
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: trunk
+Stable tag: 0.3.0-pilot.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Beta release 0.2.0-beta.1** — classic shortcode checkout pilot; not production-complete.
+Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Pilot release 0.3.0-pilot.1** — Campaign Builder default entrypoint; classic + Blocks checkout; not GA.
 
 == Description ==
 
@@ -54,7 +54,8 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * Reports tab — redemption summaries and CSV export (5,000 row cap; no raw promotion codes)
 * Settings kill switch for cart discount application
 * Production hardening — performance profiler, safe mode, degraded storefront fallback, optional WP-Cron cleanup (off by default), telemetry retention, concurrency locks, compatibility confidence on Reports
-* Beta certification — BETA_READINESS docs, blocks compatibility investigation (not declared), extracted POT, CI PHPCS visibility (non-blocking)
+* Campaign Builder — guided goals, wizard, draft promotions; recommended merchant workflow (Advanced Promotions for expert mode)
+* Beta certification — BETA_READINESS docs, blocks compatibility certified, extracted POT, CI PHPCS visibility (non-blocking)
 
 == Current MVP limitations ==
 
@@ -74,14 +75,15 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * **Uninstall** — custom tables and options are **retained** by default (see uninstall.php)
 * **Scale** — many active promotions increase planner work; use safe mode and retention cleanup under load
 * **Cron** — automation cron disabled by default; enable only with monitoring
-* **Blocks checkout** — not declared compatible with Cart/Checkout Blocks; use draft QA pages and `scripts/blocks-compatibility-smoke.php` (see docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md)
+* **Line discount modes** — experimental; fee-based remains default (see docs/manual-line-discount-engine-test.md)
+* **Pilot / not GA** — PHPCS advisory only; not marketplace-ready
 
 == Installation ==
 
 1. Upload the plugin folder to `/wp-content/plugins/mp-commerce-promotions/` or install from your deployment process.
 2. Activate **Commerce Promotions for WooCommerce** through the **Plugins** screen.
 3. Ensure **WooCommerce** is installed and active.
-4. Open **WooCommerce → Promotions** to create promotions and configure rules.
+4. Open **WooCommerce → Promotions** (Campaign Builder) to create campaigns, or use **Advanced Promotions** for expert editing.
 5. Optional: enable or disable cart discount application under **WooCommerce → Promotions → Settings**.
 
 == Frequently Asked Questions ==
@@ -113,6 +115,11 @@ No. Full codes are displayed once after generation. Download the CSV before leav
 3. Generated code batch show-once screen (placeholder).
 
 == Changelog ==
+
+= 0.3.0-pilot.1 =
+* Pilot release: Campaign Builder default entrypoint; Advanced Promotions expert mode; classic + Blocks checkout; schema 1.17.0 unchanged.
+* GitHub Actions release workflow attaches `mp-commerce-promotions-0.3.0-pilot.1.zip` on version tags.
+* Line discount modes experimental; PHPCS advisory only in CI. See docs/PILOT_RELEASE_0.3.0_PILOT1.md.
 
 = 0.2.0-beta.1 =
 * Public beta for technical pilots on classic shortcode cart/checkout with HPOS.
