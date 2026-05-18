@@ -45,22 +45,25 @@ final class GiftCardProductDisplay {
 		$mode = (string) ( $config['recipient_mode'] ?? GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY );
 
 		echo '<div class="mp-cp-gift-card-product-panel">';
-		echo '<h3 class="mp-cp-gc-title">' . esc_html__( 'About this gift card', 'mp-commerce-promotions' ) . '</h3>';
-		echo '<ul>';
-		echo '<li>' . esc_html__( 'Delivered by email after payment (or on your chosen date).', 'mp-commerce-promotions' ) . '</li>';
-		echo '<li>' . esc_html__( 'Use the full code at checkout in the “Gift card or store credit” section.', 'mp-commerce-promotions' ) . '</li>';
-		echo '<li>' . esc_html__( 'Remaining balance stays on the card for future orders (partial payment supported).', 'mp-commerce-promotions' ) . '</li>';
+		echo '<h3 class="mp-cp-gc-title">' . esc_html__( 'Digital gift card', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<p class="mp-cp-gc-help">' . esc_html__(
+			'Delivered by email. Recipient details and send date are collected at checkout.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<ul class="mp-cp-gc-product-benefits">';
+		echo '<li>' . esc_html__( 'Redeem at checkout under “Gift card or store credit”.', 'mp-commerce-promotions' ) . '</li>';
+		echo '<li>' . esc_html__( 'Partial use is OK — remaining balance stays on the card.', 'mp-commerce-promotions' ) . '</li>';
 		echo '</ul>';
 
 		if ( GiftCardProductMeta::allows_recipient_fields( $mode ) ) {
-			echo '<p class="mp-cp-gc-help"><strong>' . esc_html__( 'Recipient details', 'mp-commerce-promotions' ) . '</strong> — '
-				. esc_html__( 'You can enter the recipient email, optional message, and send now or schedule a date at checkout.', 'mp-commerce-promotions' )
+			echo '<p class="mp-cp-gc-help mp-cp-gc-recipient-hint"><strong>' . esc_html__( 'At checkout', 'mp-commerce-promotions' ) . '</strong> — '
+				. esc_html__( 'Recipient email, optional message, and send now or schedule a future date.', 'mp-commerce-promotions' )
 				. '</p>';
 		}
 
-		echo '<details class="mp-cp-gc-email-preview" style="margin-top:12px;">';
-		echo '<summary>' . esc_html__( 'Email preview', 'mp-commerce-promotions' ) . '</summary>';
-		echo '<div style="margin-top:8px;border:1px solid #dcdcde;padding:8px;max-height:240px;overflow:auto;">';
+		echo '<details class="mp-cp-gc-email-preview">';
+		echo '<summary class="mp-cp-gc-email-preview__summary">' . esc_html__( 'Preview sample email (masked code)', 'mp-commerce-promotions' ) . '</summary>';
+		echo '<div class="mp-cp-gc-email-preview__frame">';
 		echo GiftCardEmailTemplate::render_html(
 			$this->settings->gift_card_email_template(),
 			array(

@@ -51,9 +51,82 @@
 	text-align: left;
 }
 
-.mp-cp-gc-product-panel ul {
-	margin: 0.5em 0 0 1.25em;
+.mp-cp-gc-product-benefits {
+	margin: 0.75em 0 0 1.25em;
 	padding: 0;
+	line-height: 1.55;
+}
+
+.mp-cp-gc-recipient-hint {
+	padding: 0.65em 0.85em;
+	background: #f6f7f7;
+	border-radius: 4px;
+	border-left: 3px solid #2271b1;
+}
+
+.mp-cp-gc-email-preview {
+	margin-top: 1em;
+}
+
+.mp-cp-gc-email-preview__summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.mp-cp-gc-email-preview__frame {
+	margin-top: 0.75em;
+	padding: 0.75em;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	max-height: 280px;
+	overflow: auto;
+	background: #fafafa;
+}
+
+.mp-cp-gc-checkout-delivery {
+	margin: 1.5em 0;
+	padding: 1.25em 1.5em;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #fff;
+}
+
+.mp-cp-gc-line {
+	margin: 1em 0 0;
+	padding: 1em 1.15em;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+}
+
+.mp-cp-gc-line legend {
+	padding: 0 0.35em;
+	font-size: 1em;
+}
+
+.mp-cp-gc-field-label {
+	font-weight: 600;
+}
+
+.mp-cp-gc-radio {
+	display: inline-block;
+	margin: 0.35em 0.5em 0.35em 0;
+}
+
+.mp-cp-gc-scheduled-date .description {
+	display: block;
+	margin-top: 0.35em;
+}
+
+.mp-cp-gc-balance-form .input-text {
+	max-width: 320px;
+	width: 100%;
+}
+
+.mp-cp-gc-notice {
+	padding: 0.75em 1em;
+	border-radius: 4px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
 }
 
 .mp-cp-gc-wallet-card {

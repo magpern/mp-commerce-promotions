@@ -294,7 +294,7 @@ final class GiftCardRedemptionCheckout {
 			) . '</p>';
 		}
 
-		echo '</motion.div>';
+		echo '</div>';
 	}
 
 	private function estimate_amount_still_due(): float {

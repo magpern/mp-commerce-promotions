@@ -1848,6 +1848,8 @@ final class DiagnosticsPage {
 			return;
 		}
 
+		\MP\CommercePromotions\GiftCard\GiftCardPilotReadiness::render_admin_pilot_email_warning( $wpdb );
+
 		$mail = new \MP\CommercePromotions\GiftCard\GiftCardMailDiagnostics( $wpdb );
 		$info = $mail->analyze();
 
@@ -1858,7 +1860,7 @@ final class DiagnosticsPage {
 			echo esc_html__(
 				'Recent gift card emails may not be sending. Configure SMTP before selling gift cards.',
 				'mp-commerce-promotions'
-			) . '</p></motion.div>';
+			) . '</p></div>';
 		}
 
 		echo '<ul>';

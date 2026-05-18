@@ -81,6 +81,11 @@ final class GiftCardsPage {
 		echo '<h1>' . esc_html__( 'Gift Cards & Store Credit', 'mp-commerce-promotions' ) . '</h1>';
 		AdminNavigation::render_tabs( AdminNavigation::TAB_GIFT_CARDS );
 
+		global $wpdb;
+		if ( $wpdb instanceof \wpdb ) {
+			\MP\CommercePromotions\GiftCard\GiftCardPilotReadiness::render_admin_pilot_email_warning( $wpdb );
+		}
+
 		$this->render_panel_nav( $panel );
 		$this->render_notices();
 

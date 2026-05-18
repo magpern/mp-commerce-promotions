@@ -21,7 +21,10 @@ use MP\CommercePromotions\GiftCard\GiftCardLedger;
 use MP\CommercePromotions\GiftCard\GiftCardLineItemMeta;
 use MP\CommercePromotions\GiftCard\GiftCardOrderGenerator;
 use MP\CommercePromotions\GiftCard\GiftCardOrderReversal;
+use MP\CommercePromotions\GiftCard\GiftCardMailDiagnostics;
 use MP\CommercePromotions\GiftCard\GiftCardPendingDeliveryState;
+use MP\CommercePromotions\GiftCard\GiftCardPilotReadiness;
+use MP\CommercePromotions\GiftCard\GiftCardProductAdminHelper;
 use MP\CommercePromotions\GiftCard\GiftCardProductMeta;
 use MP\CommercePromotions\GiftCard\GiftCardProductService;
 use MP\CommercePromotions\GiftCard\GiftCardQaProductSetup;
@@ -297,6 +300,14 @@ $currency = $order_now->get_currency();
 $wallet->grant_credit( $customer_id, 5.0, $currency, 'Product e2e QA grant' );
 $sc_balance = $wallet->get_balance( $customer_id, $currency );
 gce2e_assert( $sc_balance >= 5.0, 'store credit granted to test user' );
+
+gce2e_assert( $products->is_gift_card_product( $product_id ), 'QA product still marked after flows' );
+gce2e_assert( class_exists( GiftCardProductAdminHelper::class ), 'product admin helper class loads' );
+gce2e_assert( class_exists( GiftCardPilotReadiness::class ), 'pilot readiness class loads' );
+$pilot_doc = dirname( __DIR__ ) . '/docs/GIFT_CARD_PILOT_CHECKLIST.md';
+gce2e_assert( is_readable( $pilot_doc ), 'pilot checklist doc exists' );
+$mail_keys = ( new GiftCardMailDiagnostics( $wpdb ) )->analyze();
+gce2e_assert( isset( $mail_keys['settings_summary'] ), 'email diagnostics keys exist' );
 
 $summary = array(
 	'product_id'        => $product_id,

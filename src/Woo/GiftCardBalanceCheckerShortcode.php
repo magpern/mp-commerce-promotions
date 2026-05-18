@@ -33,7 +33,7 @@ final class GiftCardBalanceCheckerShortcode {
 	public function render_shortcode( $atts = array() ): string {
 		unset( $atts );
 		if ( ! $this->settings->gift_card_balance_checker_enabled() ) {
-			return '<p class="mp-cp-gc-notice">' . esc_html__( 'Gift card balance lookup is currently unavailable.', 'mp-commerce-promotions' ) . '</p>';
+			return '<p class="mp-cp-gc-notice">' . esc_html__( 'Gift card balance lookup is not available on this store right now.', 'mp-commerce-promotions' ) . '</p>';
 		}
 
 		GiftCardCustomerAssets::enqueue();
@@ -56,7 +56,7 @@ final class GiftCardBalanceCheckerShortcode {
 		ob_start();
 		echo '<div class="mp-cp-gift-card-balance-checker">';
 		echo '<h2 class="mp-cp-gc-title">' . esc_html__( 'Check gift card balance', 'mp-commerce-promotions' ) . '</h2>';
-		echo '<p class="mp-cp-gc-help">' . esc_html__( 'Enter your gift card code to see the current balance. We never display your full code after this check.', 'mp-commerce-promotions' ) . '</p>';
+		echo '<p class="mp-cp-gc-help">' . esc_html__( 'Enter the code from your gift card email. We show only a masked code and balance — never the full code after you submit.', 'mp-commerce-promotions' ) . '</p>';
 
 		if ( is_array( $result ) ) {
 			if ( ! empty( $result['ok'] ) ) {

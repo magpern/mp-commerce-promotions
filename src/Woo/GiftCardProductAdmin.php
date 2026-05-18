@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Woo;
 
+use MP\CommercePromotions\GiftCard\GiftCardProductAdminHelper;
 use MP\CommercePromotions\GiftCard\GiftCardProductMeta;
+use WC_Product;
 
 final class GiftCardProductAdmin {
 
@@ -76,7 +78,7 @@ final class GiftCardProductAdmin {
 		}
 
 		echo '<div class="mp-cp-gift-card-variation-fields form-row form-row-full">';
-		$this->render_fields_inner( $loop, $config, true );
+		$this->render_fields_inner( $loop, $config, true, $variation_id );
 		echo '</div>';
 	}
 
@@ -109,35 +111,68 @@ final class GiftCardProductAdmin {
 	}
 
 	private function render_fields( int $product_id ): void {
-		$config = GiftCardProductMeta::read( $product_id );
+		$config  = GiftCardProductMeta::read( $product_id );
+		$product = function_exists( 'wc_get_product' ) ? wc_get_product( $product_id ) : null;
+		$price   = $product instanceof WC_Product ? (float) $product->get_regular_price() : 0.0;
+		$virtual = $product instanceof WC_Product && $product->is_virtual();
+
+		echo '<p class="form-field mp-cp-gc-admin-intro"><strong>' . esc_html__( 'Gift card product', 'mp-commerce-promotions' ) . '</strong> — '
+			. esc_html__( 'Sell a digital gift card from this WooCommerce product. Codes are generated after payment — never stored in order meta.', 'mp-commerce-promotions' )
+			. '</p>';
+
 		woocommerce_wp_checkbox(
 			array(
 				'id'            => 'mp_cp_sells_gift_card',
 				'label'         => __( 'This product sells a gift card', 'mp-commerce-promotions' ),
-				'description'   => __( 'When the order is paid, one gift card is created per quantity purchased.', 'mp-commerce-promotions' ),
+				'description'   => __( 'When the order is paid, one gift card is issued per quantity purchased.', 'mp-commerce-promotions' ),
 				'value'         => $config['sells'] ? GiftCardProductMeta::VALUE_YES : GiftCardProductMeta::VALUE_NO,
 				'wrapper_class' => 'show_if_simple show_if_variable',
 			)
 		);
 
-		echo '<div class="mp-cp-gift-card-product-options" style="padding:0 12px 12px;">';
-		$this->render_fields_inner( null, $config, false );
+		echo '<div class="mp-cp-gift-card-product-options">';
+		$this->render_merchant_notices( $config, $price, $virtual );
+		$this->render_fields_inner( null, $config, false, $product_id );
 		echo '</div>';
 	}
 
 	/**
 	 * @param array{sells: bool, amount_mode: string, fixed_amount: float, expiry_days: ?int, recipient_mode: string} $config
 	 */
-	private function render_fields_inner( $loop, array $config, bool $is_variation ): void {
+	private function render_merchant_notices( array $config, float $product_price, bool $is_virtual ): void {
+		if ( ! $config['sells'] ) {
+			return;
+		}
+
+		$preview = GiftCardProductAdminHelper::amount_preview_text(
+			$config,
+			$product_price,
+			function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : ''
+		);
+		if ( $preview !== '' ) {
+			echo '<p class="mp-cp-gc-admin-preview"><em>' . esc_html( $preview ) . '</em></p>';
+		}
+
+		$virtual_warn = GiftCardProductAdminHelper::virtual_product_warning( $is_virtual );
+		if ( $virtual_warn !== '' ) {
+			echo '<p class="mp-cp-gc-admin-warning" style="color:#b32d2e;"><strong>' . esc_html__( 'Note:', 'mp-commerce-promotions' ) . '</strong> '
+				. esc_html( $virtual_warn ) . '</p>';
+		}
+	}
+
+	/**
+	 * @param array{sells: bool, amount_mode: string, fixed_amount: float, expiry_days: ?int, recipient_mode: string} $config
+	 */
+	private function render_fields_inner( $loop, array $config, bool $is_variation, int $product_id ): void {
 		$suffix = $is_variation && $loop !== null ? '_' . (int) $loop : '';
 		$name_mode = $is_variation && $loop !== null ? 'mp_cp_gift_card_amount_mode_var[' . (int) $loop . ']' : 'mp_cp_gift_card_amount_mode';
 		$name_fixed = $is_variation && $loop !== null ? 'mp_cp_gift_card_fixed_amount_var[' . (int) $loop . ']' : 'mp_cp_gift_card_fixed_amount';
 		$name_expiry = $is_variation && $loop !== null ? 'mp_cp_gift_card_expiry_days_var[' . (int) $loop . ']' : 'mp_cp_gift_card_expiry_days';
 
-		echo '<p><label><strong>' . esc_html__( 'Amount mode', 'mp-commerce-promotions' ) . '</strong></label><br />';
+		echo '<p><label><strong>' . esc_html__( 'Gift card value', 'mp-commerce-promotions' ) . '</strong></label><br />';
 		echo '<label><input type="radio" name="' . esc_attr( $name_mode ) . '" value="' . esc_attr( GiftCardProductMeta::AMOUNT_MODE_PRODUCT_PRICE ) . '" '
 			. checked( $config['amount_mode'], GiftCardProductMeta::AMOUNT_MODE_PRODUCT_PRICE, false ) . ' /> '
-			. esc_html__( 'Same as product line price (per unit)', 'mp-commerce-promotions' ) . '</label><br />';
+			. esc_html__( 'Match product price (per unit)', 'mp-commerce-promotions' ) . '</label><br />';
 		echo '<label><input type="radio" name="' . esc_attr( $name_mode ) . '" value="' . esc_attr( GiftCardProductMeta::AMOUNT_MODE_FIXED ) . '" '
 			. checked( $config['amount_mode'], GiftCardProductMeta::AMOUNT_MODE_FIXED, false ) . ' /> '
 			. esc_html__( 'Fixed amount', 'mp-commerce-promotions' ) . '</label></p>';
@@ -145,23 +180,23 @@ final class GiftCardProductAdmin {
 		echo '<p><label for="mp_cp_gift_card_fixed_amount' . esc_attr( $suffix ) . '">' . esc_html__( 'Fixed amount', 'mp-commerce-promotions' ) . '</label><br />';
 		echo '<input type="number" step="0.01" min="0" class="short" id="mp_cp_gift_card_fixed_amount' . esc_attr( $suffix ) . '" name="' . esc_attr( $name_fixed ) . '" value="' . esc_attr( (string) $config['fixed_amount'] ) . '" /></p>';
 
-		echo '<p><label for="mp_cp_gift_card_expiry_days' . esc_attr( $suffix ) . '">' . esc_html__( 'Expiry (days after purchase, optional)', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<p><label for="mp_cp_gift_card_expiry_days' . esc_attr( $suffix ) . '">' . esc_html__( 'Expires (days after purchase, optional)', 'mp-commerce-promotions' ) . '</label><br />';
 		echo '<input type="number" step="1" min="0" class="short" id="mp_cp_gift_card_expiry_days' . esc_attr( $suffix ) . '" name="' . esc_attr( $name_expiry ) . '" value="'
 			. esc_attr( $config['expiry_days'] !== null ? (string) $config['expiry_days'] : '' ) . '" /></p>';
 
 		$name_recipient = $is_variation && $loop !== null ? 'mp_cp_gift_card_recipient_mode_var[' . (int) $loop . ']' : 'mp_cp_gift_card_recipient_mode';
 		$mode           = (string) ( $config['recipient_mode'] ?? GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY );
 
-		echo '<p><label for="mp_cp_gift_card_recipient_mode' . esc_attr( $suffix ) . '"><strong>' . esc_html__( 'Recipient mode', 'mp-commerce-promotions' ) . '</strong></label><br />';
+		echo '<p><label for="mp_cp_gift_card_recipient_mode' . esc_attr( $suffix ) . '"><strong>' . esc_html__( 'Recipient at checkout', 'mp-commerce-promotions' ) . '</strong></label><br />';
 		echo '<select id="mp_cp_gift_card_recipient_mode' . esc_attr( $suffix ) . '" name="' . esc_attr( $name_recipient ) . '">';
 		echo '<option value="' . esc_attr( GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY ) . '" ' . selected( $mode, GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY, false ) . '>'
 			. esc_html__( 'Purchaser only (billing email)', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="' . esc_attr( GiftCardProductMeta::RECIPIENT_EMAIL ) . '" ' . selected( $mode, GiftCardProductMeta::RECIPIENT_EMAIL, false ) . '>'
-			. esc_html__( 'Recipient email', 'mp-commerce-promotions' ) . '</option>';
+			. esc_html__( 'Recipient email (+ optional name & schedule)', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="' . esc_attr( GiftCardProductMeta::RECIPIENT_EMAIL_AND_MESSAGE ) . '" ' . selected( $mode, GiftCardProductMeta::RECIPIENT_EMAIL_AND_MESSAGE, false ) . '>'
-			. esc_html__( 'Recipient email and message', 'mp-commerce-promotions' ) . '</option>';
+			. esc_html__( 'Recipient email + personal message', 'mp-commerce-promotions' ) . '</option>';
 		echo '</select></p>';
-		echo '<p class="description">' . esc_html__( 'Recipient fields appear on cart/checkout for this gift card product.', 'mp-commerce-promotions' ) . '</p>';
+		echo '<p class="description">' . esc_html( GiftCardProductAdminHelper::recipient_mode_help( $mode ) ) . '</p>';
 	}
 
 	/**

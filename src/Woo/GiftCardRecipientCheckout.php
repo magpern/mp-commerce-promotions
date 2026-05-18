@@ -39,9 +39,12 @@ final class GiftCardRecipientCheckout {
 			return;
 		}
 
-		echo '<div id="mp_cp_gift_card_delivery_fields"><h3>' . esc_html__( 'Gift card delivery', 'mp-commerce-promotions' ) . '</h3>';
-		echo '<p class="description">' . esc_html__(
-			'Recipient details apply to each gift card line (same recipient for all units in a line).',
+		GiftCardCustomerAssets::enqueue();
+
+		echo '<div id="mp_cp_gift_card_delivery_fields" class="mp-cp-gc-checkout-delivery">';
+		echo '<h3 id="mp_cp_gift_card_delivery_heading">' . esc_html__( 'Gift card delivery', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<p class="mp-cp-gc-help">' . esc_html__(
+			'Who should receive the gift card email? The same recipient is used for every card on this line.',
 			'mp-commerce-promotions'
 		) . '</p>';
 
@@ -58,7 +61,7 @@ final class GiftCardRecipientCheckout {
 				? GiftCardLineItemMeta::normalize_array( $post_data[ $cart_key ] )
 				: GiftCardLineItemMeta::empty();
 
-			echo '<fieldset class="mp-cp-gc-line" style="margin:1em 0;padding:12px;border:1px solid #ddd;">';
+			echo '<fieldset class="mp-cp-gc-line">';
 			echo '<legend><strong>' . $label . '</strong></legend>';
 
 			if ( ! GiftCardProductMeta::allows_recipient_fields( $mode ) ) {
@@ -87,23 +90,23 @@ final class GiftCardRecipientCheckout {
 				echo '</p>';
 			}
 
-			echo '<p class="form-row form-row-wide">';
-			echo '<label>' . esc_html__( 'When to send', 'mp-commerce-promotions' ) . '</label><br />';
-			echo '<label><input type="radio" name="mp_cp_gc[' . esc_attr( $cart_key ) . '][delivery_timing]" value="' . esc_attr( GiftCardLineItemMeta::TIMING_SEND_NOW ) . '" '
+			echo '<p class="form-row form-row-wide mp-cp-gc-timing">';
+			echo '<span class="mp-cp-gc-field-label">' . esc_html__( 'When to send the email', 'mp-commerce-promotions' ) . '</span><br />';
+			echo '<label class="mp-cp-gc-radio"><input type="radio" name="mp_cp_gc[' . esc_attr( $cart_key ) . '][delivery_timing]" value="' . esc_attr( GiftCardLineItemMeta::TIMING_SEND_NOW ) . '" '
 				. checked( $values['delivery_timing'], GiftCardLineItemMeta::TIMING_SEND_NOW, false ) . ' /> '
-				. esc_html__( 'Send now (when order is paid)', 'mp-commerce-promotions' ) . '</label><br />';
-			echo '<label><input type="radio" name="mp_cp_gc[' . esc_attr( $cart_key ) . '][delivery_timing]" value="' . esc_attr( GiftCardLineItemMeta::TIMING_SEND_ON_DATE ) . '" '
+				. esc_html__( 'Send now — when payment is complete', 'mp-commerce-promotions' ) . '</label><br />';
+			echo '<label class="mp-cp-gc-radio"><input type="radio" name="mp_cp_gc[' . esc_attr( $cart_key ) . '][delivery_timing]" value="' . esc_attr( GiftCardLineItemMeta::TIMING_SEND_ON_DATE ) . '" '
 				. checked( $values['delivery_timing'], GiftCardLineItemMeta::TIMING_SEND_ON_DATE, false ) . ' /> '
-				. esc_html__( 'Send on a specific date', 'mp-commerce-promotions' ) . '</label>';
+				. esc_html__( 'Schedule for a future date', 'mp-commerce-promotions' ) . '</label>';
 			echo '</p>';
 
-			echo '<p class="form-row form-row-wide">';
-			echo '<label for="mp_cp_gc_' . esc_attr( $cart_key ) . '_date">' . esc_html__( 'Delivery date', 'mp-commerce-promotions' ) . '</label>';
+			echo '<p class="form-row form-row-wide mp-cp-gc-scheduled-date">';
+			echo '<label for="mp_cp_gc_' . esc_attr( $cart_key ) . '_date">' . esc_html__( 'Scheduled delivery date', 'mp-commerce-promotions' ) . '</label>';
 			echo '<input type="date" class="input-text" id="mp_cp_gc_' . esc_attr( $cart_key ) . '_date" name="mp_cp_gc[' . esc_attr( $cart_key ) . '][scheduled_for]" value="' . esc_attr( $values['scheduled_for'] ) . '" min="' . esc_attr( gmdate( 'Y-m-d' ) ) . '" />';
 			echo '<span class="description">' . esc_html(
 				sprintf(
 					/* translators: %d: max days */
-					__( 'Required when sending on a date. Up to %d days ahead.', 'mp-commerce-promotions' ),
+					__( 'Required for scheduled delivery. Choose today or up to %d days ahead. The gift card is created and emailed on that date.', 'mp-commerce-promotions' ),
 					$max_days
 				)
 			) . '</span>';

@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Gift card browser QA & pilot prep** — storefront/checkout/product admin polish, [GIFT_CARD_PILOT_CHECKLIST.md](docs/GIFT_CARD_PILOT_CHECKLIST.md), pilot email warning on Gift Cards + Diagnostics, balance page repair note, extended product E2E smoke checks.
+
+### Added (prior)
+
 - **Gift card product E2E QA tooling** — idempotent `scripts/gift-card-product-setup.php` (SKU `mp-cg-gift-card-qa`), `scripts/gift-card-product-e2e-smoke.php`, `GiftCardQaProductSetup`, Diagnostics catalog warning + setup hint; updated [GIFT_CARD_QA_EVIDENCE.md](docs/GIFT_CARD_QA_EVIDENCE.md).
 
 ### Added (prior)
