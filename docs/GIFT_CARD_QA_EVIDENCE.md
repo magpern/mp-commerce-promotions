@@ -33,6 +33,10 @@
 | 4c | Balance checker — disabled | **not run** | CLI: shortcode “unavailable” when setting off |
 | 5a | My Account — received cards | **partial** | CLI: card **27** for postmaster@biopentra.eu; browser login not run |
 | 5b | My Account — store credit | **partial** | CLI: customer **2**, 5,00 grant; browser not run |
+| 5c | My Account — recipient explanation | **pass** | CLI/docs: code-owned, email redeem, **Sent to me** when account email matches |
+| 5d | Customer transfer (unused) | **pass** | CLI: `gift-card-transfer-smoke.php` — void old, issue new, email new recipient, link old/new |
+| 5e | Admin reissue (unused) | **pass** | CLI smoke: admin path with required note |
+| 5f | Transfer blocked (partial use) | **pass** | CLI smoke: partially used card rejected |
 | 6 | Redemption / reversal | **partial** | CLI orders **4380** / card **30**; browser cart not run |
 
 ### Checkout send-now (CLI reference)
@@ -62,9 +66,24 @@
 ```bash
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-setup.php
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-e2e-smoke.php
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-transfer-smoke.php
 ```
 
 Product **4375**, send_now card **27**, scheduled order **4381**, redeem card **30**, customer **2**.
+
+### Transfer smoke (CLI)
+
+| Check | Result |
+|-------|--------|
+| Unregistered recipient (email only) | **pass** |
+| Account email match → **Sent to me** | **pass** |
+| Customer transfer unused card | **pass** |
+| Admin reissue unused card | **pass** |
+| Partially used transfer blocked | **pass** |
+| No plain code in transfer option | **pass** |
+
+Run after deploy: `./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-transfer-smoke.php`  
+Transfer delivery uses gift card email sender settings ([GIFT_CARD_EMAILS.md](GIFT_CARD_EMAILS.md)); use verified-domain recipient for SMTP (e.g. `postmaster@biopentra.eu`).
 
 ---
 
@@ -90,7 +109,8 @@ Before pilot:
 
 ```bash
 composer run lint:php
-composer run test -- --filter 'GiftCardEmailSenderTest|GiftCardManualIssueDeliveryTest'
+composer run test -- --filter 'GiftCardEmailSenderTest|GiftCardManualIssueDeliveryTest|GiftCardTransfer'
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-e2e-smoke.php
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-mail-smoke.php
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-transfer-smoke.php
 ```

@@ -18,6 +18,8 @@ use MP\CommercePromotions\GiftCard\GiftCardManualDeliveryStore;
 use MP\CommercePromotions\GiftCard\GiftCardManualIssueDelivery;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
 use MP\CommercePromotions\GiftCard\GiftCardSourceLabel;
+use MP\CommercePromotions\GiftCard\GiftCardTransferService;
+use MP\CommercePromotions\GiftCard\GiftCardTransferStore;
 use MP\CommercePromotions\GiftCard\StoreCreditAccountService;
 use MP\CommercePromotions\GiftCard\StoreCreditWallet;
 use RuntimeException;
@@ -33,6 +35,8 @@ final class GiftCardsPage {
 	private const NONCE_ADJUST = 'mp_cp_adjust_gift_card';
 
 	private const NONCE_VOID = 'mp_cp_void_gift_card';
+
+	private const NONCE_TRANSFER = 'mp_cp_transfer_gift_card';
 
 	private const NONCE_SC_GRANT = 'mp_cp_store_credit_grant';
 
@@ -50,6 +54,8 @@ final class GiftCardsPage {
 
 	private GiftCardManualIssueDelivery $manual_delivery;
 
+	private GiftCardTransferService $transfers;
+
 	/** @var array{plain_code?: string, card_id?: int, delivery?: array<string, string>}|null */
 	private ?array $flash_issue = null;
 
@@ -61,7 +67,8 @@ final class GiftCardsPage {
 		GiftCardRepository $cards,
 		StoreCreditWallet $store_credit,
 		StoreCreditAccountService $store_credit_accounts,
-		?GiftCardManualIssueDelivery $manual_delivery = null
+		?GiftCardManualIssueDelivery $manual_delivery = null,
+		?GiftCardTransferService $transfers = null
 	) {
 		$this->ledger                 = $ledger;
 		$this->cards                  = $cards;
@@ -71,6 +78,7 @@ final class GiftCardsPage {
 			new \MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer( new \MP\CommercePromotions\Service\Settings() ),
 			new GiftCardManualDeliveryStore()
 		);
+		$this->transfers              = $transfers ?? new GiftCardTransferService( $ledger, $cards );
 	}
 
 	public function render(): void {
@@ -146,6 +154,11 @@ final class GiftCardsPage {
 
 		if ( isset( $_POST['mp_cp_gift_card_void'] ) ) {
 			$this->handle_void();
+			return;
+		}
+
+		if ( isset( $_POST['mp_cp_gift_card_transfer'] ) ) {
+			$this->handle_transfer();
 			return;
 		}
 
@@ -489,6 +502,46 @@ final class GiftCardsPage {
 		}
 	}
 
+	private function handle_transfer(): void {
+		$card_id = isset( $_POST['gift_card_id'] ) ? (int) $_POST['gift_card_id'] : 0;
+		if (
+			! isset( $_POST['_wpnonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ), self::NONCE_TRANSFER . '_' . $card_id )
+		) {
+			AdminNotice::error( __( 'Security check failed.', 'mp-commerce-promotions' ) );
+			return;
+		}
+
+		$email   = isset( $_POST['transfer_recipient_email'] )
+			? sanitize_email( wp_unslash( (string) $_POST['transfer_recipient_email'] ) )
+			: '';
+		$name    = isset( $_POST['transfer_recipient_name'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['transfer_recipient_name'] ) )
+			: '';
+		$message = isset( $_POST['transfer_message'] )
+			? sanitize_textarea_field( wp_unslash( (string) $_POST['transfer_message'] ) )
+			: '';
+		$note    = isset( $_POST['transfer_note'] )
+			? sanitize_textarea_field( wp_unslash( (string) $_POST['transfer_note'] ) )
+			: '';
+
+		$result = $this->transfers->transfer_to_new_recipient(
+			$card_id,
+			$email,
+			$note,
+			GiftCardTransferService::INITIATED_BY_ADMIN,
+			null,
+			$name,
+			$message
+		);
+
+		if ( ! empty( $result['success'] ) ) {
+			AdminNotice::success( (string) ( $result['message'] ?? '' ) );
+		} else {
+			AdminNotice::error( (string) ( $result['message'] ?? __( 'Transfer failed.', 'mp-commerce-promotions' ) ) );
+		}
+	}
+
 	private function handle_void(): void {
 		$card_id = isset( $_POST['gift_card_id'] ) ? (int) $_POST['gift_card_id'] : 0;
 		if (
@@ -697,7 +750,38 @@ final class GiftCardsPage {
 		}
 		$this->detail_row( __( 'UUID', 'mp-commerce-promotions' ), $card->get_gift_card_uuid() );
 		$this->detail_row( __( 'Source', 'mp-commerce-promotions' ), GiftCardSourceLabel::for_card( $card ) );
+		$transfer_store = new GiftCardTransferStore();
+		$replacement_id = $transfer_store->get_replacement_id( $gift_card_id );
+		if ( $replacement_id !== null ) {
+			$this->detail_row( __( 'Transferred to card', 'mp-commerce-promotions' ), '#' . (string) $replacement_id );
+		}
+		$from_id = $transfer_store->get_source_id( $gift_card_id );
+		if ( $from_id !== null ) {
+			$this->detail_row( __( 'Transfer replacement for', 'mp-commerce-promotions' ), '#' . (string) $from_id );
+		}
 		echo '</tbody></table>';
+
+		if ( $card->get_status() !== GiftCard::STATUS_VOIDED && $this->transfers->can_transfer( $card ) ) {
+			echo '<h3>' . esc_html__( 'Reissue to new recipient', 'mp-commerce-promotions' ) . '</h3>';
+			echo '<p class="description">' . esc_html__(
+				'Voids this card and emails a new code to the recipient. The old code cannot be recovered. Only fully unused cards qualify.',
+				'mp-commerce-promotions'
+			) . '</p>';
+			echo '<form method="post" style="max-width:480px;">';
+			wp_nonce_field( self::NONCE_TRANSFER . '_' . $gift_card_id );
+			echo '<input type="hidden" name="mp_cp_gift_card_transfer" value="1" />';
+			echo '<input type="hidden" name="gift_card_id" value="' . esc_attr( (string) $gift_card_id ) . '" />';
+			echo '<p><label>' . esc_html__( 'New recipient email', 'mp-commerce-promotions' ) . '</label><br />';
+			echo '<input type="email" name="transfer_recipient_email" class="regular-text" required /></p>';
+			echo '<p><label>' . esc_html__( 'Recipient name (optional)', 'mp-commerce-promotions' ) . '</label><br />';
+			echo '<input type="text" name="transfer_recipient_name" class="regular-text" /></p>';
+			echo '<p><label>' . esc_html__( 'Message (optional)', 'mp-commerce-promotions' ) . '</label><br />';
+			echo '<textarea name="transfer_message" class="large-text" rows="2"></textarea></p>';
+			echo '<p><label>' . esc_html__( 'Note (required)', 'mp-commerce-promotions' ) . '</label><br />';
+			echo '<textarea name="transfer_note" class="large-text" rows="2" required></textarea></p>';
+			submit_button( __( 'Reissue to new recipient', 'mp-commerce-promotions' ), 'secondary' );
+			echo '</form>';
+		}
 
 		echo '<h3>' . esc_html__( 'Transaction ledger', 'mp-commerce-promotions' ) . '</h3>';
 		$txs = $this->ledger->transactions_for_card( $gift_card_id );

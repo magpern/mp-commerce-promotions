@@ -9,8 +9,10 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Woo;
 
+use MP\CommercePromotions\GiftCard\GiftCard;
 use MP\CommercePromotions\GiftCard\GiftCardCustomerService;
 use MP\CommercePromotions\GiftCard\GiftCardTransaction;
+use MP\CommercePromotions\GiftCard\GiftCardTransferService;
 use MP\CommercePromotions\GiftCard\StoreCreditWallet;
 use MP\CommercePromotions\Service\Settings;
 use WP_User;
@@ -21,7 +23,11 @@ final class GiftCardMyAccount {
 
 	private const SESSION_REVEAL_KEY = 'mp_cp_gift_code_reveal_once';
 
+	private const NONCE_TRANSFER = 'mp_cp_gc_transfer_recipient';
+
 	private GiftCardCustomerService $customer_cards;
+
+	private GiftCardTransferService $transfers;
 
 	private StoreCreditWallet $wallet;
 
@@ -30,11 +36,13 @@ final class GiftCardMyAccount {
 	public function __construct(
 		GiftCardCustomerService $customer_cards,
 		StoreCreditWallet $wallet,
-		Settings $settings
+		Settings $settings,
+		GiftCardTransferService $transfers
 	) {
 		$this->customer_cards = $customer_cards;
 		$this->wallet         = $wallet;
 		$this->settings       = $settings;
+		$this->transfers      = $transfers;
 	}
 
 	public function register(): void {
@@ -76,11 +84,13 @@ final class GiftCardMyAccount {
 			return;
 		}
 
-		GiftCardCustomerAssets::enqueue();
-
 		$user    = wp_get_current_user();
 		$user_id = $user instanceof WP_User ? (int) $user->ID : 0;
 		$email   = $user instanceof WP_User ? sanitize_email( (string) $user->user_email ) : '';
+
+		$this->maybe_handle_transfer_post( $user_id );
+
+		GiftCardCustomerAssets::enqueue();
 
 		$purchased = $this->customer_cards->list_purchased( $user_id );
 		$received  = $this->customer_cards->list_received( $email );
@@ -88,6 +98,17 @@ final class GiftCardMyAccount {
 
 		echo '<div class="mp-cp-gift-card-my-account">';
 		echo '<h2>' . esc_html__( 'My gift cards', 'mp-commerce-promotions' ) . '</h2>';
+
+		echo '<div class="mp-cp-gc-help" style="margin-bottom:1.5em;">';
+		echo '<p>' . esc_html__(
+			'Gift cards can be sent to people who do not have an account on this store. Recipients redeem using the gift card code from the email we send them.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<p>' . esc_html__(
+			'If someone creates an account later using the same email address that received a gift card, that card will appear under Sent to me below.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '</div>';
 
 		if ( $reveal !== '' ) {
 			echo '<p class="mp-cp-gc-help">' . esc_html__( 'Code from your recent checkout (shown once):', 'mp-commerce-promotions' ) . '</p>';
@@ -109,22 +130,78 @@ final class GiftCardMyAccount {
 			}
 		}
 
-		$this->render_card_table( __( 'Purchased', 'mp-commerce-promotions' ), $purchased );
-		$this->render_card_table( __( 'Received', 'mp-commerce-promotions' ), $received );
+		$this->render_card_table( __( 'Purchased by me', 'mp-commerce-promotions' ), $purchased, $user_id, true );
+		$this->render_card_table( __( 'Sent to me', 'mp-commerce-promotions' ), $received, $user_id, false );
 
 		$this->render_store_credit_section( $user_id );
 		echo '</div>';
 	}
 
+	private function maybe_handle_transfer_post( int $customer_id ): void {
+		if (
+			! isset( $_SERVER['REQUEST_METHOD'] )
+			|| strtoupper( (string) $_SERVER['REQUEST_METHOD'] ) !== 'POST'
+			|| ! isset( $_POST['mp_cp_gc_transfer'] )
+		) {
+			return;
+		}
+
+		if (
+			! isset( $_POST['_wpnonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ), self::NONCE_TRANSFER )
+		) {
+			$this->add_wc_notice( __( 'Security check failed. Please try again.', 'mp-commerce-promotions' ), 'error' );
+			return;
+		}
+
+		$gift_card_id = isset( $_POST['gift_card_id'] ) ? (int) $_POST['gift_card_id'] : 0;
+		$to_email     = isset( $_POST['transfer_recipient_email'] )
+			? sanitize_email( wp_unslash( (string) $_POST['transfer_recipient_email'] ) )
+			: '';
+		$name         = isset( $_POST['transfer_recipient_name'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['transfer_recipient_name'] ) )
+			: '';
+		$message      = isset( $_POST['transfer_message'] )
+			? sanitize_textarea_field( wp_unslash( (string) $_POST['transfer_message'] ) )
+			: '';
+
+		$result = $this->transfers->transfer_to_new_recipient(
+			$gift_card_id,
+			$to_email,
+			__( 'Customer transfer from My Account.', 'mp-commerce-promotions' ),
+			GiftCardTransferService::INITIATED_BY_CUSTOMER,
+			$customer_id,
+			$name,
+			$message
+		);
+
+		$type = ! empty( $result['success'] ) ? 'success' : 'error';
+		$this->add_wc_notice( (string) ( $result['message'] ?? '' ), $type );
+
+		if ( function_exists( 'wc_get_account_endpoint_url' ) ) {
+			wp_safe_redirect( wc_get_account_endpoint_url( self::ENDPOINT_GIFT_CARDS ) );
+			exit;
+		}
+	}
+
+	private function add_wc_notice( string $message, string $type ): void {
+		if ( $message === '' ) {
+			return;
+		}
+		if ( function_exists( 'wc_add_notice' ) ) {
+			wc_add_notice( $message, $type );
+		}
+	}
+
 	/**
 	 * @param list<array<string, mixed>> $rows
 	 */
-	private function render_card_table( string $title, array $rows ): void {
+	private function render_card_table( string $title, array $rows, int $customer_id, bool $show_transfer ): void {
 		echo '<h3>' . esc_html( $title ) . '</h3>';
 		if ( $rows === array() ) {
-			$hint = $title === __( 'Purchased', 'mp-commerce-promotions' )
+			$hint = $show_transfer
 				? __( 'Gift cards you buy for yourself or others will show here after checkout.', 'mp-commerce-promotions' )
-				: __( 'Gift cards sent to your account email will appear here.', 'mp-commerce-promotions' );
+				: __( 'Gift cards emailed to your account address will appear here. No account is required for recipients to redeem.', 'mp-commerce-promotions' );
 			echo '<p class="mp-cp-gc-help">' . esc_html( $hint ) . '</p>';
 			return;
 		}
@@ -135,6 +212,9 @@ final class GiftCardMyAccount {
 		echo '<th>' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th>' . esc_html__( 'Expires', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th>' . esc_html__( 'Delivery', 'mp-commerce-promotions' ) . '</th>';
+		if ( $show_transfer ) {
+			echo '<th>' . esc_html__( 'Actions', 'mp-commerce-promotions' ) . '</th>';
+		}
 		echo '</tr></thead><tbody>';
 
 		foreach ( $rows as $row ) {
@@ -158,10 +238,66 @@ final class GiftCardMyAccount {
 			echo '<td>' . esc_html( (string) ( $row['status_label'] ?? '' ) ) . '</td>';
 			echo '<td>' . esc_html( (string) ( $row['expires_at'] ?? '—' ) ) . '</td>';
 			echo '<td>' . esc_html( $delivery ) . '</td>';
+			if ( $show_transfer ) {
+				echo '<td>';
+				$this->render_transfer_cell( $row, $customer_id );
+				echo '</td>';
+			}
 			echo '</tr>';
 		}
 
 		echo '</tbody></table>';
+	}
+
+	/**
+	 * @param array<string, mixed> $row
+	 */
+	private function render_transfer_cell( array $row, int $customer_id ): void {
+		$card_id = (int) ( $row['gift_card_id'] ?? 0 );
+		if ( $card_id <= 0 ) {
+			echo '—';
+			return;
+		}
+
+		if ( ! empty( $row['replacement_id'] ) ) {
+			echo esc_html(
+				sprintf(
+					/* translators: %d: new gift card id */
+					__( 'Transferred (replacement #%d)', 'mp-commerce-promotions' ),
+					(int) $row['replacement_id']
+				)
+			);
+			return;
+		}
+
+		if ( (string) ( $row['status'] ?? '' ) === GiftCard::STATUS_VOIDED ) {
+			echo esc_html__( 'Voided', 'mp-commerce-promotions' );
+			return;
+		}
+
+		if ( ! $this->transfers->customer_can_transfer_card( $card_id, $customer_id ) ) {
+			echo '—';
+			return;
+		}
+
+		echo '<details class="mp-cp-gc-transfer-details"><summary class="button button-small">'
+			. esc_html__( 'Send to another recipient', 'mp-commerce-promotions' ) . '</summary>';
+		echo '<form method="post" class="mp-cp-gc-transfer-form" style="margin-top:8px;max-width:320px;">';
+		wp_nonce_field( self::NONCE_TRANSFER );
+		echo '<input type="hidden" name="mp_cp_gc_transfer" value="1" />';
+		echo '<input type="hidden" name="gift_card_id" value="' . esc_attr( (string) $card_id ) . '" />';
+		echo '<p><label>' . esc_html__( 'Recipient email', 'mp-commerce-promotions' ) . '<br />';
+		echo '<input type="email" name="transfer_recipient_email" class="input-text" required /></label></p>';
+		echo '<p><label>' . esc_html__( 'Recipient name (optional)', 'mp-commerce-promotions' ) . '<br />';
+		echo '<input type="text" name="transfer_recipient_name" class="input-text" /></label></p>';
+		echo '<p><label>' . esc_html__( 'Message (optional)', 'mp-commerce-promotions' ) . '<br />';
+		echo '<textarea name="transfer_message" class="input-text" rows="2"></textarea></label></p>';
+		echo '<p class="description">' . esc_html__(
+			'Issues a new code by email to this recipient. The previous code stops working and is not shown here.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<p><button type="submit" class="button">' . esc_html__( 'Send gift card', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form></details>';
 	}
 
 	private function render_store_credit_section( int $customer_id ): void {

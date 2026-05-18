@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Gift card recipient transfer** — My Account “Send to another recipient” and admin reissue for fully unused cards; void + new code by email; transfer linkage without storing plain codes; `GiftCardTransferService`, `scripts/gift-card-transfer-smoke.php`.
+
+### Added (prior)
+
 - **Gift card email sender settings** — Settings → default vs custom From/Reply-To; `GiftCardEmailSender` SMTP-safe default (no forced From); diagnostics sender warnings + test email shows mode; [GIFT_CARD_EMAILS.md](docs/GIFT_CARD_EMAILS.md).
 
 ### Added (prior)

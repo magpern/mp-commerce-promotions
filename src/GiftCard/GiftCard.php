@@ -252,6 +252,14 @@ final class GiftCard {
 		return strcmp( $this->expires_at, $now_mysql ) < 0;
 	}
 
+	public function is_fully_unused(): bool {
+		if ( $this->status !== self::STATUS_ACTIVE || $this->balance <= 0 ) {
+			return false;
+		}
+
+		return abs( $this->balance - $this->initial_amount ) < 0.009;
+	}
+
 	public function can_redeem( float $amount, string $now_mysql ): bool {
 		if ( $amount <= 0 ) {
 			return false;

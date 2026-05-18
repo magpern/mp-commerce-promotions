@@ -14,11 +14,21 @@ Customer-facing layer on top of the ledger-backed gift card system. **No change*
 
 Endpoint: **Gift cards** (`/my-account/gift-cards/`)
 
-- Purchased cards (by `purchaser_customer_id`)
-- Received cards (by account email / `recipient_email`)
-- Masked code, balance, status, expiry, delivery date
-- Store credit wallet balance and recent transactions
-- One-time “copy code” if the customer applied a gift card in the same session at checkout
+- **Purchased by me** — cards tied to your customer account as purchaser (`purchaser_customer_id`)
+- **Sent to me** — cards whose `recipient_email` matches your account email (no account required for recipients to redeem)
+- **Store credit wallet** — balance and recent ledger transactions
+
+Gift cards are **code-owned**, not account-owned. Recipients redeem with the code from email. If they later register with the same email, received cards appear under **Sent to me**.
+
+Unused purchased cards can be **sent to another recipient** (voids the old code, issues a new code emailed to the new address; the previous code is never shown in My Account). Only **fully unused** active cards qualify (balance equals initial amount). Partially used cards cannot be transferred.
+
+Transfer emails use the same delivery mailer and sender settings as purchase delivery ([GIFT_CARD_EMAILS.md](GIFT_CARD_EMAILS.md)); configure SMTP before pilot.
+
+Masked code, balance, status, expiry, and delivery status are shown. One-time “copy code” if the customer applied a gift card in the same checkout session.
+
+### Admin transfer
+
+**Gift Cards → View card → Reissue to new recipient** — same unused-only rules; note required. See `scripts/gift-card-transfer-smoke.php`.
 
 ## Product page
 

@@ -67,25 +67,32 @@ final class GiftCardCustomerService {
 	 * @return list<array<string, mixed>>
 	 */
 	private function map_cards( array $cards, string $role ): array {
-		$out = array();
+		$transfer_store = new GiftCardTransferStore();
+		$out            = array();
 		foreach ( $cards as $card ) {
 			$delivery = $this->delivery_meta_for_card( $card );
+			$card_id  = $card->get_id();
+			$replacement_id = $card_id !== null ? $transfer_store->get_replacement_id( $card_id ) : null;
 			$out[]    = array(
-				'role'           => $role,
-				'gift_card_id'   => $card->get_id(),
-				'masked_code'    => '****' . $card->get_code_last4(),
-				'balance'        => GiftCard::money( $card->get_balance() ),
-				'initial_amount' => GiftCard::money( $card->get_initial_amount() ),
-				'currency'       => $card->get_currency(),
-				'status'         => $card->get_status(),
-				'status_label'   => self::status_label( $card ),
-				'expires_at'     => $card->get_expires_at(),
-				'created_at'     => $card->get_created_at(),
-				'order_id'       => $card->get_created_order_id(),
-				'delivery_status'=> (string) ( $delivery['delivery_status'] ?? '' ),
-				'delivery_label' => self::format_delivery_label( $delivery ),
-				'delivered_at'   => (string) ( $delivery['delivered_at'] ?? '' ),
-				'scheduled_for'  => (string) ( $delivery['scheduled_for'] ?? '' ),
+				'role'              => $role,
+				'gift_card_id'      => $card_id,
+				'masked_code'       => '****' . $card->get_code_last4(),
+				'balance'           => GiftCard::money( $card->get_balance() ),
+				'initial_amount'    => GiftCard::money( $card->get_initial_amount() ),
+				'currency'          => $card->get_currency(),
+				'status'            => $card->get_status(),
+				'status_label'      => self::status_label( $card ),
+				'expires_at'        => $card->get_expires_at(),
+				'created_at'        => $card->get_created_at(),
+				'order_id'          => $card->get_created_order_id(),
+				'recipient_email'   => $card->get_recipient_email(),
+				'can_transfer'      => $role === 'purchased' && $card->is_fully_unused(),
+				'replacement_id'    => $replacement_id,
+				'transferred_from'  => $card_id !== null ? $transfer_store->get_source_id( $card_id ) : null,
+				'delivery_status'   => (string) ( $delivery['delivery_status'] ?? '' ),
+				'delivery_label'    => self::format_delivery_label( $delivery ),
+				'delivered_at'      => (string) ( $delivery['delivered_at'] ?? '' ),
+				'scheduled_for'     => (string) ( $delivery['scheduled_for'] ?? '' ),
 			);
 		}
 

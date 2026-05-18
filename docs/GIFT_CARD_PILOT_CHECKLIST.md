@@ -23,6 +23,11 @@ Use this before enabling gift card sales for real customers.
 - [ ] **Scheduled delivery** — future date; no card at payment; cron/admin runner fulfills on date; status recorded.
 - [ ] **Balance checker** — page/shortcode shows masked balance; invalid code shows generic error.
 - [ ] **My Account → Gift cards** — purchased/received lists; store credit wallet if used.
+- [ ] **Recipient explanation** — copy states code-owned cards, email redemption, and that matching account email shows cards under **Sent to me** (recipients do not need accounts).
+- [ ] **Customer transfer (unused only)** — on a fully unused active purchased card, **Send to another recipient**; new recipient email; optional name/message; old code voided; new code emailed; no full code shown in My Account or admin after reload.
+- [ ] **Admin reissue** — **Gift Cards → View card → Reissue to new recipient** with required note; same unused-only rules; transfer link visible on card detail.
+- [ ] **Transfer blocked when partially used** — card with balance &lt; initial amount cannot be transferred (customer or admin).
+- [ ] **SMTP for transfer** — transfer emails use the same gift card mailer/sender settings as purchase delivery; confirm inbox delivery with a verified-domain test address (not `example.com`).
 - [ ] **Redemption** — apply code at cart/checkout; partial payment; order completes; ledger debited.
 - [ ] **Cancellation / reversal** — cancel order with unused card (void) or reverse redemption (balance restored).
 - [ ] **Liability report** — Commerce Growth → Reports; gift card totals plausible.
@@ -46,9 +51,11 @@ Use this before enabling gift card sales for real customers.
 
 ```bash
 composer run lint:php
+composer run test -- --filter GiftCardTransfer
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-setup.php
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-e2e-smoke.php
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-mail-smoke.php
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-transfer-smoke.php
 ```
 
 See also [GIFT_CARD_QA_EVIDENCE.md](GIFT_CARD_QA_EVIDENCE.md), [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md), [GIFT_CARD_EMAILS.md](GIFT_CARD_EMAILS.md).

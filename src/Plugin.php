@@ -238,7 +238,14 @@ final class Plugin {
 				( new GiftCardBalanceCheckerShortcode( new GiftCardBalanceChecker( $gift_ledger ), $this->settings ) )->register();
 				( new GiftCardProductDisplay( $gift_product_service, $this->settings ) )->register();
 				$gift_customer = new GiftCardCustomerService( $gift_card_repo, $wpdb );
-				( new GiftCardMyAccount( $gift_customer, $sc_wallet, $this->settings ) )->register();
+				$gift_transfers  = new \MP\CommercePromotions\GiftCard\GiftCardTransferService(
+					$gift_ledger,
+					$gift_card_repo,
+					$this->settings,
+					null,
+					$this->audit_logger
+				);
+				( new GiftCardMyAccount( $gift_customer, $sc_wallet, $this->settings, $gift_transfers ) )->register();
 
 				$gift_order_generator = new GiftCardOrderGenerator(
 					$gift_ledger,
@@ -379,7 +386,21 @@ final class Plugin {
 			$gift_card_mailer,
 			new \MP\CommercePromotions\GiftCard\GiftCardManualDeliveryStore()
 		);
-		$gift_cards_page = new GiftCardsPage( $gift_ledger, $gift_card_repo, $sc_wallet, $sc_accounts, $manual_gc_delivery );
+		$gift_transfers_admin = new \MP\CommercePromotions\GiftCard\GiftCardTransferService(
+			$gift_ledger,
+			$gift_card_repo,
+			$this->settings,
+			null,
+			$this->audit_logger
+		);
+		$gift_cards_page = new GiftCardsPage(
+			$gift_ledger,
+			$gift_card_repo,
+			$sc_wallet,
+			$sc_accounts,
+			$manual_gc_delivery,
+			$gift_transfers_admin
+		);
 
 		$profiler_global     = new PromotionPerformanceProfiler();
 		$concurrency_global  = new PromotionConcurrencyGuard();
