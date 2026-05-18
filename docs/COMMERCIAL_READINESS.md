@@ -1,7 +1,7 @@
 # Commercial readiness
 
-**Schema:** 1.14.0 (unchanged for this milestone)  
-**Plugin version:** 0.1.0 (early beta / MVP)
+**Schema:** 1.15.0  
+**Plugin version:** 0.2.0-beta.1 (early beta / MVP)
 
 ## Current maturity
 
@@ -23,7 +23,7 @@ Commerce Promotions is suitable for **staged rollouts and merchant pilots**. It 
 ## What is not production-certified
 
 - Cart/Checkout **Blocks** compatibility not declared
-- Discounts remain **cart fees** (no catalog line-price mutation)
+- **Line_item / hybrid** discount modes are **experimental** — fee-based remains default; complete [manual-line-discount-engine-test.md](manual-line-discount-engine-test.md) before pilot
 - Tax, profitability, and allocation figures are **heuristics**
 - WP-Cron automation is **optional and off by default** (hourly maintenance + daily cleanup when enabled)
 - PHPCS baseline not zero-violation (incremental cleanup ongoing)

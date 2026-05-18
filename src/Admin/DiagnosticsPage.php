@@ -678,6 +678,10 @@ final class DiagnosticsPage {
 				return sprintf( __( 'Repaired %d malformed coupon coexistence config(s).', 'mp-commerce-promotions' ), $promotions );
 			case 'pricing_profitability_done':
 				return __( 'Profitability metric cache recalculated.', 'mp-commerce-promotions' );
+			case 'pricing_line_sessions_dry_run':
+				return __( 'Line discount session repair dry-run complete. No session or cart prices were changed. Review Diagnostics for cleared keys.', 'mp-commerce-promotions' );
+			case 'pricing_line_sessions_done':
+				return __( 'Stuck line discount sessions repaired: line allocation session cleared and cart line prices restored.', 'mp-commerce-promotions' );
 			case 'pricing_snapshots_done':
 				return sprintf(
 					__( 'Allocation snapshot validation: %1$d valid, %2$d invalid.', 'mp-commerce-promotions' ),
@@ -1307,6 +1311,21 @@ final class DiagnosticsPage {
 				)
 			);
 		}
+
+		if ( isset( $_POST['mp_cp_repair_line_discount_sessions_submit'] ) ) {
+			$this->verify_recovery_nonce( 'mp_cp_repair_line_discount_sessions_nonce', 'mp_cp_repair_line_discount_sessions' );
+			$dry_run = ! isset( $_POST['mp_cp_pricing_recovery_apply'] ) || sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_pricing_recovery_apply'] ) ) !== '1';
+			$result  = $this->pricing_recovery->repair_stuck_line_discount_sessions( $dry_run );
+			$this->redirect_with_notice(
+				'success',
+				$dry_run ? 'pricing_line_sessions_dry_run' : 'pricing_line_sessions_done',
+				array(
+					'promotions' => 0,
+					'codes'      => 0,
+					'errors'     => 0,
+				)
+			);
+		}
 	}
 
 	private function render_pricing_recovery_section(): void {
@@ -1316,11 +1335,25 @@ final class DiagnosticsPage {
 
 		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Pricing engine recovery', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p class="description">' . esc_html__( 'Rebuild allocation summaries and normalize priority tiers. Dry-run unless apply is checked.', 'mp-commerce-promotions' ) . '</p>';
+		echo '<p><label><input type="checkbox" name="mp_cp_pricing_recovery_apply" value="1" form="mp-cp-pricing-line-sessions" /> ';
+		echo esc_html__( 'Apply pricing recovery (including line discount session repair)', 'mp-commerce-promotions' ) . '</label></p>';
 		$this->render_recovery_form( 'mp_cp_rebuild_allocation_submit', 'mp_cp_rebuild_allocation', 'mp_cp_rebuild_allocation_nonce', __( 'Rebuild allocation summaries', 'mp-commerce-promotions' ), 'mp-cp-pricing-rebuild' );
 		$this->render_recovery_form( 'mp_cp_repair_coexistence_submit', 'mp_cp_repair_coexistence', 'mp_cp_repair_coexistence_nonce', __( 'Repair malformed coexistence configs', 'mp-commerce-promotions' ), 'mp-cp-pricing-coexistence' );
 		$this->render_recovery_form( 'mp_cp_normalize_tiers_submit', 'mp_cp_normalize_tiers', 'mp_cp_normalize_tiers_nonce', __( 'Normalize invalid priority tiers', 'mp-commerce-promotions' ), 'mp-cp-pricing-tiers' );
 		$this->render_recovery_form( 'mp_cp_recalc_profitability_submit', 'mp_cp_recalc_profitability', 'mp_cp_recalc_profitability_nonce', __( 'Recalculate profitability metrics', 'mp-commerce-promotions' ), 'mp-cp-pricing-profitability' );
 		$this->render_recovery_form( 'mp_cp_validate_alloc_snapshots_submit', 'mp_cp_validate_alloc_snapshots', 'mp_cp_validate_alloc_snapshots_nonce', __( 'Validate allocation snapshots', 'mp-commerce-promotions' ), 'mp-cp-pricing-snapshots' );
+
+		echo '<p class="description" style="max-width:52em;">' . esc_html__(
+			'Repair stuck line discount sessions clears mp_cp_line_allocations, restores cart lines with mp_cp_original_line_unit_price, and resets in-request line discount caches. Does not delete fallback telemetry options unless you reset them separately.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		$this->render_recovery_form(
+			'mp_cp_repair_line_discount_sessions_submit',
+			'mp_cp_repair_line_discount_sessions',
+			'mp_cp_repair_line_discount_sessions_nonce',
+			__( 'Repair stuck line discount sessions', 'mp-commerce-promotions' ),
+			'mp-cp-pricing-line-sessions'
+		);
 	}
 
 	private function render_recommendations_section(): void {

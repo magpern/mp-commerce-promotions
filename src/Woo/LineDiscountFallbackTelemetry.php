@@ -11,6 +11,8 @@ namespace MP\CommercePromotions\Woo;
 
 final class LineDiscountFallbackTelemetry {
 
+	public const OPTION_STATS = 'mp_cp_line_discount_fallback_stats';
+
 	public const REASON_LINE_MUTATION_FAILED = 'line_mutation_failed';
 
 	public const REASON_UNSUPPORTED_PRODUCT_TYPE = 'unsupported_product_type';
@@ -46,6 +48,37 @@ final class LineDiscountFallbackTelemetry {
 			'detail'        => $detail,
 			'recorded_at'   => gmdate( 'c' ),
 		);
+
+		self::persist_stats( $reason, $promotion_id, $detail );
+	}
+
+	private static function persist_stats( string $reason, int $promotion_id, ?string $detail ): void {
+		$stats = get_option( self::OPTION_STATS, array() );
+		if ( ! is_array( $stats ) ) {
+			$stats = array();
+		}
+
+		$stats['total'] = (int) ( $stats['total'] ?? 0 ) + 1;
+		if ( ! isset( $stats['counts'] ) || ! is_array( $stats['counts'] ) ) {
+			$stats['counts'] = array();
+		}
+		$stats['counts'][ $reason ] = (int) ( $stats['counts'][ $reason ] ?? 0 ) + 1;
+		$stats['last_reason']      = $reason;
+		$stats['last_promotion_id'] = $promotion_id;
+		$stats['last_detail']      = $detail;
+		$stats['last_recorded_at'] = gmdate( 'c' );
+
+		update_option( self::OPTION_STATS, $stats, false );
+	}
+
+	public static function get_persisted_stats(): array {
+		$stats = get_option( self::OPTION_STATS, array() );
+
+		return is_array( $stats ) ? $stats : array();
+	}
+
+	public static function reset_persisted_stats(): void {
+		delete_option( self::OPTION_STATS );
 	}
 
 	public static function reset(): void {

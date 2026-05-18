@@ -15,6 +15,7 @@ use MP\CommercePromotions\Domain\AutomationRunRepository;
 use MP\CommercePromotions\Domain\PlannerTelemetryRepository;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionCouponBehavior;
+use MP\CommercePromotions\Domain\PromotionDiscountApplicationMode;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\Redemption;
@@ -22,7 +23,9 @@ use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Domain\SimulationScenarioRepository;
 use MP\CommercePromotions\Engine\AllocationContextCache;
 use MP\CommercePromotions\Engine\PlannerContextCache;
+use MP\CommercePromotions\Woo\CartSessionHelper;
 use MP\CommercePromotions\Woo\CouponCoexistenceEvaluator;
+use MP\CommercePromotions\Woo\LineDiscountFallbackTelemetry;
 use MP\CommercePromotions\Woo\PricingCompatibilityAnalyzer;
 
 final class PromotionReports {
@@ -348,6 +351,52 @@ final class PromotionReports {
 			'coupon_coexistence'   => $coupon_eval,
 			'priority_tier_counts' => $tiers,
 			'compatibility_issues' => ( new PricingCompatibilityAnalyzer() )->analyze(),
+			'line_discount_mode'   => $this->line_discount_mode_summary(),
+		);
+	}
+
+	/**
+	 * Lightweight line / hybrid mode counters (options + promotion scan).
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function line_discount_mode_summary(): array {
+		$line_item_count = 0;
+		$hybrid_count    = 0;
+		$fee_based_count = 0;
+
+		try {
+			$list = $this->promotions->find_filtered( array( 'limit' => 500 ) );
+		} catch ( \InvalidArgumentException $e ) {
+			$list = array();
+		}
+
+		foreach ( $list as $promotion ) {
+			$mode = $promotion->get_discount_application_mode();
+			if ( $mode === PromotionDiscountApplicationMode::LINE_ITEM ) {
+				++$line_item_count;
+			} elseif ( $mode === PromotionDiscountApplicationMode::HYBRID ) {
+				++$hybrid_count;
+			} else {
+				++$fee_based_count;
+			}
+		}
+
+		$fallback = LineDiscountFallbackTelemetry::get_persisted_stats();
+		$usage    = CartSessionHelper::get_line_usage_stats();
+		$apps     = (int) ( $usage['applications'] ?? 0 );
+		$savings  = (float) ( $usage['total_savings'] ?? 0.0 );
+
+		return array(
+			'line_item_promotions'       => $line_item_count,
+			'hybrid_promotions'          => $hybrid_count,
+			'fee_based_promotions'       => $fee_based_count,
+			'fallback_total'             => (int) ( $fallback['total'] ?? 0 ),
+			'last_fallback_reason'       => (string) ( $fallback['last_reason'] ?? '' ),
+			'last_fallback_at'           => (string) ( $fallback['last_recorded_at'] ?? '' ),
+			'line_allocation_applications' => $apps,
+			'average_effective_line_savings' => $apps > 0 ? round( $savings / $apps, 4 ) : 0.0,
+			'total_line_savings_recorded'  => round( $savings, 4 ),
 		);
 	}
 

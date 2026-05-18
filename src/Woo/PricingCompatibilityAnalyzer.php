@@ -347,6 +347,10 @@ final class PricingCompatibilityAnalyzer {
 		$issues = array_merge( $issues, $this->detect_sale_price_mode() );
 		$issues = array_merge( $issues, $this->detect_bundle_plugins() );
 		$issues = array_merge( $issues, $this->detect_coupon_stacking() );
+		$issues = array_merge( $issues, $this->detect_multi_currency() );
+		$issues = array_merge( $issues, $this->detect_subscriptions_plugin() );
+		$issues = array_merge( $issues, $this->detect_checkout_blocks_for_line_mode() );
+		$issues = array_merge( $issues, $this->detect_active_native_coupons_line_mode() );
 
 		foreach ( $promotion_actions as $action ) {
 			if ( ! is_array( $action ) ) {
@@ -374,6 +378,44 @@ final class PricingCompatibilityAnalyzer {
 			'confidence' => $confidence,
 			'score'      => max( 0, min( 100, $score ) ),
 			'issues'     => $issues,
+		);
+	}
+
+	/**
+	 * @return list<array{severity: string, code: string, message: string}>
+	 */
+	private function detect_checkout_blocks_for_line_mode(): array {
+		$base = $this->detect_checkout_blocks();
+		if ( $base === array() ) {
+			return array();
+		}
+
+		foreach ( $base as &$issue ) {
+			if ( ( $issue['code'] ?? '' ) === 'checkout_blocks_active' ) {
+				$issue['severity'] = self::SEVERITY_WARNING;
+				$issue['message']  = __( 'Cart/Checkout Blocks are not certified for line-item discounts; use classic cart/checkout for QA.', 'mp-commerce-promotions' );
+			}
+		}
+		unset( $issue );
+
+		return $base;
+	}
+
+	/**
+	 * @return list<array{severity: string, code: string, message: string}>
+	 */
+	private function detect_active_native_coupons_line_mode(): array {
+		$eval = ( new CouponCoexistenceEvaluator() )->evaluate_cart();
+		if ( (int) ( $eval['native_coupon_count'] ?? 0 ) <= 0 ) {
+			return array();
+		}
+
+		return array(
+			array(
+				'severity' => self::SEVERITY_WARNING,
+				'code'     => 'line_mode_native_coupons',
+				'message'  => __( 'Native WooCommerce coupons are applied; line discounts may be blocked per coupon_behavior.', 'mp-commerce-promotions' ),
+			),
 		);
 	}
 }

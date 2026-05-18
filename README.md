@@ -164,7 +164,7 @@ bash scripts/sync-to-live.sh
 bash scripts/verify-plugin.sh
 ```
 
-**Plugin version:** `0.2.0-beta.1` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). Database schema version is separate (`mp_cp_schema_version`, currently **1.14.0**).
+**Plugin version:** `0.2.0-beta.1` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). Database schema version is separate (`mp_cp_schema_version`, currently **1.15.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
 
 **Release zip** (no `.git` / `vendor`):
 

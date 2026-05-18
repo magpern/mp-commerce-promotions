@@ -4,7 +4,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Current milestone
 
-**Line discount engine groundwork (schema 1.15.0)** — `fee_based` / `line_item` / `hybrid` application modes; MVP line price mutation for % and fixed actions; hybrid fee fallback; session/order allocation JSON. Fee-based remains default. Cart/Checkout Blocks still not declared.
+**Line discount stabilization** — QA runbook, admin warnings/badges, Reports + Diagnostics recovery, persisted telemetry, expanded smoke/tests. Pilot line/hybrid only after `docs/manual-line-discount-engine-test.md`. Fee-based remains default.
 
 ## Manual QA (2026-05-17)
 

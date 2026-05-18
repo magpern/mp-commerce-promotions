@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Native line discount groundwork (schema 1.15.0)** — `PromotionDiscountApplicationMode` (`fee_based`, `line_item`, `hybrid`); `LineItemDiscountApplier` + `LinePriceMutationGuard` on `woocommerce_before_calculate_totals`; line allocation persistence (`AppliedLineDiscount`, session/order meta); hybrid fee fallback with telemetry; admin **Discount application** field; compatibility audit for line mode. **Fee-based remains the default**; line mode is experimental.
+- **Line discount stabilization** — `docs/manual-line-discount-engine-test.md`; admin experimental warnings and Line/Hybrid list badges; Reports **Line discount mode** section; Diagnostics **Repair stuck line discount sessions** (dry-run); persisted fallback telemetry; expanded smoke and PHPUnit coverage.
 
 ## [0.2.0-beta.1] - 2026-05-17
 

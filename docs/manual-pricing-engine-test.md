@@ -2,7 +2,7 @@
 
 ## Scope
 
-Allocation, tax/shipping estimates, coupon coexistence, priority tiers, compatibility heuristics, and reporting — **admin/reporting only**. Storefront discounts still apply as WooCommerce cart fees.
+Allocation, tax/shipping estimates, coupon coexistence, priority tiers, compatibility heuristics, and reporting — **admin/reporting only**. Storefront discounts still apply as WooCommerce cart fees by default. For **line_item** / **hybrid** modes see [manual-line-discount-engine-test.md](manual-line-discount-engine-test.md).
 
 ## Prerequisites
 

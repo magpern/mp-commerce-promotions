@@ -17,6 +17,7 @@ use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionSnapshotRepository;
 use MP\CommercePromotions\Engine\AllocationContextCache;
 use MP\CommercePromotions\Woo\CartSessionHelper;
+use MP\CommercePromotions\Woo\LineDiscountFallbackTelemetry;
 use MP\CommercePromotions\Woo\LineDiscountPlanCache;
 use MP\CommercePromotions\Woo\LinePriceMutationGuard;
 use MP\CommercePromotions\Woo\PricingCompatibilityAnalyzer;
@@ -161,18 +162,50 @@ final class PromotionPricingRecovery {
 	/**
 	 * Clear stuck line allocation session/cache (storefront recovery).
 	 *
-	 * @return array{cleared: bool}
+	 * @return array<string, mixed>
 	 */
-	public function repair_stuck_line_discount_sessions(): array {
+	public function repair_stuck_line_discount_sessions( bool $dry_run = true ): array {
+		$would_clear = array(
+			'session_keys'    => array(
+				CartSessionHelper::LINE_ALLOCATIONS_SESSION_KEY,
+				'mp_cp_applied_promotion',
+			),
+			'cart_item_meta'  => array(
+				\MP\CommercePromotions\Engine\AppliedLineDiscount::META_ORIGINAL_PRICE,
+				\MP\CommercePromotions\Engine\AppliedLineDiscount::META_MUTATED_BY,
+			),
+			'in_request_caches' => array(
+				'LineDiscountPlanCache',
+				'LinePriceMutationGuard',
+				'AllocationContextCache (request)',
+			),
+			'optional_stats'  => array(
+				'mp_cp_line_discount_usage_stats (not cleared by default)',
+				LineDiscountFallbackTelemetry::OPTION_STATS . ' (not cleared by default)',
+			),
+		);
+
+		if ( $dry_run ) {
+			return array(
+				'dry_run'     => true,
+				'would_clear' => $would_clear,
+			);
+		}
+
 		AllocationContextCache::reset_request_cache();
 		LineDiscountPlanCache::reset();
 		LinePriceMutationGuard::reset_cycle();
+		LinePriceMutationGuard::begin_cycle();
 		CartSessionHelper::clear_line_allocations();
 
 		if ( function_exists( 'WC' ) && is_object( WC()->cart ?? null ) ) {
 			LinePriceMutationGuard::restore_all_line_prices( WC()->cart );
 		}
 
-		return array( 'cleared' => true );
+		return array(
+			'dry_run'     => false,
+			'cleared'     => true,
+			'would_clear' => $would_clear,
+		);
 	}
 }

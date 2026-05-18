@@ -15,6 +15,7 @@ use MP\CommercePromotions\Tests\Support\PromotionTestFixtures;
 use MP\CommercePromotions\Woo\LineDiscountFallbackTelemetry;
 use MP\CommercePromotions\Woo\LineDiscountPlanCache;
 use MP\CommercePromotions\Woo\LinePriceMutationGuard;
+use MP\CommercePromotions\Service\LineDiscountModeHelper;
 use MP\CommercePromotions\Woo\PricingCompatibilityAnalyzer;
 use PHPUnit\Framework\TestCase;
 
@@ -125,5 +126,56 @@ final class LineDiscountEngineTest extends TestCase {
 		$audit    = $analyzer->audit_line_discount_mode( PromotionDiscountApplicationMode::FEE_BASED );
 		$this->assertSame( PricingCompatibilityAnalyzer::CONFIDENCE_HIGH, $audit['confidence'] );
 		$this->assertSame( 100, $audit['score'] );
+	}
+
+	public function test_list_badge_labels(): void {
+		$this->assertSame( 'Line', LineDiscountModeHelper::list_badge_label( PromotionDiscountApplicationMode::LINE_ITEM ) );
+		$this->assertSame( 'Hybrid', LineDiscountModeHelper::list_badge_label( PromotionDiscountApplicationMode::HYBRID ) );
+		$this->assertNull( LineDiscountModeHelper::list_badge_label( PromotionDiscountApplicationMode::FEE_BASED ) );
+	}
+
+	public function test_validator_warns_per_action_fee_fallback(): void {
+		$promotion = \MP\CommercePromotions\Domain\Promotion::from_array(
+			array(
+				'id'                        => 3,
+				'uuid'                      => '00000000-0000-0000-0000-000000000003',
+				'name'                      => 'Line + gift',
+				'status'                    => 'active',
+				'priority'                  => 1,
+				'conditions'                => array(),
+				'actions'                   => array(
+					array( 'type' => 'percentage_discount', 'percentage' => 10 ),
+					array( 'type' => 'free_gift_product', 'product_id' => 1, 'quantity' => 1 ),
+				),
+				'restrictions'              => array(),
+				'usage_count'               => 0,
+				'application_mode'          => 'stackable',
+				'stop_processing'           => false,
+				'discount_application_mode' => PromotionDiscountApplicationMode::LINE_ITEM,
+			)
+		);
+		$validator = new \MP\CommercePromotions\Service\PromotionRuleValidator();
+		$messages  = array();
+		foreach ( $validator->validate( $promotion ) as $issue ) {
+			if ( is_array( $issue ) && isset( $issue['message'] ) ) {
+				$messages[] = (string) $issue['message'];
+			}
+		}
+		$joined = implode( ' ', $messages );
+		$this->assertStringContainsString( 'fee-based', strtolower( $joined ) );
+	}
+
+	public function test_recovery_dry_run_summary(): void {
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			$this->markTestSkipped( 'wpdb not available' );
+		}
+		$recovery = new \MP\CommercePromotions\Service\PromotionPricingRecovery(
+			new \MP\CommercePromotions\Domain\PromotionRepository( $wpdb ),
+			new \MP\CommercePromotions\Domain\PromotionSnapshotRepository( $wpdb )
+		);
+		$result = $recovery->repair_stuck_line_discount_sessions( true );
+		$this->assertTrue( $result['dry_run'] ?? false );
+		$this->assertArrayHasKey( 'would_clear', $result );
 	}
 }

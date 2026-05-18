@@ -23,6 +23,8 @@ use MP\CommercePromotions\Domain\PromotionAllocationMode;
 use MP\CommercePromotions\Domain\PromotionCouponBehavior;
 use MP\CommercePromotions\Domain\PromotionDiscountApplicationMode;
 use MP\CommercePromotions\Domain\PromotionPriorityTier;
+use MP\CommercePromotions\Service\LineDiscountModeHelper;
+use MP\CommercePromotions\Woo\PricingCompatibilityAnalyzer;
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Engine\DiscountAllocationEngine;
 use MP\CommercePromotions\Domain\PromotionStatus;
@@ -2785,6 +2787,55 @@ final class PromotionEditPage {
 		return null;
 	}
 
+	private function render_line_discount_mode_admin_panel( Promotion $promotion ): void {
+		if ( ! LineDiscountModeHelper::uses_experimental_line_mode( $promotion ) ) {
+			return;
+		}
+
+		$mode = $promotion->get_discount_application_mode();
+		echo '<div class="notice notice-warning inline" style="margin:12px 0;max-width:52em;"><p><strong>';
+		echo esc_html__( 'Experimental line discount mode', 'mp-commerce-promotions' );
+		echo '</strong> — ';
+		echo esc_html__(
+			'Fee-based mode remains the site default. Complete docs/manual-line-discount-engine-test.md on staging before pilot use.',
+			'mp-commerce-promotions'
+		);
+		echo '</p></div>';
+		echo '<ul style="margin:0 0 0 1.2em;max-width:52em;">';
+		echo '<li><strong>' . esc_html__( 'Line-capable actions', 'mp-commerce-promotions' ) . ':</strong> ';
+		echo esc_html( LineDiscountModeHelper::supported_actions_summary( $promotion->get_actions() ) );
+		echo '</li>';
+		echo '<li><strong>' . esc_html__( 'Fee/gift fallback', 'mp-commerce-promotions' ) . ':</strong> ';
+		echo esc_html( LineDiscountModeHelper::unsupported_actions_fallback_summary( $promotion->get_actions(), $mode ) );
+		echo '</li>';
+		echo '<li>' . esc_html__( 'Tax-inclusive catalogs and native coupons may change totals; Cart/Checkout Blocks are not certified.', 'mp-commerce-promotions' ) . '</li>';
+		echo '</ul>';
+
+		$audit = ( new PricingCompatibilityAnalyzer() )->audit_line_discount_mode(
+			$mode,
+			$promotion->get_actions()
+		);
+		if ( ! empty( $audit['issues'] ) ) {
+			echo '<p><strong>' . esc_html__( 'Compatibility (line mode)', 'mp-commerce-promotions' ) . '</strong> ';
+			echo esc_html(
+				sprintf(
+					/* translators: 1: confidence, 2: score */
+					__( 'Confidence: %1$s (score %2$d)', 'mp-commerce-promotions' ),
+					(string) ( $audit['confidence'] ?? '' ),
+					(int) ( $audit['score'] ?? 0 )
+				)
+			);
+			echo '</p><ul style="margin:0 0 0 1.2em;">';
+			foreach ( $audit['issues'] as $issue ) {
+				if ( ! is_array( $issue ) ) {
+					continue;
+				}
+				echo '<li>' . esc_html( (string) ( $issue['message'] ?? '' ) ) . '</li>';
+			}
+			echo '</ul>';
+		}
+	}
+
 	private function render_cart_preview_section( Promotion $promotion ): void {
 		$id = $promotion->get_id();
 		if ( $id === null || $id <= 0 ) {
@@ -2793,7 +2844,7 @@ final class PromotionEditPage {
 
 		AdminSection::render(
 			__( 'Cart preview', 'mp-commerce-promotions' ),
-			function () use ( $id ): void {
+			function () use ( $id, $promotion ): void {
 				if ( $this->cart_context_builder === null ) {
 					echo '<p class="description">' . esc_html__( 'WooCommerce is unavailable or the cart context builder is not loaded, so preview against the current cart is disabled.', 'mp-commerce-promotions' ) . '</p>';
 					return;
@@ -3631,7 +3682,9 @@ final class PromotionEditPage {
 			echo '<option value="' . esc_attr( $value ) . '"' . selected( $discount_application_mode, $value, false ) . '>' . esc_html( $label ) . '</option>';
 		}
 		echo '</select>';
-		echo '<p class="description">' . esc_html__( 'Free shipping, cheapest item, and free gift actions always use fees or gift lines. Line mode is experimental; tax-inclusive stores and native coupons need extra review.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+		echo '<p class="description">' . esc_html__( 'Free shipping, cheapest item, and free gift actions always use fees or gift lines. Line mode is experimental; tax-inclusive stores and native coupons need extra review.', 'mp-commerce-promotions' ) . '</p>';
+		$this->render_line_discount_mode_admin_panel( $promotion );
+		echo '</td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_starts">' . esc_html__( 'Starts at', 'mp-commerce-promotions' ) . '</label></th><td>';
 		$starts = $promotion->get_starts_at() ?? '';

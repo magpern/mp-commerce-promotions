@@ -25,6 +25,16 @@ Legend: **Pass** | **Fail** | **Partial** | **Blocked** | **Not run**
 | Guest checkout | **Pass** | Order **4339** guest + COD |
 | Logged-in checkout | **Partial** | Admin session on cart earlier; not isolated |
 
+## Storefront — line discount modes (experimental)
+
+| Scenario | Status | Notes |
+|----------|--------|-------|
+| Line % on simple product | **Not run** | See [manual-line-discount-engine-test.md](manual-line-discount-engine-test.md) |
+| Line fixed on simple product | **Not run** | |
+| Hybrid fee fallback | **Not run** | |
+| Tax-inclusive catalog | **Not run** | |
+| Line + free gift combo | **Not run** | |
+
 ## Storefront — Cart/Checkout Blocks
 
 | Scenario | Status | Notes |

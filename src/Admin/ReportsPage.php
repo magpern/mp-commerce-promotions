@@ -84,6 +84,7 @@ final class ReportsPage {
 		$this->render_intelligence_analytics_section();
 		$this->render_profitability_analytics_section();
 		$this->render_pricing_analytics_section();
+		$this->render_line_discount_mode_section();
 		CompatibilityStatusPanel::render();
 		if ( $this->settings->simulations_enabled() ) {
 			$this->render_simulation_section();
@@ -812,6 +813,81 @@ final class ReportsPage {
 		printf( '<li>%s</li>', esc_html( sprintf( __( 'Estimated margin impact: %s', 'mp-commerce-promotions' ), (string) ( $data['estimated_margin_impact'] ?? 0 ) ) ) );
 		printf( '<li>%s</li>', esc_html( sprintf( __( 'Average discount rate: %s', 'mp-commerce-promotions' ), (string) ( $data['average_discount_rate'] ?? 0 ) ) ) );
 		printf( '<li>%s</li>', esc_html( sprintf( __( 'Shipping discount exposure: %s', 'mp-commerce-promotions' ), (string) ( $data['shipping_discount_exposure'] ?? 0 ) ) ) );
+		echo '</ul>';
+	}
+
+	private function render_line_discount_mode_section(): void {
+		$data = $this->reports->line_discount_mode_summary();
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Line discount mode', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="description">' . esc_html__(
+			'Experimental line-item and hybrid storefront modes. Fee-based remains the default. Counters use stored telemetry (not accounting-grade).',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<ul>';
+		printf(
+			'<li>%s</li>',
+			esc_html(
+				sprintf(
+					/* translators: %d: count */
+					__( 'Promotions using line_item: %d', 'mp-commerce-promotions' ),
+					(int) ( $data['line_item_promotions'] ?? 0 )
+				)
+			)
+		);
+		printf(
+			'<li>%s</li>',
+			esc_html(
+				sprintf(
+					/* translators: %d: count */
+					__( 'Promotions using hybrid: %d', 'mp-commerce-promotions' ),
+					(int) ( $data['hybrid_promotions'] ?? 0 )
+				)
+			)
+		);
+		printf(
+			'<li>%s</li>',
+			esc_html(
+				sprintf(
+					/* translators: %d: count */
+					__( 'Fee fallbacks recorded (store): %d', 'mp-commerce-promotions' ),
+					(int) ( $data['fallback_total'] ?? 0 )
+				)
+			)
+		);
+		$last_reason = (string) ( $data['last_fallback_reason'] ?? '' );
+		if ( $last_reason !== '' ) {
+			printf(
+				'<li>%s</li>',
+				esc_html(
+					sprintf(
+						/* translators: 1: reason code, 2: timestamp */
+						__( 'Last fallback: %1$s (%2$s)', 'mp-commerce-promotions' ),
+						$last_reason,
+						(string) ( $data['last_fallback_at'] ?? '' )
+					)
+				)
+			);
+		}
+		printf(
+			'<li>%s</li>',
+			esc_html(
+				sprintf(
+					/* translators: %d: count */
+					__( 'Line allocation cart applications: %d', 'mp-commerce-promotions' ),
+					(int) ( $data['line_allocation_applications'] ?? 0 )
+				)
+			)
+		);
+		printf(
+			'<li>%s</li>',
+			esc_html(
+				sprintf(
+					/* translators: %s: amount */
+					__( 'Average effective line savings (per application): %s', 'mp-commerce-promotions' ),
+					(string) ( $data['average_effective_line_savings'] ?? 0 )
+				)
+			)
+		);
 		echo '</ul>';
 	}
 

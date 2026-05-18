@@ -100,6 +100,35 @@ final class CartSessionHelper {
 	 */
 	public static function set_line_allocations( array $payload ): void {
 		self::set( self::LINE_ALLOCATIONS_SESSION_KEY, $payload );
+
+		$total = isset( $payload['total_allocated'] ) && is_numeric( $payload['total_allocated'] )
+			? (float) $payload['total_allocated']
+			: 0.0;
+		if ( $total > 0 ) {
+			self::record_line_allocation_usage( $total );
+		}
+	}
+
+	private static function record_line_allocation_usage( float $amount ): void {
+		$stats = get_option( 'mp_cp_line_discount_usage_stats', array() );
+		if ( ! is_array( $stats ) ) {
+			$stats = array();
+		}
+		$stats['applications'] = (int) ( $stats['applications'] ?? 0 ) + 1;
+		$stats['total_savings'] = (float) ( $stats['total_savings'] ?? 0.0 ) + $amount;
+		$stats['last_recorded_at'] = gmdate( 'c' );
+		update_option( 'mp_cp_line_discount_usage_stats', $stats, false );
+	}
+
+	/** @return array<string, mixed> */
+	public static function get_line_usage_stats(): array {
+		$stats = get_option( 'mp_cp_line_discount_usage_stats', array() );
+
+		return is_array( $stats ) ? $stats : array();
+	}
+
+	public static function clear_line_usage_stats(): void {
+		delete_option( 'mp_cp_line_discount_usage_stats' );
 	}
 
 	public static function clear_line_allocations(): void {

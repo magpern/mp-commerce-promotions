@@ -16,7 +16,7 @@ Commerce Promotions for WooCommerce is a **generic** promotion engine for stores
 
 This plugin is in **early development / MVP**. It is suitable for testing and internal pilots, not for claiming marketplace-ready or production-complete status without your own review.
 
-**How discounts work today (MVP):** eligible promotions apply as **negative WooCommerce cart fees** (`percentage_discount`, `fixed_amount_discount`, `free_shipping` shipping offset, or `cheapest_item_discount` for BOGO-style cheapest-unit targeting) or add a **free gift cart line** (`free_gift_product` at zero price). Promotion codes are entered in the standard coupon field; matching codes use virtual coupon data with **zero** native coupon discount — fees/gifts come from this plugin.
+**How discounts work today (MVP):** by default, eligible promotions apply as **negative WooCommerce cart fees**. Optional **line_item** / **hybrid** modes (experimental) mutate cart line prices for percentage/fixed actions — see `docs/manual-line-discount-engine-test.md`. Otherwise: (`percentage_discount`, `fixed_amount_discount`, `free_shipping` shipping offset, or `cheapest_item_discount` for BOGO-style cheapest-unit targeting) or add a **free gift cart line** (`free_gift_product` at zero price). Promotion codes are entered in the standard coupon field; matching codes use virtual coupon data with **zero** native coupon discount — fees/gifts come from this plugin.
 
 **Promotion codes:** plain codes are **never stored**. Only a SHA-256 hash and last four characters are kept. **Generated batch codes** are shown **once** in admin (copy or CSV download); full codes cannot be recovered after you leave that screen.
 
