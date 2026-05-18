@@ -10,10 +10,19 @@ With a goal selected:
 
 `...&tab=campaign-builder&campaign_goal=category_discount`
 
+## Layout (merchant cockpit)
+
+- Page header with subtitle and **Merchant-friendly** badge
+- Horizontal summary cards (Live, Scheduled, Drafts, Needs attention, Budget exhausted) link to filtered All Promotions
+- **Choose campaign type** goal grid; selected goal highlighted
+- **Configure campaign** form (left) + **Campaign preview** sidebar (right) with smart advice and Advanced Editor link
+- **Recent campaigns** table with status/health badges
+- Styles scoped to `.mp-cb-wrap` via `assets/css/admin-campaign-builder.css`
+
 ## Checklist
 
 1. **Navigation** — Tabs order: Getting Started → Campaign Builder → All Promotions → Reports → Diagnostics → Settings.
-2. **Summary cards** — Active, Scheduled, Drafts, Needs attention, Budget exhausted show counts (no errors).
+2. **Summary cards** — Horizontal row; icons; counts; links open filtered list; warning styling when needs attention / budget exhausted > 0.
 3. **Goal cards** — All 10 goals visible with title, description, “Best for”, Create link.
 4. **Category discount** — Select categories, 20% off, label, start/end, budget, usage limit, stackable Yes, coupon No → Create Draft Campaign.
 5. **Success** — Draft created message, name shown, no auto-activation; View / Advanced edit / Activate / Create another links work.

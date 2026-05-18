@@ -18,6 +18,7 @@ use MP\CommercePromotions\Service\CampaignBuilderGoal;
 use MP\CommercePromotions\Service\CampaignBuilderPreview;
 use MP\CommercePromotions\Service\CampaignBuilderSummaryCounts;
 use MP\CommercePromotions\Service\PromotionHealthMonitor;
+use MP\CommercePromotions\Service\PromotionLifecycle;
 use MP\CommercePromotions\Service\PromotionRuleValidator;
 use MP\CommercePromotions\Service\PromotionService;
 use Throwable;
@@ -104,7 +105,7 @@ final class CampaignBuilderPage {
 		$success_id = isset( $_GET['mp_cb_created'] ) ? (int) $_GET['mp_cb_created'] : 0;
 
 		echo '<div class="wrap mp-cb-wrap">';
-		echo '<h1>' . esc_html__( 'Campaign Builder', 'mp-commerce-promotions' ) . '</h1>';
+		$this->render_page_header();
 		AdminNavigation::render_tabs( AdminNavigation::TAB_CAMPAIGN_BUILDER );
 
 		if ( $success_id > 0 ) {
@@ -117,31 +118,66 @@ final class CampaignBuilderPage {
 		}
 
 		$this->render_summary_cards();
+
+		echo '<section class="mp-cb-section mp-cb-section--goals">';
+		echo '<h2 class="mp-cb-section__title">' . esc_html__( 'Choose campaign type', 'mp-commerce-promotions' ) . '</h2>';
 		$this->render_goal_cards( $goal );
+		echo '</section>';
 
 		if ( $goal !== null ) {
 			$ui_state = $this->merged_ui_state( $goal );
 			$parsed   = $this->draft_payload_from_ui_state( $goal, $ui_state );
+			echo '<section class="mp-cb-section mp-cb-section--builder">';
+			echo '<h2 class="mp-cb-section__title">' . esc_html__( 'Configure campaign', 'mp-commerce-promotions' ) . '</h2>';
 			echo '<div class="mp-cb-layout">';
 			echo '<div class="mp-cb-layout__primary">';
 			$this->render_campaign_form( $goal, $ui_state );
 			echo '</div>';
-			echo '<div class="mp-cb-layout__aside">';
-			$this->render_preview_sidebar( $goal, $parsed );
+			echo '<aside class="mp-cb-layout__aside" aria-label="' . esc_attr__( 'Campaign preview', 'mp-commerce-promotions' ) . '">';
+			$this->render_preview_sidebar( $goal, $parsed, $ui_state );
+			echo '</aside>';
 			echo '</div>';
-			echo '</div>';
+			echo '</section>';
+		} else {
+			echo '<section class="mp-cb-section mp-cb-section--preview-empty">';
+			echo '<h2 class="mp-cb-section__title">' . esc_html__( 'Campaign preview', 'mp-commerce-promotions' ) . '</h2>';
+			$this->render_preview_empty_state();
+			echo '</section>';
 		}
 
+		echo '<section class="mp-cb-section mp-cb-section--recent">';
 		$this->render_campaign_list();
+		echo '</section>';
 
 		$this->render_escape_hatch();
+		echo '</div>';
+	}
+
+	private function render_page_header(): void {
+		echo '<header class="mp-cb-header">';
+		echo '<div class="mp-cb-header__titles">';
+		echo '<h1 class="mp-cb-header__title">' . esc_html__( 'Campaign Builder', 'mp-commerce-promotions' ) . '</h1>';
+		echo '<p class="mp-cb-header__subtitle">'
+			. esc_html__( 'Create powerful promotions in a few simple steps.', 'mp-commerce-promotions' )
+			. '</p>';
+		echo '</div>';
+		echo '<span class="mp-cb-badge">' . esc_html__( 'Merchant-friendly', 'mp-commerce-promotions' ) . '</span>';
+		echo '</header>';
+	}
+
+	private function render_preview_empty_state(): void {
+		echo '<div class="mp-cb-panel mp-cb-preview mp-cb-preview--empty">';
+		echo '<span class="dashicons dashicons-visibility mp-cb-preview__empty-icon" aria-hidden="true"></span>';
+		echo '<p class="mp-cb-preview__empty-text">'
+			. esc_html__( 'Choose a campaign type to see a preview.', 'mp-commerce-promotions' )
+			. '</p>';
 		echo '</div>';
 	}
 
 	/**
 	 * @return array<string, mixed>
 	 */
-	private function merged_ui_state( string $goal ): array {
+		private function merged_ui_state( string $goal ): array {
 		$base = $this->default_form_values( $goal );
 		if ( isset( $_GET['preview'] ) && (string) $_GET['preview'] === '1' ) {
 			return array_merge( $base, $this->parse_ui_state_from_get( $goal ) );
@@ -357,60 +393,82 @@ final class CampaignBuilderPage {
 	}
 
 	private function render_summary_cards(): void {
-		$c           = $this->summary->counts();
-		$card_layout = '<div class="mp-cb-summary"><div class="mp-cb-summary__cards">';
-
+		$c    = $this->summary->counts();
 		$defs = array(
 			array(
 				'label' => __( 'Live', 'mp-commerce-promotions' ),
 				'value' => (string) $c['active'],
+				'icon'  => 'yes-alt',
+				'url'   => $this->promotions_list_url( array( 'promotion_status' => PromotionStatus::ACTIVE ) ),
+				'warn'  => false,
 			),
 			array(
 				'label' => __( 'Scheduled', 'mp-commerce-promotions' ),
 				'value' => (string) $c['scheduled'],
+				'icon'  => 'calendar-alt',
+				'url'   => $this->promotions_list_url( array( 'lifecycle_phase' => PromotionLifecycle::PHASE_UPCOMING ) ),
+				'warn'  => false,
 			),
 			array(
 				'label' => __( 'Drafts', 'mp-commerce-promotions' ),
 				'value' => (string) $c['drafts'],
+				'icon'  => 'edit',
+				'url'   => $this->promotions_list_url( array( 'promotion_status' => PromotionStatus::DRAFT ) ),
+				'warn'  => false,
 			),
 			array(
 				'label' => __( 'Needs attention', 'mp-commerce-promotions' ),
 				'value' => (string) $c['needs_attention'],
+				'icon'  => 'warning',
+				'url'   => $this->promotions_list_url( array( 'quick_filter' => 'health_issues' ) ),
+				'warn'  => (int) $c['needs_attention'] > 0,
 			),
 			array(
-				'label' => __( 'Budget exhausted (active)', 'mp-commerce-promotions' ),
+				'label' => __( 'Budget exhausted', 'mp-commerce-promotions' ),
 				'value' => (string) $c['budget_exhausted'],
+				'icon'  => 'money-alt',
+				'url'   => $this->promotions_list_url( array( 'quick_filter' => 'budget_exhausted' ) ),
+				'warn'  => (int) $c['budget_exhausted'] > 0,
 			),
 		);
 
+		echo '<div class="mp-cb-summary">';
 		foreach ( $defs as $item ) {
-			$card_layout .= sprintf(
-				'<div class="mp-cb-summary-card"><span class="mp-cb-summary-card__label">%s</span>'
-				. '<span class="mp-cb-summary-card__value">%s</span></div>',
-				esc_html( $item['label'] ),
-				esc_html( $item['value'] )
-			);
+			$class = 'mp-cb-summary-card';
+			if ( ! empty( $item['warn'] ) ) {
+				$class .= ' is-warning';
+			}
+			echo '<a class="' . esc_attr( $class ) . '" href="' . esc_url( $item['url'] ) . '">';
+			echo '<span class="mp-cb-summary-card__icon dashicons dashicons-' . esc_attr( $item['icon'] ) . '" aria-hidden="true"></span>';
+			echo '<span class="mp-cb-summary-card__value">' . esc_html( $item['value'] ) . '</span>';
+			echo '<span class="mp-cb-summary-card__label">' . esc_html( $item['label'] ) . '</span>';
+			echo '</a>';
 		}
+		echo '</div>';
+	}
 
-		echo $card_layout . '</div></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	/**
+	 * @param array<string, string> $query
+	 */
+	private function promotions_list_url( array $query = array() ): string {
+		return AdminUrl::list_promotions( $query );
 	}
 
 	private function render_goal_cards( ?string $active_goal ): void {
 		echo '<div class="mp-cb-goals">';
 		foreach ( CampaignBuilderGoal::definitions() as $key => $def ) {
-			$url    = AdminUrl::tab( AdminNavigation::TAB_CAMPAIGN_BUILDER );
-			$url    = add_query_arg( array( 'campaign_goal' => $key ), $url );
-			$active = $active_goal === $key ? ' mp-cb-goal-card--active' : '';
+			$url    = add_query_arg( array( 'campaign_goal' => $key ), AdminUrl::tab( AdminNavigation::TAB_CAMPAIGN_BUILDER ) );
+			$active = $active_goal === $key ? ' is-selected' : '';
 			echo '<article class="mp-cb-goal-card' . esc_attr( $active ) . '">';
 			echo '<span class="mp-cb-goal-card__icon dashicons dashicons-' . esc_attr( $def['icon'] ) . '" aria-hidden="true"></span>';
-			echo '<h3>' . esc_html( $def['title'] ) . '</h3>';
-			echo '<p class="description">' . esc_html( $def['description'] ) . '</p>';
-			echo '<p><em>' . esc_html__( 'Best for:', 'mp-commerce-promotions' ) . ' '
-				. esc_html( $def['best_for'] ) . '</em></p>';
+			echo '<h3 class="mp-cb-goal-card__title">' . esc_html( $def['title'] ) . '</h3>';
+			echo '<p class="mp-cb-goal-card__desc">' . esc_html( $def['description'] ) . '</p>';
+			echo '<p class="mp-cb-goal-card__best-for"><span>' . esc_html__( 'Best for', 'mp-commerce-promotions' ) . '</span> '
+				. esc_html( $def['best_for'] ) . '</p>';
 			printf(
-				'<p><a class="button button-primary" href="%s">%s</a></p>',
+				'<a class="button button-secondary mp-cb-goal-card__cta" href="%s">%s</a>',
 				esc_url( $url ),
-				esc_html__( 'Create…', 'mp-commerce-promotions' )
+				esc_html__( 'Create campaign', 'mp-commerce-promotions' )
 			);
 			echo '</article>';
 		}
@@ -424,23 +482,32 @@ final class CampaignBuilderPage {
 		$post_url = AdminUrl::tab( AdminNavigation::TAB_CAMPAIGN_BUILDER );
 		$post_url = add_query_arg( array( 'campaign_goal' => $goal ), $post_url );
 
-		echo '<form class="mp-cb-form card" method="post" action="' . esc_url( $post_url ) . '">';
+		echo '<form class="mp-cb-form mp-cb-panel" method="post" action="' . esc_url( $post_url ) . '">';
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 		echo '<input type="hidden" name="campaign_goal" value="' . esc_attr( $goal ) . '" />';
 
+		echo '<div class="mp-cb-form-group">';
+		echo '<h3 class="mp-cb-form-group__title">' . esc_html__( 'Campaign details', 'mp-commerce-promotions' ) . '</h3>';
 		$this->render_text_field(
 			'campaign_name',
 			__( 'Campaign name', 'mp-commerce-promotions' ),
 			(string) $values['campaign_name'],
-			true
+			true,
+			array(),
+			__( 'Shown in admin and reports.', 'mp-commerce-promotions' )
 		);
 		$this->render_text_field(
 			'campaign_label',
 			__( 'Campaign label', 'mp-commerce-promotions' ),
 			(string) $values['campaign_label'],
-			false
+			false,
+			array(),
+			__( 'Optional internal tag for filtering.', 'mp-commerce-promotions' )
 		);
+		echo '</div>';
 
+		echo '<div class="mp-cb-form-group">';
+		echo '<h3 class="mp-cb-form-group__title">' . esc_html__( 'Schedule & limits', 'mp-commerce-promotions' ) . '</h3>';
 		echo '<div class="mp-cb-fields-row">';
 		$this->render_datetime_local(
 			'starts_at',
@@ -453,28 +520,27 @@ final class CampaignBuilderPage {
 			(string) $values['ends_at']
 		);
 		echo '</div>';
-
 		echo '<div class="mp-cb-fields-row">';
 		$this->render_text_field(
 			'budget_amount',
-			__( 'Budget amount (optional)', 'mp-commerce-promotions' ),
+			__( 'Budget amount', 'mp-commerce-promotions' ),
 			(string) $values['budget_amount'],
 			false,
-			array( 'type' => 'number', 'step' => '0.01', 'min' => '0' )
+			array( 'type' => 'number', 'step' => '0.01', 'min' => '0' ),
+			__( 'Optional cap on total discount spend.', 'mp-commerce-promotions' )
 		);
 		$this->render_text_field(
 			'usage_limit',
-			__( 'Overall usage limit (optional)', 'mp-commerce-promotions' ),
+			__( 'Usage limit', 'mp-commerce-promotions' ),
 			(string) $values['usage_limit'],
 			false,
-			array( 'type' => 'number', 'step' => '1', 'min' => '0' )
+			array( 'type' => 'number', 'step' => '1', 'min' => '0' ),
+			__( 'Optional maximum redemptions for this campaign.', 'mp-commerce-promotions' )
 		);
 		echo '</div>';
-
 		echo '<fieldset class="mp-cb-fieldset"><legend>' . esc_html__( 'Stacking', 'mp-commerce-promotions' ) . '</legend>';
 		$this->radio_yes_no( 'stackable', (bool) $values['stackable'], __( 'Allow stacking with compatible promotions?', 'mp-commerce-promotions' ) );
 		echo '</fieldset>';
-
 		echo '<fieldset class="mp-cb-fieldset"><legend>'
 			. esc_html__( 'Coupon requirement', 'mp-commerce-promotions' ) . '</legend>';
 		if ( $goal === CampaignBuilderGoal::COUPON_CODE ) {
@@ -489,10 +555,14 @@ final class CampaignBuilderPage {
 			);
 		}
 		echo '</fieldset>';
+		echo '</div>';
 
+		echo '<div class="mp-cb-form-group">';
+		echo '<h3 class="mp-cb-form-group__title">' . esc_html__( 'Discount & offer', 'mp-commerce-promotions' ) . '</h3>';
 		$this->render_goal_specific_fields( $goal, $values );
+		echo '</div>';
 
-		echo '<p class="submit">';
+		echo '<p class="mp-cb-form-actions submit">';
 		submit_button( __( 'Create Draft Campaign', 'mp-commerce-promotions' ), 'primary', 'mp_cb_submit_create', false );
 		$url_preview = esc_url(
 			add_query_arg(
@@ -523,9 +593,6 @@ final class CampaignBuilderPage {
 	 * @param array<string, mixed> $values
 	 */
 	private function render_goal_specific_fields( string $goal, array $values ): void {
-		echo '<fieldset class="mp-cb-fieldset"><legend>'
-			. esc_html__( 'Offer details', 'mp-commerce-promotions' ) . '</legend>';
-
 		if ( $goal === CampaignBuilderGoal::FIRST_ORDER ) {
 			$this->render_discount_fields( $values, true );
 		} elseif ( $goal === CampaignBuilderGoal::VIP_ROLE ) {
@@ -635,8 +702,6 @@ final class CampaignBuilderPage {
 		}
 
 		$this->render_coupon_optional_block( $values, $goal );
-
-		echo '</fieldset>';
 	}
 
 	private function render_bogo_scope( string $selected ): void {
@@ -833,7 +898,8 @@ final class CampaignBuilderPage {
 		string $label,
 		string $value,
 		bool $required,
-		array $more = array()
+		array $more = array(),
+		?string $help = null
 	): void {
 		$type      = isset( $more['type'] ) ? (string) $more['type'] : 'text';
 		$id        = 'mp_cb_' . $name;
@@ -847,17 +913,25 @@ final class CampaignBuilderPage {
 			$key_attrs .= sprintf( ' %s="%s"', esc_attr( $k ), esc_attr( (string) $val ) );
 		}
 
+		echo '<p class="mp-cb-field">';
 		printf(
-			'<p><label for="%1$s"><strong>%2$s</strong></label>'
-			. '<input class="widefat" type="%3$s" id="%1$s" name="%4$s" value="%5$s"%6$s%7$s /></p>',
+			'<label class="mp-cb-field__label" for="%1$s">%2$s</label>',
 			esc_attr( $id ),
-			esc_html( $label ),
+			esc_html( $label )
+		);
+		if ( $help !== null && $help !== '' ) {
+			echo '<span class="mp-cb-field__help description">' . esc_html( $help ) . '</span>';
+		}
+		printf(
+			'<input class="widefat mp-cb-field__input" type="%1$s" id="%2$s" name="%3$s" value="%4$s"%5$s%6$s />',
 			esc_attr( $type ),
+			esc_attr( $id ),
 			esc_attr( $name ),
 			esc_attr( $value ),
 			$required ? ' required' : '',
 			$key_attrs
 		);
+		echo '</p>';
 	}
 
 	private function render_datetime_local( string $name, string $label, string $value ): void {
@@ -871,53 +945,84 @@ final class CampaignBuilderPage {
 
 	/**
 	 * @param array<string, mixed> $form
+	 * @param array<string, mixed> $ui_state
 	 */
-	private function render_preview_sidebar( string $goal, array $form ): void {
+	private function render_preview_sidebar( string $goal, array $form, array $ui_state = array() ): void {
 		$blocks = $this->preview->summarize_form( $goal, $form );
 
-		echo '<div class="mp-cb-preview">';
-		foreach (
-			array(
-				'applies_when'       => __( 'When it applies', 'mp-commerce-promotions' ),
-				'customer_receives' => __( 'Customers receive', 'mp-commerce-promotions' ),
-				'limits'            => __( 'Limits', 'mp-commerce-promotions' ),
-				'stacking'          => __( 'Stacking', 'mp-commerce-promotions' ),
-				'coupon'            => __( 'Coupon behaviour', 'mp-commerce-promotions' ),
-			) as $k => $label
-		) {
-			echo '<section class="mp-cb-preview__block">';
-			echo '<h3>' . esc_html( $label ) . '</h3>';
-			echo '<p>' . esc_html( (string) ( $blocks[ $k ] ?? '' ) ) . '</p>';
-			echo '</section>';
-		}
+		echo '<div class="mp-cb-panel mp-cb-preview">';
+		echo '<h3 class="mp-cb-preview__heading">' . esc_html__( 'Campaign preview', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<dl class="mp-cb-preview__list">';
+		$this->render_preview_row( __( 'Applies when', 'mp-commerce-promotions' ), (string) ( $blocks['applies_when'] ?? '' ) );
+		$this->render_preview_row( __( 'Customer gets', 'mp-commerce-promotions' ), (string) ( $blocks['customer_receives'] ?? '' ) );
+		$this->render_preview_row( __( 'Dates', 'mp-commerce-promotions' ), $this->format_preview_dates( $ui_state ) );
+		$this->render_preview_row( __( 'Budget / usage', 'mp-commerce-promotions' ), (string) ( $blocks['limits'] ?? '' ) );
+		$this->render_preview_row( __( 'Stacking', 'mp-commerce-promotions' ), (string) ( $blocks['stacking'] ?? '' ) );
+		$this->render_preview_row( __( 'Coupon', 'mp-commerce-promotions' ), (string) ( $blocks['coupon'] ?? '' ) );
+		echo '</dl>';
 
 		if ( ! empty( $blocks['warnings'] ) ) {
-			echo '<section class="mp-cb-preview__warnings">';
-			echo '<h3>' . esc_html__( 'Warnings', 'mp-commerce-promotions' ) . '</h3><ul>';
+			echo '<div class="mp-cb-smart-advice">';
+			echo '<h4 class="mp-cb-smart-advice__title">';
+			echo '<span class="dashicons dashicons-lightbulb" aria-hidden="true"></span> ';
+			echo esc_html__( 'Smart advice', 'mp-commerce-promotions' );
+			echo '</h4><ul>';
 			foreach ( $blocks['warnings'] as $w ) {
 				echo '<li>' . esc_html( (string) $w ) . '</li>';
 			}
-			echo '</ul></section>';
+			echo '</ul></div>';
 		}
 
 		if ( ! empty( $blocks['recommendations'] ) ) {
-			echo '<section class="mp-cb-preview__reco">';
-			echo '<h3>' . esc_html__( 'Recommendations', 'mp-commerce-promotions' ) . '</h3><ul>';
+			echo '<div class="mp-cb-next-steps">';
+			echo '<h4 class="mp-cb-next-steps__title">' . esc_html__( 'What happens next', 'mp-commerce-promotions' ) . '</h4>';
+			echo '<ol class="mp-cb-next-steps__list">';
 			foreach ( $blocks['recommendations'] as $rec ) {
 				echo '<li>' . esc_html( (string) $rec ) . '</li>';
 			}
-			echo '</ul></section>';
+			echo '</ol></div>';
 		}
 
+		$this->render_sidebar_escape_hatch();
+		echo '</div>';
+	}
+
+	private function render_preview_row( string $label, string $value ): void {
+		echo '<dt>' . esc_html( $label ) . '</dt>';
+		echo '<dd>' . esc_html( $value !== '' ? $value : '—' ) . '</dd>';
+	}
+
+	/**
+	 * @param array<string, mixed> $ui_state
+	 */
+	private function format_preview_dates( array $ui_state ): string {
+		$starts = isset( $ui_state['starts_at'] ) ? trim( (string) $ui_state['starts_at'] ) : '';
+		$ends   = isset( $ui_state['ends_at'] ) ? trim( (string) $ui_state['ends_at'] ) : '';
+		if ( $starts === '' && $ends === '' ) {
+			return __( 'No schedule set — runs until paused or archived.', 'mp-commerce-promotions' );
+		}
+
+		return trim( ( $starts !== '' ? $starts : '—' ) . ' → ' . ( $ends !== '' ? $ends : '—' ) );
+	}
+
+	private function render_sidebar_escape_hatch(): void {
+		echo '<div class="mp-cb-sidebar-escape">';
+		echo '<h4>' . esc_html__( 'Need more power?', 'mp-commerce-promotions' ) . '</h4>';
+		echo '<p class="description">' . esc_html__(
+			'Use the Advanced Editor for JSON rules, cart simulation, codes, and orchestration.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<p><a class="button button-secondary" href="' . esc_url( AdminUrl::tab( AdminNavigation::TAB_ALL ) ) . '">'
+			. esc_html__( 'Open Advanced Editor', 'mp-commerce-promotions' ) . '</a></p>';
 		echo '</div>';
 	}
 
 	private function render_campaign_list(): void {
 		$rows = $this->promotions->find_filtered( array( 'limit' => 10 ) );
 
-		echo '<h2>' . esc_html__( 'Recently updated promotions', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<h2 class="mp-cb-section__title mp-cb-section__title--table">' . esc_html__( 'Recent campaigns', 'mp-commerce-promotions' ) . '</h2>';
 
-		echo '<table class="widefat striped"><thead><tr>';
+		echo '<table class="widefat striped mp-cb-table"><thead><tr>';
 		foreach (
 			array(
 				'name'       => __( 'Name', 'mp-commerce-promotions' ),
@@ -943,28 +1048,27 @@ final class CampaignBuilderPage {
 			echo '<tr>';
 			echo '<td>' . esc_html( $promotion->get_name() ) . '</td>';
 			echo '<td>' . esc_html( $this->goal_label_for_promotion( $promotion ) ) . '</td>';
-			echo '<td>' . esc_html( $this->status_label( $promotion->get_status() ) ) . '</td>';
+			echo '<td>' . $this->render_status_badge( $promotion->get_status() ) . '</td>';
 			echo '<td>' . esc_html( $this->format_datetime_cell( $promotion->get_starts_at() ) ) . '</td>';
 			echo '<td>' . esc_html( $this->format_datetime_cell( $promotion->get_ends_at() ) ) . '</td>';
 			echo '<td>' . esc_html( $this->format_usage_cell( $promotion ) ) . '</td>';
 			echo '<td>' . esc_html( $this->format_budget_cell( $promotion ) ) . '</td>';
-			echo '<td>' . esc_html( $this->format_health_cell( $promotion ) ) . '</td>';
-			echo '<td>';
-			echo '<div class="mp-cb-actions-links">';
+			echo '<td>' . $this->render_health_badge( $promotion ) . '</td>';
+			echo '<td class="mp-cb-table__actions">';
 			printf(
-				'<a href="%1$s">%2$s</a> · ',
+				'<a class="button button-small" href="%1$s">%2$s</a> ',
 				esc_url( $edit_url ),
 				esc_html__( 'View', 'mp-commerce-promotions' )
 			);
 			printf(
-				'<a href="%s">%s</a>',
+				'<a class="button button-small" href="%1$s">%2$s</a> ',
 				esc_url( $edit_url ),
 				esc_html__( 'Advanced edit', 'mp-commerce-promotions' )
 			);
 			if ( $id !== null && $id > 0 ) {
 				$this->render_duplicate_form( $id );
 			}
-			echo '</div></td>';
+			echo '</td>';
 			echo '</tr>';
 		}
 
@@ -1075,8 +1179,24 @@ final class CampaignBuilderPage {
 		return $labels[ $status ] ?? $status;
 	}
 
+	private function render_status_badge( string $status ): string {
+		$class = 'mp-cb-badge-status mp-cb-badge-status--' . sanitize_html_class( $status );
+
+		return '<span class="' . esc_attr( $class ) . '">' . esc_html( $this->status_label( $status ) ) . '</span>';
+	}
+
+	private function render_health_badge( Promotion $promotion ): string {
+		$text = $this->format_health_cell( $promotion );
+		$class = 'mp-cb-badge-health mp-cb-badge-health--ok';
+		if ( $text !== __( 'OK', 'mp-commerce-promotions' ) ) {
+			$class = 'mp-cb-badge-health mp-cb-badge-health--warn';
+		}
+
+		return '<span class="' . esc_attr( $class ) . '">' . esc_html( $text ) . '</span>';
+	}
+
 	private function render_duplicate_form( int $promotion_id ): void {
-		echo '<form method="post" class="mp-cb-dup-form" style="display:inline;">';
+		echo '<form method="post" class="mp-cb-dup-form">';
 		wp_nonce_field( self::DUPLICATE_NONCE_ACTION, self::DUPLICATE_NONCE_FIELD );
 		printf( '<input type="hidden" name="mp_cb_duplicate_promotion_id" value="%d" />', $promotion_id );
 		submit_button( __( 'Duplicate', 'mp-commerce-promotions' ), 'small', 'mp_cb_duplicate_submit', false );
@@ -1084,18 +1204,15 @@ final class CampaignBuilderPage {
 	}
 
 	private function render_escape_hatch(): void {
-		echo '<div class="mp-cb-escape-hatch">';
-		echo '<p class="description">';
-		printf(
-			/* translators: %s: link to list */
-			esc_html__(
-				'Need full rule control, JSON editing, or cart simulation? Continue in the %s.',
-				'mp-commerce-promotions'
-			),
-			'<a href="' . esc_url( AdminUrl::tab( AdminNavigation::TAB_ALL ) ) . '">'
-			. esc_html__( 'advanced promotions list', 'mp-commerce-promotions' ) . '</a>'
-		);
-		echo '</p></div>';
+		echo '<div class="mp-cb-escape mp-cb-panel">';
+		echo '<h3>' . esc_html__( 'Need more power?', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<p class="description">' . esc_html__(
+			'Campaign Builder creates standard promotions. For JSON rules, diagnostics, and cart simulation, use the Advanced Editor.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<p><a class="button button-secondary" href="' . esc_url( AdminUrl::tab( AdminNavigation::TAB_ALL ) ) . '">'
+			. esc_html__( 'Go to Advanced Editor', 'mp-commerce-promotions' ) . '</a></p>';
+		echo '</div>';
 	}
 
 	/**
