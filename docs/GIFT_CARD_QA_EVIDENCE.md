@@ -80,10 +80,17 @@ Before pilot:
 
 ---
 
+## Email sender QA
+
+- **Settings → Gift card email sender:** use **Default** unless SMTP authorizes custom From ([GIFT_CARD_EMAILS.md](GIFT_CARD_EMAILS.md)).
+- **Diagnostics → Send test gift card email:** sample `****TEST` only; check sender mode in the result.
+- Live tests: verified-domain recipient only (not `example.com`).
+
 ## Tooling & verification
 
 ```bash
 composer run lint:php
-composer run test -- --filter 'GiftCardProductAdminHelperTest|GiftCardQaProductSetupTest'
+composer run test -- --filter 'GiftCardEmailSenderTest|GiftCardManualIssueDeliveryTest'
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-e2e-smoke.php
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-mail-smoke.php
 ```

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Admin;
 
+use MP\CommercePromotions\GiftCard\GiftCardEmailSender;
 use MP\CommercePromotions\Service\Settings;
 
 final class SettingsPage {
@@ -125,10 +126,30 @@ final class SettingsPage {
 		echo '<input type="url" class="regular-text" name="mp_cp_gift_card_logo_url" id="mp_cp_gift_card_logo_url" value="' . esc_attr( $this->settings->gift_card_logo_url() ) . '" /></td></tr>';
 		echo '<tr><th scope="row"><label for="mp_cp_gift_card_accent_color">' . esc_html__( 'Email accent color', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="text" class="regular-text" name="mp_cp_gift_card_accent_color" id="mp_cp_gift_card_accent_color" value="' . esc_attr( $this->settings->gift_card_accent_color() ) . '" placeholder="#2271b1" /></td></tr>';
-		echo '<tr><th scope="row"><label for="mp_cp_gift_card_sender_name">' . esc_html__( 'Sender name', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '</tbody></table>';
+
+		echo '<h3 class="title">' . esc_html__( 'Gift card email sender', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<p class="description">' . esc_html__(
+			'Default mode lets WooCommerce, WP Mail SMTP, or your site mail settings choose the From address (recommended). Custom mode sets From/Reply-To only when the address is valid and authorized by your SMTP provider.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<table class="form-table" role="presentation"><tbody>';
+		$sender_mode = $this->settings->gift_card_sender_mode();
+		echo '<tr><th scope="row">' . esc_html__( 'Sender mode', 'mp-commerce-promotions' ) . '</th><td>';
+		echo '<fieldset><legend class="screen-reader-text">' . esc_html__( 'Sender mode', 'mp-commerce-promotions' ) . '</legend>';
+		echo '<label><input type="radio" name="mp_cp_gift_card_sender_mode" value="' . esc_attr( Settings::GIFT_CARD_SENDER_MODE_DEFAULT ) . '"'
+			. checked( $sender_mode, Settings::GIFT_CARD_SENDER_MODE_DEFAULT, false ) . ' /> '
+			. esc_html__( 'Default (WooCommerce / site / WP Mail SMTP)', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<label><input type="radio" name="mp_cp_gift_card_sender_mode" value="' . esc_attr( Settings::GIFT_CARD_SENDER_MODE_CUSTOM ) . '"'
+			. checked( $sender_mode, Settings::GIFT_CARD_SENDER_MODE_CUSTOM, false ) . ' /> '
+			. esc_html__( 'Custom sender', 'mp-commerce-promotions' ) . '</label>';
+		echo '</fieldset></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_gift_card_sender_name">' . esc_html__( 'Custom sender name', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="text" class="regular-text" name="mp_cp_gift_card_sender_name" id="mp_cp_gift_card_sender_name" value="' . esc_attr( $this->settings->gift_card_sender_name() ) . '" /></td></tr>';
-		echo '<tr><th scope="row"><label for="mp_cp_gift_card_sender_email">' . esc_html__( 'Sender email', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<tr><th scope="row"><label for="mp_cp_gift_card_sender_email">' . esc_html__( 'Custom sender email', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="email" class="regular-text" name="mp_cp_gift_card_sender_email" id="mp_cp_gift_card_sender_email" value="' . esc_attr( $this->settings->gift_card_sender_email() ) . '" /></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_gift_card_reply_to_email">' . esc_html__( 'Reply-To email (optional)', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="email" class="regular-text" name="mp_cp_gift_card_reply_to_email" id="mp_cp_gift_card_reply_to_email" value="' . esc_attr( $this->settings->gift_card_reply_to_email() ) . '" /></td></tr>';
 		echo '<tr><th scope="row"><label for="mp_cp_gift_card_support_email_text">' . esc_html__( 'Support footer text', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<textarea name="mp_cp_gift_card_support_email_text" id="mp_cp_gift_card_support_email_text" class="large-text" rows="3">' . esc_textarea( $this->settings->gift_card_support_email_text() ) . '</textarea></td></tr>';
 		echo '</tbody></table>';
@@ -287,15 +308,32 @@ final class SettingsPage {
 				sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_gift_card_accent_color'] ) )
 			);
 		}
+		$requested_mode = isset( $_POST['mp_cp_gift_card_sender_mode'] )
+			? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_sender_mode'] ) )
+			: Settings::GIFT_CARD_SENDER_MODE_DEFAULT;
 		if ( isset( $_POST['mp_cp_gift_card_sender_name'] ) ) {
 			$this->settings->set_gift_card_sender_name(
 				sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_gift_card_sender_name'] ) )
 			);
 		}
-		if ( isset( $_POST['mp_cp_gift_card_sender_email'] ) ) {
-			$this->settings->set_gift_card_sender_email(
-				sanitize_email( wp_unslash( (string) $_POST['mp_cp_gift_card_sender_email'] ) )
+		$sender_email_raw = isset( $_POST['mp_cp_gift_card_sender_email'] )
+			? sanitize_email( wp_unslash( (string) $_POST['mp_cp_gift_card_sender_email'] ) )
+			: '';
+		$this->settings->set_gift_card_sender_email( $sender_email_raw );
+		if ( isset( $_POST['mp_cp_gift_card_reply_to_email'] ) ) {
+			$this->settings->set_gift_card_reply_to_email(
+				sanitize_email( wp_unslash( (string) $_POST['mp_cp_gift_card_reply_to_email'] ) )
 			);
+		}
+		if ( $requested_mode === Settings::GIFT_CARD_SENDER_MODE_CUSTOM ) {
+			if ( $sender_email_raw === '' || ! is_email( $sender_email_raw ) ) {
+				$this->settings->set_gift_card_sender_mode( Settings::GIFT_CARD_SENDER_MODE_DEFAULT );
+				GiftCardEmailSender::flag_invalid_custom_on_save();
+				$this->redirect_with_notice( 'warning', 'sender_invalid_fallback' );
+			}
+			$this->settings->set_gift_card_sender_mode( Settings::GIFT_CARD_SENDER_MODE_CUSTOM );
+		} else {
+			$this->settings->set_gift_card_sender_mode( Settings::GIFT_CARD_SENDER_MODE_DEFAULT );
 		}
 		if ( isset( $_POST['mp_cp_gift_card_support_email_text'] ) ) {
 			$this->settings->set_gift_card_support_email_text(
@@ -334,6 +372,12 @@ final class SettingsPage {
 	}
 
 	private function render_notices(): void {
+		if ( GiftCardEmailSender::consume_invalid_custom_notice() ) {
+			AdminNotice::warning(
+				__( 'Custom sender email was invalid. Gift card emails will use the default sender until you save a valid custom address.', 'mp-commerce-promotions' )
+			);
+		}
+
 		if ( ! isset( $_GET['mp_cp_settings_notice'] ) || ! isset( $_GET['mp_cp_settings_code'] ) ) {
 			return;
 		}
@@ -351,6 +395,11 @@ final class SettingsPage {
 			return;
 		}
 
+		if ( $type === 'warning' ) {
+			AdminNotice::warning( $message );
+			return;
+		}
+
 		AdminNotice::error( $message );
 	}
 
@@ -361,6 +410,8 @@ final class SettingsPage {
 			case 'missing_nonce':
 			case 'invalid_nonce':
 				return __( 'Security check failed. Please try again.', 'mp-commerce-promotions' );
+			case 'sender_invalid_fallback':
+				return __( 'Custom sender email was invalid. Saved with default sender mode.', 'mp-commerce-promotions' );
 			default:
 				return '';
 		}

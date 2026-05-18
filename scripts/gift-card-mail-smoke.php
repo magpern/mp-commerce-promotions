@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MP\CommercePromotions\GiftCard\GiftCardDeliveryStatus;
 use MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer;
+use MP\CommercePromotions\GiftCard\GiftCardEmailSender;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
 use MP\CommercePromotions\GiftCard\GiftCardManualDeliveryStore;
 use MP\CommercePromotions\GiftCard\GiftCardManualIssueDelivery;
@@ -28,8 +29,14 @@ if ( ! $wpdb instanceof wpdb ) {
 	exit( 1 );
 }
 
-$recipient = 'postmaster@biopentra.eu';
+$recipient = function_exists( 'get_option' )
+	? sanitize_email( (string) get_option( 'admin_email' ) )
+	: '';
+if ( $recipient === '' ) {
+	$recipient = 'postmaster@biopentra.eu';
+}
 $settings  = new Settings();
+$settings->set_gift_card_sender_mode( \MP\CommercePromotions\Service\Settings::GIFT_CARD_SENDER_MODE_DEFAULT );
 $mailer    = new GiftCardDeliveryMailer( $settings );
 $manual    = new GiftCardManualIssueDelivery( $mailer, new GiftCardManualDeliveryStore() );
 $repo      = new GiftCardRepository( $wpdb );
@@ -118,6 +125,30 @@ if ( is_array( $last ) && isset( $last['delivery_status'] ) ) {
 	$pass( 'test email result recorded' );
 } else {
 	$fail( 'test email result recorded' );
+}
+
+$default_resolve = ( new GiftCardEmailSender( $settings ) )->resolve_for_send( 'Smoke' );
+if ( ( $default_resolve['mode'] ?? '' ) === \MP\CommercePromotions\Service\Settings::GIFT_CARD_SENDER_MODE_DEFAULT
+	&& empty( $default_resolve['from_header_set'] ) ) {
+	$pass( 'default sender mode omits From header' );
+} else {
+	$fail( 'default sender mode omits From header' );
+}
+
+$settings->set_gift_card_sender_mode( \MP\CommercePromotions\Service\Settings::GIFT_CARD_SENDER_MODE_CUSTOM );
+$settings->set_gift_card_sender_email( 'invalid-address' );
+$invalid_resolve = ( new GiftCardEmailSender( $settings ) )->resolve_for_send( 'Smoke' );
+if ( ( $invalid_resolve['mode'] ?? '' ) === \MP\CommercePromotions\Service\Settings::GIFT_CARD_SENDER_MODE_DEFAULT ) {
+	$pass( 'invalid custom sender falls back to default' );
+} else {
+	$fail( 'invalid custom sender falls back to default' );
+}
+
+$diag = ( new GiftCardEmailSender( $settings ) )->analyze();
+if ( isset( $diag['sender_mode'] ) && isset( $diag['effective_sender_mode'] ) ) {
+	$pass( 'diagnostics sender keys present' );
+} else {
+	$fail( 'diagnostics sender keys present' );
 }
 
 echo "=== Done; failures: {$failures} ===\n";

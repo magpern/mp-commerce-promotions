@@ -5,6 +5,7 @@ Use this before enabling gift card sales for real customers.
 ## Prerequisites
 
 - [ ] **Configure SMTP** (or reliable transactional email). Verify a test message delivers to a real inbox.
+- [ ] **Gift card email sender** — Settings → **Default** mode unless SMTP authorizes a custom From address ([GIFT_CARD_EMAILS.md](GIFT_CARD_EMAILS.md)).
 - [ ] **Do not go live** until you have confirmed at least one gift card email with the real code.
 - [ ] WooCommerce **Commerce Growth** plugin active; schema **1.19.0+**.
 
@@ -30,7 +31,7 @@ Use this before enabling gift card sales for real customers.
 ## Diagnostics
 
 - [ ] **Diagnostics → Gift card products** — no missing generation on paid orders.
-- [ ] **Diagnostics → Gift card email deliverability** — no pilot warning (“products active but email may fail”).
+- [ ] **Diagnostics → Gift card email deliverability** — no pilot warning (“products active but email may fail”); sender mode **default** or authorized **custom**; run **Send test gift card email** (`****TEST` only).
 - [ ] **Support bundle** export includes `gift_card_mail` summary (no secrets).
 
 ## Known pilot limits
@@ -47,6 +48,7 @@ Use this before enabling gift card sales for real customers.
 composer run lint:php
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-setup.php
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-e2e-smoke.php
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-mail-smoke.php
 ```
 
-See also [GIFT_CARD_QA_EVIDENCE.md](GIFT_CARD_QA_EVIDENCE.md), [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md).
+See also [GIFT_CARD_QA_EVIDENCE.md](GIFT_CARD_QA_EVIDENCE.md), [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md), [GIFT_CARD_EMAILS.md](GIFT_CARD_EMAILS.md).

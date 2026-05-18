@@ -15,8 +15,11 @@ final class GiftCardDeliveryMailer {
 
 	private Settings $settings;
 
-	public function __construct( Settings $settings ) {
-		$this->settings = $settings;
+	private GiftCardEmailSender $email_sender;
+
+	public function __construct( Settings $settings, ?GiftCardEmailSender $email_sender = null ) {
+		$this->settings     = $settings;
+		$this->email_sender = $email_sender ?? new GiftCardEmailSender( $settings );
 	}
 
 	/**
@@ -83,7 +86,8 @@ final class GiftCardDeliveryMailer {
 		}
 
 		$manual_issue = $order_id <= 0;
-		$sent         = $this->send_email( $to_email, $order_id, $cards, false, $manual_issue );
+		$send_meta    = $this->send_email( $to_email, $order_id, $cards, false, $manual_issue );
+		$sent         = ! empty( $send_meta['sent'] );
 		$now  = function_exists( 'current_time' ) ? current_time( 'mysql' ) : gmdate( 'Y-m-d H:i:s' );
 
 		foreach ( $results as $i => $row ) {
@@ -112,7 +116,9 @@ final class GiftCardDeliveryMailer {
 	 *   delivery_status: string,
 	 *   delivered_to?: string,
 	 *   delivered_at?: string,
-	 *   delivery_error?: string
+	 *   delivery_error?: string,
+	 *   sender_mode_used?: string,
+	 *   from_header_set?: bool
 	 * }
 	 */
 	public function send_test_delivery_email( string $to_email ): array {
@@ -146,30 +152,43 @@ final class GiftCardDeliveryMailer {
 			),
 		);
 
-		$sent = $this->send_email( $to_email, 0, $cards, true, true );
-		$now  = function_exists( 'current_time' ) ? current_time( 'mysql' ) : gmdate( 'Y-m-d H:i:s' );
+		$send_meta = $this->send_email( $to_email, 0, $cards, true, true );
+		$now       = function_exists( 'current_time' ) ? current_time( 'mysql' ) : gmdate( 'Y-m-d H:i:s' );
+		$base      = array(
+			'sender_mode_used' => (string) ( $send_meta['sender_mode_used'] ?? $this->email_sender->effective_mode() ),
+			'from_header_set'  => ! empty( $send_meta['from_header_set'] ),
+		);
 
-		if ( $sent ) {
-			return array(
-				'ok'              => true,
-				'delivery_status' => GiftCardDeliveryStatus::SENT,
-				'delivered_to'    => $to_email,
-				'delivered_at'    => $now,
+		if ( ! empty( $send_meta['sent'] ) ) {
+			return array_merge(
+				$base,
+				array(
+					'ok'              => true,
+					'delivery_status' => GiftCardDeliveryStatus::SENT,
+					'delivered_to'    => $to_email,
+					'delivered_at'    => $now,
+				)
 			);
 		}
 
-		return array(
-			'ok'              => false,
-			'delivery_status' => GiftCardDeliveryStatus::FAILED,
-			'delivered_to'    => $to_email,
-			'delivery_error'  => __( 'Email could not be sent (wp_mail failed).', 'mp-commerce-promotions' ),
+		return array_merge(
+			$base,
+			array(
+				'ok'              => false,
+				'delivery_status' => GiftCardDeliveryStatus::FAILED,
+				'delivered_to'    => $to_email,
+				'delivery_error'  => __( 'Email could not be sent (wp_mail failed).', 'mp-commerce-promotions' ),
+			)
 		);
 	}
 
 	/**
 	 * @param list<array{plain_code: string, amount: float, currency: string, expires_at: ?string, recipient_name?: string, purchaser_name?: string, message?: string}> $cards
 	 */
-	private function send_email( string $to_email, int $order_id, array $cards, bool $is_test = false, bool $manual_issue = false ): bool {
+	/**
+	 * @return array{sent: bool, sender_mode_used: string, from_header_set: bool}
+	 */
+	private function send_email( string $to_email, int $order_id, array $cards, bool $is_test = false, bool $manual_issue = false ): array {
 		$site_name = function_exists( 'wp_specialchars_decode' )
 			? wp_specialchars_decode( (string) get_bloginfo( 'name' ), ENT_QUOTES )
 			: 'Store';
@@ -215,17 +234,14 @@ final class GiftCardDeliveryMailer {
 			'MIME-Version: 1.0',
 		);
 
-		$from_name  = $this->settings->gift_card_sender_name();
-		$from_email = $this->settings->gift_card_sender_email();
-		if ( $from_email === '' ) {
-			$from_email = function_exists( 'get_option' ) ? sanitize_email( (string) get_option( 'admin_email' ) ) : '';
-		}
-		if ( $from_name === '' ) {
-			$from_name = $site_name;
-		}
-		if ( $from_email !== '' && is_email( $from_email ) ) {
-			$headers[] = sprintf( 'From: %s <%s>', $from_name, $from_email );
-		}
+		$sender_meta = $this->email_sender->resolve_for_send( $site_name );
+		$headers     = array_merge( $headers, $sender_meta['headers'] );
+
+		$meta = array(
+			'sent'              => false,
+			'sender_mode_used'  => (string) $sender_meta['mode'],
+			'from_header_set'   => ! empty( $sender_meta['from_header_set'] ),
+		);
 
 		if ( function_exists( 'wp_mail' ) ) {
 			\add_action( 'wp_mail_content_type', array( $this, 'filter_html_content_type' ) );
@@ -233,18 +249,22 @@ final class GiftCardDeliveryMailer {
 			\remove_action( 'wp_mail_content_type', array( $this, 'filter_html_content_type' ) );
 			if ( ! $sent ) {
 				$headers_plain = array( 'Content-Type: text/plain; charset=UTF-8' );
-				if ( isset( $headers[ count( $headers ) - 1 ] ) && str_starts_with( $headers[ count( $headers ) - 1 ], 'From:' ) ) {
-					$headers_plain[] = $headers[ count( $headers ) - 1 ];
+				foreach ( $sender_meta['headers'] as $header ) {
+					if ( str_starts_with( $header, 'From:' ) || str_starts_with( $header, 'Reply-To:' ) ) {
+						$headers_plain[] = $header;
+					}
 				}
 				$sent = (bool) wp_mail( $to_email, $subject, $plain, $headers_plain );
 			}
 			if ( ! $sent ) {
-				GiftCardMailDiagnostics::record_mail_failure();
+				GiftCardMailDiagnostics::record_mail_failure( ! empty( $sender_meta['from_header_set'] ) );
 			}
-			return $sent;
+			$meta['sent'] = $sent;
+
+			return $meta;
 		}
 
-		return false;
+		return $meta;
 	}
 
 	public function filter_html_content_type(): string {

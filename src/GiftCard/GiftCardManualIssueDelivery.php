@@ -11,7 +11,7 @@ namespace MP\CommercePromotions\GiftCard;
 
 final class GiftCardManualIssueDelivery {
 
-	public const TEST_SAMPLE_CODE = 'SAMPLE-XXXX-TEST';
+	public const TEST_SAMPLE_CODE = '****TEST';
 
 	private GiftCardDeliveryMailer $mailer;
 
@@ -135,6 +135,12 @@ final class GiftCardManualIssueDelivery {
 		}
 		if ( isset( $result['delivery_error'] ) ) {
 			$payload['delivery_error'] = (string) $result['delivery_error'];
+		}
+		if ( isset( $result['sender_mode_used'] ) ) {
+			$payload['sender_mode_used'] = (string) $result['sender_mode_used'];
+		}
+		if ( isset( $result['from_header_set'] ) ) {
+			$payload['from_header_set'] = ! empty( $result['from_header_set'] );
 		}
 
 		update_option( 'mp_cp_gift_card_test_email_last', $payload, false );

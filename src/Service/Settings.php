@@ -69,6 +69,14 @@ final class Settings {
 
 	public const OPTION_GIFT_CARD_SENDER_EMAIL = 'mp_cp_gift_card_sender_email';
 
+	public const OPTION_GIFT_CARD_SENDER_MODE = 'mp_cp_gift_card_sender_mode';
+
+	public const OPTION_GIFT_CARD_REPLY_TO_EMAIL = 'mp_cp_gift_card_reply_to_email';
+
+	public const GIFT_CARD_SENDER_MODE_DEFAULT = 'default';
+
+	public const GIFT_CARD_SENDER_MODE_CUSTOM = 'custom';
+
 	public const OPTION_GIFT_CARD_SCHEDULED_CRON = 'mp_cp_gift_card_scheduled_cron_enabled';
 
 	public const OPTION_GIFT_CARD_SUPPORT_TEXT = 'mp_cp_gift_card_support_email_text';
@@ -381,6 +389,45 @@ final class Settings {
 
 	public function set_gift_card_sender_email( string $email ): void {
 		update_option( self::OPTION_GIFT_CARD_SENDER_EMAIL, sanitize_email( trim( $email ) ), false );
+	}
+
+	public function gift_card_sender_mode(): string {
+		$raw = get_option( self::OPTION_GIFT_CARD_SENDER_MODE, self::GIFT_CARD_SENDER_MODE_DEFAULT );
+		$mode = is_string( $raw ) ? sanitize_key( $raw ) : self::GIFT_CARD_SENDER_MODE_DEFAULT;
+		if ( ! in_array( $mode, self::gift_card_sender_modes(), true ) ) {
+			return self::GIFT_CARD_SENDER_MODE_DEFAULT;
+		}
+
+		return $mode;
+	}
+
+	public function set_gift_card_sender_mode( string $mode ): void {
+		$mode = sanitize_key( $mode );
+		if ( ! in_array( $mode, self::gift_card_sender_modes(), true ) ) {
+			$mode = self::GIFT_CARD_SENDER_MODE_DEFAULT;
+		}
+		update_option( self::OPTION_GIFT_CARD_SENDER_MODE, $mode, false );
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	public static function gift_card_sender_modes(): array {
+		return array(
+			self::GIFT_CARD_SENDER_MODE_DEFAULT,
+			self::GIFT_CARD_SENDER_MODE_CUSTOM,
+		);
+	}
+
+	public function gift_card_reply_to_email(): string {
+		$raw = get_option( self::OPTION_GIFT_CARD_REPLY_TO_EMAIL, '' );
+		$email = is_string( $raw ) ? sanitize_email( trim( $raw ) ) : '';
+
+		return is_email( $email ) ? $email : '';
+	}
+
+	public function set_gift_card_reply_to_email( string $email ): void {
+		update_option( self::OPTION_GIFT_CARD_REPLY_TO_EMAIL, sanitize_email( trim( $email ) ), false );
 	}
 
 	public function gift_card_support_email_text(): string {

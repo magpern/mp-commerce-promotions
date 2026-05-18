@@ -1889,6 +1889,32 @@ final class DiagnosticsPage {
 			echo '</ul>';
 		}
 
+		$sender = $info['sender'] ?? array();
+		if ( is_array( $sender ) && $sender !== array() ) {
+			echo '<p><strong>' . esc_html__( 'Gift card email sender', 'mp-commerce-promotions' ) . '</strong></p><ul>';
+			echo '<li>' . esc_html__( 'Configured mode', 'mp-commerce-promotions' ) . ': '
+				. esc_html( (string) ( $sender['sender_mode'] ?? '' ) ) . '</li>';
+			echo '<li>' . esc_html__( 'Effective mode when sending', 'mp-commerce-promotions' ) . ': '
+				. esc_html( (string) ( $sender['effective_sender_mode'] ?? '' ) ) . '</li>';
+			if ( ! empty( $sender['custom_sender_email'] ) ) {
+				echo '<li>' . esc_html__( 'Custom sender email', 'mp-commerce-promotions' ) . ': '
+					. esc_html( (string) $sender['custom_sender_email'] ) . '</li>';
+			}
+			if ( ! empty( $sender['reply_to_email'] ) ) {
+				echo '<li>' . esc_html__( 'Reply-To', 'mp-commerce-promotions' ) . ': '
+					. esc_html( (string) $sender['reply_to_email'] ) . '</li>';
+			}
+			echo '</ul>';
+			foreach ( (array) ( $sender['warnings'] ?? array() ) as $warning ) {
+				if ( is_string( $warning ) && $warning !== '' ) {
+					echo '<div class="notice notice-warning inline"><p>' . esc_html( $warning ) . '</p></div>';
+				}
+			}
+			if ( ! empty( $sender['recommendation'] ) ) {
+				echo '<p class="description">' . esc_html( (string) $sender['recommendation'] ) . '</p>';
+			}
+		}
+
 		$manual_delivery = new \MP\CommercePromotions\GiftCard\GiftCardManualIssueDelivery(
 			new \MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer( $this->settings ),
 			new \MP\CommercePromotions\GiftCard\GiftCardManualDeliveryStore()
@@ -1905,13 +1931,19 @@ final class DiagnosticsPage {
 			echo '</ul>';
 		}
 
-		$default_test_email = 'postmaster@biopentra.eu';
+		$default_test_email = function_exists( 'get_option' )
+			? sanitize_email( (string) get_option( 'admin_email' ) )
+			: '';
 		echo '<form method="post" style="margin-top:1em;max-width:520px;">';
 		wp_nonce_field( 'mp_cp_gift_card_test_email' );
 		echo '<input type="hidden" name="mp_cp_gift_card_test_email" value="1" />';
 		echo '<p><label for="mp_cp_gc_test_email_to">' . esc_html__( 'Send test gift card email to', 'mp-commerce-promotions' ) . '</label><br />';
 		echo '<input type="email" class="regular-text" id="mp_cp_gc_test_email_to" name="mp_cp_gc_test_email_to" value="'
 			. esc_attr( $default_test_email ) . '" required /></p>';
+		echo '<p class="description">' . esc_html__(
+			'Uses the effective sender mode above. Sample code ****TEST only; no gift card is created.',
+			'mp-commerce-promotions'
+		) . '</p>';
 		echo '<p class="description">' . esc_html__(
 			'Sends a sample gift card code only. Does not create a real gift card. Useful for SMTP validation.',
 			'mp-commerce-promotions'
@@ -1938,9 +1970,9 @@ final class DiagnosticsPage {
 
 		$to = isset( $_POST['mp_cp_gc_test_email_to'] )
 			? sanitize_email( wp_unslash( (string) $_POST['mp_cp_gc_test_email_to'] ) )
-			: 'postmaster@biopentra.eu';
-		if ( $to === '' ) {
-			$to = 'postmaster@biopentra.eu';
+			: '';
+		if ( $to === '' && function_exists( 'get_option' ) ) {
+			$to = sanitize_email( (string) get_option( 'admin_email' ) );
 		}
 
 		$manual_delivery = new \MP\CommercePromotions\GiftCard\GiftCardManualIssueDelivery(
@@ -1949,12 +1981,14 @@ final class DiagnosticsPage {
 		);
 		$result = $manual_delivery->send_test_email( $to );
 
+		$mode_label = (string) ( $result['sender_mode_used'] ?? '' );
 		if ( ! empty( $result['ok'] ) ) {
 			AdminNotice::success(
 				sprintf(
-					/* translators: %s: recipient email */
-					__( 'Test gift card email sent to %s.', 'mp-commerce-promotions' ),
-					$to
+					/* translators: 1: recipient email, 2: sender mode */
+					__( 'Test gift card email sent to %1$s (sender mode: %2$s).', 'mp-commerce-promotions' ),
+					$to,
+					$mode_label !== '' ? $mode_label : __( 'default', 'mp-commerce-promotions' )
 				)
 			);
 			return;
@@ -1963,9 +1997,10 @@ final class DiagnosticsPage {
 		$reason = (string) ( $result['delivery_error'] ?? __( 'Email could not be sent.', 'mp-commerce-promotions' ) );
 		AdminNotice::error(
 			sprintf(
-				/* translators: 1: recipient email, 2: error reason */
-				__( 'Test gift card email to %1$s failed: %2$s', 'mp-commerce-promotions' ),
+				/* translators: 1: recipient email, 2: sender mode, 3: error reason */
+				__( 'Test gift card email to %1$s failed (sender mode: %2$s): %3$s', 'mp-commerce-promotions' ),
 				$to,
+				$mode_label !== '' ? $mode_label : __( 'default', 'mp-commerce-promotions' ),
 				$reason
 			)
 		);

@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Gift card email sender settings** — Settings → default vs custom From/Reply-To; `GiftCardEmailSender` SMTP-safe default (no forced From); diagnostics sender warnings + test email shows mode; [GIFT_CARD_EMAILS.md](docs/GIFT_CARD_EMAILS.md).
+
+### Added (prior)
+
 - **Gift card browser QA & pilot prep** — storefront/checkout/product admin polish, [GIFT_CARD_PILOT_CHECKLIST.md](docs/GIFT_CARD_PILOT_CHECKLIST.md), pilot email warning on Gift Cards + Diagnostics, balance page repair note, extended product E2E smoke checks.
 
 ### Added (prior)

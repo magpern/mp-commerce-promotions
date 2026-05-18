@@ -16,6 +16,8 @@ final class GiftCardMailDiagnostics {
 
 	public const TRANSIENT_LAST_MAIL_FAILURE = 'mp_cp_gift_card_mail_last_failed';
 
+	public const TRANSIENT_SENDER_REJECTED_HINT = 'mp_cp_gift_card_mail_sender_rejected_hint';
+
 	private wpdb $wpdb;
 
 	private Settings $settings;
@@ -32,7 +34,8 @@ final class GiftCardMailDiagnostics {
 	 *   wp_mail_likely_failing: bool,
 	 *   last_mail_failure_at: ?string,
 	 *   smtp_plugin_hint: string,
-	 *   settings_summary: array<string, string|bool>
+	 *   settings_summary: array<string, string|bool>,
+	 *   sender: array<string, mixed>
 	 * }
 	 */
 	public function analyze(): array {
@@ -50,6 +53,8 @@ final class GiftCardMailDiagnostics {
 		$likely_failing = $failed_count > 0
 			|| ( $last_fail_at !== null && $this->settings->gift_card_delivery_email_enabled() );
 
+		$sender = ( new GiftCardEmailSender( $this->settings ) )->analyze();
+
 		return array(
 			'delivery_email_enabled'  => $this->settings->gift_card_delivery_email_enabled(),
 			'recent_delivery_failed'  => $failed_count,
@@ -57,15 +62,21 @@ final class GiftCardMailDiagnostics {
 			'last_mail_failure_at'    => $last_fail_at,
 			'smtp_plugin_hint'        => $smtp_hint,
 			'settings_summary'        => $this->settings_summary(),
+			'sender'                  => $sender,
 		);
 	}
 
 	/**
 	 * Record that wp_mail failed for gift card delivery (no code logged).
+	 *
+	 * @param bool $custom_from_used Whether a custom From header was set on the failed attempt.
 	 */
-	public static function record_mail_failure(): void {
+	public static function record_mail_failure( bool $custom_from_used = false ): void {
 		if ( function_exists( 'set_transient' ) ) {
 			set_transient( self::TRANSIENT_LAST_MAIL_FAILURE, time(), DAY_IN_SECONDS );
+			if ( $custom_from_used ) {
+				set_transient( self::TRANSIENT_SENDER_REJECTED_HINT, '1', DAY_IN_SECONDS );
+			}
 		}
 	}
 
@@ -78,8 +89,11 @@ final class GiftCardMailDiagnostics {
 			'email_template'         => $this->settings->gift_card_email_template(),
 			'has_logo_url'           => $this->settings->gift_card_logo_url() !== '',
 			'accent_color'           => $this->settings->gift_card_accent_color(),
-			'has_custom_sender'      => $this->settings->gift_card_sender_email() !== '',
+			'sender_mode'            => $this->settings->gift_card_sender_mode(),
+			'effective_sender_mode'  => ( new GiftCardEmailSender( $this->settings ) )->effective_mode(),
+			'custom_sender_email'    => $this->settings->gift_card_sender_email(),
 			'sender_name_set'        => $this->settings->gift_card_sender_name() !== '',
+			'reply_to_set'           => $this->settings->gift_card_reply_to_email() !== '',
 			'has_support_text'       => $this->settings->gift_card_support_email_text() !== '',
 		);
 	}
