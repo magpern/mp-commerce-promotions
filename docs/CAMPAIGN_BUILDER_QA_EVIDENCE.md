@@ -3,7 +3,7 @@
 **Pass:** 2026-05-16  
 **Base commit (Phase 3):** `7e4d44f`  
 **QA commit:** `d31dbb8`  
-**Default entrypoint commit:** _(after chore commit)_  
+**Default entrypoint commit:** `b0efa36`  
 **Environment:** WooCommerce Docker (`/home/magpern/woocommerce`), plugin synced from staging.
 
 ## Method
