@@ -171,7 +171,11 @@ if ( ! function_exists( 'wp_mail' ) ) {
 	 * @return bool
 	 */
 	function wp_mail( $to, $subject, $message, $headers = '' ) {
-		unset( $to, $subject, $message, $headers );
+		unset( $to, $subject, $headers );
+		if ( ! isset( $GLOBALS['mp_cp_test_wp_mail_bodies'] ) || ! is_array( $GLOBALS['mp_cp_test_wp_mail_bodies'] ) ) {
+			$GLOBALS['mp_cp_test_wp_mail_bodies'] = array();
+		}
+		$GLOBALS['mp_cp_test_wp_mail_bodies'][] = (string) $message;
 		return (bool) ( $GLOBALS['mp_cp_test_wp_mail_result'] ?? true );
 	}
 }

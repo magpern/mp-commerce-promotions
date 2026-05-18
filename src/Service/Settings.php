@@ -81,7 +81,17 @@ final class Settings {
 
 	public const OPTION_GIFT_CARD_SUPPORT_TEXT = 'mp_cp_gift_card_support_email_text';
 
+	public const OPTION_GIFT_CARD_EMAIL_FOOTER_TEXT = 'mp_cp_gift_card_email_footer_text';
+
+	public const OPTION_GIFT_CARD_EMAIL_STYLE = 'mp_cp_gift_card_email_style';
+
+	public const OPTION_GIFT_CARD_EMAIL_TEMPLATE_SETTINGS = 'mp_cp_gift_card_email_template_settings';
+
 	public const OPTION_GIFT_CARD_BALANCE_PAGE_ID = 'mp_cp_gift_card_balance_page_id';
+
+	public const GIFT_CARD_EMAIL_STYLE_COMMERCE_GROWTH = 'commerce_growth';
+
+	public const GIFT_CARD_EMAIL_STYLE_WOOCOMMERCE = 'woocommerce';
 
 	public const GIFT_CARD_TEMPLATE_CLASSIC = 'classic';
 
@@ -338,6 +348,131 @@ final class Settings {
 			self::GIFT_CARD_TEMPLATE_BIRTHDAY,
 			self::GIFT_CARD_TEMPLATE_HOLIDAY,
 			self::GIFT_CARD_TEMPLATE_MINIMAL,
+		);
+	}
+
+	public function gift_card_email_style(): string {
+		$raw = get_option( self::OPTION_GIFT_CARD_EMAIL_STYLE, self::GIFT_CARD_EMAIL_STYLE_COMMERCE_GROWTH );
+		$style = is_string( $raw ) ? sanitize_key( $raw ) : self::GIFT_CARD_EMAIL_STYLE_COMMERCE_GROWTH;
+		if ( ! in_array( $style, self::gift_card_email_styles(), true ) ) {
+			return self::GIFT_CARD_EMAIL_STYLE_COMMERCE_GROWTH;
+		}
+
+		return $style;
+	}
+
+	public function effective_gift_card_email_style(): string {
+		$style = $this->gift_card_email_style();
+		if ( $style === self::GIFT_CARD_EMAIL_STYLE_WOOCOMMERCE
+			&& ! \MP\CommercePromotions\GiftCard\GiftCardWooEmailStyler::is_available() ) {
+			return self::GIFT_CARD_EMAIL_STYLE_COMMERCE_GROWTH;
+		}
+
+		return $style;
+	}
+
+	public function set_gift_card_email_style( string $style ): void {
+		$style = sanitize_key( $style );
+		if ( ! in_array( $style, self::gift_card_email_styles(), true ) ) {
+			$style = self::GIFT_CARD_EMAIL_STYLE_COMMERCE_GROWTH;
+		}
+		update_option( self::OPTION_GIFT_CARD_EMAIL_STYLE, $style, false );
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	public static function gift_card_email_styles(): array {
+		return array(
+			self::GIFT_CARD_EMAIL_STYLE_COMMERCE_GROWTH,
+			self::GIFT_CARD_EMAIL_STYLE_WOOCOMMERCE,
+		);
+	}
+
+	public function gift_card_email_footer_text(): string {
+		$raw = get_option( self::OPTION_GIFT_CARD_EMAIL_FOOTER_TEXT, '' );
+
+		return is_string( $raw ) ? sanitize_textarea_field( $raw ) : '';
+	}
+
+	public function set_gift_card_email_footer_text( string $text ): void {
+		update_option( self::OPTION_GIFT_CARD_EMAIL_FOOTER_TEXT, sanitize_textarea_field( $text ), false );
+	}
+
+	/**
+	 * @return array<string, array{logo_url: string, accent_color: string, footer_text: string, support_text: string}>
+	 */
+	public function gift_card_email_template_settings_all(): array {
+		$raw = get_option( self::OPTION_GIFT_CARD_EMAIL_TEMPLATE_SETTINGS, array() );
+		if ( ! is_array( $raw ) ) {
+			return array();
+		}
+		$out = array();
+		foreach ( self::gift_card_email_templates() as $slug ) {
+			if ( ! isset( $raw[ $slug ] ) || ! is_array( $raw[ $slug ] ) ) {
+				continue;
+			}
+			$out[ $slug ] = self::sanitize_template_settings_row( $raw[ $slug ] );
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Resolved appearance for a template (per-template overrides, then global defaults).
+	 *
+	 * @return array{logo_url: string, accent_color: string, footer_text: string, support_text: string}
+	 */
+	public function resolve_gift_card_email_appearance( string $template_slug ): array {
+		$slug  = sanitize_key( $template_slug );
+		$all   = $this->gift_card_email_template_settings_all();
+		$row   = $all[ $slug ] ?? array(
+			'logo_url'     => '',
+			'accent_color' => '',
+			'footer_text'  => '',
+			'support_text' => '',
+		);
+
+		return array(
+			'logo_url'     => $row['logo_url'] !== '' ? $row['logo_url'] : $this->gift_card_logo_url(),
+			'accent_color' => $row['accent_color'] !== '' ? $row['accent_color'] : $this->gift_card_accent_color(),
+			'footer_text'  => $row['footer_text'] !== '' ? $row['footer_text'] : $this->gift_card_email_footer_text(),
+			'support_text' => $row['support_text'] !== '' ? $row['support_text'] : $this->gift_card_support_email_text(),
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $row
+	 * @return array{logo_url: string, accent_color: string, footer_text: string, support_text: string}
+	 */
+	public function set_gift_card_email_template_settings( string $template_slug, array $row ): void {
+		$slug = sanitize_key( $template_slug );
+		if ( ! in_array( $slug, self::gift_card_email_templates(), true ) ) {
+			return;
+		}
+		$all         = $this->gift_card_email_template_settings_all();
+		$all[ $slug ] = self::sanitize_template_settings_row( $row );
+		update_option( self::OPTION_GIFT_CARD_EMAIL_TEMPLATE_SETTINGS, $all, false );
+	}
+
+	/**
+	 * @param array<string, mixed> $row
+	 * @return array{logo_url: string, accent_color: string, footer_text: string, support_text: string}
+	 */
+	private static function sanitize_template_settings_row( array $row ): array {
+		$logo = isset( $row['logo_url'] ) && is_string( $row['logo_url'] ) ? esc_url_raw( trim( $row['logo_url'] ) ) : '';
+		$accent = isset( $row['accent_color'] ) && is_string( $row['accent_color'] ) ? trim( $row['accent_color'] ) : '';
+		if ( ! preg_match( '/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $accent ) ) {
+			$accent = '';
+		}
+		$footer = isset( $row['footer_text'] ) && is_string( $row['footer_text'] ) ? sanitize_textarea_field( $row['footer_text'] ) : '';
+		$support = isset( $row['support_text'] ) && is_string( $row['support_text'] ) ? sanitize_textarea_field( $row['support_text'] ) : '';
+
+		return array(
+			'logo_url'     => $logo,
+			'accent_color' => $accent,
+			'footer_text'  => $footer,
+			'support_text' => $support,
 		);
 	}
 

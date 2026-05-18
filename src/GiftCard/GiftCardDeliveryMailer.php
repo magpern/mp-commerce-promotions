@@ -121,7 +121,7 @@ final class GiftCardDeliveryMailer {
 	 *   from_header_set?: bool
 	 * }
 	 */
-	public function send_test_delivery_email( string $to_email ): array {
+	public function send_test_delivery_email( string $to_email, ?float $amount = null, ?string $currency = null ): array {
 		$to_email = sanitize_email( $to_email );
 		if ( $to_email === '' || ! is_email( $to_email ) ) {
 			return array(
@@ -139,14 +139,16 @@ final class GiftCardDeliveryMailer {
 			);
 		}
 
-		$currency = function_exists( 'get_woocommerce_currency' )
-			? (string) get_woocommerce_currency()
-			: 'EUR';
+		$currency = $currency !== null && $currency !== ''
+			? sanitize_text_field( $currency )
+			: ( function_exists( 'get_woocommerce_currency' ) ? (string) get_woocommerce_currency() : 'EUR' );
+
+		$sample_amount = $amount !== null && $amount > 0 ? (float) $amount : 1.0;
 
 		$cards = array(
 			array(
 				'plain_code' => GiftCardManualIssueDelivery::TEST_SAMPLE_CODE,
-				'amount'     => 1.0,
+				'amount'     => $sample_amount,
 				'currency'   => $currency,
 				'expires_at' => null,
 			),
@@ -211,16 +213,20 @@ final class GiftCardDeliveryMailer {
 		}
 
 		$store_url = function_exists( 'home_url' ) ? home_url( '/' ) : '';
+		$template  = $this->settings->gift_card_email_template();
+		$appearance = $this->settings->resolve_gift_card_email_appearance( $template );
 
-		$html = GiftCardEmailTemplate::render_html(
-			$this->settings->gift_card_email_template(),
+		$html = GiftCardEmailRenderer::render(
+			$this->settings,
 			array(
+				'template_slug' => $template,
 				'site_name'     => $site_name,
 				'store_url'     => $store_url,
 				'order_id'      => $order_id,
-				'accent'        => $this->settings->gift_card_accent_color(),
-				'logo_url'      => $this->settings->gift_card_logo_url(),
-				'support_text'  => $this->settings->gift_card_support_email_text(),
+				'accent'        => $appearance['accent_color'],
+				'logo_url'      => $appearance['logo_url'],
+				'footer_text'   => $appearance['footer_text'],
+				'support_text'  => $appearance['support_text'],
 				'cards'         => $cards,
 				'manual_issue'  => $manual_issue,
 				'is_test'       => $is_test,

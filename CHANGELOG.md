@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Gift card email template settings** — Settings preview (`****SAMPLE`), test email with sample amount/currency, per-template logo/accent/footer/support, Commerce Growth vs WooCommerce email style (`GiftCardEmailRenderer`, `GiftCardWooEmailStyler`); diagnostics show template, style, SMTP status; [GIFT_CARD_EMAILS.md](docs/GIFT_CARD_EMAILS.md).
+
+### Added
+
 - **Gift card recipient transfer** — My Account “Send to another recipient” and admin reissue for fully unused cards; void + new code by email; transfer linkage without storing plain codes; `GiftCardTransferService`, `scripts/gift-card-transfer-smoke.php`.
 
 ### Added (prior)

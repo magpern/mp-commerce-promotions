@@ -1857,16 +1857,26 @@ final class DiagnosticsPage {
 		echo '<h2 style="margin-top:2em;">' . esc_html__( 'Gift card email deliverability', 'mp-commerce-promotions' ) . '</h2>';
 
 		if ( ! empty( $info['wp_mail_likely_failing'] ) ) {
-			echo '<motion class="notice notice-warning"><p><strong>' . esc_html__( 'Warning:', 'mp-commerce-promotions' ) . '</strong> ';
+			echo '<div class="notice notice-warning"><p><strong>' . esc_html__( 'Warning:', 'mp-commerce-promotions' ) . '</strong> ';
 			echo esc_html__(
 				'Recent gift card emails may not be sending. Configure SMTP before selling gift cards.',
 				'mp-commerce-promotions'
-			) . '</p></motion.div>';
+			) . '</p></div>';
 		}
 
 		echo '<ul>';
 		echo '<li>' . esc_html__( 'Delivery emails enabled', 'mp-commerce-promotions' ) . ': '
 			. ( ! empty( $info['delivery_email_enabled'] ) ? esc_html__( 'Yes', 'mp-commerce-promotions' ) : esc_html__( 'No', 'mp-commerce-promotions' ) ) . '</li>';
+		echo '<li>' . esc_html__( 'Active template', 'mp-commerce-promotions' ) . ': '
+			. esc_html( (string) ( $info['settings_summary']['email_template'] ?? '' ) ) . '</li>';
+		echo '<li>' . esc_html__( 'Email style (configured)', 'mp-commerce-promotions' ) . ': '
+			. esc_html( (string) ( $info['email_style'] ?? '' ) ) . '</li>';
+		echo '<li>' . esc_html__( 'Email style (effective)', 'mp-commerce-promotions' ) . ': '
+			. esc_html( (string) ( $info['effective_email_style'] ?? '' ) ) . '</li>';
+		echo '<li>' . esc_html__( 'WooCommerce email style available', 'mp-commerce-promotions' ) . ': '
+			. ( ! empty( $info['woo_email_style_available'] ) ? esc_html__( 'Yes', 'mp-commerce-promotions' ) : esc_html__( 'No', 'mp-commerce-promotions' ) ) . '</li>';
+		echo '<li>' . esc_html__( 'SMTP likely working', 'mp-commerce-promotions' ) . ': '
+			. ( ! empty( $info['smtp_likely_working'] ) ? esc_html__( 'Yes', 'mp-commerce-promotions' ) : esc_html__( 'No', 'mp-commerce-promotions' ) ) . '</li>';
 		echo '<li>' . esc_html__( 'Recent delivery failures', 'mp-commerce-promotions' ) . ': '
 			. esc_html( (string) (int) ( $info['recent_delivery_failed'] ?? 0 ) ) . '</li>';
 		if ( ! empty( $info['last_mail_failure_at'] ) ) {
@@ -1941,9 +1951,11 @@ final class DiagnosticsPage {
 		echo '<input type="email" class="regular-text" id="mp_cp_gc_test_email_to" name="mp_cp_gc_test_email_to" value="'
 			. esc_attr( $default_test_email ) . '" required /></p>';
 		echo '<p class="description">' . esc_html__(
-			'Uses the effective sender mode above. Sample code ****TEST only; no gift card is created.',
+			'Uses the effective sender mode and email template above. Sample code ****TEST only; no gift card is created.',
 			'mp-commerce-promotions'
 		) . '</p>';
+		echo '<p><a class="button button-link" href="' . esc_url( AdminUrl::settings() ) . '">'
+			. esc_html__( 'Gift card email settings (preview & test)', 'mp-commerce-promotions' ) . '</a></p>';
 		echo '<p class="description">' . esc_html__(
 			'Sends a sample gift card code only. Does not create a real gift card. Useful for SMTP validation.',
 			'mp-commerce-promotions'

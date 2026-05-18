@@ -35,7 +35,11 @@ final class GiftCardMailDiagnostics {
 	 *   last_mail_failure_at: ?string,
 	 *   smtp_plugin_hint: string,
 	 *   settings_summary: array<string, string|bool>,
-	 *   sender: array<string, mixed>
+	 *   sender: array<string, mixed>,
+	 *   email_style: string,
+	 *   effective_email_style: string,
+	 *   woo_email_style_available: bool,
+	 *   smtp_likely_working: bool
 	 * }
 	 */
 	public function analyze(): array {
@@ -53,16 +57,24 @@ final class GiftCardMailDiagnostics {
 		$likely_failing = $failed_count > 0
 			|| ( $last_fail_at !== null && $this->settings->gift_card_delivery_email_enabled() );
 
+		$smtp_likely_working = $this->settings->gift_card_delivery_email_enabled()
+			&& ! $likely_failing
+			&& ( $smtp_hint !== '' || $last_fail_at === null );
+
 		$sender = ( new GiftCardEmailSender( $this->settings ) )->analyze();
 
 		return array(
-			'delivery_email_enabled'  => $this->settings->gift_card_delivery_email_enabled(),
-			'recent_delivery_failed'  => $failed_count,
-			'wp_mail_likely_failing'  => $likely_failing,
-			'last_mail_failure_at'    => $last_fail_at,
-			'smtp_plugin_hint'        => $smtp_hint,
-			'settings_summary'        => $this->settings_summary(),
-			'sender'                  => $sender,
+			'delivery_email_enabled'    => $this->settings->gift_card_delivery_email_enabled(),
+			'recent_delivery_failed'    => $failed_count,
+			'wp_mail_likely_failing'    => $likely_failing,
+			'smtp_likely_working'       => $smtp_likely_working,
+			'last_mail_failure_at'      => $last_fail_at,
+			'smtp_plugin_hint'          => $smtp_hint,
+			'email_style'               => $this->settings->gift_card_email_style(),
+			'effective_email_style'     => $this->settings->effective_gift_card_email_style(),
+			'woo_email_style_available' => GiftCardWooEmailStyler::is_available(),
+			'settings_summary'          => $this->settings_summary(),
+			'sender'                    => $sender,
 		);
 	}
 
@@ -87,8 +99,12 @@ final class GiftCardMailDiagnostics {
 		return array(
 			'delivery_email_enabled' => $this->settings->gift_card_delivery_email_enabled(),
 			'email_template'         => $this->settings->gift_card_email_template(),
+			'email_style'            => $this->settings->gift_card_email_style(),
+			'effective_email_style'  => $this->settings->effective_gift_card_email_style(),
+			'woo_style_available'    => GiftCardWooEmailStyler::is_available(),
 			'has_logo_url'           => $this->settings->gift_card_logo_url() !== '',
 			'accent_color'           => $this->settings->gift_card_accent_color(),
+			'has_footer_text'        => $this->settings->gift_card_email_footer_text() !== '',
 			'sender_mode'            => $this->settings->gift_card_sender_mode(),
 			'effective_sender_mode'  => ( new GiftCardEmailSender( $this->settings ) )->effective_mode(),
 			'custom_sender_email'    => $this->settings->gift_card_sender_email(),

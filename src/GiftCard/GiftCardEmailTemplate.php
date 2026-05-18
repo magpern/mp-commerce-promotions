@@ -31,6 +31,7 @@ final class GiftCardEmailTemplate {
 	 *   accent: string,
 	 *   logo_url: string,
 	 *   support_text: string,
+	 *   footer_text?: string,
 	 *   preview?: bool
 	 * } $context
 	 */
@@ -40,21 +41,121 @@ final class GiftCardEmailTemplate {
 		$site     = \esc_html( (string) ( $context['site_name'] ?? 'Store' ) );
 		$store    = \esc_url( (string) ( $context['store_url'] ?? '' ) );
 		$logo     = \esc_url( (string) ( $context['logo_url'] ?? '' ) );
-		$support  = \esc_html( (string) ( $context['support_text'] ?? '' ) );
-		$preview  = ! empty( $context['preview'] );
 
 		$header_bg = $template === Settings::GIFT_CARD_TEMPLATE_MINIMAL ? '#ffffff' : $accent;
 		$header_fg = $template === Settings::GIFT_CARD_TEMPLATE_MINIMAL ? $accent : '#ffffff';
 		$border    = $template === Settings::GIFT_CARD_TEMPLATE_HOLIDAY ? '#1a472a' : '#dcdcde';
+
+		$logo_html = $logo !== ''
+			? '<img src="' . $logo . '" alt="" style="max-height:48px;margin-bottom:12px;" />'
+			: '';
+
+		$inner = self::render_body_content( $template, $context, $accent, false );
+
+		return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
+			. '<body style="margin:0;padding:0;background:#f6f7f7;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;">'
+			. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7f7;padding:24px 12px;">'
+			. '<tr><td align="center">'
+			. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border:1px solid ' . \esc_attr( $border ) . ';border-radius:8px;overflow:hidden;">'
+			. '<tr><td style="background:' . \esc_attr( $header_bg ) . ';color:' . \esc_attr( $header_fg ) . ';padding:24px;text-align:center;">'
+			. $logo_html
+			. '<h1 style="margin:0;font-size:22px;font-weight:600;">' . $site . '</h1>'
+			. '<p style="margin:8px 0 0;font-size:14px;opacity:0.95;">' . \esc_html( self::template_label( $template ) ) . '</p>'
+			. '</td></tr>'
+			. '<tr><td style="padding:24px;">'
+			. $inner
+			. ( $store !== '' ? '<p style="margin:12px 0 0;"><a href="' . $store . '" style="color:' . \esc_attr( $accent ) . ';">' . \esc_html__( 'Visit store', 'mp-commerce-promotions' ) . '</a></p>' : '' )
+			. '</td></tr></table></td></tr></table></body></html>';
+	}
+
+	/**
+	 * Inner content for WooCommerce email wrapper (no outer document).
+	 *
+	 * @param array<string, mixed> $context
+	 */
+	public static function render_inner_html( string $template_slug, array $context, bool $use_woo_colors = false ): string {
+		$template = self::normalize_slug( $template_slug );
+		$accent   = self::sanitize_color( (string) ( $context['accent'] ?? '#2271b1' ) );
+		if ( $use_woo_colors ) {
+			$woo    = GiftCardWooEmailStyler::woo_colors();
+			$accent = $woo['base'];
+		}
+
+		return self::render_body_content( $template, $context, $accent, $use_woo_colors );
+	}
+
+	/**
+	 * @param array<string, mixed> $context
+	 */
+	public static function email_heading( array $context ): string {
+		$site = (string) ( $context['site_name'] ?? 'Store' );
+		if ( ! empty( $context['preview'] ) ) {
+			return sprintf(
+				/* translators: %s: store name */
+				\__( 'Gift card email preview — %s', 'mp-commerce-promotions' ),
+				$site
+			);
+		}
+		if ( ! empty( $context['is_test'] ) ) {
+			return sprintf(
+				/* translators: %s: store name */
+				\__( '[Test] Your gift card from %s', 'mp-commerce-promotions' ),
+				$site
+			);
+		}
+
+		return sprintf(
+			/* translators: %s: store name */
+			\__( 'Your gift card from %s', 'mp-commerce-promotions' ),
+			$site
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $context
+	 */
+	private static function render_body_content( string $template, array $context, string $accent, bool $use_woo_colors ): string {
+		$preview  = ! empty( $context['preview'] );
+		$text     = $use_woo_colors ? GiftCardWooEmailStyler::woo_colors()['text'] : '#1d2327';
+		$muted    = $use_woo_colors ? '#646970' : '#646970';
+		$support  = \esc_html( (string) ( $context['support_text'] ?? '' ) );
+		$footer   = \esc_html( (string) ( $context['footer_text'] ?? '' ) );
 
 		$cards_html = '';
 		foreach ( (array) ( $context['cards'] ?? array() ) as $card ) {
 			$cards_html .= self::card_block_html( $card, $accent, $preview );
 		}
 
-		$is_test       = ! empty( $context['is_test'] );
-		$manual_issue  = ! empty( $context['manual_issue'] );
-		$intro         = $preview
+		$intro = self::intro_text( $context );
+
+		$redeem = \esc_html__( 'Redeem at checkout: enter your gift card code in the “Gift card or store credit” section before placing your order.', 'mp-commerce-promotions' );
+
+		$footer_html = '';
+		if ( $footer !== '' ) {
+			$footer_html .= '<p style="margin:16px 0 0;font-size:13px;color:' . \esc_attr( $muted ) . ';">' . nl2br( $footer, false ) . '</p>';
+		}
+		if ( $support !== '' ) {
+			$footer_html .= '<p style="margin:8px 0 0;font-size:13px;color:' . \esc_attr( $muted ) . ';">' . nl2br( $support, false ) . '</p>';
+		}
+
+		return '<p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:' . \esc_attr( $text ) . ';">' . $intro . '</p>'
+			. $cards_html
+			. '<p style="margin:16px 0 0;font-size:14px;line-height:1.5;color:' . \esc_attr( $text ) . ';">' . $redeem . '</p>'
+			. $footer_html
+			. '<p style="margin:20px 0 0;font-size:12px;color:' . \esc_attr( $muted ) . ';">'
+			. \esc_html__( 'Keep this email safe. The full code is required at checkout and is not stored in our system after delivery.', 'mp-commerce-promotions' )
+			. '</p>';
+	}
+
+	/**
+	 * @param array<string, mixed> $context
+	 */
+	private static function intro_text( array $context ): string {
+		$preview      = ! empty( $context['preview'] );
+		$is_test      = ! empty( $context['is_test'] );
+		$manual_issue = ! empty( $context['manual_issue'] );
+
+		$intro = $preview
 			? \esc_html__( 'Preview of your gift card email.', 'mp-commerce-promotions' )
 			: ( $is_test
 				? \esc_html__( 'This is a test gift card email. No real gift card was created. Sample details are below.', 'mp-commerce-promotions' )
@@ -73,34 +174,7 @@ final class GiftCardEmailTemplate {
 			);
 		}
 
-		$logo_html = $logo !== ''
-			? '<img src="' . $logo . '" alt="" style="max-height:48px;margin-bottom:12px;" />'
-			: '';
-
-		$redeem = \esc_html__( 'Redeem at checkout: enter your gift card code in the “Gift card or store credit” section before placing your order.', 'mp-commerce-promotions' );
-
-		$footer = $support !== ''
-			? '<p style="font-size:13px;color:#646970;">' . $support . '</p>'
-			: '';
-
-		return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
-			. '<body style="margin:0;padding:0;background:#f6f7f7;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;">'
-			. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7f7;padding:24px 12px;">'
-			. '<tr><td align="center">'
-			. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border:1px solid ' . \esc_attr( $border ) . ';border-radius:8px;overflow:hidden;">'
-			. '<tr><td style="background:' . \esc_attr( $header_bg ) . ';color:' . \esc_attr( $header_fg ) . ';padding:24px;text-align:center;">'
-			. $logo_html
-			. '<h1 style="margin:0;font-size:22px;font-weight:600;">' . $site . '</h1>'
-			. '<p style="margin:8px 0 0;font-size:14px;opacity:0.95;">' . \esc_html( self::template_label( $template ) ) . '</p>'
-			. '</td></tr>'
-			. '<tr><td style="padding:24px;">'
-			. '<p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#1d2327;">' . $intro . '</p>'
-			. $cards_html
-			. '<p style="margin:16px 0 0;font-size:14px;line-height:1.5;color:#1d2327;">' . $redeem . '</p>'
-			. ( $store !== '' ? '<p style="margin:12px 0 0;"><a href="' . $store . '" style="color:' . \esc_attr( $accent ) . ';">' . \esc_html__( 'Visit store', 'mp-commerce-promotions' ) . '</a></p>' : '' )
-			. $footer
-			. '<p style="margin:20px 0 0;font-size:12px;color:#646970;">' . \esc_html__( 'Keep this email safe. The full code is required at checkout and is not stored in our system after delivery.', 'mp-commerce-promotions' ) . '</p>'
-			. '</td></tr></table></td></tr></table></body></html>';
+		return $intro;
 	}
 
 	/**

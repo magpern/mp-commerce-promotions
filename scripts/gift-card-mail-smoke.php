@@ -14,7 +14,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MP\CommercePromotions\GiftCard\GiftCardDeliveryStatus;
 use MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer;
+use MP\CommercePromotions\GiftCard\GiftCardEmailPreview;
 use MP\CommercePromotions\GiftCard\GiftCardEmailSender;
+use MP\CommercePromotions\GiftCard\GiftCardEmailTemplate;
+use MP\CommercePromotions\GiftCard\GiftCardWooEmailStyler;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
 use MP\CommercePromotions\GiftCard\GiftCardManualDeliveryStore;
 use MP\CommercePromotions\GiftCard\GiftCardManualIssueDelivery;
@@ -60,6 +63,36 @@ if ( $settings->gift_card_sender_mode() !== Settings::GIFT_CARD_SENDER_MODE_DEFA
 	$pass( 'unset sender mode defaults to site mail' );
 }
 $settings->set_gift_card_sender_mode( Settings::GIFT_CARD_SENDER_MODE_DEFAULT );
+
+$preview_html = GiftCardEmailPreview::render( $settings );
+if ( strpos( $preview_html, GiftCardEmailPreview::SAMPLE_MASKED_CODE ) !== false
+	&& strpos( $preview_html, 'REALGIFTCODE999' ) === false ) {
+	$pass( 'email preview uses sample code only' );
+} else {
+	$fail( 'email preview uses sample code only' );
+}
+
+$invalid_tpl = GiftCardEmailTemplate::normalize_slug( 'invalid-template-slug' );
+if ( $invalid_tpl === Settings::GIFT_CARD_TEMPLATE_CLASSIC ) {
+	$pass( 'invalid template falls back to classic' );
+} else {
+	$fail( 'invalid template falls back to classic' );
+}
+
+$settings->set_gift_card_email_style( Settings::GIFT_CARD_EMAIL_STYLE_WOOCOMMERCE );
+$effective_style = $settings->effective_gift_card_email_style();
+if ( GiftCardWooEmailStyler::is_available() ) {
+	if ( $effective_style === Settings::GIFT_CARD_EMAIL_STYLE_WOOCOMMERCE ) {
+		$pass( 'woocommerce email style when WC mailer available' );
+	} else {
+		$fail( 'woocommerce email style when WC mailer available' );
+	}
+} elseif ( $effective_style === Settings::GIFT_CARD_EMAIL_STYLE_COMMERCE_GROWTH ) {
+	$pass( 'woocommerce email style falls back when unavailable' );
+} else {
+	$fail( 'woocommerce email style falls back when unavailable' );
+}
+$settings->set_gift_card_email_style( Settings::GIFT_CARD_EMAIL_STYLE_COMMERCE_GROWTH );
 
 $issued = $ledger->issue(
 	1.0,

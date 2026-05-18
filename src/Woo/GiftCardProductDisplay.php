@@ -64,26 +64,10 @@ final class GiftCardProductDisplay {
 		echo '<details class="mp-cp-gc-email-preview">';
 		echo '<summary class="mp-cp-gc-email-preview__summary">' . esc_html__( 'Preview sample email (masked code)', 'mp-commerce-promotions' ) . '</summary>';
 		echo '<div class="mp-cp-gc-email-preview__frame">';
-		echo GiftCardEmailTemplate::render_html(
-			$this->settings->gift_card_email_template(),
-			array(
-				'site_name' => function_exists( 'get_bloginfo' ) ? (string) get_bloginfo( 'name' ) : 'Store',
-				'store_url' => function_exists( 'home_url' ) ? home_url( '/' ) : '',
-				'accent'    => $this->settings->gift_card_accent_color(),
-				'logo_url'  => $this->settings->gift_card_logo_url(),
-				'support_text' => $this->settings->gift_card_support_email_text(),
-				'preview'   => true,
-				'cards'     => array(
-					array(
-						'masked_code' => '****SAMPLE',
-						'amount'      => $this->products->resolve_unit_amount( $config, (float) $product->get_price(), 1 ),
-						'currency'    => function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'EUR',
-						'recipient_name' => __( 'Recipient', 'mp-commerce-promotions' ),
-						'message'     => __( 'Enjoy your gift!', 'mp-commerce-promotions' ),
-					),
-				),
-			)
-		);
+		$amount = $this->products->resolve_unit_amount( $config, (float) $product->get_price(), 1 );
+		$currency = function_exists( 'get_woocommerce_currency' ) ? (string) get_woocommerce_currency() : 'EUR';
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- storefront preview HTML from plugin templates.
+		echo \MP\CommercePromotions\GiftCard\GiftCardEmailPreview::render( $this->settings, null, $amount, $currency );
 		echo '</div></details></div>';
 	}
 }
