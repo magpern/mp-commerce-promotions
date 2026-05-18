@@ -141,7 +141,7 @@ Each promotion has **application rules** (`exclusive` or `stackable`, **stop pro
 ## WooCommerce compatibility
 
 - **HPOS (High-Performance Order Storage)** — compatibility with `custom_order_tables` is declared to WooCommerce via `FeaturesUtil` when available. Order promotion metadata is written through `WC_Order` CRUD (`update_meta_data` / `save`), which works with HPOS and legacy post-based orders.
-- **Cart & Checkout Blocks** — **not** declared compatible (`partial` QA 2026-05-18). QA pages **4333** / **4334** (published; not live cart/checkout). Block cart/checkout UI renders after full block markup repair (2ce1c95); browser fee line and CLI checkout record/reversal pass; stacking, coupon UI, gift QA config, and line mode remain partial. See [docs/BLOCKS_QA_EVIDENCE_2026-05-18.md](docs/BLOCKS_QA_EVIDENCE_2026-05-18.md).
+- **Cart & Checkout Blocks** — **not** declared compatible (`partial` QA 2026-05-18). QA pages **4333** / **4334** (published; not live cart/checkout). Block cart/checkout UI renders after full block markup repair (2ce1c95); browser fee line Pass; CLI stacked/code/gift/line/fee + record/reversal Pass (orders 4360/4354). Remaining: block coupon UI, line price display in block cart, full guest COD checkout in browser. See [docs/BLOCKS_QA_EVIDENCE_2026-05-18.md](docs/BLOCKS_QA_EVIDENCE_2026-05-18.md).
 
 ## Known limitations (MVP)
 

@@ -36,7 +36,7 @@ Update `mp_cp_block_compatibility_status` (`not_tested` | `partial` | `passed` |
 
 ```bash
 ./wp option update mp_cp_block_compatibility_status partial
-./wp option update mp_cp_block_compatibility_notes "Cart fees visible; codes not tested."
+./wp option update mp_cp_block_compatibility_notes "CLI cert Pass: stacked/code/gift/line/fee (4360). Browser: fee line Pass; COD checkout not placed. cart_checkout_blocks not declared."
 ```
 
 ---

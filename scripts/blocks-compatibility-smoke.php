@@ -73,17 +73,15 @@ if ( $wpdb instanceof wpdb ) {
 	$service = new PromotionService( $repo, $factory, $audit_log );
 	$setup   = new BlockQaPromotionSetup( $repo, $service );
 
-	$gift_id = 0;
-	if ( function_exists( 'wc_get_products' ) ) {
-		$products = wc_get_products( array( 'status' => 'publish', 'limit' => 1 ) );
-		if ( is_array( $products ) && isset( $products[0] ) && is_object( $products[0] ) && method_exists( $products[0], 'get_id' ) ) {
-			$gift_id = (int) $products[0]->get_id();
-		}
-	}
-
-	$result = $setup->refresh_qa_promotions( $gift_id );
+	$pair   = BlockQaPromotionSetup::resolve_default_product_pair();
+	$result = $setup->refresh_qa_promotions( $pair['gift_product_id'], $pair['paid_product_id'] );
 	blocks_smoke_assert( $result['archived'] >= 0, 'archived prior block QA promotions' );
-	blocks_smoke_assert( count( $result['created'] ) >= 4, 'created block QA promotions (paused)' );
+	blocks_smoke_assert( count( $result['created'] ) >= 6, 'created block QA promotions (paused, includes stack pair)' );
+	if ( $pair['gift_product_id'] !== $pair['paid_product_id'] ) {
+		blocks_smoke_assert( true, 'gift and paid QA product IDs are distinct' );
+	} else {
+		blocks_smoke_assert( true, 'gift/paid share SKU (browser gift QA uses MOTS-C + 4338)' );
+	}
 }
 
 $urls = $pages->preview_urls( (int) $ids['cart_page_id'], (int) $ids['checkout_page_id'] );

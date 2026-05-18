@@ -42,13 +42,13 @@ Runbook: [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBIL
 | Scenario | Status | Notes |
 |----------|--------|-------|
 | Fee-based % / fixed in block cart | **Pass** | Browser: −4,60 € fee on €46 MOTS-C (promo 193); CLI/Store API + order 4354 |
-| Stacked fees | **Partial** | CLI: one fee when two stackable QA promos active |
-| Promotion code (block coupon UI) | **Partial** | CLI Pass with `BLOCKQA5`; browser coupon UI not exercised |
-| Free shipping fee offset | **Partial** | CLI: no offset when shipping_total=0 |
-| Free gift add/remove | **Partial** | CLI Fail: gift SKU = paid SKU in QA setup |
-| Line item mode (block cart prices) | **Partial** | CLI: no line allocations on €1 SKU |
+| Stacked fees | **Pass** (server) | CLI: two negative fees + `applied_promotions=2` (stackable pair) |
+| Promotion code (block coupon UI) | **Partial** | CLI Pass `BLOCKQA218`; browser coupon UI not exercised |
+| Free shipping fee offset | **Partial** | CLI: no offset when shipping_total=0 (not re-run) |
+| Free gift add/remove | **Pass** (server) | CLI: paid 4356 + gift 4338, `mp_cp_free_gift=yes`, price 0 |
+| Line item mode (block cart prices) | **Partial** | CLI: line price mutated (10% on €5); block UI not re-run |
 | Hybrid fallback | **Not run** | |
-| Checkout recording / redemptions | **Partial** | CLI Pass order 4354; browser COD order not placed |
+| Checkout recording / redemptions | **Partial** | CLI Pass orders 4354, 4360; browser COD order not placed |
 | Reversal | **Pass** | CLI Pass order 4354 cancel |
 | Native coupon coexistence | **Not run** | |
 | Guest checkout (blocks) | **Blocked** | |

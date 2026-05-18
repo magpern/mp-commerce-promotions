@@ -123,7 +123,7 @@ final class CartPromotionApplier {
 		$paid_subtotal = FreeGiftCartHandler::paid_cart_subtotal( $cart );
 		$subtotal   = $paid_subtotal > 0 ? $paid_subtotal : ( $context->get_cart_subtotal() ?? 0.0 );
 		if ( $subtotal <= 0 ) {
-			CartSessionHelper::clear_line_allocations();
+			// WooCommerce may run an early totals pass before line subtotals exist; do not wipe a later pass.
 			return;
 		}
 
@@ -215,8 +215,7 @@ final class CartPromotionApplier {
 		$paid_subtotal = FreeGiftCartHandler::paid_cart_subtotal( $cart );
 		$subtotal      = $paid_subtotal > 0 ? $paid_subtotal : ( $context->get_cart_subtotal() ?? 0.0 );
 		if ( $subtotal <= 0 ) {
-			$this->clear_applied_promotion_session();
-			$this->gift_synchronizer->sync( $cart, array() );
+			// Early totals pass (subtotal not computed yet); avoid clearing line/session state for a later pass.
 			return;
 		}
 

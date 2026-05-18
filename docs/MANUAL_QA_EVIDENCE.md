@@ -2,7 +2,7 @@
 
 Evidence bundle for high-risk promotion paths after admin UX polish (`e8da1f1`). This milestone documents verification only; no feature changes.
 
-**Cart/Checkout Blocks (2026-05-18):** Browser cert partial — fee line Pass on block cart (promo 193); CLI order 4354 record/reversal Pass; stacking/code/gift/line partial. `cart_checkout_blocks` not declared. [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md)
+**Cart/Checkout Blocks (2026-05-18):** Browser fee line Pass; CLI cert Pass for stacked/code/gift/line/fee (promos 217–223, orders 4360/4354); full block COD checkout not placed in browser. `cart_checkout_blocks` not declared. [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md)
 
 ## Environment
 

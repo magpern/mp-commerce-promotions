@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
+use MP\CommercePromotions\Service\BlockQaPromotionSetup;
 use MP\CommercePromotions\Service\PromotionService;
 
 $promo_id = 0;
@@ -39,14 +40,13 @@ if ( $promo_id <= 0 && isset( $_SERVER['argv'] ) && is_array( $_SERVER['argv'] )
 	}
 }
 
-$product_id = 4338;
+$pair       = BlockQaPromotionSetup::resolve_default_product_pair();
+$product_id = $pair['paid_product_id'] > 0 ? $pair['paid_product_id'] : BlockQaPromotionSetup::DEFAULT_PAID_PRODUCT_ID;
 if ( getenv( 'MP_CP_BLOCK_QA_PRODUCT_ID' ) !== false ) {
 	$product_id = (int) getenv( 'MP_CP_BLOCK_QA_PRODUCT_ID' );
 }
 
 global $wpdb;
-$plugin = new \MP\CommercePromotions\Plugin();
-$plugin->init();
 
 $repo    = new PromotionRepository( $wpdb );
 $audit   = new \MP\CommercePromotions\Domain\AuditLogRepository( $wpdb );
@@ -54,17 +54,15 @@ $audit_log = new \MP\CommercePromotions\Service\AuditLogger( $audit );
 $factory = new \MP\CommercePromotions\Domain\PromotionFactory();
 $service = new PromotionService( $repo, $factory, $audit_log );
 
-foreach ( $repo->find_filtered( array( 'search' => 'MP CP Blocks QA', 'limit' => 20 ) ) as $p ) {
+foreach ( $repo->find_active_for_planner( 200 ) as $p ) {
 	$id = $p->get_id();
-	if ( $id === null || $id <= 0 ) {
+	if ( $id === null || $id <= 0 || $id === $promo_id ) {
 		continue;
 	}
-	if ( $p->get_status() === PromotionStatus::ACTIVE && $id !== $promo_id ) {
-		try {
-			$service->change_status( $p, PromotionStatus::PAUSED );
-			echo "Paused competing promo {$id}\n";
-		} catch ( Throwable $e ) { // phpcs:ignore
-		}
+	try {
+		$service->change_status( $p, PromotionStatus::PAUSED );
+		echo "Paused competing promo {$id}\n";
+	} catch ( Throwable $e ) { // phpcs:ignore
 	}
 }
 
