@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Minimum PHP 8.1** — dropped PHP 7.4 from CI and requirements (`composer.json`, plugin header, `readme.txt`, GitHub Actions matrix 8.1–8.3).
+
 ### Added
 
 - **Production pilot hardening** — `scripts/regression-suite.php`; snapshot diff preview; operational rollback + production profile presets; runtime anomaly heuristics; retention hardening (telemetry/certification/snapshots); expanded load harness; `docs/MERCHANT_WORKFLOWS.md`.

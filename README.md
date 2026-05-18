@@ -61,7 +61,7 @@ Provide a structured foundation for commerce promotions using:
 ## Requirements
 
 - WordPress 6.5+
-- PHP 7.4+
+- PHP 8.1+
 - WooCommerce 8.0+ (required for cart integration, codes, and admin UI)
 
 ## Commercial readiness (beta)

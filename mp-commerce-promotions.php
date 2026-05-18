@@ -5,7 +5,7 @@
  * Description:       Generic WooCommerce promotion engine for discounts, promotion codes, and voucher workflows.
  * Version:           0.2.0-beta.1
  * Requires at least: 6.5
- * Requires PHP:      7.4
+ * Requires PHP:      8.1
  * Author:            Magpern
  * Author URI:        https://github.com/magpern
  * Text Domain:       mp-commerce-promotions

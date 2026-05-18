@@ -1,6 +1,6 @@
 <?php
 /**
- * PHP 7.4 compatibility shims (composer requires php >=7.4).
+ * Optional polyfills for older PHP (minimum supported version is 8.1).
  *
  * @package MP\CommercePromotions
  */

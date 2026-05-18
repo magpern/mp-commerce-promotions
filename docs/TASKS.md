@@ -50,7 +50,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 - **Customer context enrichment** — Woo `has_previous_orders` + `customer_roles` metadata; `customer_role` condition
 - **Customer/order conditions + engine tests** — `logged_in`, `first_order` (metadata); expanded PHPUnit for evaluator, validator, builder, domain
 - **PHPUnit unit scaffold** — `phpunit.xml.dist`, `tests/Unit/*`, `composer run test` in CI; no WordPress bootstrap yet
-- **CI baseline** — `.github/workflows/ci.yml` (PHP 7.4/8.1/8.2 syntax lint + build zip); PHPCS enforcement deferred
+- **CI baseline** — `.github/workflows/ci.yml` (PHP 8.1/8.2/8.3 syntax lint + build zip); PHPCS enforcement deferred
 - **Release packaging** — `CHANGELOG.md`, `docs/RELEASE_CHECKLIST.md`, `scripts/build-zip.sh`; version `0.1.0` aligned across header/constant/readme
 - **Safe sync scripts** — `scripts/sync-to-live.sh`, `scripts/verify-plugin.sh`; workflow in [DEVELOPMENT.md](DEVELOPMENT.md)
 - **Rule registry groundwork** — `RuleTypes`, `RuleRegistry`; validator/builder/evaluator wired to central type IDs

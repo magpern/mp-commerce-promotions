@@ -156,7 +156,7 @@ Workflow:
 Configured standards:
 
 - WordPress, WordPress-Extra, WordPress-Docs (selected doc rules excluded as noisy)
-- PHPCompatibilityWP (PHP 7.4+)
+- PHPCompatibilityWP (PHP 8.1+)
 - Text domain: `mp-commerce-promotions`
 - Global prefixes: `mp_cp`, `mp_commerce_promotions`, `MP`
 
@@ -215,7 +215,7 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) on `push` / 
 | `bash scripts/build-zip.sh` | Yes (artifact path verified) |
 | `composer run lint:phpcs` | **No** — not run in CI yet |
 
-**PHP matrix:** 7.4, 8.1, 8.2 (matches `composer.json` `require.php`).
+**PHP matrix:** 8.1, 8.2, 8.3 (matches `composer.json` `require.php`).
 
 PHPCS is installed via Composer for local incremental cleanup; the baseline is **not clean** (see PHPCS section above). GitHub Actions runs `composer run lint:phpcs` with **`continue-on-error: true`** (informational only). See [BETA_READINESS.md](BETA_READINESS.md). PHPCS will become a **gating** step after the target subset is stable and the team agrees on an error budget.
 
