@@ -39,6 +39,7 @@ use MP\CommercePromotions\Engine\PromotionPlanExplainer;
 use MP\CommercePromotions\Engine\PromotionPlanner;
 use MP\CommercePromotions\Service\PromotionConflictAnalyzer;
 use MP\CommercePromotions\Service\PromotionScheduleAnalyzer;
+use MP\CommercePromotions\Service\CouponCoexistencePreviewService;
 use MP\CommercePromotions\Service\ScheduleConflictPreviewService;
 use MP\CommercePromotions\Engine\RuleRegistry;
 use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
@@ -212,6 +213,7 @@ final class PromotionEditPage {
 		$this->render_rule_validation_section( $promotion );
 		$this->render_schedule_warnings_section( $promotion );
 		$this->render_schedule_conflict_preview_section( $promotion );
+		$this->render_coupon_coexistence_preview_section( $promotion );
 		$this->render_cart_preview_section( $promotion );
 		$this->render_promotion_codes_section( $promotion );
 		$this->render_usage_redemptions_section( $promotion );
@@ -2431,6 +2433,38 @@ final class PromotionEditPage {
 				echo '</tbody></table>';
 			},
 			__( 'Overlapping schedules, exclusive/orchestration conflicts, and budget overlap risk (read-only).', 'mp-commerce-promotions' ),
+			array(
+				'heading' => 'h2',
+				'width'   => 'narrow',
+			)
+		);
+	}
+
+	private function render_coupon_coexistence_preview_section( Promotion $promotion ): void {
+		$preview = ( new CouponCoexistencePreviewService() )->preview_for_promotion( $promotion );
+
+		AdminSection::render(
+			__( 'Coupon coexistence preview', 'mp-commerce-promotions' ),
+			function () use ( $preview ): void {
+				$native = $preview['native'] ?? array();
+				$check  = $preview['promotion_check'] ?? array();
+				echo '<p><strong>' . esc_html__( 'Native coupons on cart', 'mp-commerce-promotions' ) . ':</strong> ';
+				echo esc_html( (string) ( $native['native_coupon_count'] ?? 0 ) );
+				echo '</p>';
+				echo '<p><strong>' . esc_html__( 'This promotion', 'mp-commerce-promotions' ) . ':</strong> ';
+				echo ! empty( $check['allowed'] )
+					? esc_html__( 'Allowed with current cart', 'mp-commerce-promotions' )
+					: esc_html( (string) ( $check['reason'] ?? __( 'Blocked', 'mp-commerce-promotions' ) ) );
+				echo '</p>';
+				if ( ! empty( $preview['warnings'] ) && is_array( $preview['warnings'] ) ) {
+					echo '<ul style="list-style:disc;margin-left:1.5em;">';
+					foreach ( $preview['warnings'] as $warning ) {
+						echo '<li>' . esc_html( (string) ( $warning['message'] ?? '' ) ) . '</li>';
+					}
+					echo '</ul>';
+				}
+			},
+			__( 'Read-only coexistence check against native WooCommerce coupons (no checkout simulation).', 'mp-commerce-promotions' ),
 			array(
 				'heading' => 'h2',
 				'width'   => 'narrow',

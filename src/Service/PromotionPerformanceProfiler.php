@@ -51,6 +51,12 @@ final class PromotionPerformanceProfiler {
 		$buckets                      = is_array( $aggregates['timing_buckets'] ?? null ) ? $aggregates['timing_buckets'] : array();
 		$buckets[ $bucket ]           = (int) ( $buckets[ $bucket ] ?? 0 ) + 1;
 		$aggregates['timing_buckets'] = $buckets;
+		$aggregates['blocked_by_coupon_count']    = (int) ( $aggregates['blocked_by_coupon_count'] ?? 0 )
+			+ (int) ( $metrics['blocked_by_coupon_count'] ?? 0 );
+		$aggregates['coexistence_fallback_count'] = (int) ( $aggregates['coexistence_fallback_count'] ?? 0 )
+			+ (int) ( $metrics['coexistence_fallback_count'] ?? 0 );
+		$aggregates['coupon_conflict_count']      = (int) ( $aggregates['coupon_conflict_count'] ?? 0 )
+			+ (int) ( $metrics['coupon_conflict_count'] ?? 0 );
 		$aggregates['updated_at']     = gmdate( 'c' );
 		$this->save( $aggregates );
 	}
@@ -136,6 +142,9 @@ final class PromotionPerformanceProfiler {
 			'persisted_allocation'      => $alloc,
 			'degraded'                  => $this->get_degraded_state(),
 			'timing_buckets'            => (array) ( $data['timing_buckets'] ?? array() ),
+			'blocked_by_coupon_count'    => (int) ( $data['blocked_by_coupon_count'] ?? 0 ),
+			'coexistence_fallback_count' => (int) ( $data['coexistence_fallback_count'] ?? 0 ),
+			'coupon_conflict_count'      => (int) ( $data['coupon_conflict_count'] ?? 0 ),
 		);
 	}
 
@@ -158,6 +167,20 @@ final class PromotionPerformanceProfiler {
 
 	public function reset_aggregates(): void {
 		delete_option( self::OPTION_AGGREGATES );
+	}
+
+	public function increment_coexistence_fallback(): void {
+		$aggregates = $this->load();
+		++$aggregates['coexistence_fallback_count'];
+		$aggregates['updated_at'] = gmdate( 'c' );
+		$this->save( $aggregates );
+	}
+
+	public function increment_coupon_conflict(): void {
+		$aggregates = $this->load();
+		++$aggregates['coupon_conflict_count'];
+		$aggregates['updated_at'] = gmdate( 'c' );
+		$this->save( $aggregates );
 	}
 
 	/**
@@ -185,9 +208,12 @@ final class PromotionPerformanceProfiler {
 			'total_telemetry_ms'      => 0.0,
 			'simulation_runs'         => 0,
 			'total_simulation_ms'     => 0.0,
-			'planner_failures'        => 0,
-			'slow_runs'               => array(),
-			'updated_at'              => null,
+			'planner_failures'           => 0,
+			'blocked_by_coupon_count'    => 0,
+			'coexistence_fallback_count' => 0,
+			'coupon_conflict_count'      => 0,
+			'slow_runs'                  => array(),
+			'updated_at'                 => null,
 		);
 
 		return array_merge( $defaults, $stored );

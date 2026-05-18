@@ -186,22 +186,29 @@ final class EcosystemCompatibilityRegistry {
 	 * @return array<string, mixed>
 	 */
 	private function row_multi_currency(): array {
-		$detected = defined( 'WCML_VERSION' )
-			|| class_exists( 'WOOCS' )
-			|| class_exists( '\Aelia\WC\CurrencySwitcher\WC_Aelia_CurrencySwitcher' )
-			|| class_exists( '\WCPBC_Pricing_Zones' );
+		$snapshot = ( new MultiCurrencyCompatibility() )->snapshot();
+		$detected = ! empty( $snapshot['detected'] );
+		$conf     = (string) ( $snapshot['confidence'] ?? self::CONFIDENCE_HIGH );
+		$status   = $conf === MultiCurrencyCompatibility::CONFIDENCE_UNSUPPORTED
+			? self::STATUS_UNSUPPORTED
+			: ( $detected ? self::STATUS_PARTIAL : self::STATUS_CERTIFIED );
+
+		$notes = $detected
+			? (string) ( $snapshot['recommendation'] ?? '' )
+			: __( 'Single-currency context (no known multi-currency plugin).', 'mp-commerce-promotions' );
+		if ( ! empty( $snapshot['line_mode_warning'] ) ) {
+			$notes .= ' ' . __( 'Line-item mode is not recommended with this currency stack.', 'mp-commerce-promotions' );
+		}
 
 		return $this->build_row(
 			'multi_currency',
 			__( 'Multi-currency', 'mp-commerce-promotions' ),
 			$detected,
-			$detected ? self::STATUS_PARTIAL : self::STATUS_CERTIFIED,
-			$detected ? self::CONFIDENCE_MEDIUM : self::CONFIDENCE_HIGH,
+			$status,
+			$conf,
 			$detected ? 'warning' : 'info',
 			'multi_currency_plugin',
-			$detected
-				? __( 'Multi-currency plugin detected.', 'mp-commerce-promotions' )
-				: __( 'Single-currency context (no known multi-currency plugin).', 'mp-commerce-promotions' )
+			$notes
 		);
 	}
 

@@ -1,7 +1,7 @@
 # Commercial readiness
 
-**Schema:** 1.15.0  
-**Plugin version:** 0.2.0-beta.1 (early beta / MVP)
+**Schema:** 1.17.0  
+**Plugin version:** 0.2.0-beta.1 (beta / near-GA)
 
 ## Current maturity
 
@@ -18,6 +18,7 @@ Commerce Promotions is suitable for **staged rollouts and merchant pilots**. It 
 - Opt-in uninstall data deletion
 - PHPUnit and WP-CLI smoke scripts for core workflows
 - Production hardening — profiler, safe mode, degraded storefront mode, concurrency locks, retention cleanup, `scripts/release-audit.sh`
+- Ecosystem certification (1.17.0) — coupon matrix, tax/currency diagnostics, certification runs table, emergency ops, load harness, [COUPON_COMPATIBILITY.md](COUPON_COMPATIBILITY.md), [TAX_COMPATIBILITY.md](TAX_COMPATIBILITY.md), operations runbooks
 - Beta certification docs — [BETA_READINESS.md](BETA_READINESS.md), blocks investigation, browser QA matrix, extracted POT
 
 ## What is not production-certified
@@ -49,7 +50,8 @@ See **Reports → Compatibility status** or **Diagnostics → Compatibility stat
 
 - [ ] Independent security review
 - [x] Block checkout QA **passed** — [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md); `cart_checkout_blocks` declared (line unit display still partial)
-- [ ] Merchant-facing documentation and SLA
+- [ ] Fresh browser certification records (<30d) for classic, blocks, line mode, coupon coexistence (Diagnostics)
+- [ ] Merchant-facing documentation and SLA (include [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md))
 - [ ] Full i18n extraction and at least one locale
 - [ ] PHPCS gating enabled in CI (currently **informational only** — see [BETA_READINESS.md](BETA_READINESS.md))
 - [ ] Backup/restore runbook for opt-in uninstall deletion

@@ -18,6 +18,8 @@ use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Infrastructure\Database\MigrationRunner;
 use MP\CommercePromotions\Infrastructure\Database\Schema;
+use MP\CommercePromotions\Service\MultiCurrencyCompatibility;
+use MP\CommercePromotions\Service\PromotionPerformanceProfiler;
 
 final class SupportBundleExporter {
 
@@ -68,8 +70,10 @@ final class SupportBundleExporter {
 			'settings'         => $this->settings->to_feature_flags(),
 			'counts'           => $this->counts(),
 			'automation_runs'  => $this->recent_automation_runs(),
-			'health_issues'    => $this->health_issues(),
-			'redaction_notice' => 'No customer PII or raw promotion codes are included.',
+			'health_issues'           => $this->health_issues(),
+			'currency_compatibility'  => ( new MultiCurrencyCompatibility() )->snapshot(),
+			'coupon_coexistence_telemetry' => ( new PromotionPerformanceProfiler() )->get_report_summary(),
+			'redaction_notice'        => 'No customer PII or raw promotion codes are included.',
 		);
 
 		return $this->redact_sensitive( $bundle );

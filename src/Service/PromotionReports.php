@@ -560,6 +560,7 @@ final class PromotionReports {
 			'exhausted_promotions'                 => $this->promotions->count_budget_exhausted_active(),
 			'cooldown_active_promotions'           => $this->promotions->count_cooldown_active_promotions(),
 			'dry_run_promotions'                   => $this->promotions->count_dry_run_promotions(),
+			'tax_sensitive_promotions'             => $this->promotions->count_tax_sensitive_promotions(),
 			'avg_recorded_discount_per_redemption' => $recorded_count > 0
 				? $this->redemptions->avg_recorded_discount_amount( $sum_filters )
 				: 0.0,

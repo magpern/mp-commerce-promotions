@@ -190,13 +190,14 @@ final class PromotionPlanner {
 		if ( $this->profiler !== null ) {
 			$this->profiler->record_planner_run(
 				array(
-					'duration_ms'            => $duration_ms,
-					'evaluator_calls'        => $evaluator_calls,
-					'condition_checks'       => $condition_checks,
-					'action_count'           => $action_count,
-					'promotions_considered'  => $considered,
-					'promotions_prefiltered' => $prefiltered_skipped,
-					'selected_count'         => $selected_count,
+					'duration_ms'             => $duration_ms,
+					'evaluator_calls'         => $evaluator_calls,
+					'condition_checks'        => $condition_checks,
+					'action_count'            => $action_count,
+					'promotions_considered'   => $considered,
+					'promotions_prefiltered'  => $prefiltered_skipped,
+					'selected_count'          => $selected_count,
+					'blocked_by_coupon_count' => $blocked_by_coupon_count,
 				)
 			);
 		}

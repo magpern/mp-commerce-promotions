@@ -395,6 +395,27 @@ final class PromotionRepository {
 		return $this->count_filtered( array() );
 	}
 
+	public function count_tax_sensitive_promotions(): int {
+		$table = $this->promotions_table();
+		$sql   = "SELECT COUNT(*) FROM {$table} WHERE status IN (%s, %s, %s)
+			AND (discount_application_mode IN ('line_item','hybrid')
+			OR actions LIKE %s OR actions LIKE %s OR actions LIKE %s)";
+		$count = DbQuery::get_var(
+			$this->wpdb,
+			$sql,
+			array(
+				PromotionStatus::ACTIVE,
+				PromotionStatus::PAUSED,
+				PromotionStatus::DRAFT,
+				'%free_shipping%',
+				'%fixed_amount_discount%',
+				'%percentage_discount%',
+			)
+		);
+
+		return is_numeric( $count ) ? (int) $count : 0;
+	}
+
 	public function count_dry_run_promotions(): int {
 		$table = $this->promotions_table();
 		$sql   = "SELECT COUNT(*) FROM {$table} WHERE dry_run = 1";

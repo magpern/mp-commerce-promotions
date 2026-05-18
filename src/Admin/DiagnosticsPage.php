@@ -19,6 +19,8 @@ use MP\CommercePromotions\Service\PromotionOperationalRecovery;
 use MP\CommercePromotions\Service\PromotionRecommendationEngine;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Service\Settings;
+use MP\CommercePromotions\Admin\EcosystemCertificationPanel;
+use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\SupportBundleExporter;
 use MP\CommercePromotions\Service\UsageDiagnostics;
 
@@ -158,6 +160,8 @@ final class DiagnosticsPage {
 
 	private ?\MP\CommercePromotions\Service\PromotionSubsystemRecovery $subsystem_recovery;
 
+	private ?AuditLogger $audit_logger;
+
 	public function __construct(
 		UsageDiagnostics $diagnostics,
 		Settings $settings,
@@ -174,7 +178,8 @@ final class DiagnosticsPage {
 		?\MP\CommercePromotions\Service\PromotionConcurrencyGuard $concurrency = null,
 		?\MP\CommercePromotions\Service\PromotionCronScheduler $cron_scheduler = null,
 		?\MP\CommercePromotions\Service\PromotionDataRetentionService $retention = null,
-		?\MP\CommercePromotions\Service\PromotionSubsystemRecovery $subsystem_recovery = null
+		?\MP\CommercePromotions\Service\PromotionSubsystemRecovery $subsystem_recovery = null,
+		?AuditLogger $audit_logger = null
 	) {
 		$this->diagnostics           = $diagnostics;
 		$this->settings              = $settings;
@@ -192,6 +197,7 @@ final class DiagnosticsPage {
 		$this->cron_scheduler        = $cron_scheduler;
 		$this->retention             = $retention;
 		$this->subsystem_recovery    = $subsystem_recovery;
+		$this->audit_logger          = $audit_logger;
 	}
 
 	public function render(): void {
@@ -212,6 +218,18 @@ final class DiagnosticsPage {
 			$this->profiler,
 			$this->cron_scheduler
 		);
+
+		global $wpdb;
+		if ( $wpdb instanceof \wpdb ) {
+			$promo_repo = new \MP\CommercePromotions\Domain\PromotionRepository( $wpdb );
+			EcosystemCertificationPanel::handle_emergency_post(
+				$this->settings,
+				$promo_repo,
+				$this->profiler,
+				$this->intelligence_recovery,
+				$this->audit_logger
+			);
+		}
 
 		$report = $this->diagnostics->analyze();
 
@@ -239,6 +257,21 @@ final class DiagnosticsPage {
 			EcosystemCompatibilityPanel::render_merchant_safety( $promo_repo );
 			EcosystemCompatibilityPanel::render_complexity( $promo_repo );
 			EcosystemCompatibilityPanel::render_schedule_conflict_preview( $promo_repo );
+			$cert_repo = new \MP\CommercePromotions\Domain\CertificationRunRepository( $wpdb );
+			$tracking  = new \MP\CommercePromotions\Service\CertificationTrackingService( $cert_repo );
+			EcosystemCertificationPanel::render_certification_table( $tracking );
+			EcosystemCertificationPanel::render_coupon_matrix();
+			EcosystemCertificationPanel::render_tax_compatibility();
+			EcosystemCertificationPanel::render_currency_snapshot();
+			EcosystemCertificationPanel::render_coupon_telemetry( $this->profiler );
+			$emergency = new \MP\CommercePromotions\Service\EmergencyOperationsService(
+				$this->settings,
+				$promo_repo,
+				$this->profiler,
+				$this->intelligence_recovery,
+				null
+			);
+			EcosystemCertificationPanel::render_emergency_operations( $emergency );
 		}
 		$this->render_support_export_section();
 		$this->render_automation_runner_section();

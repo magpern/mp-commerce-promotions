@@ -378,7 +378,8 @@ final class Plugin {
 				$concurrency_global,
 				$cron_scheduler,
 				$retention_global,
-				$subsystem_recovery
+				$subsystem_recovery,
+				$this->audit_logger
 			);
 		}
 

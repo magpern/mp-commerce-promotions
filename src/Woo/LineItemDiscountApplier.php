@@ -57,7 +57,7 @@ final class LineItemDiscountApplier {
 			return new LineDiscountAllocationResult( array(), 0.0 );
 		}
 
-		if ( $this->settings->safe_mode_enabled() ) {
+		if ( $this->settings->safe_mode_enabled() || $this->settings->line_item_mode_disabled() ) {
 			return new LineDiscountAllocationResult( array(), 0.0 );
 		}
 

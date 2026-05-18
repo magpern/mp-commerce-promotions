@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Woo;
 
+use MP\CommercePromotions\Service\PromotionPerformanceProfiler;
+
 final class LineDiscountFallbackTelemetry {
 
 	public const OPTION_STATS = 'mp_cp_line_discount_fallback_stats';
@@ -50,6 +52,17 @@ final class LineDiscountFallbackTelemetry {
 		);
 
 		self::persist_stats( $reason, $promotion_id, $detail );
+		self::bump_profiler_counters( $reason );
+	}
+
+	private static function bump_profiler_counters( string $reason ): void {
+		$profiler = new PromotionPerformanceProfiler();
+		if ( $reason === self::REASON_COUPON_CONFLICT ) {
+			$profiler->increment_coupon_conflict();
+			return;
+		}
+
+		$profiler->increment_coexistence_fallback();
 	}
 
 	private static function persist_stats( string $reason, int $promotion_id, ?string $detail ): void {

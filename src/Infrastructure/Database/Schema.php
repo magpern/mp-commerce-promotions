@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.16.0';
+	public const SCHEMA_VERSION = '1.17.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -57,6 +57,10 @@ final class Schema {
 
 	public static function simulation_scenarios_table( wpdb $wpdb ): string {
 		return $wpdb->prefix . 'mp_cp_simulation_scenarios';
+	}
+
+	public static function certification_runs_table( wpdb $wpdb ): string {
+		return $wpdb->prefix . 'mp_cp_certification_runs';
 	}
 
 	public static function promotions_create_sql( wpdb $wpdb ): string {
@@ -279,6 +283,27 @@ PRIMARY KEY  (id),
 KEY status (status),
 KEY created_at (created_at),
 KEY last_run_at (last_run_at)
+) {$collate};";
+	}
+
+	public static function certification_runs_create_sql( wpdb $wpdb ): string {
+		$table   = self::certification_runs_table( $wpdb );
+		$collate = $wpdb->get_charset_collate();
+
+		return "CREATE TABLE {$table} (
+id bigint(20) unsigned NOT NULL auto_increment,
+certification_type varchar(64) NOT NULL,
+status varchar(32) NOT NULL default 'passed',
+environment varchar(191) NULL,
+payment_gateway varchar(191) NULL,
+operator_notes text NULL,
+metadata_json longtext NULL,
+certified_at datetime NOT NULL default CURRENT_TIMESTAMP,
+created_by bigint(20) unsigned NULL,
+PRIMARY KEY  (id),
+KEY certification_type (certification_type),
+KEY status (status),
+KEY certified_at (certified_at)
 ) {$collate};";
 	}
 }

@@ -49,6 +49,8 @@ final class Settings {
 
 	public const OPTION_PROMOTION_DRY_RUN = 'mp_cp_promotion_dry_run';
 
+	public const OPTION_LINE_ITEM_MODE_DISABLED = 'mp_cp_line_item_mode_disabled';
+
 	private const VALUE_YES = 'yes';
 
 	private const VALUE_NO = 'no';
@@ -219,6 +221,14 @@ final class Settings {
 		$this->set_enabled( self::OPTION_PROMOTION_DRY_RUN, $enabled );
 	}
 
+	public function line_item_mode_disabled(): bool {
+		return $this->is_enabled( self::OPTION_LINE_ITEM_MODE_DISABLED, false );
+	}
+
+	public function set_line_item_mode_disabled( bool $disabled ): void {
+		$this->set_enabled( self::OPTION_LINE_ITEM_MODE_DISABLED, $disabled );
+	}
+
 	/**
 	 * @return array<string, bool|int>
 	 */
@@ -243,6 +253,7 @@ final class Settings {
 			'telemetry_retention_days'  => $this->telemetry_retention_days(),
 			'blocks_hook_debug'         => $this->blocks_hook_debug_enabled(),
 			'promotion_dry_run'         => $this->promotion_dry_run_enabled(),
+			'line_item_mode_disabled'   => $this->line_item_mode_disabled(),
 		);
 	}
 

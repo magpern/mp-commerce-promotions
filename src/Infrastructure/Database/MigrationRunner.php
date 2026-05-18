@@ -89,6 +89,7 @@ final class MigrationRunner {
 			Schema::automation_runs_create_sql( $this->wpdb ),
 			Schema::planner_telemetry_create_sql( $this->wpdb ),
 			Schema::simulation_scenarios_create_sql( $this->wpdb ),
+			Schema::certification_runs_create_sql( $this->wpdb ),
 		);
 
 		foreach ( $statements as $sql ) {
@@ -277,6 +278,10 @@ final class MigrationRunner {
 
 		if ( version_compare( Schema::SCHEMA_VERSION, '1.13.0', '>=' ) ) {
 			$required[] = Schema::simulation_scenarios_table( $this->wpdb );
+		}
+
+		if ( version_compare( Schema::SCHEMA_VERSION, '1.17.0', '>=' ) ) {
+			$required[] = Schema::certification_runs_table( $this->wpdb );
 		}
 
 		foreach ( $required as $table ) {
