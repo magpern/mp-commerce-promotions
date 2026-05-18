@@ -19,6 +19,9 @@ final class GiftCardDeliveryStatus {
 
 	public const DISABLED = 'disabled';
 
+	/** Manual issue: no recipient email was provided. */
+	public const NOT_REQUESTED = 'not_requested';
+
 	/** Scheduled: card not generated yet; waiting for delivery date. */
 	public const PENDING_SCHEDULED = 'pending_scheduled';
 
@@ -36,6 +39,7 @@ final class GiftCardDeliveryStatus {
 			self::SENT,
 			self::FAILED,
 			self::DISABLED,
+			self::NOT_REQUESTED,
 			self::PENDING_SCHEDULED,
 			self::CANCELLED,
 			self::UNKNOWN,

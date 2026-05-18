@@ -13,6 +13,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	define( 'ABSPATH', $plugin_root );
 }
 
+if ( ! defined( 'DAY_IN_SECONDS' ) ) {
+	define( 'DAY_IN_SECONDS', 86400 );
+}
+
 if ( ! defined( 'MP_COMMERCE_PROMOTIONS_PATH' ) ) {
 	define( 'MP_COMMERCE_PROMOTIONS_PATH', $plugin_root );
 }

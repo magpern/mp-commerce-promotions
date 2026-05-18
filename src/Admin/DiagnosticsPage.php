@@ -214,6 +214,7 @@ final class DiagnosticsPage {
 		$this->handle_post_gift_card_delivery_repair();
 		$this->handle_post_gift_card_scheduled_repair();
 		$this->handle_post_gift_card_customer_repair();
+		$this->handle_post_gift_card_test_email();
 		$this->handle_post_repair();
 		$this->handle_post_archive_hygiene();
 		$this->handle_post_automation();
@@ -1860,7 +1861,7 @@ final class DiagnosticsPage {
 			echo esc_html__(
 				'Recent gift card emails may not be sending. Configure SMTP before selling gift cards.',
 				'mp-commerce-promotions'
-			) . '</p></div>';
+			) . '</p></motion.div>';
 		}
 
 		echo '<ul>';
@@ -1887,6 +1888,87 @@ final class DiagnosticsPage {
 			}
 			echo '</ul>';
 		}
+
+		$manual_delivery = new \MP\CommercePromotions\GiftCard\GiftCardManualIssueDelivery(
+			new \MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer( $this->settings ),
+			new \MP\CommercePromotions\GiftCard\GiftCardManualDeliveryStore()
+		);
+		$last_test = $manual_delivery->get_last_test_result();
+		if ( is_array( $last_test ) && $last_test !== array() ) {
+			echo '<p><strong>' . esc_html__( 'Last test email', 'mp-commerce-promotions' ) . '</strong></p><ul>';
+			foreach ( $last_test as $key => $value ) {
+				if ( is_bool( $value ) ) {
+					$value = $value ? __( 'Yes', 'mp-commerce-promotions' ) : __( 'No', 'mp-commerce-promotions' );
+				}
+				echo '<li>' . esc_html( str_replace( '_', ' ', (string) $key ) ) . ': ' . esc_html( (string) $value ) . '</li>';
+			}
+			echo '</ul>';
+		}
+
+		$default_test_email = 'postmaster@biopentra.eu';
+		echo '<form method="post" style="margin-top:1em;max-width:520px;">';
+		wp_nonce_field( 'mp_cp_gift_card_test_email' );
+		echo '<input type="hidden" name="mp_cp_gift_card_test_email" value="1" />';
+		echo '<p><label for="mp_cp_gc_test_email_to">' . esc_html__( 'Send test gift card email to', 'mp-commerce-promotions' ) . '</label><br />';
+		echo '<input type="email" class="regular-text" id="mp_cp_gc_test_email_to" name="mp_cp_gc_test_email_to" value="'
+			. esc_attr( $default_test_email ) . '" required /></p>';
+		echo '<p class="description">' . esc_html__(
+			'Sends a sample gift card code only. Does not create a real gift card. Useful for SMTP validation.',
+			'mp-commerce-promotions'
+		) . '</p>';
+		echo '<p><button type="submit" class="button button-secondary" name="mp_cp_gift_card_test_email_send" value="1">'
+			. esc_html__( 'Send test gift card email', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form>';
+	}
+
+	private function handle_post_gift_card_test_email(): void {
+		if ( ! isset( $_POST['mp_cp_gift_card_test_email'] ) ) {
+			return;
+		}
+
+		if (
+			! isset( $_POST['_wpnonce'] )
+			|| ! wp_verify_nonce(
+				sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ),
+				'mp_cp_gift_card_test_email'
+			)
+		) {
+			return;
+		}
+
+		$to = isset( $_POST['mp_cp_gc_test_email_to'] )
+			? sanitize_email( wp_unslash( (string) $_POST['mp_cp_gc_test_email_to'] ) )
+			: 'postmaster@biopentra.eu';
+		if ( $to === '' ) {
+			$to = 'postmaster@biopentra.eu';
+		}
+
+		$manual_delivery = new \MP\CommercePromotions\GiftCard\GiftCardManualIssueDelivery(
+			new \MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer( $this->settings ),
+			new \MP\CommercePromotions\GiftCard\GiftCardManualDeliveryStore()
+		);
+		$result = $manual_delivery->send_test_email( $to );
+
+		if ( ! empty( $result['ok'] ) ) {
+			AdminNotice::success(
+				sprintf(
+					/* translators: %s: recipient email */
+					__( 'Test gift card email sent to %s.', 'mp-commerce-promotions' ),
+					$to
+				)
+			);
+			return;
+		}
+
+		$reason = (string) ( $result['delivery_error'] ?? __( 'Email could not be sent.', 'mp-commerce-promotions' ) );
+		AdminNotice::error(
+			sprintf(
+				/* translators: 1: recipient email, 2: error reason */
+				__( 'Test gift card email to %1$s failed: %2$s', 'mp-commerce-promotions' ),
+				$to,
+				$reason
+			)
+		);
 	}
 
 	private function handle_post_gift_card_scheduled_repair(): void {

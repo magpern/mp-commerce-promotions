@@ -52,12 +52,18 @@ final class GiftCardEmailTemplate {
 			$cards_html .= self::card_block_html( $card, $accent, $preview );
 		}
 
-		$intro = $preview
+		$is_test       = ! empty( $context['is_test'] );
+		$manual_issue  = ! empty( $context['manual_issue'] );
+		$intro         = $preview
 			? \esc_html__( 'Preview of your gift card email.', 'mp-commerce-promotions' )
-			: \esc_html__( 'Thank you for your purchase. Your gift card details are below.', 'mp-commerce-promotions' );
+			: ( $is_test
+				? \esc_html__( 'This is a test gift card email. No real gift card was created. Sample details are below.', 'mp-commerce-promotions' )
+				: ( $manual_issue
+					? \esc_html__( 'You have received a gift card. Your gift card details are below.', 'mp-commerce-promotions' )
+					: \esc_html__( 'Thank you for your purchase. Your gift card details are below.', 'mp-commerce-promotions' ) ) );
 
 		$order_id = isset( $context['order_id'] ) ? (int) $context['order_id'] : 0;
-		if ( ! $preview && $order_id > 0 ) {
+		if ( ! $preview && ! $is_test && ! $manual_issue && $order_id > 0 ) {
 			$intro .= ' ' . \esc_html(
 				sprintf(
 					/* translators: %d: order ID */

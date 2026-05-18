@@ -82,7 +82,8 @@ final class GiftCardDeliveryMailer {
 			);
 		}
 
-		$sent = $this->send_email( $to_email, $order_id, $cards );
+		$manual_issue = $order_id <= 0;
+		$sent         = $this->send_email( $to_email, $order_id, $cards, false, $manual_issue );
 		$now  = function_exists( 'current_time' ) ? current_time( 'mysql' ) : gmdate( 'Y-m-d H:i:s' );
 
 		foreach ( $results as $i => $row ) {
@@ -104,9 +105,71 @@ final class GiftCardDeliveryMailer {
 	}
 
 	/**
+	 * Send a test gift card email (sample code only; does not create a card).
+	 *
+	 * @return array{
+	 *   ok: bool,
+	 *   delivery_status: string,
+	 *   delivered_to?: string,
+	 *   delivered_at?: string,
+	 *   delivery_error?: string
+	 * }
+	 */
+	public function send_test_delivery_email( string $to_email ): array {
+		$to_email = sanitize_email( $to_email );
+		if ( $to_email === '' || ! is_email( $to_email ) ) {
+			return array(
+				'ok'              => false,
+				'delivery_status' => GiftCardDeliveryStatus::FAILED,
+				'delivery_error'  => __( 'Invalid recipient email address.', 'mp-commerce-promotions' ),
+			);
+		}
+
+		if ( ! $this->settings->gift_card_delivery_email_enabled() ) {
+			return array(
+				'ok'              => false,
+				'delivery_status' => GiftCardDeliveryStatus::DISABLED,
+				'delivery_error'  => __( 'Gift card delivery email is disabled in settings.', 'mp-commerce-promotions' ),
+			);
+		}
+
+		$currency = function_exists( 'get_woocommerce_currency' )
+			? (string) get_woocommerce_currency()
+			: 'EUR';
+
+		$cards = array(
+			array(
+				'plain_code' => GiftCardManualIssueDelivery::TEST_SAMPLE_CODE,
+				'amount'     => 1.0,
+				'currency'   => $currency,
+				'expires_at' => null,
+			),
+		);
+
+		$sent = $this->send_email( $to_email, 0, $cards, true, true );
+		$now  = function_exists( 'current_time' ) ? current_time( 'mysql' ) : gmdate( 'Y-m-d H:i:s' );
+
+		if ( $sent ) {
+			return array(
+				'ok'              => true,
+				'delivery_status' => GiftCardDeliveryStatus::SENT,
+				'delivered_to'    => $to_email,
+				'delivered_at'    => $now,
+			);
+		}
+
+		return array(
+			'ok'              => false,
+			'delivery_status' => GiftCardDeliveryStatus::FAILED,
+			'delivered_to'    => $to_email,
+			'delivery_error'  => __( 'Email could not be sent (wp_mail failed).', 'mp-commerce-promotions' ),
+		);
+	}
+
+	/**
 	 * @param list<array{plain_code: string, amount: float, currency: string, expires_at: ?string, recipient_name?: string, purchaser_name?: string, message?: string}> $cards
 	 */
-	private function send_email( string $to_email, int $order_id, array $cards ): bool {
+	private function send_email( string $to_email, int $order_id, array $cards, bool $is_test = false, bool $manual_issue = false ): bool {
 		$site_name = function_exists( 'wp_specialchars_decode' )
 			? wp_specialchars_decode( (string) get_bloginfo( 'name' ), ENT_QUOTES )
 			: 'Store';
@@ -120,23 +183,32 @@ final class GiftCardDeliveryMailer {
 			__( 'Your gift card from %s', 'mp-commerce-promotions' ),
 			$site_name
 		);
+		if ( $is_test ) {
+			$subject = sprintf(
+				/* translators: %s: email subject without [Test] prefix */
+				__( '[Test] %s', 'mp-commerce-promotions' ),
+				$subject
+			);
+		}
 
 		$store_url = function_exists( 'home_url' ) ? home_url( '/' ) : '';
 
 		$html = GiftCardEmailTemplate::render_html(
 			$this->settings->gift_card_email_template(),
 			array(
-				'site_name'    => $site_name,
-				'store_url'    => $store_url,
-				'order_id'     => $order_id,
-				'accent'       => $this->settings->gift_card_accent_color(),
-				'logo_url'     => $this->settings->gift_card_logo_url(),
-				'support_text' => $this->settings->gift_card_support_email_text(),
-				'cards'        => $cards,
+				'site_name'     => $site_name,
+				'store_url'     => $store_url,
+				'order_id'      => $order_id,
+				'accent'        => $this->settings->gift_card_accent_color(),
+				'logo_url'      => $this->settings->gift_card_logo_url(),
+				'support_text'  => $this->settings->gift_card_support_email_text(),
+				'cards'         => $cards,
+				'manual_issue'  => $manual_issue,
+				'is_test'       => $is_test,
 			)
 		);
 
-		$plain = $this->build_plain_body( $site_name, $order_id, $store_url, $cards );
+		$plain = $this->build_plain_body( $site_name, $order_id, $store_url, $cards, $manual_issue, $is_test );
 
 		$headers = array(
 			'Content-Type: text/html; charset=UTF-8',
@@ -182,22 +254,51 @@ final class GiftCardDeliveryMailer {
 	/**
 	 * @param list<array{plain_code: string, amount: float, currency: string, expires_at: ?string, recipient_name?: string, purchaser_name?: string, message?: string}> $cards
 	 */
-	private function build_plain_body( string $site_name, int $order_id, string $store_url, array $cards ): string {
-		$lines = array(
-			sprintf(
-				/* translators: %s: store name */
-				__( 'Thank you for your purchase at %s.', 'mp-commerce-promotions' ),
-				$site_name
-			),
-			sprintf(
-				/* translators: %d: order ID */
-				__( 'Gift card details from order #%d:', 'mp-commerce-promotions' ),
-				$order_id
-			),
-			'',
-			__( 'Redeem at checkout in the “Gift card or store credit” section.', 'mp-commerce-promotions' ),
-			'',
-		);
+	private function build_plain_body(
+		string $site_name,
+		int $order_id,
+		string $store_url,
+		array $cards,
+		bool $manual_issue = false,
+		bool $is_test = false
+	): string {
+		if ( $is_test ) {
+			$lines = array(
+				__( 'This is a test gift card email. No real gift card was created.', 'mp-commerce-promotions' ),
+				'',
+			);
+		} elseif ( $manual_issue ) {
+			$lines = array(
+				sprintf(
+					/* translators: %s: store name */
+					__( 'You have received a gift card from %s.', 'mp-commerce-promotions' ),
+					$site_name
+				),
+				__( 'Gift card details:', 'mp-commerce-promotions' ),
+				'',
+			);
+		} else {
+			$lines = array(
+				sprintf(
+					/* translators: %s: store name */
+					__( 'Thank you for your purchase at %s.', 'mp-commerce-promotions' ),
+					$site_name
+				),
+			);
+			if ( $order_id > 0 ) {
+				$lines[] = sprintf(
+					/* translators: %d: order ID */
+					__( 'Gift card details from order #%d:', 'mp-commerce-promotions' ),
+					$order_id
+				);
+			} else {
+				$lines[] = __( 'Gift card details:', 'mp-commerce-promotions' );
+			}
+			$lines[] = '';
+		}
+
+		$lines[] = __( 'Redeem at checkout in the “Gift card or store credit” section.', 'mp-commerce-promotions' );
+		$lines[] = '';
 
 		foreach ( $cards as $card ) {
 			$recipient_name = trim( (string) ( $card['recipient_name'] ?? '' ) );

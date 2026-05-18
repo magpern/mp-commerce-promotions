@@ -374,7 +374,12 @@ final class Plugin {
 		$gift_ledger     = new GiftCardLedger( $gift_card_repo, $gift_card_tx );
 		$sc_accounts     = new StoreCreditAccountService( $gift_card_repo );
 		$sc_wallet       = new StoreCreditWallet( $sc_accounts, $gift_ledger, $this->audit_logger );
-		$gift_cards_page = new GiftCardsPage( $gift_ledger, $gift_card_repo, $sc_wallet, $sc_accounts );
+		$gift_card_mailer   = new \MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer( $this->settings );
+		$manual_gc_delivery = new \MP\CommercePromotions\GiftCard\GiftCardManualIssueDelivery(
+			$gift_card_mailer,
+			new \MP\CommercePromotions\GiftCard\GiftCardManualDeliveryStore()
+		);
+		$gift_cards_page = new GiftCardsPage( $gift_ledger, $gift_card_repo, $sc_wallet, $sc_accounts, $manual_gc_delivery );
 
 		$profiler_global     = new PromotionPerformanceProfiler();
 		$concurrency_global  = new PromotionConcurrencyGuard();

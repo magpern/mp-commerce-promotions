@@ -12,7 +12,10 @@ namespace MP\CommercePromotions\Admin;
 use InvalidArgumentException;
 use MP\CommercePromotions\GiftCard\GiftCard;
 use MP\CommercePromotions\GiftCard\GiftCardCurrency;
+use MP\CommercePromotions\GiftCard\GiftCardDeliveryStatus;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
+use MP\CommercePromotions\GiftCard\GiftCardManualDeliveryStore;
+use MP\CommercePromotions\GiftCard\GiftCardManualIssueDelivery;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
 use MP\CommercePromotions\GiftCard\GiftCardSourceLabel;
 use MP\CommercePromotions\GiftCard\StoreCreditAccountService;
@@ -45,7 +48,9 @@ final class GiftCardsPage {
 
 	private StoreCreditAccountService $store_credit_accounts;
 
-	/** @var array{plain_code?: string, card_id?: int}|null */
+	private GiftCardManualIssueDelivery $manual_delivery;
+
+	/** @var array{plain_code?: string, card_id?: int, delivery?: array<string, string>}|null */
 	private ?array $flash_issue = null;
 
 	/** @var int|null */
@@ -55,12 +60,17 @@ final class GiftCardsPage {
 		GiftCardLedger $ledger,
 		GiftCardRepository $cards,
 		StoreCreditWallet $store_credit,
-		StoreCreditAccountService $store_credit_accounts
+		StoreCreditAccountService $store_credit_accounts,
+		?GiftCardManualIssueDelivery $manual_delivery = null
 	) {
 		$this->ledger                 = $ledger;
 		$this->cards                  = $cards;
 		$this->store_credit           = $store_credit;
 		$this->store_credit_accounts  = $store_credit_accounts;
+		$this->manual_delivery        = $manual_delivery ?? new GiftCardManualIssueDelivery(
+			new \MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer( new \MP\CommercePromotions\Service\Settings() ),
+			new GiftCardManualDeliveryStore()
+		);
 	}
 
 	public function render(): void {
@@ -445,11 +455,13 @@ final class GiftCardsPage {
 			$currency = GiftCardCurrency::validate(
 				isset( $_POST['currency'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['currency'] ) ) : ''
 			);
-			$result = $this->ledger->issue( $amount, $currency, $expires, $email !== '' ? $email : null, $note !== '' ? $note : null );
-			$id     = $result->get_card()->get_id();
+			$result   = $this->ledger->issue( $amount, $currency, $expires, $email !== '' ? $email : null, $note !== '' ? $note : null );
+			$id       = $result->get_card()->get_id();
+			$delivery = $this->manual_delivery->deliver_after_issue( $result, $email !== '' ? $email : null );
 			$this->flash_issue = array(
 				'plain_code' => $result->get_plain_code(),
 				'card_id'    => $id ?? 0,
+				'delivery'   => $delivery,
 			);
 		} catch ( InvalidArgumentException | RuntimeException $e ) {
 			AdminNotice::error( esc_html( $e->getMessage() ) );
@@ -548,7 +560,50 @@ final class GiftCardsPage {
 				)
 			) . '</p>';
 		}
+		$this->render_issue_delivery_status( $this->flash_issue['delivery'] ?? array() );
 		echo '<p><strong>' . esc_html__( 'Copy now. The full code is not stored.', 'mp-commerce-promotions' ) . '</strong></p></div>';
+	}
+
+	/**
+	 * @param array<string, string> $delivery
+	 */
+	private function render_issue_delivery_status( array $delivery ): void {
+		$status = (string) ( $delivery['delivery_status'] ?? '' );
+		$email  = (string) ( $delivery['recipient_email'] ?? '' );
+
+		if ( $status === GiftCardDeliveryStatus::SENT && $email !== '' ) {
+			echo '<p>' . esc_html(
+				sprintf(
+					/* translators: %s: recipient email */
+					__( 'Email sent to %s', 'mp-commerce-promotions' ),
+					$email
+				)
+			) . '</p>';
+			return;
+		}
+
+		if ( $status === GiftCardDeliveryStatus::FAILED ) {
+			$reason = (string) ( $delivery['delivery_error'] ?? __( 'Unknown error', 'mp-commerce-promotions' ) );
+			echo '<p><strong>' . esc_html__(
+				'Email failed',
+				'mp-commerce-promotions'
+			) . ':</strong> ' . esc_html( $reason ) . '</p>';
+			return;
+		}
+
+		if ( $status === GiftCardDeliveryStatus::DISABLED ) {
+			$reason = (string) ( $delivery['delivery_error'] ?? '' );
+			echo '<p>' . esc_html__( 'Email not sent: gift card delivery email is disabled in settings.', 'mp-commerce-promotions' );
+			if ( $reason !== '' ) {
+				echo ' ' . esc_html( $reason );
+			}
+			echo '</p>';
+			return;
+		}
+
+		if ( $status === GiftCardDeliveryStatus::NOT_REQUESTED || $email === '' ) {
+			echo '<p>' . esc_html__( 'Email not sent: no recipient email', 'mp-commerce-promotions' ) . '</p>';
+		}
 	}
 
 	private function render_list(): void {
@@ -627,6 +682,19 @@ final class GiftCardsPage {
 		$this->detail_row( __( 'Status', 'mp-commerce-promotions' ), $card->get_status() );
 		$this->detail_row( __( 'Expires', 'mp-commerce-promotions' ), $card->get_expires_at() ?? '—' );
 		$this->detail_row( __( 'Recipient email', 'mp-commerce-promotions' ), $card->get_recipient_email() ?? '—' );
+		$delivery_meta = ( new GiftCardManualDeliveryStore() )->get( $gift_card_id );
+		if ( $delivery_meta !== null ) {
+			$this->detail_row( __( 'Email delivery', 'mp-commerce-promotions' ), $delivery_meta['delivery_status'] );
+			if ( isset( $delivery_meta['delivered_to'] ) ) {
+				$this->detail_row( __( 'Delivered to', 'mp-commerce-promotions' ), $delivery_meta['delivered_to'] );
+			}
+			if ( isset( $delivery_meta['delivered_at'] ) ) {
+				$this->detail_row( __( 'Delivered at', 'mp-commerce-promotions' ), $delivery_meta['delivered_at'] );
+			}
+			if ( isset( $delivery_meta['delivery_error'] ) ) {
+				$this->detail_row( __( 'Delivery error', 'mp-commerce-promotions' ), $delivery_meta['delivery_error'] );
+			}
+		}
 		$this->detail_row( __( 'UUID', 'mp-commerce-promotions' ), $card->get_gift_card_uuid() );
 		$this->detail_row( __( 'Source', 'mp-commerce-promotions' ), GiftCardSourceLabel::for_card( $card ) );
 		echo '</tbody></table>';

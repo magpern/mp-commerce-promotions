@@ -1,0 +1,124 @@
+<?php
+/**
+ * Smoke: manual gift card issue email + test email diagnostics.
+ *
+ * Run: wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-mail-smoke.php
+ *
+ * @package MP\CommercePromotions
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	echo "Run via WP-CLI eval-file inside WordPress.\n";
+	exit( 1 );
+}
+
+use MP\CommercePromotions\GiftCard\GiftCardDeliveryStatus;
+use MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer;
+use MP\CommercePromotions\GiftCard\GiftCardLedger;
+use MP\CommercePromotions\GiftCard\GiftCardManualDeliveryStore;
+use MP\CommercePromotions\GiftCard\GiftCardManualIssueDelivery;
+use MP\CommercePromotions\GiftCard\GiftCardRepository;
+use MP\CommercePromotions\GiftCard\GiftCardTransactionRepository;
+use MP\CommercePromotions\Service\Settings;
+
+global $wpdb;
+
+if ( ! $wpdb instanceof wpdb ) {
+	echo "FAIL: wpdb unavailable\n";
+	exit( 1 );
+}
+
+$recipient = 'postmaster@biopentra.eu';
+$settings  = new Settings();
+$mailer    = new GiftCardDeliveryMailer( $settings );
+$manual    = new GiftCardManualIssueDelivery( $mailer, new GiftCardManualDeliveryStore() );
+$repo      = new GiftCardRepository( $wpdb );
+$tx        = new GiftCardTransactionRepository( $wpdb );
+$ledger    = new GiftCardLedger( $repo, $tx );
+
+$failures = 0;
+$pass     = static function ( string $label ) use ( &$failures ): void {
+	echo "PASS: {$label}\n";
+};
+$fail = static function ( string $label, string $detail = '' ) use ( &$failures ): void {
+	++$failures;
+	echo 'FAIL: ' . $label . ( $detail !== '' ? " ({$detail})" : '' ) . "\n";
+};
+
+echo "=== Gift card mail smoke ===\n";
+
+$issued = $ledger->issue(
+	1.0,
+	function_exists( 'get_woocommerce_currency' ) ? (string) get_woocommerce_currency() : 'EUR',
+	null,
+	$recipient,
+	'gift-card-mail-smoke'
+);
+$card_id = $issued->get_card()->get_id();
+if ( $card_id === null || $card_id <= 0 ) {
+	$fail( 'issue gift card' );
+} else {
+	$pass( 'issued gift card #' . $card_id );
+}
+
+$plain = $issued->get_plain_code();
+$delivery = $manual->deliver_after_issue( $issued, $recipient );
+$status   = (string) ( $delivery['delivery_status'] ?? '' );
+
+if ( in_array( $status, array( GiftCardDeliveryStatus::SENT, GiftCardDeliveryStatus::DISABLED, GiftCardDeliveryStatus::FAILED ), true ) ) {
+	$pass( 'delivery attempted (' . $status . ')' );
+} else {
+	$fail( 'delivery attempted', 'status=' . $status );
+}
+
+$stored = ( new GiftCardManualDeliveryStore() )->get( (int) $card_id );
+if ( $stored !== null && isset( $stored['delivery_status'] ) ) {
+	$pass( 'delivery status recorded' );
+} else {
+	$fail( 'delivery status recorded' );
+}
+
+$card_row = $repo->find( (int) $card_id );
+if ( $card_row !== null ) {
+	$row_json = wp_json_encode( $card_row );
+		if ( is_string( $row_json ) && strpos( $row_json, $plain ) === false ) {
+		$pass( 'full code not persisted on card row' );
+	} else {
+		$fail( 'full code not persisted on card row' );
+	}
+}
+
+$option_raw = get_option( GiftCardManualDeliveryStore::OPTION_KEY, array() );
+$option_json = is_array( $option_raw ) ? wp_json_encode( $option_raw ) : '';
+if ( is_string( $option_json ) && strpos( $option_json, $plain ) === false ) {
+	$pass( 'full code not in manual delivery option' );
+} else {
+	$fail( 'full code not in manual delivery option' );
+}
+
+$test         = $manual->send_test_email( $recipient );
+$test_status  = (string) ( $test['delivery_status'] ?? '' );
+$test_attempt = in_array(
+	$test_status,
+	array(
+		GiftCardDeliveryStatus::SENT,
+		GiftCardDeliveryStatus::FAILED,
+		GiftCardDeliveryStatus::DISABLED,
+	),
+	true
+);
+if ( $test_attempt ) {
+	$pass( 'test email helper ran (' . $test_status . ')' );
+} else {
+	$fail( 'test email helper', (string) ( $test['delivery_error'] ?? '' ) );
+}
+
+$last = $manual->get_last_test_result();
+if ( is_array( $last ) && isset( $last['delivery_status'] ) ) {
+	$pass( 'test email result recorded' );
+} else {
+	$fail( 'test email result recorded' );
+}
+
+echo "=== Done; failures: {$failures} ===\n";
+exit( $failures > 0 ? 1 : 0 );
