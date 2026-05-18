@@ -1,6 +1,6 @@
 <?php
 /**
- * WooCommerce admin submenu: single Promotions entry (tab routing via AdminRouter).
+ * WooCommerce admin submenu: Commerce Growth entry (tab routing via AdminRouter).
  *
  * @package MP\CommercePromotions
  */
@@ -39,8 +39,8 @@ final class AdminMenu {
 
 		add_submenu_page(
 			'woocommerce',
-			__( 'Commerce Promotions', 'mp-commerce-promotions' ),
-			__( 'Promotions', 'mp-commerce-promotions' ),
+			__( 'Commerce Growth', 'mp-commerce-promotions' ),
+			__( 'Commerce Growth', 'mp-commerce-promotions' ),
 			self::CAPABILITY,
 			self::PAGE_SLUG,
 			array( $this->router, 'render' )

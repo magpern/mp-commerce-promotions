@@ -11,9 +11,11 @@ Commerce Promotions is suitable for **staged rollouts and merchant pilots**. It 
 
 - Rule-driven promotions with planner orchestration, codes, redemptions, reports, diagnostics
 - HPOS compatibility declared (`custom_order_tables`)
-- Getting Started onboarding tab (points to Campaign Builder first)
-- **Campaign Builder** as default Promotions landing tab (guided goals → draft promotions) — **0.3.0-pilot.1**
-- **Advanced Promotions** tab for expert mode (raw JSON, orchestration, codes, cart simulation)
+- **Commerce Growth** admin shell (WooCommerce submenu; `page=mp-commerce-promotions` slug unchanged)
+- **Campaign Builder** as default landing tab (guided goals → draft promotions)
+- **Advanced Promotions** tab for expert mode (raw JSON, orchestration, codes, cart simulation, Advanced editor)
+- **Gift Cards & Store Credit** placeholder tab (`tab=gift-cards`) — planned module, no ledger yet
+- Getting Started onboarding tab (legacy URL `tab=getting-started`; hidden from tab bar)
 - Pilot release doc: [PILOT_RELEASE_0.3.0_PILOT2.md](PILOT_RELEASE_0.3.0_PILOT2.md) (pilot.1 superseded)
 - Settings governance (telemetry, CSV, simulations, gift/shipping actions, pricing explainability)
 - Compatibility status panel (environment snapshot)

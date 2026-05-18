@@ -18,6 +18,7 @@ use MP\CommercePromotions\Admin\ReportsPage;
 use MP\CommercePromotions\Admin\PromotionEditPage;
 use MP\CommercePromotions\Admin\PromotionsPage;
 use MP\CommercePromotions\Admin\GettingStartedPage;
+use MP\CommercePromotions\Admin\GiftCardsPage;
 use MP\CommercePromotions\Admin\SettingsPage;
 use MP\CommercePromotions\Domain\AuditLogRepository;
 use MP\CommercePromotions\Domain\AutomationRunRepository;
@@ -287,6 +288,7 @@ final class Plugin {
 
 		$settings_page        = new SettingsPage( $this->settings );
 		$getting_started_page = new GettingStartedPage( $this->settings );
+		$gift_cards_page      = new GiftCardsPage();
 
 		$profiler_global     = new PromotionPerformanceProfiler();
 		$concurrency_global  = new PromotionConcurrencyGuard();
@@ -441,6 +443,7 @@ final class Plugin {
 			$promotions_page,
 			$settings_page,
 			$getting_started_page,
+			$gift_cards_page,
 			$diagnostics_page,
 			$reports_page,
 			$campaign_builder_page

@@ -252,7 +252,7 @@ final class DiagnosticsPage {
 
 		echo '<div class="wrap">';
 		$this->render_notices();
-		echo '<h1>' . esc_html__( 'Promotion Diagnostics', 'mp-commerce-promotions' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'Diagnostics', 'mp-commerce-promotions' ) . '</h1>';
 		AdminNavigation::render_tabs( AdminNavigation::TAB_DIAGNOSTICS );
 		echo '<p>' . esc_html__( 'Compare stored usage_count values against redemption and order-meta records. Use the repair action to recalculate mismatched counters from recorded redemptions.', 'mp-commerce-promotions' ) . '</p>';
 

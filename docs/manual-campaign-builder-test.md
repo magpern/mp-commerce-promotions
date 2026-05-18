@@ -29,7 +29,7 @@ With a goal selected (wizard step):
 
 ## Checklist
 
-1. **Navigation** — WooCommerce → Promotions opens Campaign Builder by default. Tabs: Getting Started → Campaign Builder → Advanced Promotions → Reports → Diagnostics → Settings.
+1. **Navigation** — WooCommerce → **Commerce Growth** opens **Campaign Builder** by default (`page=mp-commerce-promotions` with no `tab`, or `tab=campaign-builder`). Tabs: Campaign Builder → Advanced Promotions → Gift Cards & Store Credit (placeholder) → Reports → Diagnostics → Settings. Legacy `tab=getting-started` still works but is not shown in the tab bar.
 2. **Summary cards** — Horizontal row; icons; counts; links open filtered list; warning styling when needs attention / budget exhausted > 0.
 3. **Goal cards** — All 10 goals visible with title, description, “Best for”, Create link.
 4. **Category discount** — Select categories, 20% off, label, start/end, budget, usage limit, stackable Yes, coupon No → review → **Create draft campaign**.

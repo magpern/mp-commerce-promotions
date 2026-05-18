@@ -83,8 +83,8 @@ For architecture, limitations, and development workflow, see the plugin reposito
 1. Upload the plugin folder to `/wp-content/plugins/mp-commerce-promotions/` or install from your deployment process.
 2. Activate **Commerce Promotions for WooCommerce** through the **Plugins** screen.
 3. Ensure **WooCommerce** is installed and active.
-4. Open **WooCommerce → Promotions** (Campaign Builder) to create campaigns, or use **Advanced Promotions** for expert editing.
-5. Optional: enable or disable cart discount application under **WooCommerce → Promotions → Settings**.
+4. Open **WooCommerce → Commerce Growth** (Campaign Builder) to create campaigns, or use **Advanced Promotions** for expert editing.
+5. Optional: enable or disable cart discount application under **WooCommerce → Commerce Growth → Settings**.
 
 == Frequently Asked Questions ==
 

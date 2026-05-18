@@ -1,6 +1,6 @@
 <?php
 /**
- * In-page admin navigation (nav tabs) for Promotions module screens.
+ * In-page admin navigation (nav tabs) for the Commerce Growth admin shell.
  *
  * @package MP\CommercePromotions
  */
@@ -25,6 +25,8 @@ final class AdminNavigation {
 
 	public const TAB_REPORTS = 'reports';
 
+	public const TAB_GIFT_CARDS = 'gift-cards';
+
 	/** Default landing tab when `tab` is omitted (merchant entrypoint). */
 	public const DEFAULT_TAB = self::TAB_CAMPAIGN_BUILDER;
 
@@ -45,6 +47,7 @@ final class AdminNavigation {
 			self::TAB_SETTINGS,
 			self::TAB_DIAGNOSTICS,
 			self::TAB_REPORTS,
+			self::TAB_GIFT_CARDS,
 		);
 	}
 
@@ -93,10 +96,6 @@ final class AdminNavigation {
 		$active = $active_tab ?? self::get_current_tab();
 
 		$tabs = array(
-			self::TAB_GETTING_STARTED  => array(
-				'label' => __( 'Getting Started', 'mp-commerce-promotions' ),
-				'url'   => self::tab_url( self::TAB_GETTING_STARTED ),
-			),
 			self::TAB_CAMPAIGN_BUILDER => array(
 				'label' => __( 'Campaign Builder', 'mp-commerce-promotions' ),
 				'title' => __( 'Recommended — guided campaign creation', 'mp-commerce-promotions' ),
@@ -106,6 +105,11 @@ final class AdminNavigation {
 				'label' => __( 'Advanced Promotions', 'mp-commerce-promotions' ),
 				'title' => __( 'Expert mode — raw rules, orchestration, and diagnostics', 'mp-commerce-promotions' ),
 				'url'   => self::tab_url( self::TAB_ALL ),
+			),
+			self::TAB_GIFT_CARDS       => array(
+				'label' => __( 'Gift Cards & Store Credit', 'mp-commerce-promotions' ),
+				'title' => __( 'Coming soon — gift cards and store credit ledger', 'mp-commerce-promotions' ),
+				'url'   => self::tab_url( self::TAB_GIFT_CARDS ),
 			),
 			self::TAB_REPORTS          => array(
 				'label' => __( 'Reports', 'mp-commerce-promotions' ),
@@ -121,7 +125,7 @@ final class AdminNavigation {
 			),
 		);
 
-		echo '<nav class="nav-tab-wrapper wp-clearfix" aria-label="' . esc_attr__( 'Promotions navigation', 'mp-commerce-promotions' ) . '">';
+		echo '<nav class="nav-tab-wrapper wp-clearfix" aria-label="' . esc_attr__( 'Commerce Growth navigation', 'mp-commerce-promotions' ) . '">';
 
 		foreach ( $tabs as $tab_key => $tab ) {
 			$class = 'nav-tab';

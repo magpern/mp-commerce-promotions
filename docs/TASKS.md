@@ -19,7 +19,8 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 - **0.3.0-pilot.2** — supersedes pilot.1; routing regression fix; pilot.2 release notes
 - **0.3.0-pilot.1 packaging** — superseded by pilot.2
-- **Campaign Builder default entrypoint** — Promotions menu opens Campaign Builder; Advanced Promotions tab for expert mode; Create campaign shortcuts across admin
+- **Commerce Growth admin rebrand** — WooCommerce submenu “Commerce Growth”; Gift Cards & Store Credit placeholder tab; nav copy cleanup
+- **Campaign Builder default entrypoint** — Commerce Growth opens Campaign Builder; Advanced Promotions tab for expert mode; Create campaign shortcuts across admin
 - **Campaign Builder QA pass** — all 10 goals, smoke expansion, UX/a11y polish (`docs/CAMPAIGN_BUILDER_QA_EVIDENCE.md`)
 - **Merchant Campaign Builder** — `tab=campaign-builder`, goal→template mapping, draft creation, preview warnings, smoke + `docs/manual-campaign-builder-test.md` (no new engine behavior)
 - **Browser QA beta release prep** — runbook, classic certification, block draft pages, release evidence, beta-release-prep smoke

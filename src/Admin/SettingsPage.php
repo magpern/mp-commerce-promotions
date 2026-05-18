@@ -32,7 +32,7 @@ final class SettingsPage {
 
 		echo '<div class="wrap">';
 		$this->render_notices();
-		echo '<h1>' . esc_html__( 'Promotion Settings', 'mp-commerce-promotions' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'Settings', 'mp-commerce-promotions' ) . '</h1>';
 		AdminNavigation::render_tabs( AdminNavigation::TAB_SETTINGS );
 
 		echo '<form method="post" action="">';

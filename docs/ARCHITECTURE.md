@@ -352,7 +352,7 @@ Read-only services help merchants understand planner behavior without changing r
 
 - **`PromotionConflictAnalyzer::analyze()`** — scans a set of active promotions (typically all active rows during cart preview) and returns heuristic rows: `type`, `severity` (`warning` / `info`), `promotion_ids`, `message`. Types include `mutual_exclusion`, `exclusion_conflict`, `exclusive_vs_stackable`, `scope_overlap`, `max_application_conflict`, `free_shipping_overlap`, `gift_overlap`, `usage_limit_conflict`, and `priority_shadowing`. **No database writes.** Results are indicative only (e.g. scope overlap does not prove double discount at checkout).
 - **`PromotionPlanExplainer::explain()`** — given a `PromotionEvaluationPlan`, returns structured `selected` / `skipped` rows plus `summary_lines`, `stop_processing`, `exclusions`, and `max_applications` groupings. Skipped reasons mirror planner codes (`excluded_by_selected_promotion`, `max_applications_reached`, etc.).
-- **Admin cart preview** — after the plan table, renders plan explanation bullets and a conflict table (escaped). **All Promotions** list shows lightweight Application tags (Exclusive, Has exclusions, Conflicts count, Scoped, Stop) without running full analysis per row.
+- **Admin cart preview** — after the plan table, renders plan explanation bullets and a conflict table (escaped). **Advanced Promotions** list shows lightweight Application tags (Exclusive, Has exclusions, Conflicts count, Scoped, Stop) without running full analysis per row.
 - **`PromotionRuleValidator`** — adds non-blocking warnings/info for redundant exclusive+exclusions, unreachable `max_applications`, duplicate gifts/shipping within one promotion, and scoped discount overlap hints.
 
 Operational workflow: [manual-conflict-analysis-test.md](manual-conflict-analysis-test.md). Smoke: `scripts/conflict-analysis-smoke.php`.
@@ -597,17 +597,17 @@ ReportsPage
 
 ### Current Navigation
 
-The WooCommerce sidebar should show one plugin entry:
+The WooCommerce sidebar shows one plugin entry:
 
 ```text
 WooCommerce
-└── Promotions
+└── Commerce Growth
 ```
 
-Inside the plugin screen:
+Inside the plugin screen (default tab omitted → Campaign Builder):
 
 ```text
-All Promotions | Settings | Diagnostics | Reports
+Campaign Builder | Advanced Promotions | Gift Cards & Store Credit | Reports | Diagnostics | Settings
 ```
 
 The main admin route is:
@@ -619,13 +619,16 @@ admin.php?page=mp-commerce-promotions
 Tabs are routed with:
 
 ```text
-tab=all
-tab=settings
-tab=diagnostics
+tab=campaign-builder   (default when tab omitted)
+tab=all                (Advanced Promotions list / expert mode)
+tab=gift-cards         (placeholder — coming soon)
 tab=reports
+tab=diagnostics
+tab=settings
+tab=getting-started    (legacy onboarding; hidden from tab bar)
 ```
 
-**Bulk status (All Promotions):** checkbox column + POST bulk Activate / Pause / Archive (`mp_cp_bulk_promotions` nonce). Uses `PromotionService::change_status()` and allowed transitions only; shows changed/skipped summary. No bulk delete.
+**Bulk status (Advanced Promotions list):** checkbox column + POST bulk Activate / Pause / Archive (`mp_cp_bulk_promotions` nonce). Uses `PromotionService::change_status()` and allowed transitions only; shows changed/skipped summary. No bulk delete.
 
 **Exclusion UI:** edit screen checklist (latest 25 promotions) merges with comma-separated IDs on save; cannot exclude self.
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * WP-CLI smoke: default Promotions route matches explicit Campaign Builder tab.
+ * WP-CLI smoke: Commerce Growth admin shell navigation and tab routing.
  *
  * Usage (from WooCommerce project root):
  *   ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/commerce-growth-navigation-smoke.php
@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use MP\CommercePromotions\Admin\AdminNavigation;
 use MP\CommercePromotions\Admin\AdminRouter;
 use MP\CommercePromotions\Admin\CampaignBuilderPage;
+use MP\CommercePromotions\Admin\GiftCardsPage;
 
 $GLOBALS['nav_smoke_failures'] = 0;
 
@@ -47,7 +48,11 @@ nav_smoke_assert(
 );
 nav_smoke_assert(
 	AdminNavigation::normalize_tab( AdminNavigation::TAB_ALL ) === AdminNavigation::TAB_ALL,
-	'normalize_tab(all) → all'
+	'normalize_tab(all) → all (Advanced Promotions)'
+);
+nav_smoke_assert(
+	AdminNavigation::normalize_tab( AdminNavigation::TAB_GIFT_CARDS ) === AdminNavigation::TAB_GIFT_CARDS,
+	'normalize_tab(gift-cards) unchanged'
 );
 
 $_GET = array( 'page' => AdminNavigation::PAGE_SLUG );
@@ -73,6 +78,7 @@ nav_smoke_assert(
 foreach (
 	array(
 		AdminNavigation::TAB_ALL,
+		AdminNavigation::TAB_GIFT_CARDS,
 		AdminNavigation::TAB_REPORTS,
 		AdminNavigation::TAB_DIAGNOSTICS,
 		AdminNavigation::TAB_SETTINGS,
@@ -100,14 +106,52 @@ nav_smoke_assert(
 );
 
 nav_smoke_assert( class_exists( CampaignBuilderPage::class ), 'CampaignBuilderPage class loaded' );
+nav_smoke_assert( class_exists( GiftCardsPage::class ), 'GiftCardsPage class loaded' );
 nav_smoke_assert( class_exists( AdminRouter::class ), 'AdminRouter class loaded' );
 
-$source = (string) file_get_contents(
-	dirname( __DIR__ ) . '/src/Admin/CampaignBuilderPage.php'
+$menu_source = (string) file_get_contents( dirname( __DIR__ ) . '/src/Admin/AdminMenu.php' );
+nav_smoke_assert(
+	str_contains( $menu_source, "__( 'Commerce Growth', 'mp-commerce-promotions' )" ),
+	'WooCommerce submenu label is Commerce Growth'
+);
+
+$nav_source = (string) file_get_contents( dirname( __DIR__ ) . '/src/Admin/AdminNavigation.php' );
+nav_smoke_assert(
+	str_contains( $nav_source, 'TAB_GIFT_CARDS' ) && str_contains( $nav_source, 'Gift Cards & Store Credit' ),
+	'nav tabs include Gift Cards & Store Credit'
+);
+$tabs_block_start = strpos( $nav_source, '$tabs = array(' );
+$tabs_block       = $tabs_block_start !== false ? substr( $nav_source, $tabs_block_start, 2500 ) : '';
+$gift_in_tabs     = strpos( $tabs_block, 'TAB_GIFT_CARDS' );
+$reports_in_tabs  = strpos( $tabs_block, 'TAB_REPORTS' );
+nav_smoke_assert(
+	$gift_in_tabs !== false && $reports_in_tabs !== false && $gift_in_tabs < $reports_in_tabs,
+	'gift-cards tab appears before Reports in nav tab bar'
+);
+
+$router_source = (string) file_get_contents( dirname( __DIR__ ) . '/src/Admin/AdminRouter.php' );
+nav_smoke_assert(
+	str_contains( $router_source, 'case AdminNavigation::TAB_GIFT_CARDS:' ),
+	'AdminRouter routes tab=gift-cards'
+);
+
+$campaign_builder_source = (string) file_get_contents( dirname( __DIR__ ) . '/src/Admin/CampaignBuilderPage.php' );
+nav_smoke_assert(
+	str_contains( $campaign_builder_source, 'AdminNavigation::get_current_tab()' ),
+	'Campaign Builder assets use get_current_tab() not raw $_GET[tab]'
+);
+
+$edit_url = add_query_arg(
+	array(
+		'page'      => AdminNavigation::PAGE_SLUG,
+		'tab'       => AdminNavigation::TAB_ALL,
+		'promotion' => '1',
+	),
+	admin_url( 'admin.php' )
 );
 nav_smoke_assert(
-	str_contains( $source, 'AdminNavigation::get_current_tab()' ),
-	'Campaign Builder assets use get_current_tab() not raw $_GET[tab]'
+	str_contains( $edit_url, 'page=mp-commerce-promotions' ) && str_contains( $edit_url, 'promotion=1' ),
+	'edit promotion URL uses mp-commerce-promotions slug and promotion param'
 );
 
 $_GET = $backup_get;

@@ -39,7 +39,7 @@ final class GettingStartedPage {
 		echo '<div class="card" style="max-width:900px;padding:16px 20px;margin:16px 0;">';
 		echo '<h2>' . esc_html__( 'What this plugin does', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p>' . esc_html__(
-			'Commerce Promotions is a rule-driven promotion engine for WooCommerce. Define conditions, actions, and restrictions, then evaluate eligible promotions on each cart totals pass. Promotion codes use the standard coupon field with virtual coupons (discounts come from this plugin).',
+			'Commerce Growth is the promotions and growth hub for WooCommerce. Define conditions, actions, and restrictions, then evaluate eligible promotions on each cart totals pass. Promotion codes use the standard coupon field with virtual coupons (discounts come from this plugin).',
 			'mp-commerce-promotions'
 		) . '</p>';
 		echo '</div>';

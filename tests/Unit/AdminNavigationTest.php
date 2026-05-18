@@ -36,6 +36,14 @@ final class AdminNavigationTest extends TestCase {
 			AdminNavigation::TAB_GETTING_STARTED,
 			AdminNavigation::normalize_tab( AdminNavigation::TAB_GETTING_STARTED )
 		);
+		$this->assertSame(
+			AdminNavigation::TAB_GIFT_CARDS,
+			AdminNavigation::normalize_tab( AdminNavigation::TAB_GIFT_CARDS )
+		);
+	}
+
+	public function test_allowed_tabs_includes_gift_cards(): void {
+		$this->assertContains( AdminNavigation::TAB_GIFT_CARDS, AdminNavigation::allowed_tabs() );
 	}
 
 	public function test_sanitize_tab_delegates_to_normalize_tab(): void {
@@ -53,6 +61,10 @@ final class AdminNavigationTest extends TestCase {
 		);
 		$this->assertStringContainsString(
 			'case AdminNavigation::TAB_CAMPAIGN_BUILDER:',
+			$source
+		);
+		$this->assertStringContainsString(
+			'case AdminNavigation::TAB_GIFT_CARDS:',
 			$source
 		);
 		$this->assertStringContainsString( 'normalize_tab', $source );

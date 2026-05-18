@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Commerce Growth admin shell** — WooCommerce submenu and page title rebranded from “Promotions” to **Commerce Growth** (`page=mp-commerce-promotions` slug unchanged).
+- **Gift Cards & Store Credit** placeholder tab (`tab=gift-cards`) with coming-soon copy and links to Campaign Builder, Advanced Promotions, and Reports.
+
+### Changed
+
+- **Nav tabs** — Campaign Builder (default) → Advanced Promotions → Gift Cards & Store Credit → Reports → Diagnostics → Settings; Getting Started remains reachable via `tab=getting-started` but is hidden from the tab bar.
+- **Copy** — Settings/Reports/Diagnostics headings simplified; promotion edit screen labeled **Advanced editor**; back link points to Advanced Promotions.
+
 ## [0.3.0-pilot.2] - 2026-05-18
 
 **Replacement pilot release** — supersedes **0.3.0-pilot.1** (do not deploy pilot.1). **Schema 1.17.0** unchanged.

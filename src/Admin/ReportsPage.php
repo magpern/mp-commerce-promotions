@@ -64,7 +64,7 @@ final class ReportsPage {
 		$summary = $this->reports->summary( $filters );
 
 		echo '<div class="wrap">';
-		echo '<h1>' . esc_html__( 'Promotion Reports', 'mp-commerce-promotions' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'Reports', 'mp-commerce-promotions' ) . '</h1>';
 		AdminNavigation::render_tabs( AdminNavigation::TAB_REPORTS );
 		echo '<p class="description">' . esc_html__(
 			'Read-only summaries from redemption records. CSV export includes up to 5,000 rows and does not expose raw promotion codes.',

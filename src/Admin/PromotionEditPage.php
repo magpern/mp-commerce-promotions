@@ -197,7 +197,7 @@ final class PromotionEditPage {
 		$this->render_edit_page_notices();
 		$this->render_code_batch_generation_outcome();
 		echo '<p class="mp-cp-edit-back-links">';
-		echo '<a href="' . esc_url( $this->list_url() ) . '">' . esc_html__( '← Back to promotions', 'mp-commerce-promotions' ) . '</a>';
+		echo '<a href="' . esc_url( $this->list_url() ) . '">' . esc_html__( '← Back to Advanced Promotions', 'mp-commerce-promotions' ) . '</a>';
 		if ( $this->batch_detail instanceof PromotionCodeBatch && $pid !== null && $pid > 0 ) {
 			echo ' | <a href="' . esc_url( $this->edit_url( (string) $pid ) ) . '">' . esc_html__( '← Back to promotion', 'mp-commerce-promotions' ) . '</a>';
 		}
@@ -2289,6 +2289,7 @@ final class PromotionEditPage {
 			return;
 		}
 
+		echo '<p class="description" style="margin:0 0 4px;">' . esc_html__( 'Advanced editor', 'mp-commerce-promotions' ) . '</p>';
 		echo '<h1 style="margin-bottom:0.25em;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
 		echo '<span>' . esc_html( $promotion->get_name() ) . '</span>';
 		$this->render_campaign_color_badge( $promotion );

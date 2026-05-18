@@ -1,6 +1,6 @@
 <?php
 /**
- * Central WooCommerce admin router for Promotions (tab query arg dispatch).
+ * Central WooCommerce admin router for Commerce Growth (tab query arg dispatch).
  *
  * @package MP\CommercePromotions
  */
@@ -23,10 +23,13 @@ final class AdminRouter {
 
 	private ?CampaignBuilderPage $campaign_builder_page;
 
+	private GiftCardsPage $gift_cards_page;
+
 	public function __construct(
 		?PromotionsPage $promotions_page,
 		SettingsPage $settings_page,
 		GettingStartedPage $getting_started_page,
+		GiftCardsPage $gift_cards_page,
 		?DiagnosticsPage $diagnostics_page = null,
 		?ReportsPage $reports_page = null,
 		?CampaignBuilderPage $campaign_builder_page = null
@@ -34,6 +37,7 @@ final class AdminRouter {
 		$this->promotions_page         = $promotions_page;
 		$this->settings_page           = $settings_page;
 		$this->getting_started_page    = $getting_started_page;
+		$this->gift_cards_page         = $gift_cards_page;
 		$this->diagnostics_page        = $diagnostics_page;
 		$this->reports_page            = $reports_page;
 		$this->campaign_builder_page   = $campaign_builder_page;
@@ -104,6 +108,10 @@ final class AdminRouter {
 					return;
 				}
 				break;
+
+			case AdminNavigation::TAB_GIFT_CARDS:
+				$this->gift_cards_page->render();
+				return;
 
 			case AdminNavigation::TAB_ALL:
 			default:
