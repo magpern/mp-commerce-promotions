@@ -111,7 +111,7 @@ gcsd_smoke_assert(
 
 $order_now = wc_create_order();
 $order_now->add_product( wc_get_product( $product_id ), 1 );
-$order_now->set_billing_email( 'buyer@example.com' );
+$order_now->set_billing_email( $test_email );
 $order_now->set_currency( function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'EUR' );
 $order_now->calculate_totals();
 $order_now->save();
@@ -140,7 +140,7 @@ gcsd_smoke_assert( ! str_contains( $raw_now, 'plain_code' ), 'send_now order met
 
 $order_sched = wc_create_order();
 $order_sched->add_product( wc_get_product( $product_id ), 1 );
-$order_sched->set_billing_email( 'buyer@example.com' );
+$order_sched->set_billing_email( $test_email );
 $order_sched->set_currency( function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'EUR' );
 $order_sched->calculate_totals();
 $order_sched->save();

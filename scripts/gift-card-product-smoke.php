@@ -58,9 +58,10 @@ $repo      = new GiftCardRepository( $wpdb );
 $tx        = new GiftCardTransactionRepository( $wpdb );
 $ledger    = new GiftCardLedger( $repo, $tx );
 $products  = new GiftCardProductService();
-$settings  = new Settings();
-$generator = new GiftCardOrderGenerator( $ledger, $products, $settings );
-$reversal  = new GiftCardOrderReversal( $ledger, $repo );
+$settings   = new Settings();
+$qa_email   = 'postmaster@biopentra.eu';
+$generator  = new GiftCardOrderGenerator( $ledger, $products, $settings );
+$reversal   = new GiftCardOrderReversal( $ledger, $repo );
 
 $product = new WC_Product_Simple();
 $product->set_name( 'Smoke gift card product ' . wp_generate_password( 4, false ) );
@@ -83,7 +84,7 @@ gcp_smoke_assert( $products->is_gift_card_product( $product_id ), 'product marke
 
 $order = wc_create_order();
 $order->add_product( wc_get_product( $product_id ), 2 );
-$order->set_billing_email( 'gift-card-smoke@example.com' );
+$order->set_billing_email( $qa_email );
 $order->set_customer_id( 0 );
 $currency = function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'EUR';
 $order->set_currency( $currency );
@@ -103,7 +104,7 @@ if ( $card !== null ) {
 	gcp_smoke_assert( $card->get_created_order_id() === $order_id, 'created_order_id stored' );
 	gcp_smoke_assert( $card->get_currency() === $currency, 'currency stored' );
 	gcp_smoke_assert( $card->get_initial_amount() === 30.0, 'amount from product price per unit' );
-	gcp_smoke_assert( $card->get_recipient_email() === 'gift-card-smoke@example.com', 'billing email as recipient' );
+	gcp_smoke_assert( $card->get_recipient_email() === $qa_email, 'billing email as recipient' );
 }
 
 $again = $generator->generate_for_order( $order );

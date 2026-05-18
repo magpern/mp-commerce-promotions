@@ -149,7 +149,7 @@ WP_CLI::log( 'Product URL: ' . (string) $setup_result['product_url'] );
 // --- Send now ---
 $order_now = gce2e_create_gift_card_order(
 	$product_id,
-	'buyer-send-now@example.com',
+	$test_email,
 	array(
 		'recipient_email'  => $test_email,
 		'recipient_name'   => 'QA Recipient',
@@ -254,7 +254,7 @@ gce2e_assert(
 $scheduled_date = function_exists( 'current_time' ) ? current_time( 'Y-m-d' ) : gmdate( 'Y-m-d' );
 $order_sched    = gce2e_create_gift_card_order(
 	$product_id,
-	'buyer-scheduled@example.com',
+	$test_email,
 	array(
 		'recipient_email' => $test_email,
 		'recipient_name'  => 'Scheduled QA',

@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-18  
 **Commits:** `8952d90` (product E2E tooling), browser/pilot prep (latest)  
-**Test recipient:** postmaster@biopentra.eu  
+**Test recipient:** postmaster@biopentra.eu (also used for buyer billing email in live smoke scripts — verified domain; do not use `example.com` with SMTP)  
 **QA product:** ID **4375** — https://www.biopentra.eu/product/commerce-growth-gift-card-qa/
 
 ## Summary
