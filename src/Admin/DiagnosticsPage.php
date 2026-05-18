@@ -223,6 +223,22 @@ final class DiagnosticsPage {
 
 		$this->render_repair_form();
 		CompatibilityStatusPanel::render();
+		if ( $this->profiler !== null && $this->concurrency !== null ) {
+			EcosystemCompatibilityPanel::render_system_health(
+				$this->settings,
+				$this->profiler,
+				$this->concurrency,
+				null,
+				$this->health_monitor
+			);
+			EcosystemCompatibilityPanel::render_ecosystem_matrix();
+		}
+		global $wpdb;
+		if ( $wpdb instanceof \wpdb ) {
+			$promo_repo = new \MP\CommercePromotions\Domain\PromotionRepository( $wpdb );
+			EcosystemCompatibilityPanel::render_merchant_safety( $promo_repo );
+			EcosystemCompatibilityPanel::render_complexity( $promo_repo );
+		}
 		$this->render_support_export_section();
 		$this->render_automation_runner_section();
 		$this->render_promotion_health_section();

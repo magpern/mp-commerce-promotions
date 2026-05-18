@@ -20,8 +20,15 @@ final class PromotionRepository {
 
 	private wpdb $wpdb;
 
+	/** @var array<int, list<Promotion>> */
+	private static array $active_planner_cache = array();
+
 	public function __construct( wpdb $wpdb ) {
 		$this->wpdb = $wpdb;
+	}
+
+	public static function clear_request_cache(): void {
+		self::$active_planner_cache = array();
 	}
 
 	/**
@@ -111,7 +118,14 @@ final class PromotionRepository {
 	 * @return list<Promotion>
 	 */
 	public function find_active_for_planner( int $limit = 200 ): array {
-		return $this->find_active_internal( max( 1, min( 200, $limit ) ) );
+		$limit = max( 1, min( 200, $limit ) );
+		if ( isset( self::$active_planner_cache[ $limit ] ) ) {
+			return self::$active_planner_cache[ $limit ];
+		}
+		$rows = $this->find_active_internal( $limit );
+		self::$active_planner_cache[ $limit ] = $rows;
+
+		return $rows;
 	}
 
 	/**

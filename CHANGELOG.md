@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **GA stabilization phase** — `EcosystemCompatibilityRegistry` matrix + `KnownLimitationsRegistry`; `SystemHealthService` score and recovery recommendations; `PromotionComplexityScorer` and `MerchantSafetyAdvisor`; promotion **dry-run** setting; planner **timing buckets**; request memoization for `find_active_for_planner()`; stale lock cleanup; Diagnostics ecosystem/health/safety panels; `scripts/ga-stabilization-smoke.php`; docs `COMPATIBILITY_MATRIX.md`, `KNOWN_LIMITATIONS.md`, `PERFORMANCE_GUIDE.md`, `MERCHANT_SAFETY.md`, `SCALING_GUIDE.md`, `TROUBLESHOOTING.md`.
+
 ### Fixed
 
 - **Line discount cart fatal** — `LinePriceMutationGuard` now imports `Engine\AppliedLineDiscount` (wrong namespace caused fatal on `woocommerce_before_calculate_totals`, breaking all cart recalculation including Blocks Store API backend).

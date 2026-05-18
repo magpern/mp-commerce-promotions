@@ -91,6 +91,14 @@ final class AdminPerformanceHardeningPanel {
 				esc_html__( 'Planner failures', 'mp-commerce-promotions' ),
 				(int) ( $summary['planner_failures'] ?? 0 )
 			);
+			$buckets = is_array( $summary['timing_buckets'] ?? null ) ? $summary['timing_buckets'] : array();
+			if ( $buckets !== array() ) {
+				printf(
+					'<tr><th>%s</th><td>%s</td></tr>',
+					esc_html__( 'Planner timing buckets', 'mp-commerce-promotions' ),
+					esc_html( wp_json_encode( $buckets ) )
+				);
+			}
 			echo '</tbody></table>';
 
 			if ( $profiler->is_storefront_degraded() ) {

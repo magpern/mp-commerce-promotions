@@ -139,4 +139,32 @@ final class PromotionConcurrencyGuard {
 	public function clear_warnings(): void {
 		delete_option( self::OPTION_WARNINGS );
 	}
+
+	/**
+	 * Remove planner/automation/checkout locks left after timeouts or crashes.
+	 *
+	 * @return array{purged: list<string>, dry_run: bool}
+	 */
+	public function purge_stale_locks( bool $dry_run = true ): array {
+		$keys = array(
+			self::TRANSIENT_PLANNER_LOCK,
+			self::TRANSIENT_AUTOMATION_LOCK,
+			self::TRANSIENT_SNAPSHOT_RESTORE_LOCK,
+		);
+
+		$purged = array();
+		foreach ( $keys as $key ) {
+			if ( get_transient( $key ) ) {
+				$purged[] = $key;
+				if ( ! $dry_run ) {
+					delete_transient( $key );
+				}
+			}
+		}
+
+		return array(
+			'purged'  => $purged,
+			'dry_run' => $dry_run,
+		);
+	}
 }

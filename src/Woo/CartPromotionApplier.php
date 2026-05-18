@@ -975,6 +975,10 @@ final class CartPromotionApplier {
 			}
 		}
 
+		if ( $this->settings->promotion_dry_run_enabled() ) {
+			return;
+		}
+
 		$cart->add_fee( $label, -$discount, false );
 	}
 

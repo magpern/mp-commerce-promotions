@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Admin;
 
+use MP\CommercePromotions\Service\EcosystemCompatibilityRegistry;
 use MP\CommercePromotions\Service\PromotionPerformanceProfiler;
 use MP\CommercePromotions\Service\Settings;
 
@@ -30,6 +31,19 @@ final class AdminProductionNotices {
 				if ( $settings->safe_mode_enabled() ) {
 					AdminNotice::warning(
 						__( 'Safe mode is ON: automatic promotions are disabled. Promotion codes may still apply when allowed in settings.', 'mp-commerce-promotions' )
+					);
+				}
+
+				if ( $settings->promotion_dry_run_enabled() ) {
+					AdminNotice::warning(
+						__( 'Promotion dry-run is ON: the planner runs but cart fees are not applied (staging preview).', 'mp-commerce-promotions' )
+					);
+				}
+
+				$eco = ( new EcosystemCompatibilityRegistry() )->summarize( true );
+				if ( (int) ( $eco['score'] ?? 100 ) < 55 && (int) ( $eco['detected_count'] ?? 0 ) > 0 ) {
+					AdminNotice::warning(
+						__( 'Ecosystem compatibility score is low — review Diagnostics → Ecosystem compatibility before GA rollout.', 'mp-commerce-promotions' )
 					);
 				}
 

@@ -47,6 +47,8 @@ final class Settings {
 
 	public const OPTION_BLOCKS_HOOK_DEBUG = 'mp_cp_blocks_hook_debug';
 
+	public const OPTION_PROMOTION_DRY_RUN = 'mp_cp_promotion_dry_run';
+
 	private const VALUE_YES = 'yes';
 
 	private const VALUE_NO = 'no';
@@ -209,6 +211,14 @@ final class Settings {
 		$this->set_enabled( self::OPTION_BLOCKS_HOOK_DEBUG, $enabled );
 	}
 
+	public function promotion_dry_run_enabled(): bool {
+		return $this->is_enabled( self::OPTION_PROMOTION_DRY_RUN, false );
+	}
+
+	public function set_promotion_dry_run_enabled( bool $enabled ): void {
+		$this->set_enabled( self::OPTION_PROMOTION_DRY_RUN, $enabled );
+	}
+
 	/**
 	 * @return array<string, bool|int>
 	 */
@@ -232,6 +242,7 @@ final class Settings {
 			'delete_data_on_uninstall'  => $this->delete_data_on_uninstall(),
 			'telemetry_retention_days'  => $this->telemetry_retention_days(),
 			'blocks_hook_debug'         => $this->blocks_hook_debug_enabled(),
+			'promotion_dry_run'         => $this->promotion_dry_run_enabled(),
 		);
 	}
 

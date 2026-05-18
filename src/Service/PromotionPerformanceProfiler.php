@@ -47,6 +47,10 @@ final class PromotionPerformanceProfiler {
 			'recorded_at'           => gmdate( 'c' ),
 		);
 		$aggregates['slow_runs']  = $this->push_slow_run( (array) ( $aggregates['slow_runs'] ?? array() ), $slow );
+		$bucket                   = $this->timing_bucket( $ms );
+		$buckets                  = is_array( $aggregates['timing_buckets'] ?? null ) ? $aggregates['timing_buckets'] : array();
+		$buckets[ $bucket ]       = (int) ( $buckets[ $bucket ] ?? 0 ) + 1;
+		$aggregates['timing_buckets'] = $buckets;
 		$aggregates['updated_at'] = gmdate( 'c' );
 		$this->save( $aggregates );
 	}
@@ -131,7 +135,25 @@ final class PromotionPerformanceProfiler {
 			'persisted_planner'         => $planner,
 			'persisted_allocation'      => $alloc,
 			'degraded'                  => $this->get_degraded_state(),
+			'timing_buckets'            => (array) ( $data['timing_buckets'] ?? array() ),
 		);
+	}
+
+	private function timing_bucket( float $duration_ms ): string {
+		if ( $duration_ms < 25 ) {
+			return '0-25ms';
+		}
+		if ( $duration_ms < 75 ) {
+			return '25-75ms';
+		}
+		if ( $duration_ms < 150 ) {
+			return '75-150ms';
+		}
+		if ( $duration_ms < 300 ) {
+			return '150-300ms';
+		}
+
+		return '300ms+';
 	}
 
 	public function reset_aggregates(): void {

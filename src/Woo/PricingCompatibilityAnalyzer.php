@@ -86,6 +86,7 @@ final class PricingCompatibilityAnalyzer {
 		$issues = array_merge( $issues, $this->detect_object_cache() );
 		$issues = array_merge( $issues, $this->detect_aggressive_coupon_plugins() );
 		$issues = array_merge( $issues, $this->detect_tax_plugins() );
+		$issues = array_merge( $issues, $this->detect_ecosystem_matrix() );
 
 		$score = 100;
 		foreach ( $issues as $issue ) {
@@ -224,17 +225,26 @@ final class PricingCompatibilityAnalyzer {
 	 * @return list<array{severity: string, code: string, message: string}>
 	 */
 	private function detect_checkout_blocks(): array {
-		if ( class_exists( '\Automattic\WooCommerce\Blocks\Package' ) ) {
+		if ( ! class_exists( '\Automattic\WooCommerce\Blocks\Package' ) ) {
+			return array();
+		}
+		if ( \MP\CommercePromotions\Woo\WooCompatibility::is_cart_checkout_blocks_declared() ) {
 			return array(
 				array(
-					'severity' => self::SEVERITY_WARNING,
+					'severity' => self::SEVERITY_INFO,
 					'code'     => 'checkout_blocks_active',
-					'message'  => __( 'Cart/Checkout Blocks may be active; plugin does not declare block compatibility yet.', 'mp-commerce-promotions' ),
+					'message'  => __( 'Cart/Checkout Blocks package present; compatibility declared.', 'mp-commerce-promotions' ),
 				),
 			);
 		}
 
-		return array();
+		return array(
+			array(
+				'severity' => self::SEVERITY_WARNING,
+				'code'     => 'checkout_blocks_active',
+				'message'  => __( 'Cart/Checkout Blocks may be active; cart_checkout_blocks not declared.', 'mp-commerce-promotions' ),
+			),
+		);
 	}
 
 	/**
@@ -286,6 +296,32 @@ final class PricingCompatibilityAnalyzer {
 		}
 
 		return array();
+	}
+
+	/**
+	 * @return list<array{severity: string, code: string, message: string}>
+	 */
+	private function detect_ecosystem_matrix(): array {
+		$registry = new \MP\CommercePromotions\Service\EcosystemCompatibilityRegistry();
+		$issues   = array();
+
+		foreach ( $registry->build_matrix( true ) as $row ) {
+			if ( empty( $row['detected'] ) ) {
+				continue;
+			}
+			$status = (string) ( $row['status'] ?? '' );
+			if ( $status === \MP\CommercePromotions\Service\EcosystemCompatibilityRegistry::STATUS_CERTIFIED
+				&& (string) ( $row['severity'] ?? '' ) === self::SEVERITY_INFO ) {
+				continue;
+			}
+			$issues[] = array(
+				'severity' => (string) ( $row['severity'] ?? self::SEVERITY_INFO ),
+				'code'     => (string) ( $row['code'] ?? '' ),
+				'message'  => (string) ( $row['message'] ?? '' ),
+			);
+		}
+
+		return $issues;
 	}
 
 	/**
