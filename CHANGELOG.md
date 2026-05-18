@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Gift card storefront QA pass** — polish for checkout/My Account/balance checker copy; email deliverability diagnostics (`GiftCardMailDiagnostics`), support bundle mail summary; expanded customer smoke + `scripts/gift-card-storefront-qa-evidence.php`; [GIFT_CARD_QA_EVIDENCE.md](docs/GIFT_CARD_QA_EVIDENCE.md).
+
+### Added (prior)
+
 - **Gift card customer experience** — balance checker shortcode/page, My Account gift cards + store credit wallet, product purchase panel, unified checkout redemption UI, HTML email templates (classic/birthday/holiday/minimal), customer diagnostics/reports; `scripts/gift-card-customer-experience-smoke.php`.
 - **Gift card recipient & scheduled delivery** — product recipient mode (`purchaser_only`, `recipient_email`, `recipient_email_and_message`); checkout capture; send-now vs send-on-date (cards generated at delivery time for scheduled); hourly cron + Diagnostics/order actions; scheduled reports/diagnostics; `scripts/gift-card-scheduled-delivery-smoke.php`.
 - **Gift card delivery security** — no `plain_code` in order meta; masked last4 + delivery status; hardened email; admin reissue delivery; diagnostics cleanup; `scripts/gift-card-delivery-security-smoke.php`.

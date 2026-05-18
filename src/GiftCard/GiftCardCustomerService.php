@@ -83,6 +83,7 @@ final class GiftCardCustomerService {
 				'created_at'     => $card->get_created_at(),
 				'order_id'       => $card->get_created_order_id(),
 				'delivery_status'=> (string) ( $delivery['delivery_status'] ?? '' ),
+				'delivery_label' => self::format_delivery_label( $delivery ),
 				'delivered_at'   => (string) ( $delivery['delivered_at'] ?? '' ),
 				'scheduled_for'  => (string) ( $delivery['scheduled_for'] ?? '' ),
 			);
@@ -150,6 +151,51 @@ final class GiftCardCustomerService {
 		}
 
 		return array();
+	}
+
+	/**
+	 * @param array{delivery_status?: string, delivered_at?: string, scheduled_for?: string} $delivery
+	 */
+	public static function format_delivery_label( array $delivery ): string {
+		$status = (string) ( $delivery['delivery_status'] ?? '' );
+		$at     = (string) ( $delivery['delivered_at'] ?? '' );
+		$when   = (string) ( $delivery['scheduled_for'] ?? '' );
+
+		switch ( $status ) {
+			case GiftCardDeliveryStatus::SENT:
+				return $at !== ''
+					? sprintf(
+						/* translators: %s: delivery datetime */
+						__( 'Email sent %s', 'mp-commerce-promotions' ),
+						$at
+					)
+					: __( 'Email sent', 'mp-commerce-promotions' );
+			case GiftCardDeliveryStatus::FAILED:
+				return __( 'Email delivery failed', 'mp-commerce-promotions' );
+			case GiftCardDeliveryStatus::DISABLED:
+				return __( 'Email delivery disabled', 'mp-commerce-promotions' );
+			case GiftCardDeliveryStatus::PENDING_SCHEDULED:
+				return $when !== ''
+					? sprintf(
+						/* translators: %s: scheduled date */
+						__( 'Scheduled for %s', 'mp-commerce-promotions' ),
+						$when
+					)
+					: __( 'Scheduled delivery pending', 'mp-commerce-promotions' );
+			case GiftCardDeliveryStatus::PENDING:
+				return __( 'Sending email…', 'mp-commerce-promotions' );
+			case GiftCardDeliveryStatus::CANCELLED:
+				return __( 'Delivery cancelled', 'mp-commerce-promotions' );
+			default:
+				if ( $when !== '' ) {
+					return sprintf(
+						/* translators: %s: scheduled date */
+						__( 'Scheduled for %s', 'mp-commerce-promotions' ),
+						$when
+					);
+				}
+				return $status !== '' ? ucfirst( str_replace( '_', ' ', $status ) ) : '—';
+		}
 	}
 
 	public static function status_label( GiftCard $card ): string {

@@ -18,8 +18,10 @@ use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Infrastructure\Database\MigrationRunner;
 use MP\CommercePromotions\Infrastructure\Database\Schema;
+use MP\CommercePromotions\GiftCard\GiftCardMailDiagnostics;
 use MP\CommercePromotions\Service\MultiCurrencyCompatibility;
 use MP\CommercePromotions\Service\PromotionPerformanceProfiler;
+use wpdb;
 
 final class SupportBundleExporter {
 
@@ -73,6 +75,7 @@ final class SupportBundleExporter {
 			'health_issues'           => $this->health_issues(),
 			'currency_compatibility'  => ( new MultiCurrencyCompatibility() )->snapshot(),
 			'coupon_coexistence_telemetry' => ( new PromotionPerformanceProfiler() )->get_report_summary(),
+			'gift_card_mail'                => $this->gift_card_mail_summary(),
 			'redaction_notice'        => 'No customer PII or raw promotion codes are included.',
 		);
 
@@ -160,6 +163,26 @@ final class SupportBundleExporter {
 		}
 
 		return $safe;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function gift_card_mail_summary(): array {
+		global $wpdb;
+		if ( ! $wpdb instanceof wpdb ) {
+			return array();
+		}
+
+		$diag   = new GiftCardMailDiagnostics( $wpdb, $this->settings );
+		$report = $diag->analyze();
+
+		return array(
+			'delivery_email_enabled' => $report['delivery_email_enabled'] ?? false,
+			'recent_delivery_failed' => $report['recent_delivery_failed'] ?? 0,
+			'wp_mail_likely_failing' => $report['wp_mail_likely_failing'] ?? false,
+			'settings'               => $diag->settings_summary(),
+		);
 	}
 
 	/**

@@ -14,8 +14,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MP\CommercePromotions\GiftCard\GiftCardBalanceChecker;
 use MP\CommercePromotions\GiftCard\GiftCardCustomerDiagnostics;
+use MP\CommercePromotions\GiftCard\GiftCardCustomerService;
+use MP\CommercePromotions\GiftCard\GiftCardDeliveryDiagnostics;
 use MP\CommercePromotions\GiftCard\GiftCardEmailTemplate;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
+use MP\CommercePromotions\GiftCard\GiftCardMailDiagnostics;
 use MP\CommercePromotions\GiftCard\GiftCardReports;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
 use MP\CommercePromotions\GiftCard\GiftCardTransactionRepository;
@@ -49,6 +52,15 @@ $html = do_shortcode( '[mp_cp_gift_card_balance]' );
 gcxp_smoke_assert( is_string( $html ) && str_contains( $html, 'mp-cp-gift-card-balance-checker' ), 'shortcode renders balance form' );
 gcxp_smoke_assert( ! str_contains( $html, 'plain_code' ), 'shortcode output has no plain_code key' );
 
+$prev = $settings->gift_card_balance_checker_enabled();
+update_option( Settings::OPTION_GIFT_CARD_BALANCE_CHECKER, 'no' );
+$html_off = do_shortcode( '[mp_cp_gift_card_balance]' );
+update_option( Settings::OPTION_GIFT_CARD_BALANCE_CHECKER, $prev ? 'yes' : 'no' );
+gcxp_smoke_assert( str_contains( $html_off, 'unavailable' ), 'balance checker disabled hides form' );
+
+$rate_key = GiftCardBalanceChecker::rate_limit_transient_key( '203.0.113.1' );
+gcxp_smoke_assert( str_starts_with( $rate_key, 'mp_cp_gc_balance_' ), 'rate limit transient key path' );
+
 $preview = GiftCardEmailTemplate::render_html(
 	$settings->gift_card_email_template(),
 	array(
@@ -60,13 +72,19 @@ $preview = GiftCardEmailTemplate::render_html(
 	)
 );
 gcxp_smoke_assert( str_contains( $preview, '****SMOK' ), 'email template preview uses masked code' );
+gcxp_smoke_assert( ! str_contains( $preview, 'plain_code' ), 'email preview has no plain_code key' );
 
 $repo   = new GiftCardRepository( $wpdb );
 $ledger = new GiftCardLedger( $repo, new GiftCardTransactionRepository( $wpdb ) );
 $issued = $ledger->issue( 15.0, function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'EUR', null, null );
-$lookup = ( new GiftCardBalanceChecker( $ledger ) )->lookup( $issued->get_plain_code() );
+$plain  = $issued->get_plain_code();
+$lookup = ( new GiftCardBalanceChecker( $ledger ) )->lookup( $plain ?? '' );
 gcxp_smoke_assert( ! empty( $lookup['ok'] ), 'balance lookup works' );
-gcxp_smoke_assert( ! str_contains( wp_json_encode( $lookup ), $issued->get_plain_code() ), 'lookup response does not echo full code' );
+$lookup_json = wp_json_encode( $lookup );
+gcxp_smoke_assert( is_string( $lookup_json ) && ! str_contains( $lookup_json, (string) $plain ), 'lookup response does not echo full code' );
+
+$bad = ( new GiftCardBalanceChecker( $ledger ) )->lookup( 'NOT-VALID-SMOKE-CODE' );
+gcxp_smoke_assert( empty( $bad['ok'] ), 'invalid code returns error' );
 
 $summary = ( new GiftCardReports( $wpdb ) )->summary();
 foreach (
@@ -83,7 +101,16 @@ foreach (
 $diag = ( new GiftCardCustomerDiagnostics( $wpdb ) )->analyze();
 gcxp_smoke_assert( is_array( $diag ) && isset( $diag['missing_balance_page'] ), 'customer diagnostics keys exist' );
 
+$mail = ( new GiftCardMailDiagnostics( $wpdb ) )->analyze();
+gcxp_smoke_assert( isset( $mail['settings_summary'] ), 'mail diagnostics settings summary' );
+
+$delivery = ( new GiftCardDeliveryDiagnostics( $wpdb ) )->analyze();
+gcxp_smoke_assert( isset( $delivery['delivery_failed'] ), 'delivery diagnostics includes delivery_failed' );
+
 gcxp_smoke_assert( GiftCardMyAccount::ENDPOINT_GIFT_CARDS === 'gift-cards', 'my account endpoint slug' );
+
+$empty_purchased = ( new GiftCardCustomerService( $repo, $wpdb ) )->list_purchased( 999999999 );
+gcxp_smoke_assert( $empty_purchased === array(), 'my account empty purchased list helper' );
 
 if ( $GLOBALS['gcxp_smoke_failures'] > 0 ) {
 	WP_CLI::error( 'Gift card customer experience smoke finished with ' . (int) $GLOBALS['gcxp_smoke_failures'] . ' failure(s).' );

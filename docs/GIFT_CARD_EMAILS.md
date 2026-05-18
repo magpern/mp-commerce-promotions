@@ -24,6 +24,12 @@ No image files are generated or stored — only the template slug and HTML at se
 
 Product page **Email preview** uses masked `****SAMPLE` only.
 
+## Deliverability diagnostics
+
+- **Diagnostics → Gift card email deliverability** — recent `delivery_failed` count, last `wp_mail` failure transient, SMTP plugin hint, redacted settings summary
+- Admin warning when mail is likely failing: **Configure SMTP before selling gift cards.**
+- Support bundle includes `gift_card_mail` (no secrets)
+
 ## Security
 
 - Full codes appear only in the email body at send time

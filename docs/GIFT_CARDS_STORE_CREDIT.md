@@ -32,6 +32,10 @@ Gift cards are **stored-value credit** with an append-only ledger. They are **no
 
 Merchants can mark **normal WooCommerce products** to sell gift cards; paid orders generate codes idempotently. See [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md).
 
+## Customer storefront
+
+Balance checker, My Account endpoint, product panel, unified checkout redemption, HTML emails — see [GIFT_CARD_CUSTOMER_EXPERIENCE.md](GIFT_CARD_CUSTOMER_EXPERIENCE.md). QA evidence: [GIFT_CARD_QA_EVIDENCE.md](GIFT_CARD_QA_EVIDENCE.md).
+
 ## Future work (not in this milestone)
 
 - Branded gift card email templates; cart-page recipient UI (checkout-only today)

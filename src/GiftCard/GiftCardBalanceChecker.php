@@ -25,6 +25,14 @@ final class GiftCardBalanceChecker {
 	 * @return array{ok: bool, error?: string, balance?: float, currency?: string, status?: string, expires_at?: ?string, masked_code?: string}
 	 */
 	public function lookup( string $plain_code ): array {
+		$plain = trim( $plain_code );
+		if ( $plain === '' ) {
+			return array(
+				'ok'    => false,
+				'error' => __( 'Enter a gift card code.', 'mp-commerce-promotions' ),
+			);
+		}
+
 		if ( ! $this->check_rate_limit() ) {
 			return array(
 				'ok'    => false,
@@ -34,19 +42,11 @@ final class GiftCardBalanceChecker {
 
 		$this->record_attempt();
 
-		$plain = trim( $plain_code );
-		if ( $plain === '' ) {
-			return array(
-				'ok'    => false,
-				'error' => __( 'Enter a gift card code.', 'mp-commerce-promotions' ),
-			);
-		}
-
 		$card = $this->ledger->find_by_plain_code( $plain );
 		if ( $card === null || $card->is_store_credit_wallet() ) {
 			return array(
 				'ok'    => false,
-				'error' => __( 'Gift card not found or not valid.', 'mp-commerce-promotions' ),
+				'error' => __( 'We could not find a gift card with that code. Check the code and try again.', 'mp-commerce-promotions' ),
 			);
 		}
 
@@ -100,12 +100,20 @@ final class GiftCardBalanceChecker {
 		set_transient( $key, $count, self::RATE_LIMIT_WINDOW );
 	}
 
+	public static function rate_limit_transient_key( ?string $ip = null ): string {
+		if ( $ip === null && isset( $_SERVER['REMOTE_ADDR'] ) ) {
+			$ip = sanitize_text_field( wp_unslash( (string) $_SERVER['REMOTE_ADDR'] ) );
+		}
+
+		return 'mp_cp_gc_balance_' . md5( $ip !== null && $ip !== '' ? $ip : 'unknown' );
+	}
+
 	private function rate_limit_key(): string {
 		$ip = '';
 		if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
 			$ip = sanitize_text_field( wp_unslash( (string) $_SERVER['REMOTE_ADDR'] ) );
 		}
 
-		return 'mp_cp_gc_balance_' . md5( $ip !== '' ? $ip : 'unknown' );
+		return self::rate_limit_transient_key( $ip !== '' ? $ip : null );
 	}
 }

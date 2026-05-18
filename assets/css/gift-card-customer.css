@@ -56,6 +56,13 @@
 	padding: 0;
 }
 
+.mp-cp-gc-wallet-card {
+	padding: 1em 1.25em;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #f6f7f7;
+}
+
 .mp-cp-gc-wallet-balance {
 	font-size: 1.35em;
 	font-weight: 600;

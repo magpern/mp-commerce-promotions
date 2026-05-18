@@ -10,6 +10,7 @@ namespace MP\CommercePromotions\Tests\Unit;
 use MP\CommercePromotions\GiftCard\GiftCard;
 use MP\CommercePromotions\GiftCard\GiftCardBalanceChecker;
 use MP\CommercePromotions\GiftCard\GiftCardCustomerService;
+use MP\CommercePromotions\GiftCard\GiftCardDeliveryStatus;
 use MP\CommercePromotions\GiftCard\GiftCardEmailTemplate;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
@@ -58,6 +59,19 @@ final class GiftCardCustomerExperienceTest extends TestCase {
 		$checker = new GiftCardBalanceChecker( $this->ledger );
 		$result  = $checker->lookup( 'NOT-A-REAL-CODE-XYZ' );
 		$this->assertFalse( $result['ok'] );
+		$this->assertArrayHasKey( 'error', $result );
+	}
+
+	public function test_balance_checker_rate_limit_key(): void {
+		$key = GiftCardBalanceChecker::rate_limit_transient_key( '192.0.2.1' );
+		$this->assertStringStartsWith( 'mp_cp_gc_balance_', $key );
+	}
+
+	public function test_delivery_label_for_failed(): void {
+		$label = GiftCardCustomerService::format_delivery_label(
+			array( 'delivery_status' => GiftCardDeliveryStatus::FAILED )
+		);
+		$this->assertStringContainsString( 'failed', strtolower( $label ) );
 	}
 
 	public function test_my_account_endpoint_constant(): void {

@@ -26,7 +26,15 @@ Gift card products show a purchase panel: delivery, redemption, partial payment,
 
 ## Checkout redemption
 
-Single **Gift card or store credit** section on cart and checkout (classic + cart totals hook for Blocks compatibility). Partial payment explained; estimated remaining balance after apply.
+Single **Gift card or store credit** section on cart and checkout (rendered once on cart and checkout pages). Partial payment explained; estimated amount still due when gift card and/or store credit are applied; combined gift card + store credit notice when both are active.
+
+### WooCommerce Blocks
+
+Gift card and store credit checkout adjustments use the **fee/session path** (same as classic checkout). There are **no custom Blocks components** yet — redemption UI is classic-oriented. Blocks checkout should not fatal; dedicated Blocks UI is future work.
+
+## Email deliverability
+
+**Diagnostics → Gift card email deliverability** surfaces delivery failures, last `wp_mail` failure transient, and a warning to configure SMTP before selling gift cards. Support bundle exports a redacted `gift_card_mail` summary (no secrets).
 
 ## Settings
 

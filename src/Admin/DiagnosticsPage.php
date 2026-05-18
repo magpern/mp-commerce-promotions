@@ -276,6 +276,7 @@ final class DiagnosticsPage {
 		$this->render_gift_card_integrity_section();
 		$this->render_gift_card_product_section();
 		$this->render_gift_card_delivery_section();
+		$this->render_gift_card_mail_section();
 		$this->render_gift_card_scheduled_section();
 		$this->render_gift_card_customer_section();
 		CompatibilityStatusPanel::render();
@@ -1780,6 +1781,23 @@ final class DiagnosticsPage {
 		}
 		echo '</ul>';
 
+		if ( count( $issues['delivery_failed'] ) > 0 ) {
+			echo '<p class="notice notice-error inline"><strong>' . esc_html__( 'Delivery failed', 'mp-commerce-promotions' ) . ':</strong> ';
+			echo esc_html(
+				sprintf(
+					/* translators: %d: count */
+					_n(
+						'%d gift card email could not be delivered. Check SMTP and order delivery status.',
+						'%d gift card emails could not be delivered. Check SMTP and order delivery status.',
+						count( $issues['delivery_failed'] ),
+						'mp-commerce-promotions'
+					),
+					count( $issues['delivery_failed'] )
+				)
+			);
+			echo '</p>';
+		}
+
 		echo '<form method="post" style="margin-top:12px;">';
 		wp_nonce_field( 'mp_cp_gift_card_delivery_repair' );
 		echo '<input type="hidden" name="mp_cp_gift_card_delivery_repair" value="1" />';
@@ -1788,6 +1806,51 @@ final class DiagnosticsPage {
 		echo '<button type="submit" class="button button-primary" name="mp_cp_gift_card_delivery_repair_apply" value="1">'
 			. esc_html__( 'Apply repair', 'mp-commerce-promotions' ) . '</button></p>';
 		echo '</form>';
+	}
+
+	private function render_gift_card_mail_section(): void {
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			return;
+		}
+
+		$mail = new \MP\CommercePromotions\GiftCard\GiftCardMailDiagnostics( $wpdb );
+		$info = $mail->analyze();
+
+		echo '<h2 style="margin-top:2em;">' . esc_html__( 'Gift card email deliverability', 'mp-commerce-promotions' ) . '</h2>';
+
+		if ( ! empty( $info['wp_mail_likely_failing'] ) ) {
+			echo '<motion class="notice notice-warning"><p><strong>' . esc_html__( 'Warning:', 'mp-commerce-promotions' ) . '</strong> ';
+			echo esc_html__(
+				'Recent gift card emails may not be sending. Configure SMTP before selling gift cards.',
+				'mp-commerce-promotions'
+			) . '</p></motion.div>';
+		}
+
+		echo '<ul>';
+		echo '<li>' . esc_html__( 'Delivery emails enabled', 'mp-commerce-promotions' ) . ': '
+			. ( ! empty( $info['delivery_email_enabled'] ) ? esc_html__( 'Yes', 'mp-commerce-promotions' ) : esc_html__( 'No', 'mp-commerce-promotions' ) ) . '</li>';
+		echo '<li>' . esc_html__( 'Recent delivery failures', 'mp-commerce-promotions' ) . ': '
+			. esc_html( (string) (int) ( $info['recent_delivery_failed'] ?? 0 ) ) . '</li>';
+		if ( ! empty( $info['last_mail_failure_at'] ) ) {
+			echo '<li>' . esc_html__( 'Last wp_mail failure (gift cards)', 'mp-commerce-promotions' ) . ': '
+				. esc_html( (string) $info['last_mail_failure_at'] ) . '</li>';
+		}
+		$smtp = (string) ( $info['smtp_plugin_hint'] ?? '' );
+		if ( $smtp !== '' ) {
+			echo '<li>' . esc_html__( 'SMTP plugin detected', 'mp-commerce-promotions' ) . ': ' . esc_html( $smtp ) . '</li>';
+		}
+		echo '</ul>';
+
+		$summary = $info['settings_summary'] ?? array();
+		if ( is_array( $summary ) && $summary !== array() ) {
+			echo '<p><strong>' . esc_html__( 'Mail settings summary (no secrets)', 'mp-commerce-promotions' ) . '</strong></p><ul>';
+			foreach ( $summary as $key => $value ) {
+				$display = is_bool( $value ) ? ( $value ? __( 'Yes', 'mp-commerce-promotions' ) : __( 'No', 'mp-commerce-promotions' ) ) : (string) $value;
+				echo '<li>' . esc_html( str_replace( '_', ' ', (string) $key ) ) . ': ' . esc_html( $display ) . '</li>';
+			}
+			echo '</ul>';
+		}
 	}
 
 	private function handle_post_gift_card_scheduled_repair(): void {

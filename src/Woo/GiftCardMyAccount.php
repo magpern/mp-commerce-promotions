@@ -96,6 +96,19 @@ final class GiftCardMyAccount {
 				. esc_html__( 'Copy code', 'mp-commerce-promotions' ) . '</button></p>';
 		}
 
+		if ( $purchased === array() && $received === array() && $reveal === '' ) {
+			echo '<p class="mp-cp-gc-help">' . esc_html__(
+				'You have not purchased or received any gift cards yet. Gift cards you buy or receive by email will appear here with masked codes and balances.',
+				'mp-commerce-promotions'
+			) . '</p>';
+			if ( function_exists( 'wc_get_page_permalink' ) ) {
+				$shop = wc_get_page_permalink( 'shop' );
+				if ( is_string( $shop ) && $shop !== '' ) {
+					echo '<p><a class="button" href="' . esc_url( $shop ) . '">' . esc_html__( 'Browse products', 'mp-commerce-promotions' ) . '</a></p>';
+				}
+			}
+		}
+
 		$this->render_card_table( __( 'Purchased', 'mp-commerce-promotions' ), $purchased );
 		$this->render_card_table( __( 'Received', 'mp-commerce-promotions' ), $received );
 
@@ -109,7 +122,10 @@ final class GiftCardMyAccount {
 	private function render_card_table( string $title, array $rows ): void {
 		echo '<h3>' . esc_html( $title ) . '</h3>';
 		if ( $rows === array() ) {
-			echo '<p class="mp-cp-gc-help">' . esc_html__( 'No gift cards in this list yet.', 'mp-commerce-promotions' ) . '</p>';
+			$hint = $title === __( 'Purchased', 'mp-commerce-promotions' )
+				? __( 'Gift cards you buy for yourself or others will show here after checkout.', 'mp-commerce-promotions' )
+				: __( 'Gift cards sent to your account email will appear here.', 'mp-commerce-promotions' );
+			echo '<p class="mp-cp-gc-help">' . esc_html( $hint ) . '</p>';
 			return;
 		}
 
@@ -125,12 +141,15 @@ final class GiftCardMyAccount {
 			$balance = function_exists( 'wc_price' )
 				? wp_strip_all_tags( wc_price( (float) ( $row['balance'] ?? 0 ), array( 'currency' => (string) ( $row['currency'] ?? '' ) ) ) )
 				: number_format( (float) ( $row['balance'] ?? 0 ), 2 );
-			$delivery = (string) ( $row['delivered_at'] ?? '' );
-			if ( $delivery === '' && (string) ( $row['scheduled_for'] ?? '' ) !== '' ) {
-				$delivery = __( 'Scheduled', 'mp-commerce-promotions' ) . ': ' . (string) $row['scheduled_for'];
-			}
+			$delivery = (string) ( $row['delivery_label'] ?? '' );
 			if ( $delivery === '' ) {
-				$delivery = (string) ( $row['delivery_status'] ?? '—' );
+				$delivery = GiftCardCustomerService::format_delivery_label(
+					array(
+						'delivery_status' => (string) ( $row['delivery_status'] ?? '' ),
+						'delivered_at'    => (string) ( $row['delivered_at'] ?? '' ),
+						'scheduled_for'   => (string) ( $row['scheduled_for'] ?? '' ),
+					)
+				);
 			}
 
 			echo '<tr>';
@@ -149,7 +168,9 @@ final class GiftCardMyAccount {
 		$currency = function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'EUR';
 		$balance  = $this->wallet->get_balance( $customer_id, $currency );
 
-		echo '<h3 style="margin-top:2em;">' . esc_html__( 'Store credit wallet', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<div class="mp-cp-gc-wallet-card" style="margin-top:2em;">';
+		echo '<h3>' . esc_html__( 'Store credit wallet', 'mp-commerce-promotions' ) . '</h3>';
+		echo '<p class="mp-cp-gc-help">' . esc_html__( 'Use store credit at checkout on eligible carts. It can be combined with a gift card when both are available.', 'mp-commerce-promotions' ) . '</p>';
 		echo '<p class="mp-cp-gc-wallet-balance">';
 		echo esc_html(
 			sprintf(
@@ -164,10 +185,12 @@ final class GiftCardMyAccount {
 
 		$txs = array_slice( $this->wallet->transactions_for_customer( $customer_id, $currency ), 0, 20 );
 		if ( $balance <= 0 && $txs === array() ) {
-			echo '<p class="mp-cp-gc-help">' . esc_html__( 'No store credit activity yet.', 'mp-commerce-promotions' ) . '</p>';
+			echo '<p class="mp-cp-gc-help">' . esc_html__( 'No store credit balance yet. Refunds or admin grants will appear here.', 'mp-commerce-promotions' ) . '</p>';
+			echo '</div>';
 			return;
 		}
 		if ( $txs === array() ) {
+			echo '</div>';
 			return;
 		}
 
@@ -194,6 +217,7 @@ final class GiftCardMyAccount {
 		}
 
 		echo '</tbody></table>';
+		echo '</div>';
 	}
 
 	private function transaction_label( string $type ): string {

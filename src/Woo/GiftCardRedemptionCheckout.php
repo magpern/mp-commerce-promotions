@@ -34,6 +34,8 @@ final class GiftCardRedemptionCheckout {
 
 	private StoreCreditCartApplier $sc_applier;
 
+	private static bool $panel_rendered = false;
+
 	public function __construct(
 		GiftCardLedger $ledger,
 		GiftCardCartApplier $gift_applier,
@@ -49,15 +51,15 @@ final class GiftCardRedemptionCheckout {
 	}
 
 	public function register(): void {
-		$hooks = array(
+		$post_hooks = array(
 			'woocommerce_before_cart',
 			'woocommerce_before_checkout_form',
-			'woocommerce_cart_totals_before_order_total',
 		);
-		foreach ( $hooks as $hook ) {
+		foreach ( $post_hooks as $hook ) {
 			add_action( $hook, array( $this, 'maybe_handle_post' ), 5 );
-			add_action( $hook, array( $this, 'render_form' ), 15 );
 		}
+		add_action( 'woocommerce_before_cart', array( $this, 'render_form' ), 15 );
+		add_action( 'woocommerce_before_checkout_form', array( $this, 'render_form' ), 15 );
 	}
 
 	public function maybe_handle_post(): void {
@@ -202,9 +204,10 @@ final class GiftCardRedemptionCheckout {
 	}
 
 	public function render_form(): void {
-		if ( ! function_exists( 'WC' ) || ! CartSessionHelper::has_wc_session() ) {
+		if ( self::$panel_rendered || ! function_exists( 'WC' ) || ! CartSessionHelper::has_wc_session() ) {
 			return;
 		}
+		self::$panel_rendered = true;
 
 		GiftCardCustomerAssets::enqueue();
 
@@ -268,7 +271,43 @@ final class GiftCardRedemptionCheckout {
 			}
 		}
 
-		echo '</div>';
+		if ( $gift_applied !== null && $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 ) {
+			echo '<p class="mp-cp-gc-help">' . esc_html__(
+				'Both a gift card and store credit are applied. They reduce your order total before you choose a payment method for any remaining amount.',
+				'mp-commerce-promotions'
+			) . '</p>';
+		}
+
+		$still_due = $this->estimate_amount_still_due();
+		if ( $still_due > 0 && ( $gift_applied !== null || ( $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 ) ) ) {
+			echo '<p class="mp-cp-gc-help"><strong>' . esc_html__( 'Estimated amount still due', 'mp-commerce-promotions' ) . ':</strong> ';
+			echo esc_html(
+				function_exists( 'wc_price' )
+					? wp_strip_all_tags( wc_price( $still_due ) )
+					: number_format( $still_due, 2 )
+			);
+			echo '</p>';
+		} elseif ( $still_due <= 0 && ( $gift_applied !== null || $sc_applied !== null ) ) {
+			echo '<p class="mp-cp-gc-help">' . esc_html__(
+				'Your gift card and/or store credit may cover this order in full. Complete checkout to confirm — no further payment may be required.',
+				'mp-commerce-promotions'
+			) . '</p>';
+		}
+
+		echo '</motion.div>';
+	}
+
+	private function estimate_amount_still_due(): float {
+		if ( ! function_exists( 'WC' ) || ! isset( WC()->cart ) || ! is_object( WC()->cart ) ) {
+			return 0.0;
+		}
+
+		$total = (float) WC()->cart->get_total( 'edit' );
+		if ( $total < 0 ) {
+			return 0.0;
+		}
+
+		return GiftCard::money( $total );
 	}
 
 	private function payable_total(): float {

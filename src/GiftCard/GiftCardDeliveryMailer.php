@@ -166,6 +166,9 @@ final class GiftCardDeliveryMailer {
 				}
 				$sent = (bool) wp_mail( $to_email, $subject, $plain, $headers_plain );
 			}
+			if ( ! $sent ) {
+				GiftCardMailDiagnostics::record_mail_failure();
+			}
 			return $sent;
 		}
 
