@@ -48,7 +48,12 @@ final class AdminNavigation {
 		);
 	}
 
-	public static function sanitize_tab( ?string $tab ): string {
+	/**
+	 * Single source of truth for tab routing and nav highlighting.
+	 *
+	 * @param self::TAB_*|string|null $tab Raw tab from the request (may be missing, empty, or invalid).
+	 */
+	public static function normalize_tab( ?string $tab ): string {
 		if ( $tab === null || $tab === '' ) {
 			return self::DEFAULT_TAB;
 		}
@@ -61,13 +66,20 @@ final class AdminNavigation {
 		return self::DEFAULT_TAB;
 	}
 
+	/**
+	 * @param self::TAB_*|string|null $tab
+	 */
+	public static function sanitize_tab( ?string $tab ): string {
+		return self::normalize_tab( $tab );
+	}
+
 	public static function get_current_tab(): string {
+		$raw = null;
 		if ( isset( $_GET['tab'] ) ) {
 			$raw = wp_unslash( (string) $_GET['tab'] );
-			return self::sanitize_tab( $raw );
 		}
 
-		return self::DEFAULT_TAB;
+		return self::normalize_tab( $raw );
 	}
 
 	public static function tab_url( string $tab ): string {

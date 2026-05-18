@@ -61,9 +61,16 @@ cb_smoke_assert(
 	'Campaign Builder is default admin tab'
 );
 cb_smoke_assert(
-	AdminNavigation::sanitize_tab( null ) === AdminNavigation::TAB_CAMPAIGN_BUILDER,
-	'empty tab routes to Campaign Builder'
+	AdminNavigation::normalize_tab( null ) === AdminNavigation::TAB_CAMPAIGN_BUILDER,
+	'missing tab normalizes to Campaign Builder'
 );
+$nav_get_backup = $_GET;
+$_GET           = array( 'page' => AdminNavigation::PAGE_SLUG );
+cb_smoke_assert(
+	AdminNavigation::get_current_tab() === AdminNavigation::TAB_CAMPAIGN_BUILDER,
+	'get_current_tab() without tab matches explicit campaign-builder normalization'
+);
+$_GET = $nav_get_backup;
 cb_smoke_assert(
 	CampaignBuilderStep::initial_after_goal( CampaignBuilderGoal::CATEGORY_DISCOUNT ) === CampaignBuilderStep::TARGETING,
 	'wizard initial step for category discount'

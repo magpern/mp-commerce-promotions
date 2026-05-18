@@ -97,8 +97,7 @@ final class CampaignBuilderPage {
 				if ( $hook !== 'woocommerce_page_' . AdminNavigation::PAGE_SLUG ) {
 					return;
 				}
-				$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( (string) $_GET['tab'] ) ) : '';
-				if ( $tab !== AdminNavigation::TAB_CAMPAIGN_BUILDER ) {
+				if ( AdminNavigation::get_current_tab() !== AdminNavigation::TAB_CAMPAIGN_BUILDER ) {
 					return;
 				}
 				wp_enqueue_style(

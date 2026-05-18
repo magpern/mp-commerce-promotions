@@ -71,7 +71,9 @@ final class AdminRouter {
 			return;
 		}
 
-		$tab = AdminNavigation::get_current_tab();
+		$tab = AdminNavigation::normalize_tab(
+			isset( $_GET['tab'] ) ? wp_unslash( (string) $_GET['tab'] ) : null
+		);
 
 		switch ( $tab ) {
 			case AdminNavigation::TAB_GETTING_STARTED:
