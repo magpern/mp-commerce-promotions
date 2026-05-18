@@ -106,7 +106,7 @@ try {
 	$ms    = (int) round( ( microtime( true ) - $start ) * 1000 );
 
 	$selected = count( $plan->get_selected_decisions() );
-	$skipped  = count( $plan->get_skipped_decisions() );
+	$skipped  = count( $plan->get_decisions() ) - $selected;
 
 	ga_stress_assert( $selected >= 0, 'planner selected count' );
 	ga_stress_assert( $skipped >= 0, 'planner skipped count' );
