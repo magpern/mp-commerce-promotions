@@ -43,18 +43,18 @@ Runbook: [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBIL
 |----------|--------|-------|
 | Fee-based % / fixed in block cart | **Pass** | Browser: −4,60 € fee on €46 MOTS-C (promo 193); CLI/Store API + order 4354 |
 | Stacked fees | **Pass** (server) | CLI: two negative fees + `applied_promotions=2` (stackable pair) |
-| Promotion code (block coupon UI) | **Partial** | CLI Pass `BLOCKQA218`; browser coupon UI not exercised |
-| Free shipping fee offset | **Partial** | CLI: no offset when shipping_total=0 (not re-run) |
-| Free gift add/remove | **Pass** (server) | CLI: paid 4356 + gift 4338, `mp_cp_free_gift=yes`, price 0 |
-| Line item mode (block cart prices) | **Partial** | CLI: line price mutated (10% on €5); block UI not re-run |
+| Promotion code (block coupon UI) | **Pass** | Browser `BLOCKQA239`; order **4363** |
+| Free shipping fee offset | **Partial** | Not re-run when shipping > 0 |
+| Free gift add/remove | **Pass** (server) | CLI: paid 4356 + gift 4338 |
+| Line item mode (block cart prices) | **Partial** | CLI line mutation Pass; block unit still €5.00 |
 | Hybrid fallback | **Not run** | |
-| Checkout recording / redemptions | **Partial** | CLI Pass orders 4354, 4360; browser COD order not placed |
-| Reversal | **Pass** | CLI Pass order 4354 cancel |
+| Checkout recording / redemptions | **Pass** | Browser **4362**/**4363**; Store API hook |
+| Reversal | **Pass** | CLI + order **4362** cancel |
 | Native coupon coexistence | **Not run** | |
-| Guest checkout (blocks) | **Blocked** | |
+| Guest checkout (blocks) | **Pass** | COD guest orders **4362**/**4363** |
 | Logged-in checkout (blocks) | **Not run** | |
-| Hook audit (WP_DEBUG + option) | **Partial** | No logger output; hooks OK via cart/order tests |
-| **Declare `cart_checkout_blocks`** | **No** | `block_compatibility_status` = **partial** |
+| Hook audit (WP_DEBUG + option) | **Partial** | Hooks verified via cart/order tests |
+| **Declare `cart_checkout_blocks`** | **Yes** | `block_compatibility_status` = **passed** |
 
 ## Admin
 

@@ -42,7 +42,9 @@ final class CompatibilityStatus {
 			'hpos_enabled'                  => WooCompatibility::is_hpos_enabled(),
 			'hpos_declared_compatible'      => class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ),
 			'cart_checkout_blocks_declared' => WooCompatibility::is_cart_checkout_blocks_declared(),
-			'cart_checkout_blocks_note'     => __( 'Not declared — block checkout compatibility pending QA.', 'mp-commerce-promotions' ),
+			'cart_checkout_blocks_note'     => WooCompatibility::is_cart_checkout_blocks_declared()
+				? __( 'Declared compatible with Cart/Checkout Blocks (browser QA 2026-05-18).', 'mp-commerce-promotions' )
+				: __( 'Not declared — block checkout compatibility pending QA.', 'mp-commerce-promotions' ),
 			'block_cart_page_id'            => (int) $block_state['cart_page_id'],
 			'block_checkout_page_id'        => (int) $block_state['checkout_page_id'],
 			'block_pages_present'           => (bool) $block_state['block_pages_present'],

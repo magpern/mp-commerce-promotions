@@ -11,6 +11,8 @@ namespace MP\CommercePromotions\Woo;
 
 final class WooCompatibility {
 
+	private static bool $cart_checkout_blocks_declared = false;
+
 	/**
 	 * Register hooks that must run before WooCommerce initializes.
 	 */
@@ -35,6 +37,13 @@ final class WooCompatibility {
 			MP_COMMERCE_PROMOTIONS_FILE,
 			true
 		);
+
+		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
+			'cart_checkout_blocks',
+			MP_COMMERCE_PROMOTIONS_FILE,
+			true
+		);
+		self::$cart_checkout_blocks_declared = true;
 	}
 
 	/**
@@ -52,7 +61,7 @@ final class WooCompatibility {
 	 * Whether this plugin has declared cart_checkout_blocks compatibility with WooCommerce.
 	 */
 	public static function is_cart_checkout_blocks_declared(): bool {
-		return false;
+		return self::$cart_checkout_blocks_declared;
 	}
 
 	private function __construct() {

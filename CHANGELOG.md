@@ -13,16 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Line discount cart fatal** — `LinePriceMutationGuard` now imports `Engine\AppliedLineDiscount` (wrong namespace caused fatal on `woocommerce_before_calculate_totals`, breaking all cart recalculation including Blocks Store API backend).
 - **Blocks QA setup** — `BlockQaPromotionSetup` provisions distinct cart-addable paid/gift simple products; stackable pair uses `stop_processing=false`; cert pauses all planner-active promos; line cert survives WooCommerce multi-pass totals (`CartPromotionApplier` early subtotal guard).
+- **Block checkout order recording** — `woocommerce_store_api_checkout_order_processed` hooks in `WooCommerceBridge` (block COD orders were missing `_mp_cp_applied_promotions` before this fix).
 - **`scripts/verify-plugin.sh`** — lifecycle/schema checks always run from live tree; release audit runs from staging build path (skipped with message when only sync copy present).
 
 ### Added
 
 - **`scripts/blocks-browser-cert.php`** — WP-CLI + Store API certification harness for block QA promos (dynamic promo IDs, order/reversal checks).
-- **Cart/Checkout Blocks browser certification (2026-05-18)** — Block cart/checkout UI on 4333/4334; browser fee line Pass; CLI stacked/code/gift/line/fee Pass (orders 4360, 4354); full block COD checkout not placed in browser. **`cart_checkout_blocks` not declared.**
+- **Cart/Checkout Blocks browser certification (2026-05-18)** — Final browser pass: fee + coupon COD orders **4362**/**4363**; coupon UI `BLOCKQA239`; CLI cert 8/8. **`cart_checkout_blocks` declared.**
 
 ### Changed
 
-- **Cart/Checkout Blocks manual QA (2026-05-18)** — Focused cert rerun after QA setup fix; `block_compatibility_status` remains **partial** (browser COD + block coupon UI gaps).
+- **Cart/Checkout Blocks manual QA (2026-05-18)** — `block_compatibility_status` **passed**; `FeaturesUtil::declare_compatibility( 'cart_checkout_blocks' )`.
 
 - **Cart/Checkout Blocks compatibility investigation** — Draft block QA pages (cart **4333**, checkout **4334**); `scripts/blocks-compatibility-smoke.php`; expanded `docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md` test matrix and hook audit; `BlockTestPages`, `BlockQaPromotionSetup`, optional `BlocksHookAudit` debug logging (`WP_DEBUG` + `mp_cp_blocks_hook_debug`); `CompatibilityStatus` block fields exposed in Reports/Diagnostics and support bundle. **`cart_checkout_blocks` remains undeclared.**
 - **Native line discount groundwork (schema 1.15.0)** — `PromotionDiscountApplicationMode` (`fee_based`, `line_item`, `hybrid`); `LineItemDiscountApplier` + `LinePriceMutationGuard` on `woocommerce_before_calculate_totals`; line allocation persistence (`AppliedLineDiscount`, session/order meta); hybrid fee fallback with telemetry; admin **Discount application** field; compatibility audit for line mode. **Fee-based remains the default**; line mode is experimental.

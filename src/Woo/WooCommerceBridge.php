@@ -27,9 +27,9 @@
  * - `woocommerce_get_shop_coupon_data` → PromotionCodeCouponBridge::filter_shop_coupon_data (10, 2)
  * - `woocommerce_coupon_is_valid` → PromotionCodeCouponBridge::filter_coupon_is_valid (10, 3)
  *
- * Cart/Checkout Blocks: discounts still use the hooks above during `WC()->cart` recalculation
- * (Store API cart/checkout). Block coupon UI compatibility is not declared — see
- * `docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md` and optional `BlocksHookAudit` when
+ * Cart/Checkout Blocks: discounts use the hooks above during `WC()->cart` recalculation
+ * (Store API cart/checkout). Block checkout recording uses `woocommerce_store_api_checkout_order_processed`.
+ * `cart_checkout_blocks` declared in `WooCompatibility`. Optional `BlocksHookAudit` when
  * `WP_DEBUG` and `mp_cp_blocks_hook_debug` are enabled.
  *
  * @package MP\CommercePromotions
@@ -179,6 +179,18 @@ final class WooCommerceBridge {
 			array( $this->order_promotion_recorder, 'record_on_checkout_processed' ),
 			20,
 			2
+		);
+		add_action(
+			'woocommerce_store_api_checkout_order_processed',
+			array( $this->order_promotion_recorder, 'record_on_order_create' ),
+			10,
+			1
+		);
+		add_action(
+			'woocommerce_store_api_checkout_order_processed',
+			array( $this->order_promotion_recorder, 'record_on_checkout_processed' ),
+			20,
+			1
 		);
 		$this->order_checkout_hook_registered = true;
 	}

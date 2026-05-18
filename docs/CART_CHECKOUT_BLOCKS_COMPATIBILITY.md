@@ -3,8 +3,8 @@
 **Plugin:** MP Commerce Promotions `0.2.0-beta.1`  
 **Schema:** `1.15.0`  
 **Investigation milestone:** 2026-05-17 (setup) · **Browser cert:** 2026-05-18 · **Rendering fix:** 2ce1c95  
-**Declaration:** `cart_checkout_blocks` remains **not declared**.  
-**Status:** `mp_cp_block_compatibility_status` = **`partial`** — [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md)
+**Declaration:** `cart_checkout_blocks` **declared** (`FeaturesUtil`, 2026-05-18 final browser pass).  
+**Status:** `mp_cp_block_compatibility_status` = **`passed`** — [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md)
 
 ### Root cause (block UI empty on QA pages)
 
@@ -25,18 +25,16 @@ QA pages used **self-closing** block comments only (`<!-- wp:woocommerce/cart /-
 | Hook audit | **Partial** | Cart fees + checkout hooks verified; logger empty (WP_DEBUG off) |
 | Block cart fees (fee-based) | **Pass** | Browser + CLI + Store API (promo 193, order 4354) |
 | Block stacked fees | **Partial** | One fee with two stackable QA promos (CLI) |
-| Promotion code in block coupon UI | **Partial** | CLI `BLOCKQA5`; browser not exercised |
-| Free shipping fee offset | **Partial** | No offset when shipping €0 in CLI |
-| Free gift | **Partial** | QA gift SKU = paid SKU; browser not run |
-| Line item mode | **Partial** | No line allocations on €1 CLI cart |
-| Checkout / reversal | **Partial** | CLI Pass order 4354; browser COD not placed |
-| **Declare `cart_checkout_blocks`** | **No** | Stacking, code UI, gift config, line/hybrid, full browser checkout |
-
-Update `mp_cp_block_compatibility_status` (`not_tested` | `partial` | `passed` | `failed`) and notes after manual QA:
+| Promotion code in block coupon UI | **Pass** | Browser `BLOCKQA239` + CLI cert |
+| Free shipping fee offset | **Partial** | Not re-run when shipping > 0 |
+| Free gift | **Pass** (server) | Distinct SKUs; CLI cert |
+| Line item mode | **Partial** | Server line mutation Pass; block unit price still €5.00 |
+| Checkout / reversal | **Pass** | Browser COD **4362**/**4363**; Store API recording hook |
+| **Declare `cart_checkout_blocks`** | **Yes** | Final browser + CLI critical paths Pass |
 
 ```bash
-./wp option update mp_cp_block_compatibility_status partial
-./wp option update mp_cp_block_compatibility_notes "CLI cert Pass: stacked/code/gift/line/fee (4360). Browser: fee line Pass; COD checkout not placed. cart_checkout_blocks not declared."
+./wp option update mp_cp_block_compatibility_status passed
+./wp option update mp_cp_block_compatibility_notes "Browser: fee+coupon COD 4362/4363; BLOCKQA239; CLI cert 8/8. Line UI partial. cart_checkout_blocks declared."
 ```
 
 ---
@@ -164,7 +162,7 @@ Declare in `WooCompatibility::declare_feature_compatibility()` **only if all** m
 5. Free gift sync acceptable  
 6. No fatals with 2+ active promotions  
 
-Until then: `CompatibilityStatus::cart_checkout_blocks_declared` stays **false**.
+**Declared 2026-05-18** after browser COD orders **4362**/**4363**, coupon UI (`BLOCKQA239`), and CLI cert 8/8. Residual: line unit display in block cart; free-shipping offset when shipping > 0.
 
 ---
 

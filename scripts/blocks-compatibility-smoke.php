@@ -48,7 +48,7 @@ $cart_render    = WooCommerceBlockPageContent::render_cart_diagnostic( $cart_con
 blocks_smoke_assert( $cart_render['has_wrapper'], 'do_blocks cart output includes wc cart wrapper' );
 
 $compat = ( new CompatibilityStatus() )->collect();
-blocks_smoke_assert( $compat['cart_checkout_blocks_declared'] === false, 'cart_checkout_blocks not declared' );
+blocks_smoke_assert( $compat['cart_checkout_blocks_declared'] === true, 'cart_checkout_blocks declared' );
 blocks_smoke_assert( ! empty( $compat['hpos_declared_compatible'] ), 'HPOS FeaturesUtil available' );
 blocks_smoke_assert(
 	isset( $compat['block_cart_page_id'], $compat['block_checkout_page_id'], $compat['block_pages_present'] ),
@@ -63,6 +63,7 @@ blocks_smoke_assert(
 $hooks = BlocksHookAudit::audited_hooks();
 blocks_smoke_assert( isset( $hooks['woocommerce_cart_calculate_fees'] ), 'hook audit includes cart_calculate_fees' );
 blocks_smoke_assert( isset( $hooks['woocommerce_checkout_create_order'] ), 'hook audit includes checkout_create_order' );
+blocks_smoke_assert( isset( $hooks['woocommerce_store_api_checkout_order_processed'] ), 'hook audit includes store_api_checkout_order_processed' );
 
 global $wpdb;
 if ( $wpdb instanceof wpdb ) {

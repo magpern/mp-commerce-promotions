@@ -28,8 +28,9 @@ final class BlocksHookAudit {
 			'woocommerce_cart_calculate_fees'     => 'cart_calculate_fees',
 			'woocommerce_get_shop_coupon_data'      => 'shop_coupon_data',
 			'woocommerce_coupon_is_valid'           => 'coupon_is_valid',
-			'woocommerce_checkout_create_order'     => 'checkout_create_order',
-			'woocommerce_checkout_order_processed'  => 'checkout_order_processed',
+			'woocommerce_checkout_create_order'              => 'checkout_create_order',
+			'woocommerce_checkout_order_processed'           => 'checkout_order_processed',
+			'woocommerce_store_api_checkout_order_processed' => 'store_api_checkout_order_processed',
 		);
 	}
 

@@ -45,7 +45,10 @@ final class BlocksCompatibilityTest extends TestCase {
 	}
 
 	public function test_compatibility_status_includes_block_keys(): void {
-		$GLOBALS['mp_cp_test_options'][ BlockTestPages::OPTION_COMPATIBILITY_STATUS ] = BlockTestPages::STATUS_PARTIAL;
+		if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) && defined( 'MP_COMMERCE_PROMOTIONS_FILE' ) ) {
+			WooCompatibility::declare_feature_compatibility();
+		}
+		$GLOBALS['mp_cp_test_options'][ BlockTestPages::OPTION_COMPATIBILITY_STATUS ] = BlockTestPages::STATUS_PASSED;
 		$GLOBALS['mp_cp_test_options'][ BlockTestPages::OPTION_COMPATIBILITY_NOTES ]  = 'Cart fees verified in block cart.';
 
 		$status = ( new CompatibilityStatus() )->collect();
@@ -56,16 +59,19 @@ final class BlocksCompatibilityTest extends TestCase {
 		$this->assertArrayHasKey( 'block_compatibility_status', $status );
 		$this->assertArrayHasKey( 'block_compatibility_notes', $status );
 		$this->assertArrayHasKey( 'blocks_hook_audit_hooks', $status );
-		$this->assertFalse( $status['cart_checkout_blocks_declared'] );
-		$this->assertSame( BlockTestPages::STATUS_PARTIAL, $status['block_compatibility_status'] );
+		$this->assertTrue( $status['cart_checkout_blocks_declared'] );
+		$this->assertSame( BlockTestPages::STATUS_PASSED, $status['block_compatibility_status'] );
 	}
 
 	public function test_support_bundle_includes_block_status(): void {
+		if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) && defined( 'MP_COMMERCE_PROMOTIONS_FILE' ) ) {
+			WooCompatibility::declare_feature_compatibility();
+		}
 		$bundle = ( new SupportBundleExporter( new Settings() ) )->build();
 		$env    = $bundle['environment'] ?? array();
 		$this->assertIsArray( $env );
 		$this->assertArrayHasKey( 'block_compatibility_status', $env );
-		$this->assertFalse( $env['cart_checkout_blocks_declared'] ?? true );
+		$this->assertTrue( $env['cart_checkout_blocks_declared'] ?? false );
 	}
 
 	public function test_blocks_hook_debug_defaults_off(): void {
@@ -77,10 +83,18 @@ final class BlocksCompatibilityTest extends TestCase {
 		$this->assertArrayHasKey( 'woocommerce_cart_calculate_fees', $hooks );
 		$this->assertArrayHasKey( 'woocommerce_before_calculate_totals', $hooks );
 		$this->assertArrayHasKey( 'woocommerce_checkout_create_order', $hooks );
+		$this->assertArrayHasKey( 'woocommerce_store_api_checkout_order_processed', $hooks );
 	}
 
-	public function test_woocommerce_blocks_not_declared_in_features_util(): void {
-		$this->assertFalse( WooCompatibility::is_cart_checkout_blocks_declared() );
+	public function test_woocommerce_blocks_declared_after_feature_registration(): void {
+		if ( ! class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
+			$this->markTestSkipped( 'WooCommerce FeaturesUtil not available.' );
+		}
+		if ( ! defined( 'MP_COMMERCE_PROMOTIONS_FILE' ) ) {
+			define( 'MP_COMMERCE_PROMOTIONS_FILE', dirname( __DIR__, 2 ) . '/mp-commerce-promotions.php' );
+		}
+		WooCompatibility::declare_feature_compatibility();
+		$this->assertTrue( WooCompatibility::is_cart_checkout_blocks_declared() );
 	}
 
 	public function test_factory_create_draft_includes_discount_application_mode(): void {

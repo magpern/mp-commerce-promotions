@@ -52,13 +52,16 @@ final class CommercialReadinessTest extends TestCase {
 	}
 
 	public function test_compatibility_status_collects_expected_keys(): void {
+		if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) && defined( 'MP_COMMERCE_PROMOTIONS_FILE' ) ) {
+			\MP\CommercePromotions\Woo\WooCompatibility::declare_feature_compatibility();
+		}
 		$status = ( new CompatibilityStatus() )->collect();
 		$this->assertArrayHasKey( 'wordpress_version', $status );
 		$this->assertArrayHasKey( 'woocommerce_version', $status );
 		$this->assertArrayHasKey( 'php_version', $status );
 		$this->assertArrayHasKey( 'hpos_enabled', $status );
 		$this->assertArrayHasKey( 'discount_strategy', $status );
-		$this->assertFalse( $status['cart_checkout_blocks_declared'] );
+		$this->assertTrue( $status['cart_checkout_blocks_declared'] );
 		$this->assertArrayHasKey( 'block_compatibility_status', $status );
 		$this->assertArrayHasKey( 'block_pages_present', $status );
 	}

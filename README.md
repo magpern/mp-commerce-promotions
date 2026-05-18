@@ -27,7 +27,7 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 - [docs/manual-performance-and-hardening-test.md](docs/manual-performance-and-hardening-test.md) — profiler, safe mode, cron, cleanup, concurrency
 - [docs/BROWSER_QA_MATRIX.md](docs/BROWSER_QA_MATRIX.md) — reproducible browser QA matrix
 - [docs/BETA_READINESS.md](docs/BETA_READINESS.md) — beta certification status and release criteria
-- [docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md) — blocks investigation (not declared)
+- [docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md) — blocks compatibility (declared 2026-05-18)
 - [docs/BROWSER_QA_RUNBOOK.md](docs/BROWSER_QA_RUNBOOK.md) — browser QA setup (gateways, products, promotions)
 - [docs/CLASSIC_CHECKOUT_CERTIFICATION.md](docs/CLASSIC_CHECKOUT_CERTIFICATION.md) — classic checkout pass/fail matrix
 - [docs/BLOCK_CHECKOUT_INVESTIGATION.md](docs/BLOCK_CHECKOUT_INVESTIGATION.md) — block cart/checkout test pages
@@ -141,7 +141,7 @@ Each promotion has **application rules** (`exclusive` or `stackable`, **stop pro
 ## WooCommerce compatibility
 
 - **HPOS (High-Performance Order Storage)** — compatibility with `custom_order_tables` is declared to WooCommerce via `FeaturesUtil` when available. Order promotion metadata is written through `WC_Order` CRUD (`update_meta_data` / `save`), which works with HPOS and legacy post-based orders.
-- **Cart & Checkout Blocks** — **not** declared compatible (`partial` QA 2026-05-18). QA pages **4333** / **4334** (published; not live cart/checkout). Block cart/checkout UI renders after full block markup repair (2ce1c95); browser fee line Pass; CLI stacked/code/gift/line/fee + record/reversal Pass (orders 4360/4354). Remaining: block coupon UI, line price display in block cart, full guest COD checkout in browser. See [docs/BLOCKS_QA_EVIDENCE_2026-05-18.md](docs/BLOCKS_QA_EVIDENCE_2026-05-18.md).
+- **Cart & Checkout Blocks** — **declared** compatible (`passed` QA 2026-05-18). QA pages **4333** / **4334** (published; not live cart/checkout). Browser fee + coupon COD Pass (orders **4362**, **4363**); Store API checkout recording hook; CLI cert 8/8. Residual: block line-item unit display; free-shipping offset. Code batch: **`BLOCKQA239`** (legacy `BLOCKQA218` → archived promo). See [docs/BLOCKS_QA_EVIDENCE_2026-05-18.md](docs/BLOCKS_QA_EVIDENCE_2026-05-18.md).
 
 ## Known limitations (MVP)
 

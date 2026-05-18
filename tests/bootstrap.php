@@ -17,6 +17,18 @@ if ( ! defined( 'MP_COMMERCE_PROMOTIONS_PATH' ) ) {
 	define( 'MP_COMMERCE_PROMOTIONS_PATH', $plugin_root );
 }
 
+if ( ! defined( 'MP_COMMERCE_PROMOTIONS_FILE' ) ) {
+	define( 'MP_COMMERCE_PROMOTIONS_FILE', $plugin_root . 'mp-commerce-promotions.php' );
+}
+
+if ( ! class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class, false ) ) {
+	require_once $plugin_root . 'tests/Stubs/FeaturesUtilStub.php';
+	class_alias(
+		\MP\CommercePromotions\Tests\Stubs\FeaturesUtilStub::class,
+		'Automattic\\WooCommerce\\Utilities\\FeaturesUtil'
+	);
+}
+
 if ( ! function_exists( '__' ) ) {
 	/**
 	 * @param string $text

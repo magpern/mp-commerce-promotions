@@ -53,7 +53,7 @@ foreach ( $docs as $doc ) {
 }
 
 $compat = ( new CompatibilityStatus() )->collect();
-mp_cp_prep_assert( empty( $compat['cart_checkout_blocks_declared'] ), 'cart_checkout_blocks not declared' );
+mp_cp_prep_assert( ! empty( $compat['cart_checkout_blocks_declared'] ), 'cart_checkout_blocks declared' );
 mp_cp_prep_assert( ! empty( $compat['hpos_enabled'] ) || class_exists( '\Automattic\WooCommerce\Utilities\OrderUtil' ), 'HPOS compatibility path exists' );
 
 mp_cp_prep_assert( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ), 'FeaturesUtil available for HPOS declaration' );

@@ -43,7 +43,7 @@ if ( $schema !== '' ) {
 
 $compat = ( new CompatibilityStatus() )->collect();
 mp_cp_beta_assert( isset( $compat['cart_checkout_blocks_declared'] ), 'compatibility cart_checkout_blocks_declared key' );
-mp_cp_beta_assert( $compat['cart_checkout_blocks_declared'] === false, 'blocks not declared' );
+mp_cp_beta_assert( $compat['cart_checkout_blocks_declared'] === true, 'cart_checkout_blocks declared' );
 mp_cp_beta_assert( isset( $compat['hpos_enabled'] ), 'compatibility hpos_enabled key' );
 
 $settings = new Settings();

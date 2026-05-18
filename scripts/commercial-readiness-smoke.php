@@ -60,7 +60,7 @@ $settings->set_csv_export_enabled( true );
 
 $compat = ( new CompatibilityStatus() )->collect();
 commercial_smoke_assert( isset( $compat['woocommerce_version'] ), 'compatibility status keys' );
-commercial_smoke_assert( $compat['cart_checkout_blocks_declared'] === false, 'blocks not declared' );
+commercial_smoke_assert( $compat['cart_checkout_blocks_declared'] === true, 'cart_checkout_blocks declared' );
 
 global $wpdb;
 $repo        = new PromotionRepository( $wpdb );
