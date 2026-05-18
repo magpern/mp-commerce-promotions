@@ -41,9 +41,9 @@ Runbook: [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBIL
 
 | Scenario | Status | Notes |
 |----------|--------|-------|
-| Fee-based % / fixed in block cart | **Partial** | CLI fees OK; block UI does not render on 4333 |
+| Fee-based % / fixed in block cart | **Partial** | CLI fees OK; SSR fixed 2026-05-16 (full block markup on 4333) — browser re-test pending |
 | Stacked fees | **Blocked** | QA promos exclusive |
-| Promotion code (block coupon UI) | **Blocked** | No block checkout UI |
+| Promotion code (block coupon UI) | **Partial** | SSR fixed on 4334; browser re-test pending |
 | Free shipping fee offset | **Partial** | CLI: no offset fee observed |
 | Free gift add/remove | **Partial** | CLI Pass (gift $0) |
 | Line item mode (block cart prices) | **Partial** | Not verified in browser |

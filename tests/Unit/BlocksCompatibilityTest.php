@@ -11,6 +11,7 @@ use MP\CommercePromotions\Domain\PromotionDiscountApplicationMode;
 use MP\CommercePromotions\Domain\PromotionFactory;
 use MP\CommercePromotions\Service\BlockTestPages;
 use MP\CommercePromotions\Service\CompatibilityStatus;
+use MP\CommercePromotions\Service\WooCommerceBlockPageContent;
 use MP\CommercePromotions\Service\Settings;
 use MP\CommercePromotions\Service\SupportBundleExporter;
 use MP\CommercePromotions\Woo\BlocksHookAudit;
@@ -28,6 +29,13 @@ final class BlocksCompatibilityTest extends TestCase {
 		$this->assertTrue( BlockTestPages::is_block_cart_content( '<!-- wp:woocommerce/cart /-->' ) );
 		$this->assertTrue( BlockTestPages::is_block_checkout_content( '<!-- wp:woocommerce/checkout /-->' ) );
 		$this->assertFalse( BlockTestPages::is_block_cart_content( '[woocommerce_cart]' ) );
+	}
+
+	public function test_void_block_markup_is_incomplete_for_rendering(): void {
+		$this->assertFalse( WooCommerceBlockPageContent::has_complete_cart_structure( '<!-- wp:woocommerce/cart /-->' ) );
+		$this->assertFalse( WooCommerceBlockPageContent::has_complete_checkout_structure( '<!-- wp:woocommerce/checkout /-->' ) );
+		$minimal_cart = '<!-- wp:woocommerce/cart --><div class="wp-block-woocommerce-filled-cart-block"><!-- wp:woocommerce/cart-line-items-block /--></div><!-- /wp:woocommerce/cart -->';
+		$this->assertTrue( WooCommerceBlockPageContent::has_complete_cart_structure( $minimal_cart ) );
 	}
 
 	public function test_block_status_normalization(): void {

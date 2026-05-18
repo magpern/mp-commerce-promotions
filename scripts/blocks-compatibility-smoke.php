@@ -16,6 +16,7 @@ use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Service\BlockQaPromotionSetup;
 use MP\CommercePromotions\Service\BlockTestPages;
 use MP\CommercePromotions\Service\CompatibilityStatus;
+use MP\CommercePromotions\Service\WooCommerceBlockPageContent;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Woo\BlocksHookAudit;
 
@@ -32,14 +33,19 @@ function blocks_smoke_assert( bool $cond, string $label ): void {
 	echo "FAIL {$label}\n";
 }
 
-$pages = new BlockTestPages();
-$ids   = $pages->ensure_pages();
+$pages  = new BlockTestPages();
+$repair = $pages->repair_page_block_markup();
+$ids    = $pages->ensure_pages();
 
 blocks_smoke_assert( $ids['cart_page_id'] > 0, 'block cart page exists' );
 blocks_smoke_assert( $ids['checkout_page_id'] > 0, 'block checkout page exists' );
 
 $state = $pages->resolve_page_state();
-blocks_smoke_assert( ! empty( $state['block_pages_present'] ), 'block pages contain cart/checkout blocks' );
+blocks_smoke_assert( ! empty( $state['block_pages_present'] ), 'block pages contain full cart/checkout block structure' );
+
+$cart_content = function_exists( 'get_post' ) ? (string) get_post_field( 'post_content', $ids['cart_page_id'] ) : '';
+$cart_render    = WooCommerceBlockPageContent::render_cart_diagnostic( $cart_content );
+blocks_smoke_assert( $cart_render['has_wrapper'], 'do_blocks cart output includes wc cart wrapper' );
 
 $compat = ( new CompatibilityStatus() )->collect();
 blocks_smoke_assert( $compat['cart_checkout_blocks_declared'] === false, 'cart_checkout_blocks not declared' );

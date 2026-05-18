@@ -2,19 +2,30 @@
 
 **Plugin:** MP Commerce Promotions `0.2.0-beta.1`  
 **Schema:** `1.15.0`  
-**Investigation milestone:** 2026-05-17 (setup) · **Manual QA:** 2026-05-18  
+**Investigation milestone:** 2026-05-17 (setup) · **Manual QA:** 2026-05-18 · **Rendering fix:** 2026-05-16  
 **Declaration:** `cart_checkout_blocks` remains **not declared**.  
 **Status:** `mp_cp_block_compatibility_status` = **`partial`** — [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md)
+
+### Root cause (block UI empty on QA pages)
+
+QA pages used **self-closing** block comments only (`<!-- wp:woocommerce/cart /-->`). WooCommerce Cart/Checkout block PHP `render()` returns the saved inner `$content`; with no inner block markup, `do_blocks()` and the front end output **no** `wp-block-woocommerce-cart` / `wc-block-cart` wrapper. Blocksy was not suppressing `the_content()` — the rendered content was empty.
+
+**Fix:** `BlockTestPages::repair_page_block_markup()` sets `post_content` from `WC_Install::get_cart_block_content()` / `get_checkout_block_content()` (full inner block template). Run:
+
+```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/blocks-rendering-diagnostic.php
+```
 
 ## Summary
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Block QA pages | **Pass** | **4333**, **4334** published for guest URLs (live cart/checkout unchanged) |
+| Block QA pages | **Pass** | **4333**, **4334** — full block markup after repair (live cart/checkout unchanged) |
+| Block SSR / hydration | **Pass** (post-fix) | `do_blocks()` includes cart/checkout wrapper when inner structure present |
 | Hook audit | **Partial** | Cart fees + checkout hooks verified; logger empty (WP_DEBUG off) |
-| Block cart fees (fee-based) | **Partial** | CLI Pass; browser Blocked (block UI missing) |
+| Block cart fees (fee-based) | **Partial** | CLI Pass; browser re-test after markup repair |
 | Block stacked fees | **Blocked** | QA promos `exclusive` |
-| Promotion code in block coupon UI | **Blocked** | No block checkout UI |
+| Promotion code in block coupon UI | **Partial** | Re-test on 4334 after markup repair |
 | Free shipping fee offset | **Partial** | CLI: no offset fee observed |
 | Free gift | **Partial** | CLI Pass |
 | Line item mode | **Partial** | Not verified in block UI |
@@ -34,21 +45,22 @@ Update `mp_cp_block_compatibility_status` (`not_tested` | `partial` | `passed` |
 
 | Page | ID | Slug | Block markup | WC cart/checkout option |
 |------|-----|------|--------------|-------------------------|
-| Promotion Block Cart Test | **4333** | `mp-cp-block-cart-qa` | `<!-- wp:woocommerce/cart /-->` | **Not set** |
-| Promotion Block Checkout Test | **4334** | `mp-cp-block-checkout-qa` | `<!-- wp:woocommerce/checkout /-->` | **Not set** |
+| Promotion Block Cart Test | **4333** | `mp-cp-block-cart-qa` | Full `woocommerce/cart` inner blocks (from `WC_Install`) | **Not set** |
+| Promotion Block Checkout Test | **4334** | `mp-cp-block-checkout-qa` | Full `woocommerce/checkout` inner blocks | **Not set** |
 
 **Live storefront (unchanged):** cart page **82** (`[woocommerce_cart]`), checkout **83** (`[woocommerce_checkout]`).
 
 ### Preview URLs
 
 ```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/blocks-rendering-diagnostic.php
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/blocks-compatibility-smoke.php
 ```
 
-Or (replace host):
+Guest URLs (published):
 
-- Cart: `https://<site>/?page_id=4333` (admin may preview draft)
-- Checkout: `https://<site>/?page_id=4334`
+- Cart: `https://www.biopentra.eu/mp-cp-block-cart-qa/`
+- Checkout: `https://www.biopentra.eu/mp-cp-block-checkout-qa/`
 
 ### Setup commands
 

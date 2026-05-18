@@ -41,10 +41,19 @@ Legend: **Pass** | **Fail** | **Partial** | **Blocked**
 
 ## Block UI finding (storefront)
 
-- URL https://www.biopentra.eu/mp-cp-block-cart-qa/ loads WooCommerce Blocks **assets** (`cart-frontend.js`, Store API client).
-- **No** `wp-block-woocommerce-cart` markup in HTML; main content is page title only (Blocksy layout).
-- Mini-cart shows session items (e.g. 46 €, 2 lines) but **block cart/checkout components do not mount**.
-- **Conclusion:** Block matrix cannot be completed in the browser on this theme/page setup until the theme renders `the_content()` blocks (separate from MP CP).
+### Initial (2026-05-18)
+
+- URL https://www.biopentra.eu/mp-cp-block-cart-qa/ loaded WooCommerce Blocks **assets** but **no** `wp-block-woocommerce-cart` in HTML.
+- Root cause: `post_content` was only `<!-- wp:woocommerce/cart /-->` (self-closing). WooCommerce Cart block SSR returns empty inner `$content` without the default inner block template.
+
+### After rendering repair (2026-05-16)
+
+- `scripts/blocks-rendering-diagnostic.php` + `BlockTestPages::repair_page_block_markup()` set full `WC_Install` cart/checkout block markup on pages **4333** / **4334**.
+- `do_blocks()` length ~9973 (cart) / ~3250 (checkout); live HTML includes `wp-block-woocommerce-cart` / `wc-block-checkout`.
+- Blocksy + default page template; theme was not the blocker.
+- Browser spot-check: cart shows **Products in cart**, **Add coupons**, **Proceed to Checkout**; checkout shows **Place Order**, shipping/payment blocks.
+- QA promotions refreshed: **183–187** (paused). CLI fee test promo **183**: fee −0.10 on €1 product.
+- Full browser matrix (fee visibility in block totals per session, codes, gift lines, checkout order) remains **partial**.
 
 ## Hook audit
 
@@ -68,6 +77,6 @@ Legend: **Pass** | **Fail** | **Partial** | **Blocked**
 
 ## Follow-up
 
-- Fix theme/page template so `<!-- wp:woocommerce/cart /-->` renders on 4333/4334.
-- Re-run browser matrix; consider stackable QA promotions for stacked-fee test.
+- ~~Fix theme/page template~~ → use full WooCommerce block inner markup (not self-closing comments).
+- Re-run browser matrix after repair; consider stackable QA promotions for stacked-fee test.
 - Retest line mode on storefront (not only WP-CLI).

@@ -31,8 +31,10 @@ final class BlockTestPages {
 
 	public const CHECKOUT_TITLE = 'Promotion Block Checkout Test';
 
+	/** @deprecated Self-closing blocks render empty; use WooCommerceBlockPageContent::default_*_markup(). */
 	public const CART_BLOCK_MARKUP = '<!-- wp:woocommerce/cart /-->';
 
+	/** @deprecated Self-closing blocks render empty; use WooCommerceBlockPageContent::default_*_markup(). */
 	public const CHECKOUT_BLOCK_MARKUP = '<!-- wp:woocommerce/checkout /-->';
 
 	public const STATUS_NOT_TESTED = 'not_tested';
@@ -82,19 +84,36 @@ final class BlockTestPages {
 			self::DEFAULT_CART_PAGE_ID,
 			self::CART_TITLE,
 			self::CART_SLUG,
-			self::CART_BLOCK_MARKUP
+			WooCommerceBlockPageContent::default_cart_markup(),
+			true
 		);
 		$checkout_id = $this->ensure_single_page(
 			self::OPTION_CHECKOUT_PAGE_ID,
 			self::DEFAULT_CHECKOUT_PAGE_ID,
 			self::CHECKOUT_TITLE,
 			self::CHECKOUT_SLUG,
-			self::CHECKOUT_BLOCK_MARKUP
+			WooCommerceBlockPageContent::default_checkout_markup(),
+			false
 		);
 
 		return array(
 			'cart_page_id'     => $cart_id,
 			'checkout_page_id' => $checkout_id,
+		);
+	}
+
+	/**
+	 * Upgrade existing QA pages from self-closing block comments to full inner block markup.
+	 *
+	 * @return array{cart_repaired: bool, checkout_repaired: bool}
+	 */
+	public function repair_page_block_markup(): array {
+		$cart_id     = $this->resolve_page_id( self::OPTION_CART_PAGE_ID, self::DEFAULT_CART_PAGE_ID );
+		$checkout_id = $this->resolve_page_id( self::OPTION_CHECKOUT_PAGE_ID, self::DEFAULT_CHECKOUT_PAGE_ID );
+
+		return array(
+			'cart_repaired'     => $this->repair_single_page( $cart_id, true ),
+			'checkout_repaired' => $this->repair_single_page( $checkout_id, false ),
 		);
 	}
 
@@ -105,8 +124,8 @@ final class BlockTestPages {
 		$cart_id     = $this->resolve_page_id( self::OPTION_CART_PAGE_ID, self::DEFAULT_CART_PAGE_ID );
 		$checkout_id = $this->resolve_page_id( self::OPTION_CHECKOUT_PAGE_ID, self::DEFAULT_CHECKOUT_PAGE_ID );
 
-		$cart_ok     = $this->page_has_expected_block( $cart_id, true );
-		$checkout_ok = $this->page_has_expected_block( $checkout_id, false );
+		$cart_ok     = $this->page_has_complete_block_structure( $cart_id, true );
+		$checkout_ok = $this->page_has_complete_block_structure( $checkout_id, false );
 
 		return array(
 			'cart_page_id'        => $cart_id,
@@ -164,13 +183,21 @@ final class BlockTestPages {
 		int $preferred_id,
 		string $title,
 		string $slug,
-		string $content
+		string $content,
+		bool $is_cart
 	): int {
 		$existing = $this->resolve_page_id( $option, $preferred_id );
-		if ( $existing > 0 && $this->page_has_content( $existing, $content ) ) {
-			update_option( $option, $existing, false );
+		if ( $existing > 0 ) {
+			if ( $this->page_has_complete_block_structure( $existing, $is_cart ) ) {
+				update_option( $option, $existing, false );
 
-			return $existing;
+				return $existing;
+			}
+			if ( $this->repair_single_page( $existing, $is_cart ) ) {
+				update_option( $option, $existing, false );
+
+				return $existing;
+			}
 		}
 
 		if ( ! function_exists( 'wp_insert_post' ) ) {
@@ -198,7 +225,7 @@ final class BlockTestPages {
 		return $id;
 	}
 
-	private function page_has_expected_block( int $page_id, bool $cart ): bool {
+	private function page_has_complete_block_structure( int $page_id, bool $cart ): bool {
 		if ( $page_id <= 0 ) {
 			return false;
 		}
@@ -206,18 +233,28 @@ final class BlockTestPages {
 		$content = $this->get_post_content( $page_id );
 
 		return $cart
-			? self::is_block_cart_content( $content )
-			: self::is_block_checkout_content( $content );
+			? WooCommerceBlockPageContent::has_complete_cart_structure( $content )
+			: WooCommerceBlockPageContent::has_complete_checkout_structure( $content );
 	}
 
-	private function page_has_content( int $page_id, string $expected_markup ): bool {
-		if ( $page_id <= 0 ) {
+	private function repair_single_page( int $page_id, bool $is_cart ): bool {
+		if ( $page_id <= 0 || ! function_exists( 'wp_update_post' ) ) {
 			return false;
 		}
 
-		$content = $this->get_post_content( $page_id );
+		$content = $is_cart
+			? WooCommerceBlockPageContent::default_cart_markup()
+			: WooCommerceBlockPageContent::default_checkout_markup();
 
-		return str_contains( $content, trim( $expected_markup ) );
+		$result = wp_update_post(
+			array(
+				'ID'           => $page_id,
+				'post_content' => $content,
+			),
+			true
+		);
+
+		return ! is_wp_error( $result );
 	}
 
 	private function get_post_content( int $post_id ): string {

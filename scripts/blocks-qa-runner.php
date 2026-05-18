@@ -23,6 +23,21 @@ if ( isset( $args ) && is_array( $args ) && isset( $args[0] ) && is_numeric( $ar
 if ( $promo_id <= 0 && getenv( 'MP_CP_BLOCK_QA_PROMO_ID' ) !== false ) {
 	$promo_id = (int) getenv( 'MP_CP_BLOCK_QA_PROMO_ID' );
 }
+if ( $promo_id <= 0 && defined( 'WP_CLI' ) && WP_CLI && class_exists( '\WP_CLI' ) ) {
+	$assoc = \WP_CLI::get_runner()->config;
+	if ( is_array( $assoc ) && isset( $assoc['promo_id'] ) && is_numeric( $assoc['promo_id'] ) ) {
+		$promo_id = (int) $assoc['promo_id'];
+	}
+}
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WP-CLI only.
+if ( $promo_id <= 0 && isset( $_SERVER['argv'] ) && is_array( $_SERVER['argv'] ) ) {
+	foreach ( $_SERVER['argv'] as $arg ) {
+		if ( is_string( $arg ) && preg_match( '/^--promo_id=(\d+)$/', $arg, $m ) ) {
+			$promo_id = (int) $m[1];
+			break;
+		}
+	}
+}
 
 $product_id = 3702;
 if ( getenv( 'MP_CP_BLOCK_QA_PRODUCT_ID' ) !== false ) {
@@ -98,11 +113,11 @@ foreach ( $cart->get_fees() as $fee ) {
 echo 'Promotion: ' . $promo->get_name() . ' (' . $promo->get_status() . ")\n";
 echo 'Mode: ' . $promo->get_discount_application_mode() . "\n";
 echo 'Cart subtotal: ' . (string) $cart->get_subtotal() . "\n";
-echo 'Cart total: ' . (string) $cart->get_total( 'edit' ) ) . "\n";
+echo 'Cart total: ' . (string) $cart->get_total( 'edit' ) . "\n";
 echo 'Fees: ' . wp_json_encode( $fees ) . "\n";
 
-$session = \MP\CommercePromotions\Woo\CartSessionHelper::get_applied_promotions();
-echo 'Session promos: ' . wp_json_encode( is_array( $session ) ? count( $session ) : 0 ) . "\n";
+$session = \MP\CommercePromotions\Woo\CartSessionHelper::get_applied_promotion();
+echo 'Session promo: ' . wp_json_encode( $session ) . "\n";
 
 $line_alloc = \MP\CommercePromotions\Woo\CartSessionHelper::get_line_allocations();
 if ( is_array( $line_alloc ) && ! empty( $line_alloc['line_discounts'] ) ) {
