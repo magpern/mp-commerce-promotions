@@ -39,4 +39,38 @@ final class CampaignSummaryFormatterTest extends TestCase {
 			$this->assertNotSame( '', CampaignSummaryFormatter::goal_teaser( $goal ) );
 		}
 	}
+
+	public function test_first_order_headline_avoids_duplicate_scope(): void {
+		$ui = array(
+			'discount_type' => 'percentage',
+			'percentage'    => '15',
+		);
+
+		$headline = CampaignSummaryFormatter::headline( CampaignBuilderGoal::FIRST_ORDER, $ui );
+		$this->assertStringContainsString( 'First-time customers', $headline );
+		$this->assertStringNotContainsString( ' on first-time buyers', strtolower( $headline ) );
+	}
+
+	public function test_bogo_headline_includes_scope_once(): void {
+		$ui = array(
+			'bogo_scope'            => 'category',
+			'category_ids'          => array( 1 ),
+			'required_quantity'     => 2,
+			'discounted_quantity'   => 1,
+			'discount_percentage'   => 100,
+		);
+
+		$headline = CampaignSummaryFormatter::headline( CampaignBuilderGoal::BUY_X_GET_Y, $ui );
+		$this->assertStringContainsString( 'Buy 2', $headline );
+		$this->assertStringNotContainsString( ' on ', $headline );
+	}
+
+	public function test_review_sections_for_every_goal(): void {
+		foreach ( CampaignBuilderGoal::all() as $goal ) {
+			$ui       = array( 'discount_type' => 'percentage', 'percentage' => '10' );
+			$sections = CampaignSummaryFormatter::review_sections( $goal, $ui );
+			$this->assertNotSame( '', $sections['headline'], 'headline for ' . $goal );
+			$this->assertNotSame( '', $sections['benefit'], 'benefit for ' . $goal );
+		}
+	}
 }

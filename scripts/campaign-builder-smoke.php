@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit( 1 );
 }
 
+use MP\CommercePromotions\Admin\CampaignBuilderAjax;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Domain\PromotionCodeFactory;
 use MP\CommercePromotions\Domain\PromotionCodeRepository;
@@ -58,26 +59,87 @@ cb_smoke_assert(
 	CampaignBuilderStep::initial_after_goal( CampaignBuilderGoal::CATEGORY_DISCOUNT ) === CampaignBuilderStep::TARGETING,
 	'wizard initial step for category discount'
 );
+cb_smoke_assert(
+	! CampaignBuilderStep::goal_needs_targeting_step( CampaignBuilderGoal::FIRST_ORDER ),
+	'first order skips targeting step'
+);
+
+cb_smoke_assert(
+	has_action( 'wp_ajax_mp_cb_search_products' ) !== false
+	&& has_action( 'wp_ajax_mp_cb_search_categories' ) !== false,
+	'AJAX search handlers registered'
+);
+cb_smoke_assert(
+	CampaignBuilderAjax::nonce_action() === 'mp_cb_search',
+	'AJAX nonce action constant'
+);
+
+$user_id = (int) get_current_user_id();
+if ( $user_id <= 0 ) {
+	$user_id = 1;
+	wp_set_current_user( $user_id );
+}
+
+$wizard_token = wp_generate_password( 12, false, false );
+$wizard_key   = 'mp_cb_wizard_' . $user_id . '_' . sanitize_key( $wizard_token );
+$wizard_ui    = array( 'campaign_name' => 'Wizard transient smoke', 'percentage' => '10' );
+set_transient(
+	$wizard_key,
+	array(
+		'goal' => CampaignBuilderGoal::CATEGORY_DISCOUNT,
+		'ui'   => $wizard_ui,
+	),
+	HOUR_IN_SECONDS
+);
+$wizard_loaded = get_transient( $wizard_key );
+cb_smoke_assert(
+	is_array( $wizard_loaded )
+	&& (string) ( $wizard_loaded['goal'] ?? '' ) === CampaignBuilderGoal::CATEGORY_DISCOUNT
+	&& is_array( $wizard_loaded['ui'] ?? null ),
+	'wizard transient round-trip'
+);
+delete_transient( $wizard_key );
+
+foreach ( $goals as $goal ) {
+	$form = cb_smoke_form_for_goal( $goal );
+	$headline = CampaignSummaryFormatter::headline( $goal, $form );
+	cb_smoke_assert( $headline !== '', 'summary headline: ' . $goal );
+
+	$sections = CampaignSummaryFormatter::review_sections( $goal, $form );
+	cb_smoke_assert( $sections['headline'] !== '' && $sections['benefit'] !== '', 'review sections: ' . $goal );
+
+	if ( $goal === CampaignBuilderGoal::FIRST_ORDER ) {
+		cb_smoke_assert(
+			! str_contains( strtolower( $headline ), ' on first-time buyers' ),
+			'first order headline without duplicate scope'
+		);
+	}
+	if ( $goal === CampaignBuilderGoal::BUY_X_GET_Y ) {
+		cb_smoke_assert( ! str_contains( $headline, ' on ' ), 'bogo headline without trailing scope clause' );
+	}
+
+	try {
+		$rules = $creator->build_rules( $goal, $form );
+		cb_smoke_assert( isset( $rules['actions'] ) && $rules['actions'] !== array(), 'build_rules: ' . $goal );
+		cb_smoke_assert(
+			isset( $rules['conditions'] ) && is_array( $rules['conditions'] ),
+			'build_rules conditions array: ' . $goal
+		);
+	} catch ( Throwable $e ) {
+		cb_smoke_assert( false, 'build_rules exception for ' . $goal . ': ' . $e->getMessage() );
+	}
+}
+
 $headline = CampaignSummaryFormatter::headline(
 	CampaignBuilderGoal::FREE_SHIPPING,
 	array( 'minimum_subtotal' => '100' )
 );
 cb_smoke_assert( str_contains( $headline, 'Free shipping' ), 'summary formatter free shipping' );
 
-foreach ( $goals as $goal ) {
-	$form = cb_smoke_form_for_goal( $goal );
-	try {
-		$rules = $creator->build_rules( $goal, $form );
-		cb_smoke_assert( isset( $rules['actions'] ) && $rules['actions'] !== array(), 'build_rules: ' . $goal );
-	} catch ( Throwable $e ) {
-		cb_smoke_assert( false, 'build_rules exception for ' . $goal . ': ' . $e->getMessage() );
-	}
-}
-
 $form = cb_smoke_form_for_goal( CampaignBuilderGoal::CATEGORY_DISCOUNT );
 $form['campaign_name']  = 'Smoke CB ' . gmdate( 'Y-m-d H:i:s' );
 $form['campaign_label'] = 'SMOKE_CB';
-$form['actor_user_id']  = (int) get_current_user_id();
+$form['actor_user_id']  = $user_id;
 $form['stackable']      = '1';
 $form['budget_amount']    = '500';
 $form['usage_limit']      = '100';
@@ -115,13 +177,13 @@ $edit_url = admin_url(
 		'admin.php'
 	)
 );
-cb_smoke_assert( str_contains( $edit_url, 'promotion=' ), 'advanced edit URL generated' );
+cb_smoke_assert( str_contains( $edit_url, 'promotion=' . (string) $pid ), 'advanced edit URL generated' );
 
 $coupon_form = cb_smoke_form_for_goal( CampaignBuilderGoal::COUPON_CODE );
 $coupon_form['campaign_name']        = 'Smoke Coupon ' . wp_generate_password( 4, false, false );
 $coupon_form['generate_coupon_code'] = '1';
 $coupon_form['require_coupon_code']  = '1';
-$coupon_form['actor_user_id']        = (int) get_current_user_id();
+$coupon_form['actor_user_id']        = $user_id;
 
 try {
 	$coupon_result = $creator->create_draft( $coupon_form );
@@ -136,6 +198,11 @@ $coupon_id = $coupon_result['promotion']->get_id();
 if ( $coupon_id !== null ) {
 	$list = $codes->find_for_promotion( $coupon_id );
 	cb_smoke_assert( count( $list ) >= 1, 'code row persisted for promotion' );
+
+	$coupon_transient_key = 'mp_cb_code_' . $user_id . '_' . $coupon_id;
+	set_transient( $coupon_transient_key, $code_plain, 5 * MINUTE_IN_SECONDS );
+	cb_smoke_assert( get_transient( $coupon_transient_key ) === $code_plain, 'coupon one-time transient pattern' );
+	delete_transient( $coupon_transient_key );
 }
 
 if ( $GLOBALS['smoke_failures'] > 0 ) {
@@ -148,6 +215,9 @@ WP_CLI::success( 'Campaign builder smoke passed.' );
  * @return array<string, mixed>
  */
 function cb_smoke_form_for_goal( string $goal ): array {
+	$cat_id  = cb_smoke_first_category_id();
+	$prod_id = cb_smoke_first_product_id();
+
 	$base = array(
 		'campaign_goal'  => $goal,
 		'campaign_name'  => 'Smoke',
@@ -159,17 +229,17 @@ function cb_smoke_form_for_goal( string $goal ): array {
 	switch ( $goal ) {
 		case CampaignBuilderGoal::CATEGORY_DISCOUNT:
 		case CampaignBuilderGoal::SCHEDULED:
-			$base['category_ids'] = array( 1 );
+			$base['category_ids'] = array( $cat_id );
 			return $base;
 		case CampaignBuilderGoal::PRODUCT_DISCOUNT:
-			$base['product_ids'] = array( 1 );
+			$base['product_ids'] = array( $prod_id );
 			return $base;
 		case CampaignBuilderGoal::BUY_X_GET_Y:
 			return array_merge(
 				$base,
 				array(
 					'bogo_scope'          => 'category',
-					'category_ids'        => array( 1 ),
+					'category_ids'        => array( $cat_id ),
 					'required_quantity'   => 2,
 					'discounted_quantity' => 1,
 					'discount_percentage' => 100,
@@ -182,7 +252,7 @@ function cb_smoke_form_for_goal( string $goal ): array {
 				$base,
 				array(
 					'minimum_subtotal' => 100,
-					'gift_product_id'  => 1,
+					'gift_product_id'  => $prod_id,
 					'gift_quantity'    => 1,
 				)
 			);
@@ -195,4 +265,49 @@ function cb_smoke_form_for_goal( string $goal ): array {
 		default:
 			return $base;
 	}
+}
+
+function cb_smoke_first_category_id(): int {
+	$terms = get_terms(
+		array(
+			'taxonomy'   => 'product_cat',
+			'hide_empty' => false,
+			'number'     => 1,
+			'fields'     => 'ids',
+		)
+	);
+	if ( is_array( $terms ) && isset( $terms[0] ) ) {
+		return max( 1, (int) $terms[0] );
+	}
+
+	return 1;
+}
+
+function cb_smoke_first_product_id(): int {
+	if ( function_exists( 'wc_get_products' ) ) {
+		$products = wc_get_products(
+			array(
+				'limit'  => 1,
+				'status' => 'publish',
+				'return' => 'ids',
+			)
+		);
+		if ( is_array( $products ) && isset( $products[0] ) ) {
+			return max( 1, (int) $products[0] );
+		}
+	}
+
+	$query = new WP_Query(
+		array(
+			'post_type'      => 'product',
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+		)
+	);
+	if ( ! empty( $query->posts[0] ) ) {
+		return max( 1, (int) $query->posts[0] );
+	}
+
+	return 1;
 }

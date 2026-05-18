@@ -22,7 +22,14 @@ final class CampaignSummaryFormatter {
 		$benefit = self::customer_benefit( $goal, $ui );
 		$scope   = self::targeting_phrase( $goal, $ui );
 
-		if ( $scope !== '' && $benefit !== '' ) {
+		// BOGO and first-order copy already includes audience/scope in the benefit sentence.
+		$benefit_includes_scope = in_array(
+			$goal,
+			array( CampaignBuilderGoal::BUY_X_GET_Y, CampaignBuilderGoal::FIRST_ORDER ),
+			true
+		);
+
+		if ( $scope !== '' && $benefit !== '' && ! $benefit_includes_scope ) {
 			return sprintf(
 				/* translators: 1: customer benefit, 2: targeting scope */
 				__( '%1$s on %2$s.', 'mp-commerce-promotions' ),
@@ -32,7 +39,7 @@ final class CampaignSummaryFormatter {
 		}
 
 		if ( $benefit !== '' ) {
-			return $benefit . '.';
+			return str_ends_with( $benefit, '.' ) ? $benefit : $benefit . '.';
 		}
 
 		return CampaignBuilderGoal::label( $goal );
@@ -196,7 +203,7 @@ final class CampaignSummaryFormatter {
 
 		$roles = array_filter( array_map( 'strval', (array) ( $ui['roles'] ?? array() ) ) );
 		if ( $roles !== array() && $goal === CampaignBuilderGoal::VIP_ROLE ) {
-			return self::join_names( $roles );
+			return self::join_names( self::role_display_names( $roles ) );
 		}
 
 		if ( $goal === CampaignBuilderGoal::FIRST_ORDER ) {
@@ -367,6 +374,28 @@ final class CampaignSummaryFormatter {
 				}
 			}
 			$labels[] = '#' . $id;
+		}
+
+		return $labels;
+	}
+
+	/**
+	 * @param list<string> $names
+	 */
+	/**
+	 * @param list<string> $role_keys
+	 * @return list<string>
+	 */
+	private static function role_display_names( array $role_keys ): array {
+		global $wp_roles;
+		$labels = array();
+		foreach ( $role_keys as $role ) {
+			$key = sanitize_key( $role );
+			if ( $wp_roles instanceof \WP_Roles && isset( $wp_roles->roles[ $key ]['name'] ) ) {
+				$labels[] = translate_user_role( (string) $wp_roles->roles[ $key ]['name'] );
+			} else {
+				$labels[] = $key;
+			}
 		}
 
 		return $labels;

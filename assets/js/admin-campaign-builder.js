@@ -7,6 +7,7 @@
 	var cfg = window.mpCbAdmin || {};
 	var ajaxUrl = cfg.ajaxUrl || '';
 	var searchNonce = cfg.searchNonce || '';
+	var i18n = cfg.i18n || {};
 
 	function debounce( fn, ms ) {
 		var t;
@@ -62,7 +63,9 @@
 					'<span class="mp-cb-picker__pill-label">' +
 					escapeHtml( selected[ id ] ) +
 					'</span>' +
-					'<button type="button" class="mp-cb-picker__pill-remove" aria-label="Remove">&times;</button>' +
+					'<button type="button" class="mp-cb-picker__pill-remove" aria-label="'
+					+ escapeHtml( i18n.removeItem || 'Remove' )
+					+ '">&times;</button>' +
 					'<input type="hidden" name="' +
 					nameAttr +
 					'" value="' +
@@ -105,6 +108,7 @@
 				'&q=' +
 				encodeURIComponent( q );
 
+			resultsEl.setAttribute( 'aria-live', 'polite' );
 			resultsEl.innerHTML = '<p class="mp-cb-picker__loading">…</p>';
 			fetch( url, { credentials: 'same-origin' } )
 				.then( function ( r ) {
@@ -113,7 +117,10 @@
 				.then( function ( payload ) {
 					var items = ( payload.data && payload.data.items ) || [];
 					if ( ! items.length ) {
-						resultsEl.innerHTML = '<p class="mp-cb-picker__empty">No matches</p>';
+						resultsEl.innerHTML =
+							'<p class="mp-cb-picker__empty">' +
+							escapeHtml( i18n.searchNoMatches || 'No matches found.' ) +
+							'</p>';
 						return;
 					}
 					resultsEl.innerHTML = '';
@@ -133,7 +140,10 @@
 					} );
 				} )
 				.catch( function () {
-					resultsEl.innerHTML = '<p class="mp-cb-picker__empty">Search failed</p>';
+					resultsEl.innerHTML =
+						'<p class="mp-cb-picker__empty">' +
+						escapeHtml( i18n.searchFailed || 'Search failed. Use manual IDs below.' ) +
+						'</p>';
 				} );
 		}, 280 );
 

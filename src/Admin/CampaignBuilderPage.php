@@ -63,6 +63,8 @@ final class CampaignBuilderPage {
 	/** @var list<array<string, mixed>>|null */
 	private ?array $health_issue_cache = null;
 
+	private bool $wizard_session_expired_notice = false;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionService $promotion_service,
@@ -118,6 +120,11 @@ final class CampaignBuilderPage {
 					array(
 						'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
 						'searchNonce' => wp_create_nonce( CampaignBuilderAjax::nonce_action() ),
+						'i18n'        => array(
+							'searchNoMatches' => __( 'No matches found.', 'mp-commerce-promotions' ),
+							'searchFailed'    => __( 'Search failed. Use manual IDs below.', 'mp-commerce-promotions' ),
+							'removeItem'      => __( 'Remove', 'mp-commerce-promotions' ),
+						),
 					)
 				);
 			}
@@ -128,6 +135,8 @@ final class CampaignBuilderPage {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mp-commerce-promotions' ) );
 		}
+
+		$this->wizard_session_expired_notice = false;
 
 		$this->handle_post_duplicate();
 		$this->handle_post_create();
@@ -151,6 +160,11 @@ final class CampaignBuilderPage {
 		$error_raw = isset( $_GET['mp_cb_error'] ) ? wp_unslash( (string) $_GET['mp_cb_error'] ) : '';
 		if ( $error_raw !== '' ) {
 			AdminNotice::error( $this->resolve_error_notice( sanitize_key( $error_raw ) ) );
+		}
+		if ( $this->wizard_session_expired_notice ) {
+			AdminNotice::warning(
+				__( 'Your in-progress campaign form expired. Continue from the fields below or start again.', 'mp-commerce-promotions' )
+			);
 		}
 
 		$this->render_summary_cards();
@@ -220,6 +234,8 @@ final class CampaignBuilderPage {
 		$stored = $this->load_wizard_state( $token, $goal );
 		if ( $stored !== null ) {
 			$base = array_merge( $base, $stored );
+		} elseif ( $token !== '' ) {
+			$this->wizard_session_expired_notice = true;
 		}
 		if ( isset( $_GET['preview'] ) && (string) $_GET['preview'] === '1' ) {
 			return array_merge( $base, $this->parse_ui_state_from_get( $goal ) );
@@ -376,7 +392,10 @@ final class CampaignBuilderPage {
 	private function resolve_error_notice( string $code ): string {
 		switch ( $code ) {
 			case 'invalid_nonce':
-				return __( 'Security check failed. Please reload the page and try again.', 'mp-commerce-promotions' );
+				return __(
+					'Security check failed. Reload the page and try again. If you were idle for a while, pick your campaign goal again to restart the wizard.',
+					'mp-commerce-promotions'
+				);
 			case 'invalid_goal':
 				return __( 'Please choose a valid campaign goal.', 'mp-commerce-promotions' );
 			case 'duplicate_invalid':
@@ -1758,12 +1777,14 @@ final class CampaignBuilderPage {
 		echo '<ol class="mp-cb-progress" aria-label="' . esc_attr__( 'Campaign setup progress', 'mp-commerce-promotions' ) . '">';
 		foreach ( $steps as $idx => $step ) {
 			$classes = 'mp-cb-progress__step';
+			$aria    = '';
 			if ( $step === $current ) {
 				$classes .= ' is-current';
+				$aria     = ' aria-current="step"';
 			} elseif ( $current_idx !== false && $idx < $current_idx ) {
 				$classes .= ' is-complete';
 			}
-			echo '<li class="' . esc_attr( $classes ) . '">';
+			echo '<li class="' . esc_attr( $classes ) . '"' . $aria . '>';
 			echo '<span class="mp-cb-progress__label">' . esc_html( CampaignBuilderStep::label( $step ) ) . '</span>';
 			echo '</li>';
 		}
@@ -1871,14 +1892,27 @@ final class CampaignBuilderPage {
 	 * @param array<string, mixed> $values
 	 */
 	private function render_step_offer( string $goal, array $values ): void {
-		if ( trim( (string) ( $values['campaign_name'] ?? '' ) ) === '' ) {
-			$this->open_form_card( __( 'Campaign name', 'mp-commerce-promotions' ) );
+		if ( ! CampaignBuilderStep::goal_needs_targeting_step( $goal )
+			|| trim( (string) ( $values['campaign_name'] ?? '' ) ) === '' ) {
+			$this->open_form_card( __( 'Campaign details', 'mp-commerce-promotions' ) );
 			$this->render_text_field(
 				'campaign_name',
 				__( 'Campaign name', 'mp-commerce-promotions' ),
-				'',
-				true
+				(string) $values['campaign_name'],
+				true,
+				array(),
+				__( 'Shown in admin and reports.', 'mp-commerce-promotions' )
 			);
+			if ( ! CampaignBuilderStep::goal_needs_targeting_step( $goal ) ) {
+				$this->render_text_field(
+					'campaign_label',
+					__( 'Campaign label', 'mp-commerce-promotions' ),
+					(string) $values['campaign_label'],
+					false,
+					array(),
+					__( 'Optional internal tag for filtering.', 'mp-commerce-promotions' )
+				);
+			}
 			$this->close_form_card();
 		}
 		$this->open_form_card( __( 'What do customers get?', 'mp-commerce-promotions' ) );
@@ -1973,6 +2007,12 @@ final class CampaignBuilderPage {
 		}
 		echo '</ul>';
 		$this->render_confidence_panel( $insights );
+		echo '<p class="description mp-cb-review-note">'
+			. esc_html__(
+				'This creates a draft only. Shoppers will not see the offer until you activate it in Advanced Editor or the promotions list.',
+				'mp-commerce-promotions'
+			)
+			. '</p>';
 		$this->close_form_card();
 	}
 
@@ -1981,7 +2021,8 @@ final class CampaignBuilderPage {
 		$idx  = array_search( $step, $flow, true );
 		$idx  = $idx === false ? 0 : (int) $idx;
 
-		echo '<div class="mp-cb-wizard-nav">';
+		echo '<div class="mp-cb-wizard-nav" role="navigation" aria-label="'
+			. esc_attr__( 'Wizard navigation', 'mp-commerce-promotions' ) . '">';
 		if ( $idx > 0 ) {
 			printf(
 				'<button type="submit" class="button" name="mp_cb_wizard_nav" value="back">%s</button>',
@@ -1991,7 +2032,7 @@ final class CampaignBuilderPage {
 		if ( $step !== CampaignBuilderStep::REVIEW ) {
 			printf(
 				'<button type="submit" class="button button-primary" name="mp_cb_wizard_nav" value="next">%s</button>',
-				esc_html__( 'Next', 'mp-commerce-promotions' )
+				esc_html__( 'Continue', 'mp-commerce-promotions' )
 			);
 		} else {
 			wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
@@ -2004,12 +2045,16 @@ final class CampaignBuilderPage {
 	 * @param array<int> $selected
 	 */
 	private function render_category_picker( array $selected ): void {
+		$search_id    = 'mp_cb_category_search';
+		$remove_label = esc_attr__( 'Remove category', 'mp-commerce-promotions' );
 		echo '<div class="mp-cb-field">';
-		echo '<span class="mp-cb-field__label">' . esc_html__( 'Categories', 'mp-commerce-promotions' ) . '</span>';
-		echo '<span class="mp-cb-field__help description">'
-			. esc_html__( 'Search and select product categories.', 'mp-commerce-promotions' ) . '</span>';
+		echo '<label class="mp-cb-field__label" for="' . esc_attr( $search_id ) . '">'
+			. esc_html__( 'Categories', 'mp-commerce-promotions' ) . '</label>';
+		echo '<p class="mp-cb-field__help description">'
+			. esc_html__( 'Search and select product categories, or browse all categories below.', 'mp-commerce-promotions' )
+			. '</p>';
 		echo '<div class="mp-cb-picker" data-mp-cb-picker="categories">';
-		echo '<input type="search" class="mp-cb-picker__search widefat" placeholder="'
+		echo '<input type="search" id="' . esc_attr( $search_id ) . '" class="mp-cb-picker__search widefat" placeholder="'
 			. esc_attr__( 'Search categories…', 'mp-commerce-promotions' ) . '" autocomplete="off" />';
 		echo '<div class="mp-cb-picker__results" role="listbox"></div>';
 		echo '<div class="mp-cb-picker__selected">';
@@ -2024,7 +2069,7 @@ final class CampaignBuilderPage {
 			echo '<span class="mp-cb-picker__pill" data-id="' . esc_attr( (string) $id ) . '" data-label="'
 				. esc_attr( $label ) . '">';
 			echo '<span class="mp-cb-picker__pill-label">' . esc_html( $label ) . '</span>';
-			echo '<button type="button" class="mp-cb-picker__pill-remove" aria-label="Remove">&times;</button>';
+			echo '<button type="button" class="mp-cb-picker__pill-remove" aria-label="' . $remove_label . '">&times;</button>';
 			echo '<input type="hidden" name="category_ids[]" value="' . esc_attr( (string) $id ) . '" />';
 			echo '</span>';
 		}
@@ -2039,12 +2084,16 @@ final class CampaignBuilderPage {
 	 * @param list<int> $selected
 	 */
 	private function render_product_picker( array $selected ): void {
+		$search_id    = 'mp_cb_product_search';
+		$remove_label = esc_attr__( 'Remove product', 'mp-commerce-promotions' );
 		echo '<div class="mp-cb-field">';
-		echo '<span class="mp-cb-field__label">' . esc_html__( 'Products', 'mp-commerce-promotions' ) . '</span>';
-		echo '<span class="mp-cb-field__help description">'
-			. esc_html__( 'Search products by name or SKU.', 'mp-commerce-promotions' ) . '</span>';
+		echo '<label class="mp-cb-field__label" for="' . esc_attr( $search_id ) . '">'
+			. esc_html__( 'Products', 'mp-commerce-promotions' ) . '</label>';
+		echo '<p class="mp-cb-field__help description">'
+			. esc_html__( 'Search products by name or SKU, or enter IDs manually below.', 'mp-commerce-promotions' )
+			. '</p>';
 		echo '<div class="mp-cb-picker" data-mp-cb-picker="products">';
-		echo '<input type="search" class="mp-cb-picker__search widefat" placeholder="'
+		echo '<input type="search" id="' . esc_attr( $search_id ) . '" class="mp-cb-picker__search widefat" placeholder="'
 			. esc_attr__( 'Search products…', 'mp-commerce-promotions' ) . '" autocomplete="off" />';
 		echo '<div class="mp-cb-picker__results" role="listbox"></div>';
 		echo '<div class="mp-cb-picker__selected">';
@@ -2059,7 +2108,7 @@ final class CampaignBuilderPage {
 			echo '<span class="mp-cb-picker__pill" data-id="' . esc_attr( (string) $id ) . '" data-label="'
 				. esc_attr( $label ) . '">';
 			echo '<span class="mp-cb-picker__pill-label">' . esc_html( $label ) . '</span>';
-			echo '<button type="button" class="mp-cb-picker__pill-remove" aria-label="Remove">&times;</button>';
+			echo '<button type="button" class="mp-cb-picker__pill-remove" aria-label="' . $remove_label . '">&times;</button>';
 			echo '<input type="hidden" name="product_ids[]" value="' . esc_attr( (string) $id ) . '" />';
 			echo '</span>';
 		}

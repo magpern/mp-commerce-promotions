@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Campaign Builder QA pass** — summary copy fixes (BOGO, first order, VIP roles); wizard UX (Continue, session-expired notice, review draft note, campaign name on non-targeting goals); accessibility (progress `aria-current`, picker labels, localized AJAX strings); expanded `campaign-builder-smoke.php` and `docs/CAMPAIGN_BUILDER_QA_EVIDENCE.md`.
 - **Minimum PHP 8.1** — dropped PHP 7.4 from CI and requirements (`composer.json`, plugin header, `readme.txt`, GitHub Actions matrix 8.1–8.3).
 
 ### Added
