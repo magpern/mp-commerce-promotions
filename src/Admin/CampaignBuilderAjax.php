@@ -118,7 +118,4 @@ final class CampaignBuilderAjax {
 	public static function nonce_action(): string {
 		return self::NONCE_ACTION;
 	}
-
-	private function __construct() {
-	}
 }
