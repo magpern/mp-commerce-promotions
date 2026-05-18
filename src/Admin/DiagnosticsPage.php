@@ -210,6 +210,7 @@ final class DiagnosticsPage {
 		}
 
 		$this->handle_post_gift_card_integrity_repair();
+		$this->handle_post_gift_card_product_repair();
 		$this->handle_post_repair();
 		$this->handle_post_archive_hygiene();
 		$this->handle_post_automation();
@@ -270,6 +271,7 @@ final class DiagnosticsPage {
 
 		$this->render_repair_form();
 		$this->render_gift_card_integrity_section();
+		$this->render_gift_card_product_section();
 		CompatibilityStatusPanel::render();
 		if ( $this->profiler !== null && $this->concurrency !== null ) {
 			EcosystemCompatibilityPanel::render_system_health(
@@ -1593,6 +1595,115 @@ final class DiagnosticsPage {
 				)
 			);
 		}
+	}
+
+	private function handle_post_gift_card_product_repair(): void {
+		if ( ! isset( $_POST['mp_cp_gift_card_product_repair'] ) ) {
+			return;
+		}
+
+		if (
+			! isset( $_POST['_wpnonce'] )
+			|| ! wp_verify_nonce(
+				sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ),
+				'mp_cp_gift_card_product_repair'
+			)
+		) {
+			return;
+		}
+
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			return;
+		}
+
+		$apply = isset( $_POST['mp_cp_gift_card_product_repair_apply'] ) && (string) $_POST['mp_cp_gift_card_product_repair_apply'] === '1';
+		$repo  = new \MP\CommercePromotions\GiftCard\GiftCardRepository( $wpdb );
+		$tx    = new \MP\CommercePromotions\GiftCard\GiftCardTransactionRepository( $wpdb );
+		$ledger = new \MP\CommercePromotions\GiftCard\GiftCardLedger( $repo, $tx );
+		$generator = new \MP\CommercePromotions\GiftCard\GiftCardOrderGenerator(
+			$ledger,
+			null,
+			$this->settings,
+			$this->audit_logger
+		);
+		$reversal = new \MP\CommercePromotions\GiftCard\GiftCardOrderReversal( $ledger, $repo );
+		$diag     = new \MP\CommercePromotions\GiftCard\GiftCardProductDiagnostics(
+			$wpdb,
+			$repo,
+			$ledger,
+			$generator,
+			$reversal
+		);
+		$result = $diag->repair( $apply );
+		if ( $apply ) {
+			AdminNotice::success(
+				sprintf(
+					/* translators: 1: generated count, 2: voided count */
+					__( 'Gift card product repair applied: %1$d generated, %2$d voided.', 'mp-commerce-promotions' ),
+					(int) $result['generated'],
+					(int) $result['voided']
+				)
+			);
+		} else {
+			AdminNotice::info(
+				sprintf(
+					/* translators: 1: generated count, 2: voided count */
+					__( 'Gift card product repair preview: would generate %1$d, void %2$d.', 'mp-commerce-promotions' ),
+					(int) $result['generated'],
+					(int) $result['voided']
+				)
+			);
+		}
+	}
+
+	private function render_gift_card_product_section(): void {
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			return;
+		}
+
+		$repo   = new \MP\CommercePromotions\GiftCard\GiftCardRepository( $wpdb );
+		$tx     = new \MP\CommercePromotions\GiftCard\GiftCardTransactionRepository( $wpdb );
+		$ledger = new \MP\CommercePromotions\GiftCard\GiftCardLedger( $repo, $tx );
+		$generator = new \MP\CommercePromotions\GiftCard\GiftCardOrderGenerator(
+			$ledger,
+			null,
+			$this->settings,
+			$this->audit_logger
+		);
+		$reversal = new \MP\CommercePromotions\GiftCard\GiftCardOrderReversal( $ledger, $repo );
+		$diag     = new \MP\CommercePromotions\GiftCard\GiftCardProductDiagnostics(
+			$wpdb,
+			$repo,
+			$ledger,
+			$generator,
+			$reversal
+		);
+		$issues = $diag->analyze();
+
+		echo '<h2 style="margin-top:2em;">' . esc_html__( 'Gift card products', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Checks paid orders with gift-card products, order linkage, and cancellation hygiene.', 'mp-commerce-promotions' ) . '</p>';
+
+		$counts = array(
+			__( 'Paid orders missing generation', 'mp-commerce-promotions' )       => count( $issues['paid_orders_missing_generation'] ),
+			__( 'Gift cards missing order ID', 'mp-commerce-promotions' )          => count( $issues['product_cards_missing_order_id'] ),
+			__( 'Cancelled orders with unused cards', 'mp-commerce-promotions' ) => count( $issues['cancelled_orders_active_unused_cards'] ),
+		);
+		echo '<ul>';
+		foreach ( $counts as $label => $count ) {
+			echo '<li>' . esc_html( $label ) . ': ' . esc_html( (string) $count ) . '</li>';
+		}
+		echo '</ul>';
+
+		echo '<form method="post" style="margin-top:12px;">';
+		wp_nonce_field( 'mp_cp_gift_card_product_repair' );
+		echo '<input type="hidden" name="mp_cp_gift_card_product_repair" value="1" />';
+		echo '<p><button type="submit" class="button" name="mp_cp_gift_card_product_repair_apply" value="0">'
+			. esc_html__( 'Preview repair', 'mp-commerce-promotions' ) . '</button> ';
+		echo '<button type="submit" class="button button-primary" name="mp_cp_gift_card_product_repair_apply" value="1">'
+			. esc_html__( 'Apply repair', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form>';
 	}
 
 	private function render_gift_card_integrity_section(): void {

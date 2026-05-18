@@ -88,6 +88,16 @@ final class SettingsPage {
 		);
 		echo '</tbody></table>';
 
+		echo '<h2 class="title">' . esc_html__( 'Gift cards', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<table class="form-table" role="presentation"><tbody>';
+		$this->checkbox_row(
+			'mp_cp_gift_card_delivery_email_enabled',
+			__( 'Send gift card codes by email when sold via products', 'mp-commerce-promotions' ),
+			__( 'Plain-text email to the order billing address when gift cards are generated from a paid order. Disable for manual delivery only.', 'mp-commerce-promotions' ),
+			$this->settings->gift_card_delivery_email_enabled()
+		);
+		echo '</tbody></table>';
+
 		echo '<h2 class="title">' . esc_html__( 'Automation', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<table class="form-table" role="presentation"><tbody>';
 		$this->checkbox_row(
@@ -223,6 +233,7 @@ final class SettingsPage {
 		$this->settings->set_csv_export_enabled( $this->post_yes( 'mp_cp_csv_export_enabled' ) );
 		$this->settings->set_simulations_enabled( $this->post_yes( 'mp_cp_simulations_enabled' ) );
 		$this->settings->set_pricing_explainability_enabled( $this->post_yes( 'mp_cp_pricing_explainability_enabled' ) );
+		$this->settings->set_gift_card_delivery_email_enabled( $this->post_yes( 'mp_cp_gift_card_delivery_email_enabled' ) );
 		$this->settings->set_automation_manual_only( $this->post_yes( 'mp_cp_automation_manual_only' ) );
 		$this->settings->set_cron_automation_enabled( $this->post_yes( 'mp_cp_cron_automation_enabled' ) );
 		$this->settings->set_automation_emergency_stop( $this->post_yes( 'mp_cp_automation_emergency_stop' ) );

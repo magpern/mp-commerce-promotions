@@ -62,6 +62,9 @@ use MP\CommercePromotions\Service\SupportBundleExporter;
 use MP\CommercePromotions\Service\UsageDiagnostics;
 use MP\CommercePromotions\GiftCard\GiftCardIntegrityDiagnostics;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
+use MP\CommercePromotions\GiftCard\GiftCardOrderGenerator;
+use MP\CommercePromotions\GiftCard\GiftCardOrderReversal;
+use MP\CommercePromotions\GiftCard\GiftCardProductService;
 use MP\CommercePromotions\GiftCard\GiftCardReports;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
 use MP\CommercePromotions\GiftCard\GiftCardTransactionRepository;
@@ -74,7 +77,9 @@ use MP\CommercePromotions\Woo\CartPromotionApplier;
 use MP\CommercePromotions\Woo\FreeGiftCartSynchronizer;
 use MP\CommercePromotions\Woo\GiftCardCartApplier;
 use MP\CommercePromotions\Woo\GiftCardCheckoutForm;
+use MP\CommercePromotions\Woo\GiftCardOrderAdmin;
 use MP\CommercePromotions\Woo\GiftCardOrderRecorder;
+use MP\CommercePromotions\Woo\GiftCardProductAdmin;
 use MP\CommercePromotions\Woo\StoreCreditCartApplier;
 use MP\CommercePromotions\Woo\StoreCreditCheckoutForm;
 use MP\CommercePromotions\Woo\StoreCreditOrderRecorder;
@@ -224,6 +229,22 @@ final class Plugin {
 				$this->woo_bridge->set_store_credit_checkout_form(
 					new StoreCreditCheckoutForm( $sc_checkout, $sc_applier )
 				);
+
+				$gift_product_service = new GiftCardProductService();
+				$gift_order_generator = new GiftCardOrderGenerator(
+					$gift_ledger,
+					$gift_product_service,
+					$this->settings,
+					$this->audit_logger
+				);
+				$gift_order_reversal = new GiftCardOrderReversal( $gift_ledger, $gift_card_repo );
+				$gift_order_generator->register_hooks();
+				$gift_order_reversal->register_hooks();
+
+				if ( is_admin() ) {
+					( new GiftCardProductAdmin() )->register();
+					( new GiftCardOrderAdmin( $gift_card_repo ) )->register();
+				}
 			}
 
 			BlocksHookAudit::register( $this->settings );

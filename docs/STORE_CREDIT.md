@@ -46,7 +46,7 @@ Diagnostics add store-credit-specific checks (missing owner, unexpected `code_ha
 ## Not in this milestone
 
 - Full payment gateway / native Woo refund UI integration
-- Purchasable gift card products
+- Purchasable gift card products — **done**; see [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md)
 - Blocks-specific store credit UI (fee path should not fatal)
 
 ## Verification

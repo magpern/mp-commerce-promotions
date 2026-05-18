@@ -39,7 +39,9 @@ final class GiftCardLedger {
 		string $currency,
 		?string $expires_at = null,
 		?string $recipient_email = null,
-		?string $note = null
+		?string $note = null,
+		?int $created_order_id = null,
+		?int $purchaser_customer_id = null
 	): GiftCardIssueResult {
 		$amount = GiftCard::money( $amount );
 		if ( $amount <= 0 ) {
@@ -63,8 +65,8 @@ final class GiftCardLedger {
 			$currency,
 			GiftCard::STATUS_ACTIVE,
 			$expires_at !== null && $expires_at !== '' ? $expires_at : null,
-			null,
-			null,
+			$created_order_id !== null && $created_order_id > 0 ? $created_order_id : null,
+			$purchaser_customer_id !== null && $purchaser_customer_id > 0 ? $purchaser_customer_id : null,
 			$recipient_email !== null && $recipient_email !== '' ? sanitize_email( $recipient_email ) : null
 		);
 
@@ -83,12 +85,42 @@ final class GiftCardLedger {
 			GiftCardTransaction::TYPE_ISSUED,
 			$amount,
 			$amount,
-			null,
-			null,
+			$created_order_id !== null && $created_order_id > 0 ? $created_order_id : null,
+			$purchaser_customer_id !== null && $purchaser_customer_id > 0 ? $purchaser_customer_id : null,
 			$note
 		);
 
 		return new GiftCardIssueResult( $plain_code, $stored );
+	}
+
+	/**
+	 * Issue a gift card tied to a paid product order line.
+	 *
+	 * @throws InvalidArgumentException
+	 * @throws RuntimeException
+	 */
+	public function issue_from_order(
+		float $amount,
+		string $currency,
+		int $order_id,
+		?int $purchaser_customer_id,
+		?string $recipient_email,
+		?string $expires_at,
+		?string $note = null
+	): GiftCardIssueResult {
+		if ( $order_id <= 0 ) {
+			throw new InvalidArgumentException( 'Order ID is required for product gift cards.' );
+		}
+
+		return $this->issue(
+			$amount,
+			$currency,
+			$expires_at,
+			$recipient_email,
+			$note ?? 'Generated from product order',
+			$order_id,
+			$purchaser_customer_id
+		);
 	}
 
 	/**

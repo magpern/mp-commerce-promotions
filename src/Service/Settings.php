@@ -53,6 +53,8 @@ final class Settings {
 
 	public const OPTION_PLANNER_TRACE_VERBOSE = 'mp_cp_planner_trace_verbose';
 
+	public const OPTION_GIFT_CARD_DELIVERY_EMAIL = 'mp_cp_gift_card_delivery_email_enabled';
+
 	private const VALUE_YES = 'yes';
 
 	private const VALUE_NO = 'no';
@@ -239,6 +241,14 @@ final class Settings {
 		$this->set_enabled( self::OPTION_PLANNER_TRACE_VERBOSE, $enabled );
 	}
 
+	public function gift_card_delivery_email_enabled(): bool {
+		return $this->is_enabled( self::OPTION_GIFT_CARD_DELIVERY_EMAIL, true );
+	}
+
+	public function set_gift_card_delivery_email_enabled( bool $enabled ): void {
+		$this->set_enabled( self::OPTION_GIFT_CARD_DELIVERY_EMAIL, $enabled );
+	}
+
 	/**
 	 * @return array<string, bool|int>
 	 */
@@ -265,6 +275,7 @@ final class Settings {
 			'promotion_dry_run'         => $this->promotion_dry_run_enabled(),
 			'line_item_mode_disabled'   => $this->line_item_mode_disabled(),
 			'planner_trace_verbose'     => $this->planner_trace_verbose(),
+			'gift_card_delivery_email'  => $this->gift_card_delivery_email_enabled(),
 		);
 	}
 

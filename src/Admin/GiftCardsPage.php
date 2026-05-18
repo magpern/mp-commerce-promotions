@@ -14,6 +14,7 @@ use MP\CommercePromotions\GiftCard\GiftCard;
 use MP\CommercePromotions\GiftCard\GiftCardCurrency;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
+use MP\CommercePromotions\GiftCard\GiftCardSourceLabel;
 use MP\CommercePromotions\GiftCard\StoreCreditAccountService;
 use MP\CommercePromotions\GiftCard\StoreCreditWallet;
 use RuntimeException;
@@ -546,7 +547,10 @@ final class GiftCardsPage {
 	}
 
 	private function render_list(): void {
-		$list = $this->cards->list_recent( 50, 0, GiftCard::SOURCE_GIFT_CARD );
+		$filters = $this->list_filters_from_request();
+		$list    = $this->cards->list_filtered( $filters, 50, 0 );
+
+		$this->render_list_filters();
 
 		echo '<h2 style="margin-top:2em;">' . esc_html__( 'Gift cards', 'mp-commerce-promotions' ) . '</h2>';
 		if ( $list === array() ) {
@@ -562,6 +566,7 @@ final class GiftCardsPage {
 		echo '<th>' . esc_html__( 'Status', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th>' . esc_html__( 'Expires', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th>' . esc_html__( 'Recipient', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th>' . esc_html__( 'Source', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th>' . esc_html__( 'Created', 'mp-commerce-promotions' ) . '</th>';
 		echo '<th>' . esc_html__( 'Actions', 'mp-commerce-promotions' ) . '</th>';
 		echo '</tr></thead><tbody>';
@@ -587,6 +592,7 @@ final class GiftCardsPage {
 			echo '<td>' . esc_html( $card->get_status() ) . '</td>';
 			echo '<td>' . esc_html( $card->get_expires_at() ?? '—' ) . '</td>';
 			echo '<td>' . esc_html( $card->get_recipient_email() ?? '—' ) . '</td>';
+			echo '<td>' . esc_html( GiftCardSourceLabel::for_card( $card ) ) . '</td>';
 			echo '<td>' . esc_html( $card->get_created_at() ?? '' ) . '</td>';
 			echo '<td><a href="' . esc_url( $view_url ) . '">' . esc_html__( 'View', 'mp-commerce-promotions' ) . '</a></td>';
 			echo '</tr>';
@@ -617,6 +623,7 @@ final class GiftCardsPage {
 		$this->detail_row( __( 'Expires', 'mp-commerce-promotions' ), $card->get_expires_at() ?? '—' );
 		$this->detail_row( __( 'Recipient email', 'mp-commerce-promotions' ), $card->get_recipient_email() ?? '—' );
 		$this->detail_row( __( 'UUID', 'mp-commerce-promotions' ), $card->get_gift_card_uuid() );
+		$this->detail_row( __( 'Source', 'mp-commerce-promotions' ), GiftCardSourceLabel::for_card( $card ) );
 		echo '</tbody></table>';
 
 		echo '<h3>' . esc_html__( 'Transaction ledger', 'mp-commerce-promotions' ) . '</h3>';
@@ -672,5 +679,58 @@ final class GiftCardsPage {
 
 	private function detail_row( string $label, string $value ): void {
 		echo '<tr><th scope="row">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';
+	}
+
+	private function render_list_filters(): void {
+		$base = add_query_arg(
+			array(
+				'page'            => AdminNavigation::PAGE_SLUG,
+				'tab'             => AdminNavigation::TAB_GIFT_CARDS,
+				'mp_cp_gc_panel'  => self::PANEL_GIFT_CARDS,
+			),
+			admin_url( 'admin.php' )
+		);
+
+		$origin = isset( $_GET['mp_cp_gc_origin'] ) ? sanitize_key( (string) $_GET['mp_cp_gc_origin'] ) : '';
+		$order  = isset( $_GET['mp_cp_gc_order_id'] ) ? (int) $_GET['mp_cp_gc_order_id'] : 0;
+
+		echo '<form method="get" style="margin:1em 0;max-width:720px;">';
+		echo '<input type="hidden" name="page" value="' . esc_attr( AdminNavigation::PAGE_SLUG ) . '" />';
+		echo '<input type="hidden" name="tab" value="' . esc_attr( AdminNavigation::TAB_GIFT_CARDS ) . '" />';
+		echo '<input type="hidden" name="mp_cp_gc_panel" value="' . esc_attr( self::PANEL_GIFT_CARDS ) . '" />';
+		echo '<label>' . esc_html__( 'Source', 'mp-commerce-promotions' ) . ' ';
+		echo '<select name="mp_cp_gc_origin">';
+		echo '<option value="">' . esc_html__( 'All gift cards', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="manual"' . selected( $origin, 'manual', false ) . '>' . esc_html__( 'Manual', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="product_order"' . selected( $origin, 'product_order', false ) . '>' . esc_html__( 'Product order', 'mp-commerce-promotions' ) . '</option>';
+		echo '</select></label> ';
+		echo '<label>' . esc_html__( 'Order ID', 'mp-commerce-promotions' ) . ' ';
+		echo '<input type="number" name="mp_cp_gc_order_id" value="' . esc_attr( $order > 0 ? (string) $order : '' ) . '" min="0" class="small-text" /></label> ';
+		echo '<button type="submit" class="button">' . esc_html__( 'Filter', 'mp-commerce-promotions' ) . '</button>';
+		echo ' <a class="button" href="' . esc_url( $base ) . '">' . esc_html__( 'Reset', 'mp-commerce-promotions' ) . '</a>';
+		echo '</form>';
+	}
+
+	/**
+	 * @return array{source_type?: ?string, created_order_id?: ?int, manual_only?: bool, product_order_only?: bool}
+	 */
+	private function list_filters_from_request(): array {
+		$filters = array(
+			'source_type' => GiftCard::SOURCE_GIFT_CARD,
+		);
+
+		$origin = isset( $_GET['mp_cp_gc_origin'] ) ? sanitize_key( (string) $_GET['mp_cp_gc_origin'] ) : '';
+		if ( $origin === 'manual' ) {
+			$filters['manual_only'] = true;
+		} elseif ( $origin === 'product_order' ) {
+			$filters['product_order_only'] = true;
+		}
+
+		$order_id = isset( $_GET['mp_cp_gc_order_id'] ) ? (int) $_GET['mp_cp_gc_order_id'] : 0;
+		if ( $order_id > 0 ) {
+			$filters['created_order_id'] = $order_id;
+		}
+
+		return $filters;
 	}
 }

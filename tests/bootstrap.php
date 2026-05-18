@@ -99,6 +99,17 @@ if ( ! function_exists( 'sanitize_textarea_field' ) ) {
 	}
 }
 
+if ( ! function_exists( 'sanitize_email' ) ) {
+	/**
+	 * @param string $email
+	 * @return string
+	 */
+	function sanitize_email( $email ) {
+		$filtered = filter_var( (string) $email, FILTER_SANITIZE_EMAIL );
+		return is_string( $filtered ) ? $filtered : '';
+	}
+}
+
 if ( ! function_exists( 'sanitize_text_field' ) ) {
 	/**
 	 * @param string $str
@@ -171,6 +182,53 @@ if ( ! function_exists( 'current_time' ) ) {
 
 if ( ! class_exists( 'WC_Order', false ) ) {
 	class WC_Order {
+	}
+}
+
+if ( ! class_exists( 'WC_Order_Item_Product', false ) ) {
+	class WC_Order_Item_Product {
+	}
+}
+
+/** @var array<int, array<string, mixed>> $mp_cp_test_post_meta */
+$GLOBALS['mp_cp_test_post_meta'] = array();
+
+if ( ! function_exists( 'get_post_meta' ) ) {
+	/**
+	 * @param int    $post_id
+	 * @param string $key
+	 * @param bool   $single
+	 * @return mixed
+	 */
+	function get_post_meta( $post_id, $key = '', $single = false ) {
+		global $mp_cp_test_post_meta;
+		$id = (int) $post_id;
+		if ( ! isset( $mp_cp_test_post_meta[ $id ] ) ) {
+			return $single ? '' : array();
+		}
+		if ( $key === '' ) {
+			return $mp_cp_test_post_meta[ $id ];
+		}
+		$value = $mp_cp_test_post_meta[ $id ][ $key ] ?? '';
+		return $single ? $value : array( $value );
+	}
+}
+
+if ( ! function_exists( 'update_post_meta' ) ) {
+	/**
+	 * @param int    $post_id
+	 * @param string $key
+	 * @param mixed  $value
+	 * @return bool
+	 */
+	function update_post_meta( $post_id, $key, $value ) {
+		global $mp_cp_test_post_meta;
+		$id = (int) $post_id;
+		if ( ! isset( $mp_cp_test_post_meta[ $id ] ) ) {
+			$mp_cp_test_post_meta[ $id ] = array();
+		}
+		$mp_cp_test_post_meta[ $id ][ $key ] = $value;
+		return true;
 	}
 }
 

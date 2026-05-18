@@ -218,6 +218,56 @@ class GiftCardRepository {
 	}
 
 	/**
+	 * @param array{source_type?: ?string, created_order_id?: ?int, manual_only?: bool, product_order_only?: bool} $filters
+	 * @return list<GiftCard>
+	 */
+	public function list_filtered( array $filters, int $limit = 50, int $offset = 0 ): array {
+		$limit  = max( 1, min( 200, $limit ) );
+		$offset = max( 0, $offset );
+		$table  = $this->table();
+
+		$where  = array( '1=1' );
+		$params = array();
+
+		if ( isset( $filters['source_type'] ) && $filters['source_type'] !== null && $filters['source_type'] !== '' ) {
+			$where[]  = 'source_type = %s';
+			$params[] = $filters['source_type'];
+		}
+
+		if ( isset( $filters['created_order_id'] ) && $filters['created_order_id'] !== null && (int) $filters['created_order_id'] > 0 ) {
+			$where[]  = 'created_order_id = %d';
+			$params[] = (int) $filters['created_order_id'];
+		}
+
+		if ( ! empty( $filters['manual_only'] ) ) {
+			$where[] = 'source_type = %s AND created_order_id IS NULL';
+			$params[] = GiftCard::SOURCE_GIFT_CARD;
+		}
+
+		if ( ! empty( $filters['product_order_only'] ) ) {
+			$where[] = 'source_type = %s AND created_order_id IS NOT NULL';
+			$params[] = GiftCard::SOURCE_GIFT_CARD;
+		}
+
+		$params[] = $limit;
+		$params[] = $offset;
+
+		$sql = "SELECT * FROM {$table} WHERE " . implode( ' AND ', $where ) . ' ORDER BY id DESC LIMIT %d OFFSET %d';
+
+		$rows = DbQuery::get_results( $this->wpdb, $sql, $params );
+
+		$out = array();
+		foreach ( $rows as $row ) {
+			$card = $this->row_to_card( $row );
+			if ( $card !== null ) {
+				$out[] = $card;
+			}
+		}
+
+		return $out;
+	}
+
+	/**
 	 * @param array<string, mixed>|null $row
 	 */
 	private function row_to_card( ?array $row ): ?GiftCard {

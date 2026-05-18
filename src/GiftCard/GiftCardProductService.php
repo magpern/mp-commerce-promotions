@@ -1,0 +1,80 @@
+<?php
+/**
+ * Gift card product configuration and line amount resolution.
+ *
+ * @package MP\CommercePromotions
+ */
+
+declare(strict_types=1);
+
+namespace MP\CommercePromotions\GiftCard;
+
+use InvalidArgumentException;
+
+final class GiftCardProductService {
+
+	public function is_gift_card_product( int $product_id ): bool {
+		if ( $product_id <= 0 ) {
+			return false;
+		}
+
+		$config = GiftCardProductMeta::read( $product_id );
+
+		return $config['sells'];
+	}
+
+	/**
+	 * Resolve config for a line item (variation or simple product).
+	 *
+	 * @return array{sells: bool, amount_mode: string, fixed_amount: float, expiry_days: ?int, recipient_mode: string}|null
+	 */
+	public function get_line_config( int $product_id, int $variation_id = 0 ): ?array {
+		$target = $variation_id > 0 ? $variation_id : $product_id;
+		if ( $target <= 0 ) {
+			return null;
+		}
+
+		$config = GiftCardProductMeta::read( $target );
+		if ( ! $config['sells'] && $variation_id > 0 && $product_id > 0 ) {
+			$config = GiftCardProductMeta::read( $product_id );
+		}
+
+		return $config['sells'] ? $config : null;
+	}
+
+	/**
+	 * Per-unit gift card amount for a purchased line.
+	 *
+	 * @param array{sells: bool, amount_mode: string, fixed_amount: float, expiry_days: ?int, recipient_mode: string} $config
+	 */
+	public function resolve_unit_amount( array $config, float $line_subtotal, int $quantity ): float {
+		$quantity = max( 1, $quantity );
+
+		if ( $config['amount_mode'] === GiftCardProductMeta::AMOUNT_MODE_FIXED ) {
+			$amount = GiftCard::money( $config['fixed_amount'] );
+		} else {
+			$amount = GiftCard::money( $line_subtotal / $quantity );
+		}
+
+		if ( $amount <= 0 ) {
+			throw new InvalidArgumentException( 'Gift card product amount must be greater than zero.' );
+		}
+
+		return $amount;
+	}
+
+	public function resolve_expires_at( ?int $expiry_days, string $paid_at_mysql ): ?string {
+		if ( $expiry_days === null || $expiry_days <= 0 ) {
+			return null;
+		}
+
+		$ts = strtotime( $paid_at_mysql );
+		if ( $ts === false ) {
+			return null;
+		}
+
+		$day_seconds = defined( 'DAY_IN_SECONDS' ) ? (int) DAY_IN_SECONDS : 86400;
+
+		return gmdate( 'Y-m-d H:i:s', $ts + ( $expiry_days * $day_seconds ) );
+	}
+}

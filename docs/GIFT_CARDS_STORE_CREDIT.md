@@ -28,10 +28,14 @@ Gift cards are **stored-value credit** with an append-only ledger. They are **no
 - **Reports** tab — liability, issued/redeemed/adjusted/voided totals, depleted/expired counts.
 - **Diagnostics** — gift card integrity checks + preview/apply repair (mark zero-balance active as depleted, expired dates as expired).
 
+## Gift cards from products
+
+Merchants can mark **normal WooCommerce products** to sell gift cards; paid orders generate codes idempotently. See [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md).
+
 ## Future work (not in this milestone)
 
-- Buy gift card WooCommerce product / auto-generation on purchase
-- Recipient email / scheduled delivery
+- Recipient-entered email / scheduled delivery for product gift cards
+- Custom WooCommerce gift card product type
 - Customer store credit wallets (see [STORE_CREDIT.md](STORE_CREDIT.md)) — **done in 1.19.0**
 - Dedicated Blocks UI (fee/session path should not fatal on Blocks checkout)
 - REST/AJAX admin APIs

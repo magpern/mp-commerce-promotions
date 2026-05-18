@@ -38,7 +38,11 @@ final class GiftCardReports {
 	 *   manual_adjustment_total: float,
 	 *   depleted_count: int,
 	 *   expired_count: int,
-	 *   liability_by_currency: list<array{currency: string, gift_card_liability: float, store_credit_liability: float, combined_liability: float}>
+	 *   liability_by_currency: list<array{currency: string, gift_card_liability: float, store_credit_liability: float, combined_liability: float}>,
+	 *   gift_cards_sold_from_products: int,
+	 *   product_generated_liability: float,
+	 *   product_generated_issued_total: float,
+	 *   manually_issued_total: float
 	 * }
 	 */
 	public function summary(): array {
@@ -139,6 +143,35 @@ final class GiftCardReports {
 			array( GiftCardTransaction::TYPE_VOIDED, GiftCard::SOURCE_GIFT_CARD )
 		);
 
+		$product_sold_count = (int) DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COUNT(*) FROM {$cards_table} WHERE source_type = %s AND created_order_id IS NOT NULL",
+			array( GiftCard::SOURCE_GIFT_CARD )
+		);
+
+		$product_generated_liability = (float) DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COALESCE(SUM(balance), 0) FROM {$cards_table}
+			WHERE status = %s AND source_type = %s AND created_order_id IS NOT NULL",
+			array( GiftCard::STATUS_ACTIVE, GiftCard::SOURCE_GIFT_CARD )
+		);
+
+		$product_issued_total = (float) DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COALESCE(SUM(t.amount), 0) FROM {$tx_table} t
+			INNER JOIN {$cards_table} c ON c.id = t.gift_card_id
+			WHERE t.transaction_type = %s AND c.source_type = %s AND c.created_order_id IS NOT NULL",
+			array( GiftCardTransaction::TYPE_ISSUED, GiftCard::SOURCE_GIFT_CARD )
+		);
+
+		$manual_issued_total = (float) DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COALESCE(SUM(t.amount), 0) FROM {$tx_table} t
+			INNER JOIN {$cards_table} c ON c.id = t.gift_card_id
+			WHERE t.transaction_type = %s AND c.source_type = %s AND c.created_order_id IS NULL",
+			array( GiftCardTransaction::TYPE_ISSUED, GiftCard::SOURCE_GIFT_CARD )
+		);
+
 		return array(
 			'active_outstanding_liability'      => GiftCard::money( $combined_liability ),
 			'gift_card_outstanding_liability'   => GiftCard::money( $gift_liability ),
@@ -155,6 +188,10 @@ final class GiftCardReports {
 			'depleted_count'                    => max( 0, $depleted ),
 			'expired_count'                     => max( 0, $expired ),
 			'liability_by_currency'             => $this->liability_by_currency(),
+			'gift_cards_sold_from_products'     => max( 0, $product_sold_count ),
+			'product_generated_liability'       => GiftCard::money( $product_generated_liability ),
+			'product_generated_issued_total'    => GiftCard::money( $product_issued_total ),
+			'manually_issued_total'             => GiftCard::money( $manual_issued_total ),
 		);
 	}
 

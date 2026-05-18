@@ -63,6 +63,17 @@ Operational playbooks for real merchant pilots using Commerce Promotions for Woo
 3. Switch to **balanced** profile when line mode is required; monitor line fallback telemetry.
 4. Use **aggressive** only with full certification and `scripts/load-harness.php` with `MP_CP_LOAD_POOL=line`.
 
+## Selling gift cards (products)
+
+1. Create a normal **simple** or **variable** WooCommerce product.
+2. Enable **This product sells a gift card** on the product (or variation).
+3. Choose **Same as product price** or **Fixed amount**; optional expiry days.
+4. Customer checks out as usual; codes generate when the order reaches **Processing** or **Completed**.
+5. Codes email to the **billing address** when delivery email is enabled in Settings.
+6. On cancellation/refund, unused generated cards are voided automatically; partially used cards need manual review (order note).
+
+Recipient mode is **purchaser only** (no separate recipient form yet). See [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md).
+
 ## Related scripts
 
 ```bash
