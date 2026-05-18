@@ -13,7 +13,7 @@ use wpdb;
 
 final class Schema {
 
-	public const SCHEMA_VERSION = '1.17.0';
+	public const SCHEMA_VERSION = '1.18.0';
 
 	/**
 	 * Reserved slug prefix for table names (after $wpdb->prefix).
@@ -61,6 +61,14 @@ final class Schema {
 
 	public static function certification_runs_table( wpdb $wpdb ): string {
 		return $wpdb->prefix . 'mp_cp_certification_runs';
+	}
+
+	public static function gift_cards_table( wpdb $wpdb ): string {
+		return $wpdb->prefix . 'mp_cp_gift_cards';
+	}
+
+	public static function gift_card_transactions_table( wpdb $wpdb ): string {
+		return $wpdb->prefix . 'mp_cp_gift_card_transactions';
 	}
 
 	public static function promotions_create_sql( wpdb $wpdb ): string {
@@ -304,6 +312,58 @@ PRIMARY KEY  (id),
 KEY certification_type (certification_type),
 KEY status (status),
 KEY certified_at (certified_at)
+) {$collate};";
+	}
+
+	public static function gift_cards_create_sql( wpdb $wpdb ): string {
+		$table   = self::gift_cards_table( $wpdb );
+		$collate = $wpdb->get_charset_collate();
+
+		return "CREATE TABLE {$table} (
+id bigint(20) unsigned NOT NULL auto_increment,
+gift_card_uuid varchar(36) NOT NULL,
+code_hash varchar(255) NOT NULL,
+code_last4 varchar(8) NOT NULL,
+initial_amount decimal(18,2) NOT NULL,
+balance decimal(18,2) NOT NULL,
+currency varchar(10) NOT NULL,
+status varchar(32) NOT NULL default 'active',
+expires_at datetime NULL,
+created_order_id bigint(20) unsigned NULL,
+purchaser_customer_id bigint(20) unsigned NULL,
+recipient_email varchar(191) NULL,
+created_at datetime NOT NULL default CURRENT_TIMESTAMP,
+updated_at datetime NOT NULL default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+PRIMARY KEY  (id),
+UNIQUE KEY gift_card_uuid (gift_card_uuid),
+UNIQUE KEY code_hash (code_hash),
+KEY status (status),
+KEY expires_at (expires_at),
+KEY created_order_id (created_order_id),
+KEY purchaser_customer_id (purchaser_customer_id)
+) {$collate};";
+	}
+
+	public static function gift_card_transactions_create_sql( wpdb $wpdb ): string {
+		$table   = self::gift_card_transactions_table( $wpdb );
+		$collate = $wpdb->get_charset_collate();
+
+		return "CREATE TABLE {$table} (
+id bigint(20) unsigned NOT NULL auto_increment,
+gift_card_id bigint(20) unsigned NOT NULL,
+transaction_type varchar(32) NOT NULL,
+amount decimal(18,2) NOT NULL,
+balance_after decimal(18,2) NOT NULL,
+order_id bigint(20) unsigned NULL,
+customer_id bigint(20) unsigned NULL,
+note text NULL,
+created_at datetime NOT NULL default CURRENT_TIMESTAMP,
+PRIMARY KEY  (id),
+KEY gift_card_id (gift_card_id),
+KEY transaction_type (transaction_type),
+KEY order_id (order_id),
+KEY customer_id (customer_id),
+KEY created_at (created_at)
 ) {$collate};";
 	}
 }

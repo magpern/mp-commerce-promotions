@@ -60,10 +60,18 @@ use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Service\Settings;
 use MP\CommercePromotions\Service\SupportBundleExporter;
 use MP\CommercePromotions\Service\UsageDiagnostics;
+use MP\CommercePromotions\GiftCard\GiftCardIntegrityDiagnostics;
+use MP\CommercePromotions\GiftCard\GiftCardLedger;
+use MP\CommercePromotions\GiftCard\GiftCardReports;
+use MP\CommercePromotions\GiftCard\GiftCardRepository;
+use MP\CommercePromotions\GiftCard\GiftCardTransactionRepository;
 use MP\CommercePromotions\Woo\BlocksHookAudit;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use MP\CommercePromotions\Woo\CartPromotionApplier;
 use MP\CommercePromotions\Woo\FreeGiftCartSynchronizer;
+use MP\CommercePromotions\Woo\GiftCardCartApplier;
+use MP\CommercePromotions\Woo\GiftCardCheckoutForm;
+use MP\CommercePromotions\Woo\GiftCardOrderRecorder;
 use MP\CommercePromotions\Woo\OrderPromotionRecorder;
 use MP\CommercePromotions\Woo\PromotionCodeCouponBridge;
 use MP\CommercePromotions\Woo\WooCommerceBridge;
@@ -190,6 +198,18 @@ final class Plugin {
 				$this->woo_bridge->set_order_promotion_recorder( $order_recorder );
 			}
 
+			if ( $wpdb instanceof wpdb ) {
+				$gift_card_repo = new GiftCardRepository( $wpdb );
+				$gift_card_tx   = new GiftCardTransactionRepository( $wpdb );
+				$gift_ledger    = new GiftCardLedger( $gift_card_repo, $gift_card_tx );
+				$gift_applier   = new GiftCardCartApplier( $gift_ledger );
+				$this->woo_bridge->set_gift_card_cart_applier( $gift_applier );
+				$this->woo_bridge->set_gift_card_order_recorder( new GiftCardOrderRecorder( $gift_ledger ) );
+				$this->woo_bridge->set_gift_card_checkout_form(
+					new GiftCardCheckoutForm( $gift_ledger, $gift_applier )
+				);
+			}
+
 			BlocksHookAudit::register( $this->settings );
 		} elseif ( $this->woo_bridge->is_available() ) {
 			$cart_builder = new CartContextBuilder( $this->redemption_repository );
@@ -288,14 +308,17 @@ final class Plugin {
 
 		$settings_page        = new SettingsPage( $this->settings );
 		$getting_started_page = new GettingStartedPage( $this->settings );
-		$gift_cards_page      = new GiftCardsPage();
+		global $wpdb;
+		$gift_card_repo  = new GiftCardRepository( $wpdb );
+		$gift_card_tx    = new GiftCardTransactionRepository( $wpdb );
+		$gift_ledger     = new GiftCardLedger( $gift_card_repo, $gift_card_tx );
+		$gift_cards_page = new GiftCardsPage( $gift_ledger, $gift_card_repo );
 
 		$profiler_global     = new PromotionPerformanceProfiler();
 		$concurrency_global  = new PromotionConcurrencyGuard();
 		$retention_global    = null;
 		$cron_scheduler      = null;
 		$subsystem_recovery  = null;
-		global $wpdb;
 		if ( $wpdb instanceof wpdb ) {
 			$retention_global = new PromotionDataRetentionService(
 				$wpdb,
@@ -431,11 +454,13 @@ final class Plugin {
 				$health_monitor,
 				$scenario_repo
 			);
-			$reports_page = new ReportsPage(
+			$gift_card_reports = $wpdb instanceof wpdb ? new GiftCardReports( $wpdb ) : null;
+			$reports_page      = new ReportsPage(
 				$promotion_reports,
 				$this->promotion_repository,
 				$this->settings,
-				$scenario_repo
+				$scenario_repo,
+				$gift_card_reports
 			);
 		}
 

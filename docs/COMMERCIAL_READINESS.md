@@ -1,6 +1,6 @@
 # Commercial readiness
 
-**Schema:** 1.17.0  
+**Schema:** 1.18.0  
 **Plugin version:** 0.3.0-pilot.2 (pilot — not GA; supersedes pilot.1)
 
 ## Current maturity
@@ -14,7 +14,7 @@ Commerce Promotions is suitable for **staged rollouts and merchant pilots**. It 
 - **Commerce Growth** admin shell (WooCommerce submenu; `page=mp-commerce-promotions` slug unchanged)
 - **Campaign Builder** as default landing tab (guided goals → draft promotions)
 - **Advanced Promotions** tab for expert mode (raw JSON, orchestration, codes, cart simulation, Advanced editor)
-- **Gift Cards & Store Credit** placeholder tab (`tab=gift-cards`) — planned module, no ledger yet
+- **Gift Cards & Store Credit** — issue/adjust/void, ledger, checkout credit MVP (negative fee); product-purchase and refund-to-credit are future work ([GIFT_CARDS_STORE_CREDIT.md](GIFT_CARDS_STORE_CREDIT.md))
 - Getting Started onboarding tab (legacy URL `tab=getting-started`; hidden from tab bar)
 - Pilot release doc: [PILOT_RELEASE_0.3.0_PILOT2.md](PILOT_RELEASE_0.3.0_PILOT2.md) (pilot.1 superseded)
 - Settings governance (telemetry, CSV, simulations, gift/shipping actions, pricing explainability)

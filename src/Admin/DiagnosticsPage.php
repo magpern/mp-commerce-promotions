@@ -209,6 +209,7 @@ final class DiagnosticsPage {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mp-commerce-promotions' ) );
 		}
 
+		$this->handle_post_gift_card_integrity_repair();
 		$this->handle_post_repair();
 		$this->handle_post_archive_hygiene();
 		$this->handle_post_automation();
@@ -268,6 +269,7 @@ final class DiagnosticsPage {
 		}
 
 		$this->render_repair_form();
+		$this->render_gift_card_integrity_section();
 		CompatibilityStatusPanel::render();
 		if ( $this->profiler !== null && $this->concurrency !== null ) {
 			EcosystemCompatibilityPanel::render_system_health(
@@ -1541,5 +1543,95 @@ final class DiagnosticsPage {
 		}
 
 		return __( 'Completed', 'mp-commerce-promotions' );
+	}
+
+	private function handle_post_gift_card_integrity_repair(): void {
+		if ( ! isset( $_POST['mp_cp_gift_card_integrity_repair'] ) ) {
+			return;
+		}
+
+		if (
+			! isset( $_POST['_wpnonce'] )
+			|| ! wp_verify_nonce(
+				sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ),
+				'mp_cp_gift_card_integrity_repair'
+			)
+		) {
+			return;
+		}
+
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			return;
+		}
+
+		$apply = isset( $_POST['mp_cp_gift_card_repair_apply'] ) && (string) $_POST['mp_cp_gift_card_repair_apply'] === '1';
+		$repo  = new \MP\CommercePromotions\GiftCard\GiftCardRepository( $wpdb );
+		$tx    = new \MP\CommercePromotions\GiftCard\GiftCardTransactionRepository( $wpdb );
+		$diag  = new \MP\CommercePromotions\GiftCard\GiftCardIntegrityDiagnostics(
+			$wpdb,
+			$repo,
+			new \MP\CommercePromotions\GiftCard\GiftCardLedger( $repo, $tx )
+		);
+		$result = $diag->repair( $apply );
+		if ( $apply ) {
+			AdminNotice::success(
+				sprintf(
+					/* translators: 1: depleted count, 2: expired count */
+					__( 'Gift card repair applied: %1$d depleted, %2$d expired.', 'mp-commerce-promotions' ),
+					(int) $result['depleted_marked'],
+					(int) $result['expired_marked']
+				)
+			);
+		} else {
+			AdminNotice::info(
+				sprintf(
+					/* translators: 1: depleted count, 2: expired count */
+					__( 'Gift card repair preview: would mark %1$d depleted, %2$d expired.', 'mp-commerce-promotions' ),
+					(int) $result['depleted_marked'],
+					(int) $result['expired_marked']
+				)
+			);
+		}
+	}
+
+	private function render_gift_card_integrity_section(): void {
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			return;
+		}
+
+		$repo = new \MP\CommercePromotions\GiftCard\GiftCardRepository( $wpdb );
+		$tx   = new \MP\CommercePromotions\GiftCard\GiftCardTransactionRepository( $wpdb );
+		$diag = new \MP\CommercePromotions\GiftCard\GiftCardIntegrityDiagnostics(
+			$wpdb,
+			$repo,
+			new \MP\CommercePromotions\GiftCard\GiftCardLedger( $repo, $tx )
+		);
+		$issues = $diag->analyze();
+
+		echo '<h2 style="margin-top:2em;">' . esc_html__( 'Gift card integrity', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Checks ledger consistency and status hygiene for stored-value gift cards.', 'mp-commerce-promotions' ) . '</p>';
+
+		$counts = array(
+			__( 'Negative balance', 'mp-commerce-promotions' )     => count( $issues['negative_balance'] ),
+			__( 'Active with zero balance', 'mp-commerce-promotions' ) => count( $issues['active_zero_balance'] ),
+			__( 'Balance mismatch', 'mp-commerce-promotions' )       => count( $issues['balance_mismatch'] ),
+			__( 'Expired but active', 'mp-commerce-promotions' )   => count( $issues['expired_still_active'] ),
+		);
+		echo '<ul>';
+		foreach ( $counts as $label => $count ) {
+			echo '<li>' . esc_html( $label ) . ': ' . esc_html( (string) $count ) . '</li>';
+		}
+		echo '</ul>';
+
+		echo '<form method="post" style="margin-top:12px;">';
+		wp_nonce_field( 'mp_cp_gift_card_integrity_repair' );
+		echo '<input type="hidden" name="mp_cp_gift_card_integrity_repair" value="1" />';
+		echo '<p><button type="submit" class="button" name="mp_cp_gift_card_repair_apply" value="0">'
+			. esc_html__( 'Preview repair', 'mp-commerce-promotions' ) . '</button> ';
+		echo '<button type="submit" class="button button-primary" name="mp_cp_gift_card_repair_apply" value="1">'
+			. esc_html__( 'Apply repair', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form>';
 	}
 }

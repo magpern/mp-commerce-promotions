@@ -21,7 +21,7 @@ use PHPUnit\Framework\TestCase;
 final class GaClosureTest extends TestCase {
 
 	public function test_schema_version_1_17_0(): void {
-		$this->assertSame( '1.17.0', Schema::SCHEMA_VERSION );
+		$this->assertSame( '1.18.0', Schema::SCHEMA_VERSION );
 	}
 
 	public function test_promotion_dry_run_from_array(): void {

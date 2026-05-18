@@ -90,6 +90,8 @@ final class MigrationRunner {
 			Schema::planner_telemetry_create_sql( $this->wpdb ),
 			Schema::simulation_scenarios_create_sql( $this->wpdb ),
 			Schema::certification_runs_create_sql( $this->wpdb ),
+			Schema::gift_cards_create_sql( $this->wpdb ),
+			Schema::gift_card_transactions_create_sql( $this->wpdb ),
 		);
 
 		foreach ( $statements as $sql ) {
@@ -282,6 +284,11 @@ final class MigrationRunner {
 
 		if ( version_compare( Schema::SCHEMA_VERSION, '1.17.0', '>=' ) ) {
 			$required[] = Schema::certification_runs_table( $this->wpdb );
+		}
+
+		if ( version_compare( Schema::SCHEMA_VERSION, '1.18.0', '>=' ) ) {
+			$required[] = Schema::gift_cards_table( $this->wpdb );
+			$required[] = Schema::gift_card_transactions_table( $this->wpdb );
 		}
 
 		foreach ( $required as $table ) {

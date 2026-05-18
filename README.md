@@ -69,7 +69,7 @@ Provide a structured foundation for commerce promotions using:
 - **Commerce Growth** admin shell — WooCommerce submenu label; slug remains `mp-commerce-promotions` for backward-compatible URLs.
 - **Campaign Builder** (`?page=mp-commerce-promotions` or `tab=campaign-builder`) — **default entrypoint**: guided goals, simple forms, draft creation.
 - **Advanced Promotions** (`tab=all`) — expert mode: list, raw JSON rules, orchestration, codes, cart simulation, and per-promotion **Advanced editor**.
-- **Gift Cards & Store Credit** (`tab=gift-cards`) — placeholder (coming soon); no ledger or storefront logic yet.
+- **Gift Cards & Store Credit** (`tab=gift-cards`) — issue/adjust/void, hashed codes, ledger, checkout credit MVP ([docs/GIFT_CARDS_STORE_CREDIT.md](docs/GIFT_CARDS_STORE_CREDIT.md)).
 - **Getting Started** (`tab=getting-started`) — legacy onboarding tab (hidden from nav bar; still reachable by URL).
 - **Settings** — feature gates (telemetry, CSV export, simulations, free gift/shipping, pricing explainability) and opt-in **delete all data on uninstall** (default: retain).
 - **Compatibility status** on Reports and Diagnostics; **support bundle** JSON export on Diagnostics (no PII).
@@ -77,7 +77,7 @@ Provide a structured foundation for commerce promotions using:
 
 ## Database
 
-- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.17.0`** (see `Schema::SCHEMA_VERSION`; adds `dry_run` on promotions; prior **1.15.0** added `discount_application_mode`).
+- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.18.0`** (gift card tables; prior **1.17.0** certification runs) (see `Schema::SCHEMA_VERSION`; adds `dry_run` on promotions; prior **1.15.0** added `discount_application_mode`).
 - **Tables** (after activation / migration), using the site table prefix (e.g. `wp_`):
   - `{prefix}mp_cp_promotions` — promotion definitions (JSON-like rules in `LONGTEXT` columns).
   - `{prefix}mp_cp_redemptions` — usage against orders; **unique** `(order_id, promotion_id)` as **`order_promotion_unique`** (MySQL allows multiple `NULL` `order_id` rows; real checkouts use non-null `order_id`). Migration to **1.1.0** **refuses** `dbDelta` / version bump if duplicate non-null `(order_id, promotion_id)` pairs already exist (see `MigrationRunner`).
@@ -169,7 +169,7 @@ bash scripts/sync-to-live.sh
 bash scripts/verify-plugin.sh
 ```
 
-**Plugin version:** `0.3.0-pilot.2` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). **Pilot release** — see [docs/PILOT_RELEASE_0.3.0_PILOT2.md](docs/PILOT_RELEASE_0.3.0_PILOT2.md). **0.3.0-pilot.1 is superseded** — do not deploy. Database schema version is separate (`mp_cp_schema_version`, currently **1.17.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
+**Plugin version:** `0.3.0-pilot.2` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). **Pilot release** — see [docs/PILOT_RELEASE_0.3.0_PILOT2.md](docs/PILOT_RELEASE_0.3.0_PILOT2.md). **0.3.0-pilot.1 is superseded** — do not deploy. Database schema version is separate (`mp_cp_schema_version`, currently **1.18.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
 
 **Release zip** (no `.git` / `vendor`):
 

@@ -1,6 +1,6 @@
 # Merchant workflows (production pilot)
 
-Operational playbooks for real merchant pilots using Commerce Promotions for WooCommerce (**Commerce Growth** admin) — schema **1.17.0**.
+Operational playbooks for real merchant pilots using Commerce Promotions for WooCommerce (**Commerce Growth** admin) — schema **1.18.0**.
 
 **Admin entrypoint:** WooCommerce → **Commerce Growth** → **Campaign Builder** (default). Use **Advanced Promotions** for expert list/edit and **Advanced editor** per promotion.
 

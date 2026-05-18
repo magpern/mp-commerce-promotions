@@ -19,7 +19,7 @@
 
 ## Still pilot / pre-GA (0.3.x)
 
-- **Gift Cards & Store Credit** — admin placeholder only (`tab=gift-cards`); ledger, checkout partial pay, and refunds-to-credit not implemented
+- **Gift Cards & Store Credit** — foundation shipped (ledger, admin, checkout MVP); product purchase, email delivery, refund-to-credit, Blocks UI still future
 - **0.3.0-pilot.2** — supersedes pilot.1; Campaign Builder default-route asset fix
 - **0.3.0-pilot.1** — superseded (default-route regression)
 - Line-item / hybrid discount application (experimental; global disable available)

@@ -14,6 +14,7 @@ use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\Redemption;
 use MP\CommercePromotions\Domain\SimulationScenarioRecord;
 use MP\CommercePromotions\Domain\SimulationScenarioRepository;
+use MP\CommercePromotions\GiftCard\GiftCardReports;
 use MP\CommercePromotions\Service\PromotionLifecycle;
 use MP\CommercePromotions\Service\PromotionReports;
 use MP\CommercePromotions\Service\PromotionSimulationEngine;
@@ -39,17 +40,21 @@ final class ReportsPage {
 
 	private Settings $settings;
 
+	private ?GiftCardReports $gift_card_reports;
+
 	public function __construct(
 		PromotionReports $reports,
 		PromotionRepository $promotions,
 		Settings $settings,
-		?SimulationScenarioRepository $scenarios = null
+		?SimulationScenarioRepository $scenarios = null,
+		?GiftCardReports $gift_card_reports = null
 	) {
-		$this->reports    = $reports;
-		$this->promotions = $promotions;
-		$this->settings   = $settings;
-		$this->scenarios  = $scenarios;
-		$this->picker     = new PromotionPicker( $promotions );
+		$this->reports           = $reports;
+		$this->promotions        = $promotions;
+		$this->settings          = $settings;
+		$this->scenarios         = $scenarios;
+		$this->gift_card_reports = $gift_card_reports;
+		$this->picker            = new PromotionPicker( $promotions );
 	}
 
 	public function render(): void {
@@ -76,6 +81,7 @@ final class ReportsPage {
 
 		$this->render_filter_form( $filters );
 		$this->render_summary_cards( $summary );
+		$this->render_gift_card_summary_section();
 		$this->render_telemetry_section();
 		$this->render_automation_history_section();
 		$this->render_health_summary_section();
@@ -287,6 +293,29 @@ final class ReportsPage {
 			echo '<tr><th scope="row" style="width:50%;">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';
 		}
 
+		echo '</tbody></table>';
+	}
+
+	private function render_gift_card_summary_section(): void {
+		if ( $this->gift_card_reports === null ) {
+			return;
+		}
+
+		$gc = $this->gift_card_reports->summary();
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Gift cards & store credit', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<table class="widefat striped" style="max-width:720px;"><tbody>';
+		$rows = array(
+			__( 'Active outstanding liability', 'mp-commerce-promotions' ) => number_format_i18n( $gc['active_outstanding_liability'], 2 ),
+			__( 'Total issued', 'mp-commerce-promotions' )                 => number_format_i18n( $gc['total_issued'], 2 ),
+			__( 'Total redeemed', 'mp-commerce-promotions' )               => number_format_i18n( $gc['total_redeemed'], 2 ),
+			__( 'Total adjusted (net)', 'mp-commerce-promotions' )        => number_format_i18n( $gc['total_adjusted'], 2 ),
+			__( 'Total voided (amount)', 'mp-commerce-promotions' )        => number_format_i18n( $gc['total_voided'], 2 ),
+			__( 'Depleted cards', 'mp-commerce-promotions' )              => (string) $gc['depleted_count'],
+			__( 'Expired cards', 'mp-commerce-promotions' )               => (string) $gc['expired_count'],
+		);
+		foreach ( $rows as $label => $value ) {
+			echo '<tr><th scope="row" style="width:50%;">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';
+		}
 		echo '</tbody></table>';
 	}
 

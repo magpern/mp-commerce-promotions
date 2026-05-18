@@ -302,3 +302,6 @@ if ( ! class_exists( 'wpdb', false ) ) {
 
 require $plugin_root . 'src/autoload.php';
 require $plugin_root . 'tests/Support/PromotionTestFixtures.php';
+require $plugin_root . 'tests/Support/InMemoryGiftCardStore.php';
+require $plugin_root . 'tests/Support/MemoryGiftCardRepository.php';
+require $plugin_root . 'tests/Support/MemoryGiftCardTransactionRepository.php';

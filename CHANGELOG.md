@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Gift cards & store credit foundation (schema 1.18.0)** — `mp_cp_gift_cards`, `mp_cp_gift_card_transactions`, admin issue/adjust/void, checkout credit via negative fee, order redemption/reversal, Reports summary, Diagnostics integrity repair, `scripts/gift-card-ledger-smoke.php`, [GIFT_CARDS_STORE_CREDIT.md](docs/GIFT_CARDS_STORE_CREDIT.md).
+
+### Added (prior unreleased)
+
 - **Commerce Growth admin shell** — WooCommerce submenu and page title rebranded from “Promotions” to **Commerce Growth** (`page=mp-commerce-promotions` slug unchanged).
 - **Gift Cards & Store Credit** placeholder tab (`tab=gift-cards`) with coming-soon copy and links to Campaign Builder, Advanced Promotions, and Reports.
 

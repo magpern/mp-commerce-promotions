@@ -65,6 +65,16 @@ final class WooCommerceBridge {
 
 	private bool $promotion_code_coupon_hooks_registered = false;
 
+	private ?GiftCardCartApplier $gift_card_cart_applier = null;
+
+	private bool $gift_card_fee_hook_registered = false;
+
+	private ?GiftCardOrderRecorder $gift_card_order_recorder = null;
+
+	private bool $gift_card_order_hooks_registered = false;
+
+	private ?GiftCardCheckoutForm $gift_card_checkout_form = null;
+
 	/**
 	 * Detect WooCommerce availability (call once during plugin bootstrap).
 	 */
@@ -124,6 +134,59 @@ final class WooCommerceBridge {
 
 	public function get_promotion_code_coupon_bridge(): ?PromotionCodeCouponBridge {
 		return $this->promotion_code_coupon_bridge;
+	}
+
+	public function set_gift_card_cart_applier( ?GiftCardCartApplier $applier ): void {
+		$this->gift_card_cart_applier = $applier;
+		if ( $this->gift_card_cart_applier !== null && $this->available ) {
+			$this->register_gift_card_fee_hook();
+		}
+	}
+
+	public function set_gift_card_order_recorder( ?GiftCardOrderRecorder $recorder ): void {
+		$this->gift_card_order_recorder = $recorder;
+		if ( $this->gift_card_order_recorder !== null && $this->available ) {
+			$this->register_gift_card_order_hooks();
+		}
+	}
+
+	public function set_gift_card_checkout_form( ?GiftCardCheckoutForm $form ): void {
+		$this->gift_card_checkout_form = $form;
+		if ( $this->gift_card_checkout_form !== null && $this->available ) {
+			$this->gift_card_checkout_form->register();
+		}
+	}
+
+	private function register_gift_card_fee_hook(): void {
+		if ( $this->gift_card_fee_hook_registered || $this->gift_card_cart_applier === null ) {
+			return;
+		}
+
+		add_action(
+			'woocommerce_cart_calculate_fees',
+			array( $this->gift_card_cart_applier, 'apply_cart_fee' ),
+			25
+		);
+		$this->gift_card_fee_hook_registered = true;
+	}
+
+	private function register_gift_card_order_hooks(): void {
+		if ( $this->gift_card_order_hooks_registered || $this->gift_card_order_recorder === null ) {
+			return;
+		}
+
+		$recorder = $this->gift_card_order_recorder;
+
+		add_action( 'woocommerce_checkout_create_order', array( $recorder, 'stage_on_order_create' ), 10, 2 );
+		add_action( 'woocommerce_checkout_order_processed', array( $recorder, 'record_on_checkout_processed' ), 20, 1 );
+		add_action( 'woocommerce_payment_complete', array( $recorder, 'record_on_checkout_processed' ), 20, 1 );
+		add_action( 'woocommerce_store_api_checkout_order_processed', array( $recorder, 'record_on_checkout_processed' ), 20, 1 );
+
+		add_action( 'woocommerce_order_status_cancelled', array( $recorder, 'reverse_on_order_status' ), 10, 1 );
+		add_action( 'woocommerce_order_status_failed', array( $recorder, 'reverse_on_order_status' ), 10, 1 );
+		add_action( 'woocommerce_order_status_refunded', array( $recorder, 'reverse_on_order_status' ), 10, 1 );
+
+		$this->gift_card_order_hooks_registered = true;
 	}
 
 	/**

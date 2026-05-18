@@ -608,6 +608,8 @@ Inside the plugin screen (default tab omitted → Campaign Builder):
 
 ```text
 Campaign Builder | Advanced Promotions | Gift Cards & Store Credit | Reports | Diagnostics | Settings
+
+**Gift cards (schema 1.18.0):** Separate from the promotion engine — stored-value ledger (`mp_cp_gift_cards`, `mp_cp_gift_card_transactions`), admin issue/adjust/void, checkout negative fee + order redemption. See [GIFT_CARDS_STORE_CREDIT.md](GIFT_CARDS_STORE_CREDIT.md).
 ```
 
 The main admin route is:
