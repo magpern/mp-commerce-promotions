@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MP\CommercePromotions\GiftCard\GiftCard;
 use MP\CommercePromotions\GiftCard\GiftCardBalanceChecker;
+use MP\CommercePromotions\GiftCard\GiftCardQaProductSetup;
 use MP\CommercePromotions\GiftCard\GiftCardCustomerService;
 use MP\CommercePromotions\GiftCard\GiftCardDeliveryDiagnostics;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
@@ -21,6 +22,7 @@ use MP\CommercePromotions\GiftCard\GiftCardMailDiagnostics;
 use MP\CommercePromotions\GiftCard\GiftCardRedemptionService;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
 use MP\CommercePromotions\GiftCard\GiftCardTransactionRepository;
+use MP\CommercePromotions\GiftCard\StoreCreditAccountService;
 use MP\CommercePromotions\GiftCard\StoreCreditWallet;
 use MP\CommercePromotions\Service\Settings;
 use MP\CommercePromotions\Woo\GiftCardMyAccount;
@@ -148,7 +150,7 @@ $evidence['scenarios'][] = gcqa_row(
 );
 
 if ( $customer_id > 0 ) {
-	$wallet = new StoreCreditWallet( $repo, new GiftCardTransactionRepository( $wpdb ) );
+	$wallet = new StoreCreditWallet( new StoreCreditAccountService( $repo ), $ledger );
 	$wallet->grant_credit( $customer_id, 5.0, $currency, 'QA grant' );
 	$bal = $wallet->get_balance( $customer_id, $currency );
 	$evidence['scenarios'][] = gcqa_row(
@@ -158,25 +160,23 @@ if ( $customer_id > 0 ) {
 	);
 }
 
-// Gift card product hint.
-$product_id = 0;
-if ( function_exists( 'wc_get_products' ) ) {
-	$products = wc_get_products(
-		array(
-			'limit'  => 5,
-			'status' => 'publish',
-			'meta_key' => '_mp_cp_is_gift_card',
-			'meta_value' => 'yes',
-		)
-	);
-	if ( $products !== array() && isset( $products[0] ) ) {
-		$product_id = (int) $products[0]->get_id();
+$catalog_ids = GiftCardQaProductSetup::find_published_gift_card_product_ids( 5 );
+$qa_ids      = array();
+if ( function_exists( 'wc_get_product_id_by_sku' ) ) {
+	$qa_id = (int) wc_get_product_id_by_sku( GiftCardQaProductSetup::PRODUCT_SKU );
+	if ( $qa_id > 0 ) {
+		$qa_ids[] = $qa_id;
 	}
 }
+$product_id = $qa_ids[0] ?? ( $catalog_ids[0] ?? 0 );
 $evidence['scenarios'][] = gcqa_row(
 	'gift_card_product_detected',
 	$product_id > 0 ? 'pass' : 'partial',
-	array( 'product_id' => $product_id, 'notes' => 'Manual checkout/email scenarios require browser QA.' )
+	array(
+		'product_id'    => $product_id,
+		'catalog_count' => count( $catalog_ids ),
+		'notes'         => 'Run gift-card-product-setup.php if empty. Browser checkout optional.',
+	)
 );
 
 $encoded = wp_json_encode( $evidence, JSON_PRETTY_PRINT );

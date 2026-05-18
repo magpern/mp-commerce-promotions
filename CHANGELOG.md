@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Gift card product E2E QA tooling** — idempotent `scripts/gift-card-product-setup.php` (SKU `mp-cg-gift-card-qa`), `scripts/gift-card-product-e2e-smoke.php`, `GiftCardQaProductSetup`, Diagnostics catalog warning + setup hint; updated [GIFT_CARD_QA_EVIDENCE.md](docs/GIFT_CARD_QA_EVIDENCE.md).
+
+### Added (prior)
+
 - **Gift card storefront QA pass** — polish for checkout/My Account/balance checker copy; email deliverability diagnostics (`GiftCardMailDiagnostics`), support bundle mail summary; expanded customer smoke + `scripts/gift-card-storefront-qa-evidence.php`; [GIFT_CARD_QA_EVIDENCE.md](docs/GIFT_CARD_QA_EVIDENCE.md).
 
 ### Added (prior)

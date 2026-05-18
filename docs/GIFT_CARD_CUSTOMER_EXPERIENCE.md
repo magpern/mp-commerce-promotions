@@ -24,6 +24,8 @@ Endpoint: **Gift cards** (`/my-account/gift-cards/`)
 
 Gift card products show a purchase panel: delivery, redemption, partial payment, recipient help, collapsible **email preview** (masked sample code only).
 
+Mark products with `_mp_cp_sells_gift_card=yes` (see [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md)). For QA, run `scripts/gift-card-product-setup.php` to create SKU `mp-cg-gift-card-qa`. Test recipient: `postmaster@biopentra.eu`.
+
 ## Checkout redemption
 
 Single **Gift card or store credit** section on cart and checkout (rendered once on cart and checkout pages). Partial payment explained; estimated amount still due when gift card and/or store credit are applied; combined gift card + store credit notice when both are active.

@@ -1692,6 +1692,40 @@ final class DiagnosticsPage {
 		echo '<h2 style="margin-top:2em;">' . esc_html__( 'Gift card products', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p>' . esc_html__( 'Checks paid orders with gift-card products, order linkage, and cancellation hygiene.', 'mp-commerce-promotions' ) . '</p>';
 
+		$catalog_count = \MP\CommercePromotions\GiftCard\GiftCardQaProductSetup::count_published_gift_card_products();
+		if ( $catalog_count === 0 ) {
+			echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__( 'No gift card products found.', 'mp-commerce-promotions' ) . '</strong> ';
+			echo esc_html__(
+				'Mark a simple or variation product with “This product sells a gift card”, or run the QA setup script on staging.',
+				'mp-commerce-promotions'
+			);
+			echo ' <a href="' . esc_url( admin_url( 'admin.php?page=mp-commerce-promotions&tab=settings' ) ) . '">'
+				. esc_html__( 'Settings', 'mp-commerce-promotions' ) . '</a>';
+			$docs = defined( 'MP_COMMERCE_PROMOTIONS_URL' )
+				? MP_COMMERCE_PROMOTIONS_URL . 'docs/GIFT_CARD_PRODUCTS.md'
+				: '';
+			if ( $docs !== '' ) {
+				echo ' · <a href="' . esc_url( $docs ) . '" target="_blank" rel="noopener noreferrer">'
+					. esc_html__( 'Gift card products docs', 'mp-commerce-promotions' ) . '</a>';
+			}
+			echo '</p>';
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				echo '<p class="description">' . esc_html__(
+					'WP-CLI (staging): wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-setup.php',
+					'mp-commerce-promotions'
+				) . '</p>';
+			}
+			echo '</div>';
+		} else {
+			echo '<p>' . esc_html(
+				sprintf(
+					/* translators: %d: product count */
+					_n( '%d published gift card product found.', '%d published gift card products found.', $catalog_count, 'mp-commerce-promotions' ),
+					$catalog_count
+				)
+			) . '</p>';
+		}
+
 		$counts = array(
 			__( 'Paid orders missing generation', 'mp-commerce-promotions' )       => count( $issues['paid_orders_missing_generation'] ),
 			__( 'Gift cards missing order ID', 'mp-commerce-promotions' )          => count( $issues['product_cards_missing_order_id'] ),

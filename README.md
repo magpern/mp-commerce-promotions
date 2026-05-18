@@ -25,6 +25,7 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 - [docs/manual-promotion-code-test.md](docs/manual-promotion-code-test.md) — promotion codes and coupon-field behavior
 - [docs/MANUAL_QA_EVIDENCE.md](docs/MANUAL_QA_EVIDENCE.md) — manual/browser QA evidence (latest verification bundle)
 - [docs/GIFT_CARD_QA_EVIDENCE.md](docs/GIFT_CARD_QA_EVIDENCE.md) — gift card & store credit storefront QA (CLI + manual notes)
+- [docs/GIFT_CARD_PRODUCTS.md](docs/GIFT_CARD_PRODUCTS.md) — gift card product meta + `gift-card-product-setup.php` QA product
 - [docs/manual-performance-and-hardening-test.md](docs/manual-performance-and-hardening-test.md) — profiler, safe mode, cron, cleanup, concurrency
 - [docs/BROWSER_QA_MATRIX.md](docs/BROWSER_QA_MATRIX.md) — reproducible browser QA matrix
 - [docs/BETA_READINESS.md](docs/BETA_READINESS.md) — beta certification status and release criteria

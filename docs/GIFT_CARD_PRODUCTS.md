@@ -8,11 +8,13 @@ Merchants sell gift cards using **normal WooCommerce simple or variable products
 
 ## Product setup
 
+### Manual (product edit screen)
+
 On the product edit screen (General tab for simple products; variation rows for variations):
 
 | Setting | Meta key | Notes |
 |--------|----------|--------|
-| This product sells a gift card | `_mp_cp_sells_gift_card` | `yes` / `no` |
+| This product sells a gift card | `_mp_cp_sells_gift_card` | `yes` / `no` (not `_mp_cp_is_gift_card`) |
 | Amount mode | `_mp_cp_gift_card_amount_mode` | `product_price` or `fixed_amount` |
 | Fixed amount | `_mp_cp_gift_card_fixed_amount` | Used when mode is `fixed_amount` |
 | Expiry (days) | `_mp_cp_gift_card_expiry_days` | Optional; expiry = paid date + N days |
@@ -27,6 +29,32 @@ On the product edit screen (General tab for simple products; variation rows for 
 | `recipient_email_and_message` | Above + optional personal message (length capped) | Same, message included in plain email |
 
 Recipient fields appear under **Gift card delivery** at checkout (one field group per gift-card line that allows recipients). Quantity &gt; 1 uses the same recipient data for every card on that line (MVP).
+
+### QA demo product (WP-CLI, idempotent)
+
+Creates or updates a virtual product for automated and browser QA:
+
+```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-setup.php
+```
+
+| Field | Value |
+|-------|--------|
+| Name | Commerce Growth Gift Card QA |
+| SKU | `mp-cg-gift-card-qa` |
+| Price | 30 (amount mode `product_price`) |
+| Expiry | 365 days |
+| Recipient mode | `recipient_email_and_message` |
+
+**Test recipient (QA):** `postmaster@biopentra.eu`
+
+End-to-end CLI verification (after setup):
+
+```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-e2e-smoke.php
+```
+
+See [GIFT_CARD_QA_EVIDENCE.md](GIFT_CARD_QA_EVIDENCE.md).
 
 ### Delivery timing
 
@@ -85,6 +113,8 @@ On `cancelled`, `refunded`, or `failed`:
 ```bash
 composer run lint:php
 composer run test
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-setup.php
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-e2e-smoke.php
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-scheduled-delivery-smoke.php
 ```
 
