@@ -73,7 +73,14 @@ Operational playbooks for real merchant pilots using Commerce Promotions for Woo
 6. **Send on date** — no code at payment; generation and email run on the chosen date (hourly cron, Diagnostics, or order **Send due deliveries now**).
 7. On cancellation/refund, unused generated cards are voided; pending scheduled rows are cancelled; partially used cards need manual review (order note).
 
-Full codes are never stored after delivery. See [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md).
+Full codes are never stored after delivery. See [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md) and [GIFT_CARD_CUSTOMER_EXPERIENCE.md](GIFT_CARD_CUSTOMER_EXPERIENCE.md).
+
+## Customer gift card tools
+
+1. **Balance checker** — page with `[mp_cp_gift_card_balance]` or add shortcode to any page (Settings can disable).
+2. **My Account → Gift cards** — purchased/received cards (masked), store credit wallet history.
+3. **Checkout** — single **Gift card or store credit** box; partial payment supported.
+4. Configure branding under **Commerce Growth → Settings → Gift cards & store credit** (template, logo, accent, sender).
 
 ## Related scripts
 

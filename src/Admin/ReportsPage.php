@@ -329,6 +329,10 @@ final class ReportsPage {
 			__( 'Scheduled deliveries pending', 'mp-commerce-promotions' ) => (string) ( $gc['scheduled_pending'] ?? 0 ),
 			__( 'Scheduled deliveries sent', 'mp-commerce-promotions' ) => (string) ( $gc['scheduled_sent'] ?? 0 ),
 			__( 'Scheduled deliveries failed', 'mp-commerce-promotions' ) => (string) ( $gc['scheduled_failed'] ?? 0 ),
+			__( 'Average product gift card amount', 'mp-commerce-promotions' ) => number_format_i18n( (float) ( $gc['gift_card_avg_amount'] ?? 0 ), 2 ),
+			__( 'Gift card redeemed / issued ratio', 'mp-commerce-promotions' ) => number_format_i18n( (float) ( $gc['gift_card_redeemed_ratio'] ?? 0 ), 2 ),
+			__( 'Store credit utilization ratio', 'mp-commerce-promotions' ) => number_format_i18n( (float) ( $gc['store_credit_utilization_ratio'] ?? 0 ), 2 ),
+			__( 'Top gift card product line count (sample)', 'mp-commerce-promotions' ) => (string) ( $gc['top_gift_card_product_count'] ?? 0 ),
 		);
 		foreach ( $rows as $label => $value ) {
 			echo '<tr><th scope="row" style="width:50%;">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';

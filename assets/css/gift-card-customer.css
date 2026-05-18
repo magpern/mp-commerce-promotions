@@ -1,0 +1,70 @@
+.mp-cp-gift-card-balance-checker,
+.mp-cp-gift-card-my-account,
+.mp-cp-gift-card-product-panel,
+.mp-cp-gift-card-checkout {
+	max-width: 640px;
+	margin: 1.5em 0;
+	padding: 1.25em 1.5em;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #fff;
+}
+
+.mp-cp-gc-title {
+	margin: 0 0 0.5em;
+	font-size: 1.25em;
+}
+
+.mp-cp-gc-help {
+	margin: 0 0 1em;
+	color: #50575e;
+	font-size: 0.95em;
+	line-height: 1.5;
+}
+
+.mp-cp-gc-result {
+	margin: 0 0 1em;
+	padding: 0.75em 1em;
+	border-radius: 4px;
+}
+
+.mp-cp-gc-result--ok {
+	background: #edfaef;
+	border: 1px solid #68de7c;
+}
+
+.mp-cp-gc-result--error {
+	background: #fcf0f1;
+	border: 1px solid #d63638;
+}
+
+.mp-cp-gc-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.95em;
+}
+
+.mp-cp-gc-table th,
+.mp-cp-gc-table td {
+	padding: 0.5em 0.75em;
+	border-bottom: 1px solid #dcdcde;
+	text-align: left;
+}
+
+.mp-cp-gc-product-panel ul {
+	margin: 0.5em 0 0 1.25em;
+	padding: 0;
+}
+
+.mp-cp-gc-wallet-balance {
+	font-size: 1.35em;
+	font-weight: 600;
+	margin: 0.25em 0 0.75em;
+}
+
+@media (max-width: 600px) {
+	.mp-cp-gc-table {
+		display: block;
+		overflow-x: auto;
+	}
+}

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Gift card customer experience** — balance checker shortcode/page, My Account gift cards + store credit wallet, product purchase panel, unified checkout redemption UI, HTML email templates (classic/birthday/holiday/minimal), customer diagnostics/reports; `scripts/gift-card-customer-experience-smoke.php`.
 - **Gift card recipient & scheduled delivery** — product recipient mode (`purchaser_only`, `recipient_email`, `recipient_email_and_message`); checkout capture; send-now vs send-on-date (cards generated at delivery time for scheduled); hourly cron + Diagnostics/order actions; scheduled reports/diagnostics; `scripts/gift-card-scheduled-delivery-smoke.php`.
 - **Gift card delivery security** — no `plain_code` in order meta; masked last4 + delivery status; hardened email; admin reissue delivery; diagnostics cleanup; `scripts/gift-card-delivery-security-smoke.php`.
 - **Gift cards from WooCommerce products** — mark simple/variation products, generate cards on paid orders (idempotent), plain billing email delivery, order admin meta box, cancellation void for unused cards, Reports/Diagnostics extensions, `scripts/gift-card-product-smoke.php`, [GIFT_CARD_PRODUCTS.md](docs/GIFT_CARD_PRODUCTS.md).

@@ -25,15 +25,18 @@ final class GiftCardScheduledDeliveryService {
 
 	private ?AuditLogger $audit_logger;
 
+	private Settings $settings;
+
 	public function __construct(
 		GiftCardLedger $ledger,
 		?GiftCardProductService $products = null,
 		?Settings $settings = null,
 		?AuditLogger $audit_logger = null
 	) {
+		$this->settings     = $settings ?? new Settings();
 		$this->ledger       = $ledger;
 		$this->products     = $products ?? new GiftCardProductService();
-		$this->fulfillment  = new GiftCardUnitFulfillment( $ledger, $settings, $audit_logger );
+		$this->fulfillment  = new GiftCardUnitFulfillment( $ledger, $this->settings, $audit_logger );
 		$this->audit_logger = $audit_logger;
 	}
 
@@ -44,6 +47,13 @@ final class GiftCardScheduledDeliveryService {
 
 	public function maybe_schedule_cron(): void {
 		if ( ! function_exists( 'wp_next_scheduled' ) || ! function_exists( 'wp_schedule_event' ) ) {
+			return;
+		}
+
+		if ( ! $this->settings->gift_card_scheduled_cron_enabled() ) {
+			if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
+				wp_clear_scheduled_hook( self::CRON_HOOK );
+			}
 			return;
 		}
 

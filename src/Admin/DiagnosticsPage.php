@@ -213,6 +213,7 @@ final class DiagnosticsPage {
 		$this->handle_post_gift_card_product_repair();
 		$this->handle_post_gift_card_delivery_repair();
 		$this->handle_post_gift_card_scheduled_repair();
+		$this->handle_post_gift_card_customer_repair();
 		$this->handle_post_repair();
 		$this->handle_post_archive_hygiene();
 		$this->handle_post_automation();
@@ -276,6 +277,7 @@ final class DiagnosticsPage {
 		$this->render_gift_card_product_section();
 		$this->render_gift_card_delivery_section();
 		$this->render_gift_card_scheduled_section();
+		$this->render_gift_card_customer_section();
 		CompatibilityStatusPanel::render();
 		if ( $this->profiler !== null && $this->concurrency !== null ) {
 			EcosystemCompatibilityPanel::render_system_health(
@@ -1873,6 +1875,63 @@ final class DiagnosticsPage {
 		echo '<button type="submit" class="button button-primary" name="mp_cp_gift_card_scheduled_repair_apply" value="1">'
 			. esc_html__( 'Run due deliveries + cleanup', 'mp-commerce-promotions' ) . '</button></p>';
 		echo '</form>';
+	}
+
+	private function render_gift_card_customer_section(): void {
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			return;
+		}
+
+		$diag   = new \MP\CommercePromotions\GiftCard\GiftCardCustomerDiagnostics( $wpdb );
+		$issues = $diag->analyze();
+
+		echo '<h2 style="margin-top:2em;">' . esc_html__( 'Gift card customer experience', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<ul>';
+		echo '<li>' . esc_html__( 'Balance checker page missing', 'mp-commerce-promotions' ) . ': '
+			. ( $issues['missing_balance_page'] ? esc_html__( 'Yes', 'mp-commerce-promotions' ) : esc_html__( 'No', 'mp-commerce-promotions' ) ) . '</li>';
+		echo '<li>' . esc_html__( 'Balance checker disabled', 'mp-commerce-promotions' ) . ': '
+			. ( $issues['balance_checker_disabled'] ? esc_html__( 'Yes', 'mp-commerce-promotions' ) : esc_html__( 'No', 'mp-commerce-promotions' ) ) . '</li>';
+		echo '<li>' . esc_html__( 'My Account endpoint disabled', 'mp-commerce-promotions' ) . ': '
+			. ( $issues['my_account_disabled'] ? esc_html__( 'Yes', 'mp-commerce-promotions' ) : esc_html__( 'No', 'mp-commerce-promotions' ) ) . '</li>';
+		echo '<li>' . esc_html__( 'Cron off with pending scheduled sends', 'mp-commerce-promotions' ) . ': '
+			. ( $issues['cron_disabled_with_pending'] ? esc_html__( 'Yes', 'mp-commerce-promotions' ) : esc_html__( 'No', 'mp-commerce-promotions' ) ) . '</li>';
+		echo '<li>' . esc_html__( 'Invalid email template slug', 'mp-commerce-promotions' ) . ': '
+			. ( $issues['invalid_template'] ? esc_html__( 'Yes', 'mp-commerce-promotions' ) : esc_html__( 'No', 'mp-commerce-promotions' ) ) . '</li>';
+		echo '<li>' . esc_html__( 'Invalid accent color', 'mp-commerce-promotions' ) . ': '
+			. ( $issues['invalid_accent'] ? esc_html__( 'Yes', 'mp-commerce-promotions' ) : esc_html__( 'No', 'mp-commerce-promotions' ) ) . '</li>';
+		echo '<li>' . esc_html__( 'Invalid sender email', 'mp-commerce-promotions' ) . ': '
+			. ( $issues['invalid_sender_email'] ? esc_html__( 'Yes', 'mp-commerce-promotions' ) : esc_html__( 'No', 'mp-commerce-promotions' ) ) . '</li>';
+		echo '</ul>';
+
+		echo '<form method="post" style="margin-top:12px;">';
+		wp_nonce_field( 'mp_cp_gift_card_customer_repair' );
+		echo '<input type="hidden" name="mp_cp_gift_card_customer_repair" value="1" />';
+		echo '<p><button type="submit" class="button button-primary" name="mp_cp_gift_card_customer_repair_apply" value="1">'
+			. esc_html__( 'Create balance page & flush endpoints', 'mp-commerce-promotions' ) . '</button></p>';
+		echo '</form>';
+	}
+
+	private function handle_post_gift_card_customer_repair(): void {
+		if ( ! isset( $_POST['mp_cp_gift_card_customer_repair'] ) ) {
+			return;
+		}
+		if (
+			! isset( $_POST['_wpnonce'] )
+			|| ! wp_verify_nonce(
+				sanitize_text_field( wp_unslash( (string) $_POST['_wpnonce'] ) ),
+				'mp_cp_gift_card_customer_repair'
+			)
+		) {
+			return;
+		}
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			return;
+		}
+		$diag = new \MP\CommercePromotions\GiftCard\GiftCardCustomerDiagnostics( $wpdb );
+		$diag->repair( true );
+		AdminNotice::success( __( 'Customer gift card pages/endpoints refreshed.', 'mp-commerce-promotions' ) );
 	}
 
 	private function render_gift_card_integrity_section(): void {

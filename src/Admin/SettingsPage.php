@@ -88,14 +88,49 @@ final class SettingsPage {
 		);
 		echo '</tbody></table>';
 
-		echo '<h2 class="title">' . esc_html__( 'Gift cards', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<h2 class="title">' . esc_html__( 'Gift cards & store credit', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<table class="form-table" role="presentation"><tbody>';
 		$this->checkbox_row(
 			'mp_cp_gift_card_delivery_email_enabled',
 			__( 'Send gift card codes by email when sold via products', 'mp-commerce-promotions' ),
-			__( 'Plain-text email to the order billing address when gift cards are generated from a paid order. Disable for manual delivery only.', 'mp-commerce-promotions' ),
+			__( 'HTML email to the recipient when gift cards are generated or scheduled delivery runs.', 'mp-commerce-promotions' ),
 			$this->settings->gift_card_delivery_email_enabled()
 		);
+		$this->checkbox_row(
+			'mp_cp_gift_card_balance_checker_enabled',
+			__( 'Enable public balance checker', 'mp-commerce-promotions' ),
+			__( 'Shows the [mp_cp_gift_card_balance] shortcode and balance lookup page.', 'mp-commerce-promotions' ),
+			$this->settings->gift_card_balance_checker_enabled()
+		);
+		$this->checkbox_row(
+			'mp_cp_gift_card_my_account_enabled',
+			__( 'Enable My Account gift cards endpoint', 'mp-commerce-promotions' ),
+			__( 'Adds a Gift cards tab under WooCommerce My Account.', 'mp-commerce-promotions' ),
+			$this->settings->gift_card_my_account_enabled()
+		);
+		$this->checkbox_row(
+			'mp_cp_gift_card_scheduled_cron_enabled',
+			__( 'Enable scheduled gift card delivery cron', 'mp-commerce-promotions' ),
+			__( 'Hourly job to fulfill send-on-date gift cards. Disable to run deliveries manually from Diagnostics only.', 'mp-commerce-promotions' ),
+			$this->settings->gift_card_scheduled_cron_enabled()
+		);
+		echo '<tr><th scope="row"><label for="mp_cp_gift_card_email_template">' . esc_html__( 'Default email template', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<select name="mp_cp_gift_card_email_template" id="mp_cp_gift_card_email_template">';
+		$current_tpl = $this->settings->gift_card_email_template();
+		foreach ( Settings::gift_card_email_templates() as $slug ) {
+			echo '<option value="' . esc_attr( $slug ) . '"' . selected( $current_tpl, $slug, false ) . '>' . esc_html( ucfirst( $slug ) ) . '</option>';
+		}
+		echo '</select></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_gift_card_logo_url">' . esc_html__( 'Email logo URL', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="url" class="regular-text" name="mp_cp_gift_card_logo_url" id="mp_cp_gift_card_logo_url" value="' . esc_attr( $this->settings->gift_card_logo_url() ) . '" /></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_gift_card_accent_color">' . esc_html__( 'Email accent color', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" name="mp_cp_gift_card_accent_color" id="mp_cp_gift_card_accent_color" value="' . esc_attr( $this->settings->gift_card_accent_color() ) . '" placeholder="#2271b1" /></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_gift_card_sender_name">' . esc_html__( 'Sender name', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" name="mp_cp_gift_card_sender_name" id="mp_cp_gift_card_sender_name" value="' . esc_attr( $this->settings->gift_card_sender_name() ) . '" /></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_gift_card_sender_email">' . esc_html__( 'Sender email', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="email" class="regular-text" name="mp_cp_gift_card_sender_email" id="mp_cp_gift_card_sender_email" value="' . esc_attr( $this->settings->gift_card_sender_email() ) . '" /></td></tr>';
+		echo '<tr><th scope="row"><label for="mp_cp_gift_card_support_email_text">' . esc_html__( 'Support footer text', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<textarea name="mp_cp_gift_card_support_email_text" id="mp_cp_gift_card_support_email_text" class="large-text" rows="3">' . esc_textarea( $this->settings->gift_card_support_email_text() ) . '</textarea></td></tr>';
 		echo '</tbody></table>';
 
 		echo '<h2 class="title">' . esc_html__( 'Automation', 'mp-commerce-promotions' ) . '</h2>';
@@ -234,6 +269,39 @@ final class SettingsPage {
 		$this->settings->set_simulations_enabled( $this->post_yes( 'mp_cp_simulations_enabled' ) );
 		$this->settings->set_pricing_explainability_enabled( $this->post_yes( 'mp_cp_pricing_explainability_enabled' ) );
 		$this->settings->set_gift_card_delivery_email_enabled( $this->post_yes( 'mp_cp_gift_card_delivery_email_enabled' ) );
+		$this->settings->set_gift_card_balance_checker_enabled( $this->post_yes( 'mp_cp_gift_card_balance_checker_enabled' ) );
+		$this->settings->set_gift_card_my_account_enabled( $this->post_yes( 'mp_cp_gift_card_my_account_enabled' ) );
+		$this->settings->set_gift_card_scheduled_cron_enabled( $this->post_yes( 'mp_cp_gift_card_scheduled_cron_enabled' ) );
+		if ( isset( $_POST['mp_cp_gift_card_email_template'] ) ) {
+			$this->settings->set_gift_card_email_template(
+				sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_email_template'] ) )
+			);
+		}
+		if ( isset( $_POST['mp_cp_gift_card_logo_url'] ) ) {
+			$this->settings->set_gift_card_logo_url(
+				esc_url_raw( wp_unslash( (string) $_POST['mp_cp_gift_card_logo_url'] ) )
+			);
+		}
+		if ( isset( $_POST['mp_cp_gift_card_accent_color'] ) ) {
+			$this->settings->set_gift_card_accent_color(
+				sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_gift_card_accent_color'] ) )
+			);
+		}
+		if ( isset( $_POST['mp_cp_gift_card_sender_name'] ) ) {
+			$this->settings->set_gift_card_sender_name(
+				sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_gift_card_sender_name'] ) )
+			);
+		}
+		if ( isset( $_POST['mp_cp_gift_card_sender_email'] ) ) {
+			$this->settings->set_gift_card_sender_email(
+				sanitize_email( wp_unslash( (string) $_POST['mp_cp_gift_card_sender_email'] ) )
+			);
+		}
+		if ( isset( $_POST['mp_cp_gift_card_support_email_text'] ) ) {
+			$this->settings->set_gift_card_support_email_text(
+				sanitize_textarea_field( wp_unslash( (string) $_POST['mp_cp_gift_card_support_email_text'] ) )
+			);
+		}
 		$this->settings->set_automation_manual_only( $this->post_yes( 'mp_cp_automation_manual_only' ) );
 		$this->settings->set_cron_automation_enabled( $this->post_yes( 'mp_cp_cron_automation_enabled' ) );
 		$this->settings->set_automation_emergency_stop( $this->post_yes( 'mp_cp_automation_emergency_stop' ) );

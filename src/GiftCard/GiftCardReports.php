@@ -210,6 +210,77 @@ final class GiftCardReports {
 			'scheduled_sent'                      => max( 0, (int) ( $delivery['scheduled_sent'] ?? 0 ) ),
 			'scheduled_failed'                    => max( 0, (int) ( $delivery['scheduled_failed'] ?? 0 ) ),
 			'scheduled_cancelled'                 => max( 0, (int) ( $delivery['scheduled_cancelled'] ?? 0 ) ),
+		) + $this->customer_insights( $gift_liability, $issued, $redeemed, $store_liability, $store_issued, $store_redeemed );
+	}
+
+	/**
+	 * @return array{
+	 *   gift_card_avg_amount: float,
+	 *   gift_card_redeemed_ratio: float,
+	 *   store_credit_utilization_ratio: float,
+	 *   top_gift_card_product_count: int
+	 * }
+	 */
+	public function customer_insights(
+		float $gift_liability,
+		float $issued,
+		float $redeemed,
+		float $store_liability,
+		float $store_issued,
+		float $store_redeemed
+	): array {
+		$cards_table = $this->cards_table();
+
+		$avg = (float) DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COALESCE(AVG(initial_amount), 0) FROM {$cards_table} WHERE source_type = %s AND created_order_id IS NOT NULL",
+			array( GiftCard::SOURCE_GIFT_CARD )
+		);
+
+		$redeemed_ratio = $issued > 0 ? GiftCard::money( $redeemed / $issued ) : 0.0;
+		$sc_util        = $store_issued > 0 ? GiftCard::money( $store_redeemed / $store_issued ) : 0.0;
+
+		$top_product_count = 0;
+		if ( function_exists( 'wc_get_orders' ) ) {
+			$orders = wc_get_orders(
+				array(
+					'limit'      => 200,
+					'status'     => array( 'processing', 'completed' ),
+					'meta_query' => array(
+						array(
+							'key'     => GiftCardGeneratedOrderState::META_GENERATED,
+							'compare' => 'EXISTS',
+						),
+					),
+				)
+			);
+			$product_counts = array();
+			foreach ( $orders as $order ) {
+				if ( ! is_object( $order ) ) {
+					continue;
+				}
+				foreach ( $order->get_items( 'line_item' ) as $item ) {
+					if ( ! is_object( $item ) || ! method_exists( $item, 'get_product_id' ) ) {
+						continue;
+					}
+					$pid = (int) $item->get_product_id();
+					if ( $pid > 0 && GiftCardProductMeta::read( $pid )['sells'] ) {
+						$product_counts[ $pid ] = ( $product_counts[ $pid ] ?? 0 ) + 1;
+					}
+				}
+			}
+			if ( $product_counts !== array() ) {
+				$top_product_count = (int) max( $product_counts );
+			}
+		}
+
+		unset( $gift_liability, $store_liability );
+
+		return array(
+			'gift_card_avg_amount'           => GiftCard::money( $avg ),
+			'gift_card_redeemed_ratio'       => $redeemed_ratio,
+			'store_credit_utilization_ratio' => $sc_util,
+			'top_gift_card_product_count'    => $top_product_count,
 		);
 	}
 

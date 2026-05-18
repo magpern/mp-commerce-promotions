@@ -42,6 +42,39 @@ if ( ! function_exists( '__' ) ) {
 	}
 }
 
+if ( ! function_exists( 'add_action' ) ) {
+	/**
+	 * @param string   $hook
+	 * @param callable $callback
+	 * @param int      $priority
+	 * @param int      $accepted_args
+	 */
+	function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 ) {
+		unset( $hook, $callback, $priority, $accepted_args );
+	}
+}
+
+if ( ! function_exists( 'remove_action' ) ) {
+	/**
+	 * @param string   $hook
+	 * @param callable $callback
+	 * @param int      $priority
+	 */
+	function remove_action( $hook, $callback, $priority = 10 ) {
+		unset( $hook, $callback, $priority );
+	}
+}
+
+if ( ! function_exists( 'esc_html__' ) ) {
+	/**
+	 * @param string $text
+	 * @return string
+	 */
+	function esc_html__( $text, $domain = 'default' ) {
+		return esc_html( __( $text, $domain ) );
+	}
+}
+
 if ( ! function_exists( 'apply_filters' ) ) {
 	/**
 	 * @param string $hook
@@ -139,6 +172,46 @@ if ( ! function_exists( 'wp_mail' ) ) {
 	}
 }
 
+if ( ! function_exists( 'esc_html' ) ) {
+	/**
+	 * @param string $text
+	 * @return string
+	 */
+	function esc_html( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'esc_attr' ) ) {
+	/**
+	 * @param string $text
+	 * @return string
+	 */
+	function esc_attr( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'esc_url' ) ) {
+	/**
+	 * @param string $url
+	 * @return string
+	 */
+	function esc_url( $url ) {
+		return esc_url_raw( $url );
+	}
+}
+
+if ( ! function_exists( 'esc_url_raw' ) ) {
+	/**
+	 * @param string $url
+	 * @return string
+	 */
+	function esc_url_raw( $url ) {
+		return is_string( $url ) ? trim( $url ) : '';
+	}
+}
+
 if ( ! function_exists( 'esc_textarea' ) ) {
 	/**
 	 * @param string $text
@@ -224,6 +297,9 @@ if ( ! function_exists( 'current_time' ) ) {
 	function current_time( $type ) {
 		if ( $type === 'timestamp' ) {
 			return time();
+		}
+		if ( $type === 'Y-m-d' ) {
+			return gmdate( 'Y-m-d' );
 		}
 
 		return gmdate( 'Y-m-d H:i:s' );

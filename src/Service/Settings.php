@@ -55,6 +55,36 @@ final class Settings {
 
 	public const OPTION_GIFT_CARD_DELIVERY_EMAIL = 'mp_cp_gift_card_delivery_email_enabled';
 
+	public const OPTION_GIFT_CARD_BALANCE_CHECKER = 'mp_cp_gift_card_balance_checker_enabled';
+
+	public const OPTION_GIFT_CARD_MY_ACCOUNT = 'mp_cp_gift_card_my_account_enabled';
+
+	public const OPTION_GIFT_CARD_EMAIL_TEMPLATE = 'mp_cp_gift_card_email_template';
+
+	public const OPTION_GIFT_CARD_LOGO_URL = 'mp_cp_gift_card_logo_url';
+
+	public const OPTION_GIFT_CARD_ACCENT_COLOR = 'mp_cp_gift_card_accent_color';
+
+	public const OPTION_GIFT_CARD_SENDER_NAME = 'mp_cp_gift_card_sender_name';
+
+	public const OPTION_GIFT_CARD_SENDER_EMAIL = 'mp_cp_gift_card_sender_email';
+
+	public const OPTION_GIFT_CARD_SCHEDULED_CRON = 'mp_cp_gift_card_scheduled_cron_enabled';
+
+	public const OPTION_GIFT_CARD_SUPPORT_TEXT = 'mp_cp_gift_card_support_email_text';
+
+	public const OPTION_GIFT_CARD_BALANCE_PAGE_ID = 'mp_cp_gift_card_balance_page_id';
+
+	public const GIFT_CARD_TEMPLATE_CLASSIC = 'classic';
+
+	public const GIFT_CARD_TEMPLATE_BIRTHDAY = 'birthday';
+
+	public const GIFT_CARD_TEMPLATE_HOLIDAY = 'holiday';
+
+	public const GIFT_CARD_TEMPLATE_MINIMAL = 'minimal';
+
+	private const DEFAULT_GIFT_CARD_ACCENT = '#2271b1';
+
 	private const VALUE_YES = 'yes';
 
 	private const VALUE_NO = 'no';
@@ -249,8 +279,132 @@ final class Settings {
 		$this->set_enabled( self::OPTION_GIFT_CARD_DELIVERY_EMAIL, $enabled );
 	}
 
+	public function gift_card_balance_checker_enabled(): bool {
+		return $this->is_enabled( self::OPTION_GIFT_CARD_BALANCE_CHECKER, true );
+	}
+
+	public function set_gift_card_balance_checker_enabled( bool $enabled ): void {
+		$this->set_enabled( self::OPTION_GIFT_CARD_BALANCE_CHECKER, $enabled );
+	}
+
+	public function gift_card_my_account_enabled(): bool {
+		return $this->is_enabled( self::OPTION_GIFT_CARD_MY_ACCOUNT, true );
+	}
+
+	public function set_gift_card_my_account_enabled( bool $enabled ): void {
+		$this->set_enabled( self::OPTION_GIFT_CARD_MY_ACCOUNT, $enabled );
+	}
+
+	public function gift_card_scheduled_cron_enabled(): bool {
+		return $this->is_enabled( self::OPTION_GIFT_CARD_SCHEDULED_CRON, true );
+	}
+
+	public function set_gift_card_scheduled_cron_enabled( bool $enabled ): void {
+		$this->set_enabled( self::OPTION_GIFT_CARD_SCHEDULED_CRON, $enabled );
+	}
+
+	public function gift_card_email_template(): string {
+		$raw = get_option( self::OPTION_GIFT_CARD_EMAIL_TEMPLATE, self::GIFT_CARD_TEMPLATE_CLASSIC );
+		$slug = is_string( $raw ) ? sanitize_key( $raw ) : self::GIFT_CARD_TEMPLATE_CLASSIC;
+		if ( ! in_array( $slug, self::gift_card_email_templates(), true ) ) {
+			return self::GIFT_CARD_TEMPLATE_CLASSIC;
+		}
+
+		return $slug;
+	}
+
+	public function set_gift_card_email_template( string $template ): void {
+		$template = sanitize_key( $template );
+		if ( ! in_array( $template, self::gift_card_email_templates(), true ) ) {
+			$template = self::GIFT_CARD_TEMPLATE_CLASSIC;
+		}
+		update_option( self::OPTION_GIFT_CARD_EMAIL_TEMPLATE, $template, false );
+	}
+
 	/**
-	 * @return array<string, bool|int>
+	 * @return list<string>
+	 */
+	public static function gift_card_email_templates(): array {
+		return array(
+			self::GIFT_CARD_TEMPLATE_CLASSIC,
+			self::GIFT_CARD_TEMPLATE_BIRTHDAY,
+			self::GIFT_CARD_TEMPLATE_HOLIDAY,
+			self::GIFT_CARD_TEMPLATE_MINIMAL,
+		);
+	}
+
+	public function gift_card_logo_url(): string {
+		$raw = get_option( self::OPTION_GIFT_CARD_LOGO_URL, '' );
+		$url = is_string( $raw ) ? esc_url_raw( trim( $raw ) ) : '';
+
+		return $url;
+	}
+
+	public function set_gift_card_logo_url( string $url ): void {
+		update_option( self::OPTION_GIFT_CARD_LOGO_URL, esc_url_raw( trim( $url ) ), false );
+	}
+
+	public function gift_card_accent_color(): string {
+		$raw = get_option( self::OPTION_GIFT_CARD_ACCENT_COLOR, self::DEFAULT_GIFT_CARD_ACCENT );
+		$color = is_string( $raw ) ? trim( $raw ) : self::DEFAULT_GIFT_CARD_ACCENT;
+		if ( ! preg_match( '/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color ) ) {
+			return self::DEFAULT_GIFT_CARD_ACCENT;
+		}
+
+		return $color;
+	}
+
+	public function set_gift_card_accent_color( string $color ): void {
+		$color = trim( $color );
+		if ( ! preg_match( '/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color ) ) {
+			$color = self::DEFAULT_GIFT_CARD_ACCENT;
+		}
+		update_option( self::OPTION_GIFT_CARD_ACCENT_COLOR, $color, false );
+	}
+
+	public function gift_card_sender_name(): string {
+		$raw = get_option( self::OPTION_GIFT_CARD_SENDER_NAME, '' );
+
+		return is_string( $raw ) ? sanitize_text_field( $raw ) : '';
+	}
+
+	public function set_gift_card_sender_name( string $name ): void {
+		update_option( self::OPTION_GIFT_CARD_SENDER_NAME, sanitize_text_field( $name ), false );
+	}
+
+	public function gift_card_sender_email(): string {
+		$raw = get_option( self::OPTION_GIFT_CARD_SENDER_EMAIL, '' );
+		$email = is_string( $raw ) ? sanitize_email( trim( $raw ) ) : '';
+
+		return is_email( $email ) ? $email : '';
+	}
+
+	public function set_gift_card_sender_email( string $email ): void {
+		update_option( self::OPTION_GIFT_CARD_SENDER_EMAIL, sanitize_email( trim( $email ) ), false );
+	}
+
+	public function gift_card_support_email_text(): string {
+		$raw = get_option( self::OPTION_GIFT_CARD_SUPPORT_TEXT, '' );
+
+		return is_string( $raw ) ? sanitize_textarea_field( $raw ) : '';
+	}
+
+	public function set_gift_card_support_email_text( string $text ): void {
+		update_option( self::OPTION_GIFT_CARD_SUPPORT_TEXT, sanitize_textarea_field( $text ), false );
+	}
+
+	public function gift_card_balance_page_id(): int {
+		$raw = get_option( self::OPTION_GIFT_CARD_BALANCE_PAGE_ID, 0 );
+
+		return max( 0, (int) $raw );
+	}
+
+	public function set_gift_card_balance_page_id( int $page_id ): void {
+		update_option( self::OPTION_GIFT_CARD_BALANCE_PAGE_ID, max( 0, $page_id ), false );
+	}
+
+	/**
+	 * @return array<string, bool|int|string>
 	 */
 	public function to_feature_flags(): array {
 		return array(
@@ -275,7 +429,11 @@ final class Settings {
 			'promotion_dry_run'         => $this->promotion_dry_run_enabled(),
 			'line_item_mode_disabled'   => $this->line_item_mode_disabled(),
 			'planner_trace_verbose'     => $this->planner_trace_verbose(),
-			'gift_card_delivery_email'  => $this->gift_card_delivery_email_enabled(),
+			'gift_card_delivery_email'      => $this->gift_card_delivery_email_enabled(),
+			'gift_card_balance_checker'     => $this->gift_card_balance_checker_enabled(),
+			'gift_card_my_account'          => $this->gift_card_my_account_enabled(),
+			'gift_card_scheduled_cron'      => $this->gift_card_scheduled_cron_enabled(),
+			'gift_card_email_template'      => $this->gift_card_email_template(),
 		);
 	}
 

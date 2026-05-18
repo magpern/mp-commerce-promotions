@@ -76,7 +76,14 @@ use MP\CommercePromotions\Woo\CartContextBuilder;
 use MP\CommercePromotions\Woo\CartPromotionApplier;
 use MP\CommercePromotions\Woo\FreeGiftCartSynchronizer;
 use MP\CommercePromotions\Woo\GiftCardCartApplier;
-use MP\CommercePromotions\Woo\GiftCardCheckoutForm;
+use MP\CommercePromotions\GiftCard\GiftCardBalanceChecker;
+use MP\CommercePromotions\GiftCard\GiftCardCustomerService;
+use MP\CommercePromotions\Infrastructure\GiftCardPageInstaller;
+use MP\CommercePromotions\Woo\GiftCardBalanceCheckerShortcode;
+use MP\CommercePromotions\Woo\GiftCardCustomerAssets;
+use MP\CommercePromotions\Woo\GiftCardMyAccount;
+use MP\CommercePromotions\Woo\GiftCardProductDisplay;
+use MP\CommercePromotions\Woo\GiftCardRedemptionCheckout;
 use MP\CommercePromotions\Woo\GiftCardOrderAdmin;
 use MP\CommercePromotions\Woo\GiftCardOrderRecorder;
 use MP\CommercePromotions\Woo\GiftCardProductAdmin;
@@ -215,24 +222,24 @@ final class Plugin {
 				$gift_card_repo = new GiftCardRepository( $wpdb );
 				$gift_card_tx   = new GiftCardTransactionRepository( $wpdb );
 				$gift_ledger    = new GiftCardLedger( $gift_card_repo, $gift_card_tx );
-				$gift_applier   = new GiftCardCartApplier( $gift_ledger );
+				$gift_applier           = new GiftCardCartApplier( $gift_ledger );
+				$gift_product_service   = new GiftCardProductService();
 				$this->woo_bridge->set_gift_card_cart_applier( $gift_applier );
 				$this->woo_bridge->set_gift_card_order_recorder( new GiftCardOrderRecorder( $gift_ledger ) );
-				$this->woo_bridge->set_gift_card_checkout_form(
-					new GiftCardCheckoutForm( $gift_ledger, $gift_applier )
-				);
-
-				$sc_accounts  = new StoreCreditAccountService( $gift_card_repo );
-				$sc_wallet    = new StoreCreditWallet( $sc_accounts, $gift_ledger, $this->audit_logger );
-				$sc_checkout  = new StoreCreditCheckoutService( $sc_accounts, $gift_ledger );
-				$sc_applier   = new StoreCreditCartApplier( $gift_ledger, $sc_checkout );
+				$sc_accounts = new StoreCreditAccountService( $gift_card_repo );
+				$sc_wallet   = new StoreCreditWallet( $sc_accounts, $gift_ledger, $this->audit_logger );
+				$sc_checkout = new StoreCreditCheckoutService( $sc_accounts, $gift_ledger );
+				$sc_applier  = new StoreCreditCartApplier( $gift_ledger, $sc_checkout );
 				$this->woo_bridge->set_store_credit_cart_applier( $sc_applier );
 				$this->woo_bridge->set_store_credit_order_recorder( new StoreCreditOrderRecorder( $sc_wallet ) );
-				$this->woo_bridge->set_store_credit_checkout_form(
-					new StoreCreditCheckoutForm( $sc_checkout, $sc_applier )
-				);
 
-				$gift_product_service = new GiftCardProductService();
+				( new GiftCardRedemptionCheckout( $gift_ledger, $gift_applier, $sc_checkout, $sc_applier ) )->register();
+				GiftCardCustomerAssets::register();
+				( new GiftCardBalanceCheckerShortcode( new GiftCardBalanceChecker( $gift_ledger ), $this->settings ) )->register();
+				( new GiftCardProductDisplay( $gift_product_service, $this->settings ) )->register();
+				$gift_customer = new GiftCardCustomerService( $gift_card_repo, $wpdb );
+				( new GiftCardMyAccount( $gift_customer, $sc_wallet, $this->settings ) )->register();
+
 				$gift_order_generator = new GiftCardOrderGenerator(
 					$gift_ledger,
 					$gift_product_service,

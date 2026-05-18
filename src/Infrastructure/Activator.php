@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Infrastructure;
 
 use MP\CommercePromotions\Infrastructure\Database\MigrationRunner;
+use MP\CommercePromotions\Service\Settings;
 
 final class Activator {
 
@@ -28,5 +29,12 @@ final class Activator {
 
 		$runner = new MigrationRunner( $wpdb );
 		$runner->run();
+
+		$settings = new Settings();
+		GiftCardPageInstaller::maybe_create_balance_page( $settings );
+
+		if ( function_exists( 'flush_rewrite_rules' ) ) {
+			flush_rewrite_rules( false );
+		}
 	}
 }

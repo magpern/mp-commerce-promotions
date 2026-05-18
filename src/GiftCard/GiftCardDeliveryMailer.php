@@ -1,6 +1,6 @@
 <?php
 /**
- * Plain-text gift card delivery email (codes never logged or audited).
+ * Gift card delivery email (HTML + plain; codes never logged or audited).
  *
  * @package MP\CommercePromotions
  */
@@ -123,6 +123,63 @@ final class GiftCardDeliveryMailer {
 
 		$store_url = function_exists( 'home_url' ) ? home_url( '/' ) : '';
 
+		$html = GiftCardEmailTemplate::render_html(
+			$this->settings->gift_card_email_template(),
+			array(
+				'site_name'    => $site_name,
+				'store_url'    => $store_url,
+				'order_id'     => $order_id,
+				'accent'       => $this->settings->gift_card_accent_color(),
+				'logo_url'     => $this->settings->gift_card_logo_url(),
+				'support_text' => $this->settings->gift_card_support_email_text(),
+				'cards'        => $cards,
+			)
+		);
+
+		$plain = $this->build_plain_body( $site_name, $order_id, $store_url, $cards );
+
+		$headers = array(
+			'Content-Type: text/html; charset=UTF-8',
+			'MIME-Version: 1.0',
+		);
+
+		$from_name  = $this->settings->gift_card_sender_name();
+		$from_email = $this->settings->gift_card_sender_email();
+		if ( $from_email === '' ) {
+			$from_email = function_exists( 'get_option' ) ? sanitize_email( (string) get_option( 'admin_email' ) ) : '';
+		}
+		if ( $from_name === '' ) {
+			$from_name = $site_name;
+		}
+		if ( $from_email !== '' && is_email( $from_email ) ) {
+			$headers[] = sprintf( 'From: %s <%s>', $from_name, $from_email );
+		}
+
+		if ( function_exists( 'wp_mail' ) ) {
+			\add_action( 'wp_mail_content_type', array( $this, 'filter_html_content_type' ) );
+			$sent = (bool) wp_mail( $to_email, $subject, $html, $headers );
+			\remove_action( 'wp_mail_content_type', array( $this, 'filter_html_content_type' ) );
+			if ( ! $sent ) {
+				$headers_plain = array( 'Content-Type: text/plain; charset=UTF-8' );
+				if ( isset( $headers[ count( $headers ) - 1 ] ) && str_starts_with( $headers[ count( $headers ) - 1 ], 'From:' ) ) {
+					$headers_plain[] = $headers[ count( $headers ) - 1 ];
+				}
+				$sent = (bool) wp_mail( $to_email, $subject, $plain, $headers_plain );
+			}
+			return $sent;
+		}
+
+		return false;
+	}
+
+	public function filter_html_content_type(): string {
+		return 'text/html';
+	}
+
+	/**
+	 * @param list<array{plain_code: string, amount: float, currency: string, expires_at: ?string, recipient_name?: string, purchaser_name?: string, message?: string}> $cards
+	 */
+	private function build_plain_body( string $site_name, int $order_id, string $store_url, array $cards ): string {
 		$lines = array(
 			sprintf(
 				/* translators: %s: store name */
@@ -135,6 +192,8 @@ final class GiftCardDeliveryMailer {
 				$order_id
 			),
 			'',
+			__( 'Redeem at checkout in the “Gift card or store credit” section.', 'mp-commerce-promotions' ),
+			'',
 		);
 
 		foreach ( $cards as $card ) {
@@ -145,32 +204,17 @@ final class GiftCardDeliveryMailer {
 					__( 'Hi %s,', 'mp-commerce-promotions' ),
 					$recipient_name
 				);
-				$lines[] = '';
 			}
-
-			$purchaser = trim( (string) ( $card['purchaser_name'] ?? '' ) );
-			if ( $purchaser !== '' ) {
-				$lines[] = sprintf(
-					/* translators: %s: purchaser name */
-					__( 'From: %s', 'mp-commerce-promotions' ),
-					$purchaser
-				);
-			}
-
 			$message = trim( (string) ( $card['message'] ?? '' ) );
 			if ( $message !== '' ) {
 				$lines[] = __( 'Message:', 'mp-commerce-promotions' );
 				$lines[] = $message;
-				$lines[] = '';
 			}
-
 			$amount_str = function_exists( 'wc_price' )
 				? wp_strip_all_tags( wc_price( (float) $card['amount'], array( 'currency' => $card['currency'] ) ) )
 				: number_format( (float) $card['amount'], 2 ) . ' ' . $card['currency'];
-
 			$lines[] = __( 'Gift card code:', 'mp-commerce-promotions' ) . ' ' . (string) $card['plain_code'];
 			$lines[] = __( 'Amount:', 'mp-commerce-promotions' ) . ' ' . $amount_str;
-			$lines[] = __( 'Currency:', 'mp-commerce-promotions' ) . ' ' . (string) $card['currency'];
 			if ( ! empty( $card['expires_at'] ) ) {
 				$lines[] = __( 'Expires:', 'mp-commerce-promotions' ) . ' ' . (string) $card['expires_at'];
 			}
@@ -179,25 +223,15 @@ final class GiftCardDeliveryMailer {
 
 		if ( $store_url !== '' ) {
 			$lines[] = __( 'Store:', 'mp-commerce-promotions' ) . ' ' . $store_url;
-			$lines[] = '';
+		}
+
+		$support = $this->settings->gift_card_support_email_text();
+		if ( $support !== '' ) {
+			$lines[] = $support;
 		}
 
 		$lines[] = __( 'Keep this email safe. The full code is required at checkout and is not stored in our system after delivery.', 'mp-commerce-promotions' );
 
-		$body = implode( "\n", $lines );
-
-		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
-
-		$from_email = function_exists( 'get_option' ) ? (string) get_option( 'admin_email' ) : '';
-		$from_email = sanitize_email( $from_email );
-		if ( $from_email !== '' && is_email( $from_email ) ) {
-			$headers[] = sprintf( 'From: %s <%s>', $site_name, $from_email );
-		}
-
-		if ( function_exists( 'wp_mail' ) ) {
-			return (bool) wp_mail( $to_email, $subject, $body, $headers );
-		}
-
-		return false;
+		return implode( "\n", $lines );
 	}
 }
