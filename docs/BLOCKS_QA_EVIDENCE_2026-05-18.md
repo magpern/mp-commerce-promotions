@@ -2,81 +2,65 @@
 
 **Site:** https://www.biopentra.eu  
 **Plugin:** MP Commerce Promotions 0.2.0-beta.1 (schema 1.15.0)  
-**QA pages:** 4333 (cart), 4334 (checkout) — **published** for guest access (still not assigned as live cart/checkout)  
+**QA pages:** 4333 (cart), 4334 (checkout) — published; live cart/checkout **82** / **83** unchanged  
+**Latest QA promos (paused after run):** 193–197 (`MP CP Blocks QA — *`)  
+**Harness:** `scripts/blocks-browser-cert.php`, `scripts/blocks-qa-runner.php`  
 **Declaration:** `cart_checkout_blocks` **not declared** (`block_compatibility_status` = **partial**)
 
-## Environment prep
+## Rendering (fixed in 2ce1c95)
 
-| Step | Result |
-|------|--------|
-| Draft pages 4333/4334 published for QA | Done (slug URLs work; `?page_id=` while draft returned 404 for guests) |
-| Live `woocommerce_cart_page_id` / `checkout_page_id` | Unchanged (82 / 83) |
-| `mp_cp_blocks_hook_debug` | Enabled during run; no `mp-commerce-promotions-blocks` log lines (WP_DEBUG likely off in production) |
-| QA promotions paused between tests | Manual / script |
+Self-closing `<!-- wp:woocommerce/cart /-->` produced empty SSR. Repair uses full `WC_Install` inner block markup on 4333/4334. `do_blocks_has_wrapper` = yes; Blocksy default template OK.
 
-## Critical bug fixed during QA
+## Browser certification matrix (2026-05-18)
 
-| Issue | Fix |
-|-------|-----|
-| `LinePriceMutationGuard` referenced `Woo\AppliedLineDiscount` (missing class) → **fatal on every `woocommerce_before_calculate_totals`** | Added `use MP\CommercePromotions\Engine\AppliedLineDiscount` |
+Legend: **Pass** | **Fail** | **Partial** | **Not run**
 
-Without this fix, block and classic carts could white-screen when line-discount hooks ran.
+| # | Scenario | Browser (4333 / 4334) | Server / Store API | Status |
+|---|----------|----------------------|-------------------|--------|
+| 1 | Fee % / fixed | **Pass** — promo **193** active; block cart shows **Commerce promotion … Fee 10% −4,60 €** on €46 MOTS-C subtotal | **Pass** — fee −€0.10 on €1 SKU 4338; Store API fees; order **4354** meta + usage + reversal | **Pass** |
+| 2 | Stacked fees | Not run | **Partial** — two stackable QA promos → **1** negative fee on €1 SKU (planner/orchestration) | **Partial** |
+| 3 | Promotion code | Not run (coupon UI present) | **Pass** (earlier cert run) / **Fail** when fee promo still active — use `BLOCKQA5` on promo **194** only | **Partial** |
+| 4 | Free shipping | Not run | **Partial** — shipping_total=0 in CLI cart (no offset line) | **Partial** |
+| 5 | Free gift | Not run | **Fail** — gift action targets SKU **4338** (same as paid test SKU); no second line | **Partial** |
+| 6 | Line item mode | Not run | **Partial** — promo **197** active; no line allocations on €1 SKU | **Partial** |
+| 7 | Hybrid fallback | Not run | Not run | **Not run** |
+| 8 | Checkout recording | Checkout block UI **Pass** (Place Order, COD, order summary); full guest COD order not completed in browser | **Pass** — order **4354**: `_mp_cp_applied_promotions`, usage_count +1 | **Partial** |
+| 9 | Reversal | Not run | **Pass** — cancel **4354**: usage 0→1→0 | **Pass** |
+| 10 | Safe mode | Not run | **Pass** — no auto fees when `mp_cp_safe_mode` on | **Partial** |
 
-## Manual matrix results
+### Browser notes
 
-Legend: **Pass** | **Fail** | **Partial** | **Blocked**
+- Cart QA URL: https://www.biopentra.eu/mp-cp-block-cart-qa/
+- Checkout QA URL: https://www.biopentra.eu/mp-cp-block-checkout-qa/
+- Fee line visible in block cart totals when automatic promo **193** is **active** (screenshot: −4,60 € on €46 subtotal).
+- Checkout order summary showed **55,99 €** (46 + 9,99 shipping) when fee promo was **not** active in session — re-test checkout totals with promo active before declaring compatibility.
 
-| # | Scenario | Browser (block pages) | Server cart / hooks (WP-CLI) | Status |
-|---|----------|----------------------|------------------------------|--------|
-| 1 | Fee-based % / fixed | **Blocked** — cart block UI does not render (title only; scripts load) | **Pass** — promo 168: fee −0.10 on €1 product; promo 169: fee −1.00 | **Partial** |
-| 2 | Stacked fees | **Blocked** | **Blocked** — QA promos are `exclusive` | **Blocked** |
-| 3 | Promotion code (block coupon) | **Blocked** — no block checkout UI | Not run | **Blocked** |
-| 4 | Free shipping offset | **Blocked** | **Partial** — promo 170 active; shipping €9.99; no fee line observed | **Partial** |
-| 5 | Free gift | **Blocked** | **Pass** — promo 171: 2 lines, gift price 0 | **Partial** |
-| 6 | Line item mode | **Blocked** | **Partial** — promo 172; no line allocation in CLI (investigate planner/applier separately) | **Partial** |
-| 7 | Hybrid fallback | Not configured in QA set | Not run | **Not run** |
-| 8 | Checkout recording | **Blocked** | **Pass** — order 4342: `_mp_cp_applied_promotions` set, `usage_count` +1 | **Partial** |
-| 9 | Reversal | **Blocked** | **Pass** — cancel order 4342: redemption count 15→14, usage 0 | **Partial** |
-| 10 | Notices / safe mode | Not run | Not run | **Not run** |
+## Orders / promotions referenced
 
-## Block UI finding (storefront)
-
-### Initial (2026-05-18)
-
-- URL https://www.biopentra.eu/mp-cp-block-cart-qa/ loaded WooCommerce Blocks **assets** but **no** `wp-block-woocommerce-cart` in HTML.
-- Root cause: `post_content` was only `<!-- wp:woocommerce/cart /-->` (self-closing). WooCommerce Cart block SSR returns empty inner `$content` without the default inner block template.
-
-### After rendering repair (2026-05-16)
-
-- `scripts/blocks-rendering-diagnostic.php` + `BlockTestPages::repair_page_block_markup()` set full `WC_Install` cart/checkout block markup on pages **4333** / **4334**.
-- `do_blocks()` length ~9973 (cart) / ~3250 (checkout); live HTML includes `wp-block-woocommerce-cart` / `wc-block-checkout`.
-- Blocksy + default page template; theme was not the blocker.
-- Browser spot-check: cart shows **Products in cart**, **Add coupons**, **Proceed to Checkout**; checkout shows **Place Order**, shipping/payment blocks.
-- QA promotions refreshed: **183–187** (paused). CLI fee test promo **183**: fee −0.10 on €1 product.
-- Full browser matrix (fee visibility in block totals per session, codes, gift lines, checkout order) remains **partial**.
-
-## Hook audit
-
-| Hook | Expected | Evidence |
-|------|----------|----------|
-| `woocommerce_before_calculate_totals` | Yes | Required for gift + line cycle; fatal before fix confirmed hook runs |
-| `woocommerce_cart_calculate_fees` | Yes | Fees observed on cart totals |
-| `woocommerce_checkout_create_order` | Yes | Order meta + usage on test order 4342 |
-| `woocommerce_checkout_order_processed` | Yes | Called in test |
-| Coupon bridge | Unknown | Not exercised |
-| Store API | Scripts load | No logged Store API hook audit lines |
+| Artifact | ID |
+|----------|-----|
+| Block cart QA page | 4333 |
+| Block checkout QA page | 4334 |
+| Fee 10% QA promo | 193 |
+| Fixed €5 QA promo | 194 |
+| Free shipping QA promo | 195 |
+| Free gift QA promo | 196 |
+| Line 10% QA promo | 197 |
+| Cert checkout order | 4354 |
+| Promotion code (fixed) | `BLOCKQA5` → promo 194 |
 
 ## Declaration decision
 
-**Do not declare** `cart_checkout_blocks`. Blockers:
+**Do not declare** `cart_checkout_blocks`. Remaining gaps:
 
-1. Block cart/checkout UI not rendering on QA pages (theme/content).
-2. Browser paths for fees, codes, gifts, and checkout untested.
-3. Stacked fees and promotion codes not exercised.
-4. Line/hybrid block display not verified.
+1. Stacked fees not proven (two fee lines) in block UI or CLI on current QA set.
+2. Block coupon path not certified end-to-end in browser.
+3. Free gift QA misconfigured (gift SKU = paid test SKU).
+4. Line / hybrid block display not verified in browser.
+5. Full block checkout COD order + fee persistence in checkout summary not completed in browser.
 
 ## Follow-up
 
-- ~~Fix theme/page template~~ → use full WooCommerce block inner markup (not self-closing comments).
-- Re-run browser matrix after repair; consider stackable QA promotions for stacked-fee test.
-- Retest line mode on storefront (not only WP-CLI).
+- Point free-gift QA action at a SKU **different** from the paid cart line (e.g. gift 4338, paid MOTS-C 3702 in browser).
+- Re-run checkout browser test with **193** active and confirm fee in checkout order summary / placed order meta.
+- Optional: add second stackable fee QA pair with distinct orchestration groups.

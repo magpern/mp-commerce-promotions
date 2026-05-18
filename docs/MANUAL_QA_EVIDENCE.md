@@ -2,7 +2,7 @@
 
 Evidence bundle for high-risk promotion paths after admin UX polish (`e8da1f1`). This milestone documents verification only; no feature changes.
 
-**Cart/Checkout Blocks (2026-05-18):** See [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md) — partial; `cart_checkout_blocks` not declared.
+**Cart/Checkout Blocks (2026-05-18):** Browser cert partial — fee line Pass on block cart (promo 193); CLI order 4354 record/reversal Pass; stacking/code/gift/line partial. `cart_checkout_blocks` not declared. [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md)
 
 ## Environment
 
@@ -270,7 +270,7 @@ See [BETA_RELEASE_DECISION.md](BETA_RELEASE_DECISION.md).
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Cart/Checkout Blocks | **Blocked** | See [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md); declaration remains **false** |
+| Cart/Checkout Blocks | **Partial** | Block UI renders; fee browser Pass; CLI order 4354; see [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md); declaration **false** |
 | Classic stacked fees | **Partial** | Smokes + prior browser; matrix updated in [BROWSER_QA_MATRIX.md](BROWSER_QA_MATRIX.md) |
 | Scoped / cheapest / shipping | **Partial** | Script coverage; browser not re-run this milestone |
 | Free gift | **Partial** | Prior live site notes |

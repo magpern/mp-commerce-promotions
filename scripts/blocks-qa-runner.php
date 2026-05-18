@@ -39,7 +39,7 @@ if ( $promo_id <= 0 && isset( $_SERVER['argv'] ) && is_array( $_SERVER['argv'] )
 	}
 }
 
-$product_id = 3702;
+$product_id = 4338;
 if ( getenv( 'MP_CP_BLOCK_QA_PRODUCT_ID' ) !== false ) {
 	$product_id = (int) getenv( 'MP_CP_BLOCK_QA_PRODUCT_ID' );
 }

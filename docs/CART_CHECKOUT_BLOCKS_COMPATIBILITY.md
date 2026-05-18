@@ -2,7 +2,7 @@
 
 **Plugin:** MP Commerce Promotions `0.2.0-beta.1`  
 **Schema:** `1.15.0`  
-**Investigation milestone:** 2026-05-17 (setup) · **Manual QA:** 2026-05-18 · **Rendering fix:** 2026-05-16  
+**Investigation milestone:** 2026-05-17 (setup) · **Browser cert:** 2026-05-18 · **Rendering fix:** 2ce1c95  
 **Declaration:** `cart_checkout_blocks` remains **not declared**.  
 **Status:** `mp_cp_block_compatibility_status` = **`partial`** — [BLOCKS_QA_EVIDENCE_2026-05-18.md](BLOCKS_QA_EVIDENCE_2026-05-18.md)
 
@@ -23,14 +23,14 @@ QA pages used **self-closing** block comments only (`<!-- wp:woocommerce/cart /-
 | Block QA pages | **Pass** | **4333**, **4334** — full block markup after repair (live cart/checkout unchanged) |
 | Block SSR / hydration | **Pass** (post-fix) | `do_blocks()` includes cart/checkout wrapper when inner structure present |
 | Hook audit | **Partial** | Cart fees + checkout hooks verified; logger empty (WP_DEBUG off) |
-| Block cart fees (fee-based) | **Partial** | CLI Pass; browser re-test after markup repair |
-| Block stacked fees | **Blocked** | QA promos `exclusive` |
-| Promotion code in block coupon UI | **Partial** | Re-test on 4334 after markup repair |
-| Free shipping fee offset | **Partial** | CLI: no offset fee observed |
-| Free gift | **Partial** | CLI Pass |
-| Line item mode | **Partial** | Not verified in block UI |
-| Checkout / reversal | **Partial** | CLI Pass (order 4342) |
-| **Declare `cart_checkout_blocks`** | **No** | Block UI + codes/stacking incomplete |
+| Block cart fees (fee-based) | **Pass** | Browser + CLI + Store API (promo 193, order 4354) |
+| Block stacked fees | **Partial** | One fee with two stackable QA promos (CLI) |
+| Promotion code in block coupon UI | **Partial** | CLI `BLOCKQA5`; browser not exercised |
+| Free shipping fee offset | **Partial** | No offset when shipping €0 in CLI |
+| Free gift | **Partial** | QA gift SKU = paid SKU; browser not run |
+| Line item mode | **Partial** | No line allocations on €1 CLI cart |
+| Checkout / reversal | **Partial** | CLI Pass order 4354; browser COD not placed |
+| **Declare `cart_checkout_blocks`** | **No** | Stacking, code UI, gift config, line/hybrid, full browser checkout |
 
 Update `mp_cp_block_compatibility_status` (`not_tested` | `partial` | `passed` | `failed`) and notes after manual QA:
 
