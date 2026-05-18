@@ -72,6 +72,8 @@ If **any** is Fail or untested → **do not declare**; keep `CompatibilityStatus
 | Check | Status |
 |-------|--------|
 | Block QA pages created | **Pass** (IDs 4333, 4334, draft) |
+| Smoke setup script | **Pass** — `scripts/blocks-compatibility-smoke.php` |
+| Hook audit documented | **Pass** — [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md) |
 | Block cart fees | **Not run** |
 | Block codes | **Not run** |
 | Block checkout record | **Not run** |

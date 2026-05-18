@@ -45,6 +45,8 @@ final class Settings {
 
 	public const OPTION_TELEMETRY_RETENTION_DAYS = 'mp_cp_telemetry_retention_days';
 
+	public const OPTION_BLOCKS_HOOK_DEBUG = 'mp_cp_blocks_hook_debug';
+
 	private const VALUE_YES = 'yes';
 
 	private const VALUE_NO = 'no';
@@ -199,6 +201,14 @@ final class Settings {
 		update_option( self::OPTION_TELEMETRY_RETENTION_DAYS, max( 7, min( 3650, $days ) ), false );
 	}
 
+	public function blocks_hook_debug_enabled(): bool {
+		return $this->is_enabled( self::OPTION_BLOCKS_HOOK_DEBUG, false );
+	}
+
+	public function set_blocks_hook_debug_enabled( bool $enabled ): void {
+		$this->set_enabled( self::OPTION_BLOCKS_HOOK_DEBUG, $enabled );
+	}
+
 	/**
 	 * @return array<string, bool|int>
 	 */
@@ -221,6 +231,7 @@ final class Settings {
 			'retain_data_on_uninstall'  => $this->retain_data_on_uninstall(),
 			'delete_data_on_uninstall'  => $this->delete_data_on_uninstall(),
 			'telemetry_retention_days'  => $this->telemetry_retention_days(),
+			'blocks_hook_debug'         => $this->blocks_hook_debug_enabled(),
 		);
 	}
 

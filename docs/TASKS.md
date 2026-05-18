@@ -4,7 +4,9 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Current milestone
 
-**Line discount stabilization** — QA runbook, admin warnings/badges, Reports + Diagnostics recovery, persisted telemetry, expanded smoke/tests. Pilot line/hybrid only after `docs/manual-line-discount-engine-test.md`. Fee-based remains default.
+**Cart/Checkout Blocks compatibility investigation** — Draft block QA pages, hook audit doc, `blocks-compatibility-smoke.php`, `CompatibilityStatus` block fields, paused `MP CP Blocks QA` promotions. **Do not declare** `cart_checkout_blocks` until [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md) matrix passes in the browser.
+
+**Line discount stabilization** (complete) — fee-based default; line/hybrid experimental per `docs/manual-line-discount-engine-test.md`.
 
 ## Manual QA (2026-05-17)
 

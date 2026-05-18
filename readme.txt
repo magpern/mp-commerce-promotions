@@ -74,7 +74,7 @@ For architecture, limitations, and development workflow, see the plugin reposito
 * **Uninstall** — custom tables and options are **retained** by default (see uninstall.php)
 * **Scale** — many active promotions increase planner work; use safe mode and retention cleanup under load
 * **Cron** — automation cron disabled by default; enable only with monitoring
-* **Blocks checkout** — not declared compatible with Cart/Checkout Blocks
+* **Blocks checkout** — not declared compatible with Cart/Checkout Blocks; use draft QA pages and `scripts/blocks-compatibility-smoke.php` (see docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md)
 
 == Installation ==
 
@@ -119,7 +119,7 @@ No. Full codes are displayed once after generation. Download the CSV before leav
 * Checkout recording fallback when session is empty at order creation (fee-line rebuild).
 * Browser QA certification docs, beta release evidence, and local QA promotion setup script.
 * Production hardening, simulation, orchestration, economics, and commercial readiness milestones since 0.1.0 (see repository CHANGELOG.md).
-* Cart/Checkout Blocks compatibility is not declared. PHPCS baseline is informational only.
+* Cart/Checkout Blocks compatibility is not declared. Investigation runbook: docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md. PHPCS baseline is informational only.
 
 = 0.1.0 =
 * Initial MVP: promotion engine, admin UI, cart fees, promotion codes, batches, redemptions, audit log, diagnostics.

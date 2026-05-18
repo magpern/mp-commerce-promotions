@@ -53,6 +53,7 @@ use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Service\Settings;
 use MP\CommercePromotions\Service\SupportBundleExporter;
 use MP\CommercePromotions\Service\UsageDiagnostics;
+use MP\CommercePromotions\Woo\BlocksHookAudit;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use MP\CommercePromotions\Woo\CartPromotionApplier;
 use MP\CommercePromotions\Woo\FreeGiftCartSynchronizer;
@@ -181,6 +182,8 @@ final class Plugin {
 				);
 				$this->woo_bridge->set_order_promotion_recorder( $order_recorder );
 			}
+
+			BlocksHookAudit::register( $this->settings );
 		} elseif ( $this->woo_bridge->is_available() ) {
 			$cart_builder = new CartContextBuilder( $this->redemption_repository );
 			$this->woo_bridge->set_cart_context_builder( $cart_builder );

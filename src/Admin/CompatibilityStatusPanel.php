@@ -35,6 +35,33 @@ final class CompatibilityStatusPanel {
 			__( 'Cart/Checkout Blocks', 'mp-commerce-promotions' ),
 			(string) ( $data['cart_checkout_blocks_note'] ?? __( 'Not declared', 'mp-commerce-promotions' ) )
 		);
+		self::row(
+			__( 'Blocks QA cart page ID', 'mp-commerce-promotions' ),
+			(string) (int) ( $data['block_cart_page_id'] ?? 0 )
+		);
+		self::row(
+			__( 'Blocks QA checkout page ID', 'mp-commerce-promotions' ),
+			(string) (int) ( $data['block_checkout_page_id'] ?? 0 )
+		);
+		self::row(
+			__( 'Block QA pages present', 'mp-commerce-promotions' ),
+			! empty( $data['block_pages_present'] ) ? __( 'Yes', 'mp-commerce-promotions' ) : __( 'No', 'mp-commerce-promotions' )
+		);
+		self::row(
+			__( 'Block compatibility status', 'mp-commerce-promotions' ),
+			(string) ( $data['block_compatibility_status'] ?? 'not_tested' )
+		);
+		$block_notes = trim( (string) ( $data['block_compatibility_notes'] ?? '' ) );
+		if ( $block_notes !== '' ) {
+			self::row( __( 'Block compatibility notes', 'mp-commerce-promotions' ), $block_notes );
+		}
+		$preview = is_array( $data['block_preview_urls'] ?? null ) ? $data['block_preview_urls'] : array();
+		if ( ! empty( $preview['cart_preview_url'] ) ) {
+			self::row( __( 'Block cart preview URL', 'mp-commerce-promotions' ), (string) $preview['cart_preview_url'] );
+		}
+		if ( ! empty( $preview['checkout_preview_url'] ) ) {
+			self::row( __( 'Block checkout preview URL', 'mp-commerce-promotions' ), (string) $preview['checkout_preview_url'] );
+		}
 
 		$strategy       = is_array( $data['discount_strategy'] ?? null ) ? $data['discount_strategy'] : array();
 		$strategy_parts = array();

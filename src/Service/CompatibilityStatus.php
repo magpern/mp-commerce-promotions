@@ -9,9 +9,16 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Service;
 
+use MP\CommercePromotions\Woo\BlocksHookAudit;
 use MP\CommercePromotions\Woo\WooCompatibility;
 
 final class CompatibilityStatus {
+
+	private BlockTestPages $block_pages;
+
+	public function __construct( ?BlockTestPages $block_pages = null ) {
+		$this->block_pages = $block_pages ?? new BlockTestPages();
+	}
 
 	/**
 	 * @return array<string, mixed>
@@ -19,7 +26,14 @@ final class CompatibilityStatus {
 	public function collect(): array {
 		global $wp_version;
 
-		$wc_version = defined( 'WC_VERSION' ) ? (string) WC_VERSION : '';
+		$wc_version   = defined( 'WC_VERSION' ) ? (string) WC_VERSION : '';
+		$block_state  = $this->block_pages->resolve_page_state();
+		$block_status = $this->block_pages->compatibility_status();
+		$block_notes  = $this->block_pages->compatibility_notes();
+		$urls         = $this->block_pages->preview_urls(
+			(int) $block_state['cart_page_id'],
+			(int) $block_state['checkout_page_id']
+		);
 
 		return array(
 			'wordpress_version'             => is_string( $wp_version ) ? $wp_version : '',
@@ -27,8 +41,16 @@ final class CompatibilityStatus {
 			'php_version'                   => PHP_VERSION,
 			'hpos_enabled'                  => WooCompatibility::is_hpos_enabled(),
 			'hpos_declared_compatible'      => class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ),
-			'cart_checkout_blocks_declared' => false,
+			'cart_checkout_blocks_declared' => WooCompatibility::is_cart_checkout_blocks_declared(),
 			'cart_checkout_blocks_note'     => __( 'Not declared — block checkout compatibility pending QA.', 'mp-commerce-promotions' ),
+			'block_cart_page_id'            => (int) $block_state['cart_page_id'],
+			'block_checkout_page_id'        => (int) $block_state['checkout_page_id'],
+			'block_pages_present'           => (bool) $block_state['block_pages_present'],
+			'block_compatibility_status'    => $block_status,
+			'block_compatibility_notes'     => $block_notes,
+			'block_preview_urls'            => $urls,
+			'blocks_hook_audit_hooks'       => array_keys( BlocksHookAudit::audited_hooks() ),
+			'blocks_package_present'        => class_exists( \Automattic\WooCommerce\Blocks\Package::class, false ),
 			'discount_strategy'             => array(
 				'cart_fees'            => true,
 				'free_gift_cart_line'  => true,

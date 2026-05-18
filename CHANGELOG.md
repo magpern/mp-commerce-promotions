@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Cart/Checkout Blocks compatibility investigation** — Draft block QA pages (cart **4333**, checkout **4334**); `scripts/blocks-compatibility-smoke.php`; expanded `docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md` test matrix and hook audit; `BlockTestPages`, `BlockQaPromotionSetup`, optional `BlocksHookAudit` debug logging (`WP_DEBUG` + `mp_cp_blocks_hook_debug`); `CompatibilityStatus` block fields exposed in Reports/Diagnostics and support bundle. **`cart_checkout_blocks` remains undeclared.**
 - **Native line discount groundwork (schema 1.15.0)** — `PromotionDiscountApplicationMode` (`fee_based`, `line_item`, `hybrid`); `LineItemDiscountApplier` + `LinePriceMutationGuard` on `woocommerce_before_calculate_totals`; line allocation persistence (`AppliedLineDiscount`, session/order meta); hybrid fee fallback with telemetry; admin **Discount application** field; compatibility audit for line mode. **Fee-based remains the default**; line mode is experimental.
 - **Line discount stabilization** — `docs/manual-line-discount-engine-test.md`; admin experimental warnings and Line/Hybrid list badges; Reports **Line discount mode** section; Diagnostics **Repair stuck line discount sessions** (dry-run); persisted fallback telemetry; expanded smoke and PHPUnit coverage.
 

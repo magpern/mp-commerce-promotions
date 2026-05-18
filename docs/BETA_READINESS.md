@@ -18,7 +18,7 @@
 
 | Area | Status |
 |------|--------|
-| Cart/Checkout Blocks | **Not declared** — see [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md) |
+| Cart/Checkout Blocks | **Not declared** — investigation bundle: [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md), `scripts/blocks-compatibility-smoke.php`, draft pages **4333** / **4334** |
 | Marketplace / wordpress.org | Not submitted |
 | Accounting / tax correctness | Heuristic only |
 | Full browser checkout on production | Partial (BTCPay blocker on reference site) |

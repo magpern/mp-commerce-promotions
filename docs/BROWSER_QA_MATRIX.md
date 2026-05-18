@@ -37,13 +37,24 @@ Legend: **Pass** | **Fail** | **Partial** | **Blocked** | **Not run**
 
 ## Storefront — Cart/Checkout Blocks
 
+Runbook: [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md). Setup: `./wp eval-file .../blocks-compatibility-smoke.php`.
+
 | Scenario | Status | Notes |
 |----------|--------|-------|
-| Block cart fees | **Blocked** | Draft pages **4333**, **4334** not exercised |
-| Block checkout codes | **Blocked** | |
-| Block free gift | **Blocked** | |
-| Block order recording | **Blocked** | |
-| **Declare `cart_checkout_blocks`** | **No** | |
+| Fee-based % / fixed in block cart | **Not run** | QA promos `MP CP Blocks QA — *` (paused) |
+| Stacked fees | **Not run** | |
+| Promotion code (block coupon UI) | **Not run** | Virtual coupon hooks unverified on blocks |
+| Free shipping fee offset | **Not run** | |
+| Free gift add/remove | **Not run** | |
+| Line item mode (block cart prices) | **Not run** | Experimental |
+| Hybrid fallback | **Not run** | |
+| Checkout recording / redemptions | **Not run** | |
+| Reversal | **Not run** | |
+| Native coupon coexistence | **Not run** | |
+| Guest checkout (blocks) | **Not run** | |
+| Logged-in checkout (blocks) | **Not run** | |
+| Hook audit (WP_DEBUG + option) | **Ready** | `mp_cp_blocks_hook_debug` |
+| **Declare `cart_checkout_blocks`** | **No** | `block_compatibility_status` = not_tested |
 
 ## Admin
 

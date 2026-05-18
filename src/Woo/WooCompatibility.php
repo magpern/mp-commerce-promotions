@@ -48,6 +48,13 @@ final class WooCompatibility {
 		return \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
 	}
 
+	/**
+	 * Whether this plugin has declared cart_checkout_blocks compatibility with WooCommerce.
+	 */
+	public static function is_cart_checkout_blocks_declared(): bool {
+		return false;
+	}
+
 	private function __construct() {
 	}
 }

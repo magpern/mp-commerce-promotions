@@ -59,6 +59,8 @@ final class CommercialReadinessTest extends TestCase {
 		$this->assertArrayHasKey( 'hpos_enabled', $status );
 		$this->assertArrayHasKey( 'discount_strategy', $status );
 		$this->assertFalse( $status['cart_checkout_blocks_declared'] );
+		$this->assertArrayHasKey( 'block_compatibility_status', $status );
+		$this->assertArrayHasKey( 'block_pages_present', $status );
 	}
 
 	public function test_support_bundle_redacts_sensitive_keys(): void {

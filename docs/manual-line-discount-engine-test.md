@@ -4,7 +4,7 @@
 
 Storefront **line_item** and **hybrid** discount application modes. **Fee-based remains the default** for all promotions unless you change **Discount application** on the edit screen.
 
-**Not in scope:** Cart/Checkout Blocks certification, subscription products, REST/AJAX admin.
+**Not in scope:** Full Cart/Checkout Blocks certification (see [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md) for block QA), subscription products, REST/AJAX admin.
 
 ## Prerequisites
 
@@ -110,7 +110,7 @@ WooCommerce → Promotions → Diagnostics → **Pricing engine recovery**:
 - **Fee-based default** — existing promotions unchanged until edited.
 - **Unsupported on line path:** free shipping, cheapest item, free gift (fee/gift mechanics).
 - **Product types skipped:** subscriptions, bundles, composites.
-- **Cart/Checkout Blocks** — not declared; use classic cart/checkout.
+- **Cart/Checkout Blocks** — not declared; line mode on block cart is **unverified**. Use classic cart/checkout for line/hybrid pilot, or follow the block matrix in [CART_CHECKOUT_BLOCKS_COMPATIBILITY.md](CART_CHECKOUT_BLOCKS_COMPATIBILITY.md).
 - **PHPCS / CI** — line engine not gated on PHPCS clean baseline.
 
 ## Smoke

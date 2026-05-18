@@ -1,84 +1,168 @@
 # Cart / Checkout Blocks compatibility investigation
 
-**Date:** 2026-05-17  
-**Plugin:** MP Commerce Promotions 0.1.0  
-**Schema:** 1.14.0  
-**Declaration status:** `cart_checkout_blocks` is **not** declared in `WooCompatibility::declare_feature_compatibility()`.
+**Plugin:** MP Commerce Promotions `0.2.0-beta.1`  
+**Schema:** `1.15.0`  
+**Investigation milestone:** 2026-05-17 (post line-discount stabilization)  
+**Declaration:** `cart_checkout_blocks` remains **not declared** in `WooCompatibility::declare_feature_compatibility()`.
 
 ## Summary
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Cart fees in block cart | **Not verified** | Local Docker cart uses `[woocommerce_cart]` shortcode, not `woocommerce/cart` block |
-| Virtual promotion codes in block checkout | **Not verified** | Block checkout coupon UI differs from classic coupon form |
-| Free gift line sync | **Not verified** | Depends on `woocommerce_before_calculate_totals` during block cart recalc |
-| `woocommerce_checkout_create_order` | **Likely** (classic proven) | WooCommerce fires this for block checkout orders; not re-tested on block pages here |
-| Order meta / redemptions | **Likely** (HPOS + classic proven) | Same hooks path when checkout completes |
-| Reversal on cancel/refund | **Likely** (classic proven) | Order status hooks unchanged |
-| Storefront notices (degraded mode) | **Partial** | `woocommerce_before_cart` may not run on block-only cart routes |
-| **Overall declaration** | **Do not declare** | Insufficient block-page evidence |
+| Draft block QA pages | **Pass** | Cart **4333**, checkout **4334** (draft, not live cart/checkout) |
+| Hook audit (documented) | **Pass** | See [Technical hook audit](#technical-hook-audit) |
+| Optional hook debug log | **Available** | `WP_DEBUG` + `mp_cp_blocks_hook_debug=yes` |
+| Block cart fees (fee-based) | **Not run** | Manual browser |
+| Block stacked fees | **Not run** | Manual browser |
+| Promotion code in block coupon UI | **Not run** | Virtual coupon filters untested on blocks |
+| Free shipping fee offset | **Not run** | Manual browser |
+| Free gift add/remove | **Not run** | `woocommerce_before_calculate_totals` path |
+| Line item mode prices | **Not run** | Experimental; block cart line display unverified |
+| Hybrid fallback | **Not run** | Fee path + line path |
+| Checkout order recording | **Not run** | `woocommerce_checkout_create_order` likely; not browser-verified |
+| Redemptions / reversal | **Not run** | Same hooks as classic; not block-verified |
+| Native coupon coexistence | **Not run** | |
+| Guest / logged-in checkout | **Not run** | |
+| **Declare `cart_checkout_blocks`** | **No** | Until matrix below is Pass |
 
-## Integration points (technical)
+Update `mp_cp_block_compatibility_status` (`not_tested` | `partial` | `passed` | `failed`) and notes after manual QA:
 
-The plugin applies promotions through:
+```bash
+./wp option update mp_cp_block_compatibility_status partial
+./wp option update mp_cp_block_compatibility_notes "Cart fees visible; codes not tested."
+```
 
-| Mechanism | Hook / API | Block relevance |
-|-----------|------------|-----------------|
-| Cart fees | `woocommerce_cart_calculate_fees` (priority 20) | Server-side cart totals; block cart uses Store API but typically still builds `WC()->cart` for checkout |
-| Gift zero pricing | `woocommerce_before_calculate_totals` (priority 20) | Must run during cart total calculation |
-| Promotion codes | `woocommerce_get_shop_coupon_data`, `woocommerce_coupon_is_valid` | Block checkout may apply coupons via Store API extensions; virtual coupon path untested |
-| Checkout record | `woocommerce_checkout_create_order` | Standard for WC block checkout order creation |
-| Reversal | `woocommerce_order_status_*`, trash/delete hooks | Order-object based; HPOS compatible |
+---
 
-WooCommerce Blocks package is **present** on the local Docker site (`Automattic\WooCommerce\Blocks\Package`), but cart/checkout **pages use shortcodes**, not block templates.
+## Block QA pages (do not replace live storefront)
 
-## Test environments
+| Page | ID | Slug | Block markup | WC cart/checkout option |
+|------|-----|------|--------------|-------------------------|
+| Promotion Block Cart Test | **4333** | `mp-cp-block-cart-qa` | `<!-- wp:woocommerce/cart /-->` | **Not set** |
+| Promotion Block Checkout Test | **4334** | `mp-cp-block-checkout-qa` | `<!-- wp:woocommerce/checkout /-->` | **Not set** |
 
-### Local Docker (`/home/magpern/woocommerce`)
+**Live storefront (unchanged):** cart page **82** (`[woocommerce_cart]`), checkout **83** (`[woocommerce_checkout]`).
 
-| Check | Result |
-|-------|--------|
-| Cart page (ID 82) | `[woocommerce_cart]` shortcode — **not** `woocommerce/cart` block |
-| Checkout page (ID 83) | `[woocommerce_checkout]` shortcode |
-| Block cart smoke | **Blocked** — no block cart page configured |
+### Preview URLs
 
-### Production reference (`biopentra.eu`, prior evidence)
+```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/blocks-compatibility-smoke.php
+```
 
-| Check | Result |
-|-------|--------|
-| Cart URL | `/cart-2/` (theme route; block vs classic not confirmed in this milestone) |
-| Full checkout | **Blocked** — BTCPay-only; prior runs did not complete payment |
-| Block checkout | **Not tested** |
+Or (replace host):
 
-## Manual test plan (when block pages exist)
+- Cart: `https://<site>/?page_id=4333` (admin may preview draft)
+- Checkout: `https://<site>/?page_id=4334`
 
-1. Replace cart page content with `<!-- wp:woocommerce/cart /-->` and checkout with `<!-- wp:woocommerce/checkout /-->` (or use block templates).
-2. Create active automatic promotion (e.g. 10% subtotal) and add product to cart.
-3. **Fees:** Confirm negative fee line or equivalent discount in block cart totals.
-4. **Code:** Apply promotion code in block coupon field; confirm fee applies and native WC discount stays 0.
-5. **Free gift:** Confirm gift line at $0 and quantity sync on recalc.
-6. **Checkout:** Place test order (cash on delivery or test gateway); verify `mp_cp_redemptions` row and order meta.
-7. **Reversal:** Cancel order; verify redemption reversed and usage decremented.
-8. **Notices:** Trigger degraded mode; confirm whether notice appears on block cart.
+### Setup commands
 
-Record pass/fail in [BROWSER_QA_MATRIX.md](BROWSER_QA_MATRIX.md).
+```bash
+# Ensure pages + paused QA promotions
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/blocks-compatibility-smoke.php
 
-## Remaining blockers before declaration
+# Optional: log when audited hooks fire (requires WP_DEBUG true in wp-config)
+./wp option update mp_cp_blocks_hook_debug yes
+# Revert:
+./wp option update mp_cp_blocks_hook_debug no
+```
 
-1. No block cart/checkout pages on the certified test environment (local Docker).
-2. Block coupon field integration with virtual `shop_coupon_data` filter not exercised.
-3. Unclear whether `woocommerce_before_cart` runs for block-only storefront flows (degraded notice).
-4. Production merchant site not available for controlled block checkout in this run.
-5. No automated Playwright/block E2E suite in CI.
+**Never** on production:
 
-## Recommendation
+```bash
+./wp option update woocommerce_cart_page_id 4333   # do not
+./wp option update woocommerce_checkout_page_id 4334
+```
 
-- Keep **`cart_checkout_blocks_declared` = false** in `CompatibilityStatus`.
-- Merchants on **Cart/Checkout Blocks** should use **classic shortcode pages** or accept **unverified** behavior until this checklist passes.
-- Revisit declaration only after a documented **pass** row for fees + codes + checkout recording on real block pages.
+---
+
+## Manual test matrix
+
+Record **Pass** | **Fail** | **Partial** | **Not run** in [BROWSER_QA_MATRIX.md](BROWSER_QA_MATRIX.md).
+
+| # | Scenario | Mode / notes | Expected | Status |
+|---|----------|--------------|----------|--------|
+| 1 | Fee-based **percentage** discount | Activate `MP CP Blocks QA — Fee 10%` | Negative fee or discount line in block cart totals | Not run |
+| 2 | Fee-based **fixed** discount | `MP CP Blocks QA — Fixed 5` | Fixed fee discount visible | Not run |
+| 3 | **Stacked** fees (2+ stackable promos) | Custom or duplicate QA promos | Both fees; subtotal correct | Not run |
+| 4 | **Promotion code** via block coupon field | Code linked to paused promo → activate | Virtual coupon valid; native WC discount 0; fee applies | Not run |
+| 5 | **Free shipping** fee offset | `MP CP Blocks QA — Free shipping` | Shipping reduced / free shipping fee line | Not run |
+| 6 | **Free gift** add/remove | `MP CP Blocks QA — Free gift` | Gift line $0; qty sync on recalc; no orphan lines | Not run |
+| 7 | **Line item** mode (experimental) | `MP CP Blocks QA — Line 10%` | Line unit/subtotal reduced in block cart if supported | Not run |
+| 8 | **Hybrid** fallback | Promo with line + gift/shipping | Line actions apply; gift/shipping stay fee-based | Not run |
+| 9 | **Checkout** order recording | COD or test gateway on block checkout | Order meta + `mp_cp_redemptions` row | Not run |
+| 10 | **Redemptions** count | After order | `usage_count` incremented | Not run |
+| 11 | **Reversal** | Cancel/refund order | Redemption reversed; usage decremented | Not run |
+| 12 | **Native coupon coexistence** | WC coupon + MP promotion | Per `coupon_behavior` on promotion | Not run |
+| 13 | **Guest checkout** | Incognito block checkout | Same as classic recording path | Not run |
+| 14 | **Logged-in checkout** | Customer account | Per-customer limits respected | Not run |
+
+---
+
+## Technical hook audit
+
+WooCommerce **Cart/Checkout Blocks** use the **Store API** (`/wc/store/v1/cart`, checkout endpoints). Server-side, WooCommerce still builds `WC()->cart` and runs total calculation for many flows. MP Commerce Promotions integrates via **classic cart/checkout hooks** (no Store API extension in this milestone).
+
+### Plugin hooks (registered in `WooCommerceBridge`)
+
+| Hook | MP CP handler | Expected in block flow | Confidence |
+|------|---------------|------------------------|------------|
+| `woocommerce_before_calculate_totals` (15) | `CartPromotionApplier::prepare_line_discount_cycle` | **Likely** on cart recalc (Store API cart updates) | Medium |
+| `woocommerce_before_calculate_totals` (20) | `CartPromotionApplier::zero_free_gift_line_prices` | **Likely** same cycle | Medium |
+| `woocommerce_cart_calculate_fees` (20) | `CartPromotionApplier::apply` | **Likely** — fees are the primary discount surface | Medium–High |
+| `woocommerce_get_shop_coupon_data` | `PromotionCodeCouponBridge::filter_shop_coupon_data` | **Unknown** — block coupon UI may use Store API | Low |
+| `woocommerce_coupon_is_valid` | `PromotionCodeCouponBridge::filter_coupon_is_valid` | **Unknown** | Low |
+| `woocommerce_checkout_create_order` | `OrderPromotionRecorder::record_on_order_create` | **Likely** — WC block checkout creates orders via core checkout | Medium–High |
+| `woocommerce_checkout_order_processed` | `OrderPromotionRecorder::record_on_checkout_processed` | **Likely** (fallback path) | Medium–High |
+| Order status / trash hooks | Reversal / restore | **Likely** (order object / HPOS) | High |
+
+### Related WooCommerce / Blocks surfaces (not hooked by MP CP)
+
+| Surface | Relevance |
+|---------|-----------|
+| `WC()->cart->add_fee()` display | Block cart totals should reflect fees returned in Store API cart response |
+| Store API `ExtendSchema` / cart extensions | **Not used** by MP CP in this milestone |
+| `woocommerce_blocks_loaded` | Blocks package present; no MP CP listener |
+| `woocommerce_store_api_*` | Cart/checkout REST; may not fire all classic hooks — **verify with hook debug** |
+| `woocommerce_before_cart` | Degraded storefront notice — **may not run** on block-only cart routes |
+
+### Debug hook logging
+
+When **`WP_DEBUG`** is true and option **`mp_cp_blocks_hook_debug`** is `yes`, `BlocksHookAudit` logs (WooCommerce logger, source `mp-commerce-promotions-blocks`) when audited hooks fire, including whether the request is Store API (`/wc/store/`).
+
+---
+
+## QA promotions (paused)
+
+Smoke script archives prior rows matching **`MP CP Blocks QA`** and creates paused drafts:
+
+- Fee 10% (fee-based)
+- Fixed 5 (fee-based)
+- Free shipping
+- Free gift (when a published product exists)
+- Line 10% (line_item, experimental)
+
+Activate only the promotion under test.
+
+---
+
+## Decision: declare `cart_checkout_blocks`?
+
+Declare in `WooCompatibility::declare_feature_compatibility()` **only if all** manual matrix rows **1–6, 9–11** are **Pass** on draft block pages (or staging with block pages as live cart, then reverted):
+
+1. Automatic promotion fees visible in block cart/checkout totals  
+2. Promotion codes work (fee applies; native discount 0)  
+3. Checkout records redemptions / order meta  
+4. Reversal on cancel/refund  
+5. Free gift sync acceptable  
+6. No fatals with 2+ active promotions  
+
+Until then: `CompatibilityStatus::cart_checkout_blocks_declared` stays **false**.
+
+---
 
 ## Related docs
 
+- [BLOCK_CHECKOUT_INVESTIGATION.md](BLOCK_CHECKOUT_INVESTIGATION.md)
 - [BROWSER_QA_MATRIX.md](BROWSER_QA_MATRIX.md)
-- [MANUAL_QA_EVIDENCE.md](MANUAL_QA_EVIDENCE.md)
-- [BETA_READINESS.md](BETA_READINESS.md)
+- [manual-line-discount-engine-test.md](manual-line-discount-engine-test.md)
+- [CLASSIC_CHECKOUT_CERTIFICATION.md](CLASSIC_CHECKOUT_CERTIFICATION.md)
