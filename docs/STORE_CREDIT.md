@@ -24,7 +24,7 @@ Store credit is **customer-account balance** on the same ledger as gift cards. I
 
 **Commerce Growth → Gift Cards & Store Credit → Store Credit**
 
-- Look up customer by ID, email, or login.
+- Look up customer by ID, email, or login; choose **currency** from the WooCommerce currency list (store default).
 - Grant or deduct with **required note**.
 - View ledger.
 - **Refund order to store credit (MVP)** — order ID, amount, note; requires `customer_id > 0` on the order. Not integrated into Woo’s refund UI yet.

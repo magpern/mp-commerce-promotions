@@ -55,7 +55,8 @@ final class StoreCreditWallet {
 			throw new InvalidArgumentException( 'Grant amount must be greater than zero.' );
 		}
 
-		$wallet = $this->accounts->find_or_create_wallet( $customer_id, $currency );
+		$currency = GiftCardCurrency::validate( $currency );
+		$wallet   = $this->accounts->find_or_create_wallet( $customer_id, $currency );
 		$id     = $wallet->get_id();
 		if ( $id === null ) {
 			throw new RuntimeException( 'Store credit wallet has no ID.' );
@@ -86,7 +87,8 @@ final class StoreCreditWallet {
 			throw new InvalidArgumentException( 'Deduct amount must be greater than zero.' );
 		}
 
-		$wallet = $this->accounts->find_or_create_wallet( $customer_id, $currency );
+		$currency = GiftCardCurrency::validate( $currency );
+		$wallet   = $this->accounts->find_or_create_wallet( $customer_id, $currency );
 		$id     = $wallet->get_id();
 		if ( $id === null ) {
 			throw new RuntimeException( 'Store credit wallet has no ID.' );
@@ -181,7 +183,8 @@ final class StoreCreditWallet {
 			$currency = get_woocommerce_currency();
 		}
 
-		$wallet = $this->accounts->find_or_create_wallet( $customer_id, $currency );
+		$currency = GiftCardCurrency::validate( $currency );
+		$wallet   = $this->accounts->find_or_create_wallet( $customer_id, $currency );
 		$id     = $wallet->get_id();
 		if ( $id === null ) {
 			throw new RuntimeException( 'Store credit wallet has no ID.' );

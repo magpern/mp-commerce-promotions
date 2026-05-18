@@ -323,6 +323,31 @@ final class ReportsPage {
 			echo '<tr><th scope="row" style="width:50%;">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';
 		}
 		echo '</tbody></table>';
+
+		$by_currency = $gc['liability_by_currency'] ?? array();
+		if ( is_array( $by_currency ) && $by_currency !== array() ) {
+			echo '<h3 style="margin-top:1.25em;">' . esc_html__( 'Outstanding liability by currency', 'mp-commerce-promotions' ) . '</h3>';
+			echo '<p class="description">' . esc_html__( 'Liabilities are not converted between currencies; totals above may combine multiple currencies.', 'mp-commerce-promotions' ) . '</p>';
+			echo '<table class="widefat striped" style="max-width:720px;"><thead><tr>';
+			echo '<th scope="col">' . esc_html__( 'Currency', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Gift cards', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Store credit', 'mp-commerce-promotions' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Combined', 'mp-commerce-promotions' ) . '</th>';
+			echo '</tr></thead><tbody>';
+			foreach ( $by_currency as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$code = (string) ( $row['currency'] ?? '' );
+				echo '<tr>';
+				echo '<td><strong>' . esc_html( $code ) . '</strong></td>';
+				echo '<td>' . esc_html( number_format_i18n( (float) ( $row['gift_card_liability'] ?? 0 ), 2 ) ) . '</td>';
+				echo '<td>' . esc_html( number_format_i18n( (float) ( $row['store_credit_liability'] ?? 0 ), 2 ) ) . '</td>';
+				echo '<td>' . esc_html( number_format_i18n( (float) ( $row['combined_liability'] ?? 0 ), 2 ) ) . '</td>';
+				echo '</tr>';
+			}
+			echo '</tbody></table>';
+		}
 	}
 
 	/**

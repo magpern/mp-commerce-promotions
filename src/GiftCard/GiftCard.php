@@ -117,10 +117,7 @@ final class GiftCard {
 			throw new InvalidArgumentException( 'GiftCard amounts cannot be negative.' );
 		}
 
-		$currency = strtoupper( trim( $currency ) );
-		if ( $currency === '' ) {
-			throw new InvalidArgumentException( 'GiftCard currency is required.' );
-		}
+		$currency = GiftCardCurrency::validate( $currency );
 
 		if ( ! in_array( $status, self::ALLOWED_STATUSES, true ) ) {
 			throw new InvalidArgumentException( 'GiftCard status is invalid.' );

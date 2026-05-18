@@ -72,10 +72,7 @@ final class StoreCreditAccountService {
 			throw new InvalidArgumentException( 'Customer ID is required for store credit.' );
 		}
 
-		$currency = strtoupper( trim( $currency ) );
-		if ( $currency === '' ) {
-			throw new InvalidArgumentException( 'Currency is required for store credit.' );
-		}
+		$currency = GiftCardCurrency::validate( $currency );
 
 		$existing = $this->cards->find_store_credit_wallet( $customer_id, $currency );
 		if ( $existing !== null ) {

@@ -32,6 +32,11 @@ final class GiftCardLedgerTest extends TestCase {
 		);
 	}
 
+	public function test_issue_rejects_invalid_currency(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->ledger->issue( 10.0, 'NOTACURRENCY' );
+	}
+
 	public function test_hash_lookup(): void {
 		$issued = $this->ledger->issue( 50.0, 'EUR' );
 		$found  = $this->ledger->find_by_plain_code( $issued->get_plain_code() );

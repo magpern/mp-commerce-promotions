@@ -11,6 +11,7 @@ namespace MP\CommercePromotions\Admin;
 
 use InvalidArgumentException;
 use MP\CommercePromotions\GiftCard\GiftCard;
+use MP\CommercePromotions\GiftCard\GiftCardCurrency;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
 use MP\CommercePromotions\GiftCard\StoreCreditAccountService;
@@ -229,16 +230,41 @@ final class GiftCardsPage {
 	}
 
 	private function resolve_post_currency(): string {
-		$currency = isset( $_POST['sc_currency'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['sc_currency'] ) ) : '';
-		if ( $currency === '' && function_exists( 'get_woocommerce_currency' ) ) {
-			$currency = get_woocommerce_currency();
+		$raw = isset( $_POST['sc_currency'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['sc_currency'] ) ) : '';
+
+		return GiftCardCurrency::validate( $raw );
+	}
+
+	private function resolve_panel_currency(): string {
+		if ( isset( $_GET['sc_currency'] ) ) {
+			$raw = sanitize_text_field( wp_unslash( (string) $_GET['sc_currency'] ) );
+			if ( GiftCardCurrency::is_allowed( $raw ) ) {
+				return GiftCardCurrency::normalize( $raw );
+			}
 		}
 
-		return $currency;
+		return GiftCardCurrency::store_currency();
+	}
+
+	/**
+	 * @param array<string, string> $currencies
+	 */
+	private function render_currency_select( string $field_name, string $field_id, string $selected, array $currencies ): void {
+		echo '<select name="' . esc_attr( $field_name ) . '" id="' . esc_attr( $field_id ) . '" class="regular-text">';
+		foreach ( $currencies as $code => $label ) {
+			printf(
+				'<option value="%1$s"%2$s>%3$s (%1$s)</option>',
+				esc_attr( $code ),
+				selected( $selected, $code, false ),
+				esc_html( $label )
+			);
+		}
+		echo '</select>';
 	}
 
 	private function render_store_credit_panel(): void {
-		$currency = function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'EUR';
+		$currency    = $this->resolve_panel_currency();
+		$currencies  = GiftCardCurrency::allowed_currencies();
 		$customer = $this->selected_customer_id;
 		$balance  = 0.0;
 		$wallet   = null;
@@ -263,6 +289,9 @@ final class GiftCardsPage {
 		echo '<input type="hidden" name="page" value="' . esc_attr( AdminNavigation::PAGE_SLUG ) . '" />';
 		echo '<input type="hidden" name="tab" value="' . esc_attr( AdminNavigation::TAB_GIFT_CARDS ) . '" />';
 		echo '<input type="hidden" name="mp_cp_gc_panel" value="' . esc_attr( self::PANEL_STORE_CREDIT ) . '" />';
+		echo '<p><label for="sc_currency_lookup">' . esc_html__( 'Currency', 'mp-commerce-promotions' ) . '</label><br />';
+		$this->render_currency_select( 'sc_currency', 'sc_currency_lookup', $currency, $currencies );
+		echo '</p>';
 		echo '<p><label for="sc_customer_lookup">' . esc_html__( 'Customer (ID, email, or login)', 'mp-commerce-promotions' ) . '</label><br />';
 		echo '<input type="text" class="regular-text" id="sc_customer_lookup" name="sc_customer_lookup" value="';
 		if ( $customer !== null && $customer > 0 ) {
@@ -281,6 +310,7 @@ final class GiftCardsPage {
 						array(
 							'customer_id'    => $found,
 							'mp_cp_gc_panel' => self::PANEL_STORE_CREDIT,
+							'sc_currency'    => $currency,
 						),
 						$search_url
 					)
@@ -372,11 +402,14 @@ final class GiftCardsPage {
 		int $customer_id,
 		string $currency
 	): void {
+		$currencies = GiftCardCurrency::allowed_currencies();
 		echo '<form method="post" style="max-width:480px;margin-bottom:1.5em;">';
 		wp_nonce_field( $nonce_action );
 		echo '<input type="hidden" name="' . esc_attr( $submit_name ) . '" value="1" />';
 		echo '<input type="hidden" name="sc_customer" value="' . esc_attr( (string) $customer_id ) . '" />';
-		echo '<input type="hidden" name="sc_currency" value="' . esc_attr( $currency ) . '" />';
+		echo '<p><label for="' . esc_attr( $submit_name ) . '_currency">' . esc_html__( 'Currency', 'mp-commerce-promotions' ) . '</label><br />';
+		$this->render_currency_select( 'sc_currency', $submit_name . '_currency', $currency, $currencies );
+		echo '</p>';
 		echo '<p><label>' . esc_html__( 'Amount', 'mp-commerce-promotions' ) . '</label><br />';
 		echo '<input type="number" step="0.01" min="0.01" name="sc_amount" class="regular-text" required /></p>';
 		echo '<p><label>' . esc_html__( 'Note (required)', 'mp-commerce-promotions' ) . '</label><br />';
@@ -395,10 +428,6 @@ final class GiftCardsPage {
 		}
 
 		$amount = isset( $_POST['amount'] ) ? (float) wp_unslash( (string) $_POST['amount'] ) : 0.0;
-		$currency = isset( $_POST['currency'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['currency'] ) ) : '';
-		if ( $currency === '' && function_exists( 'get_woocommerce_currency' ) ) {
-			$currency = get_woocommerce_currency();
-		}
 
 		$expires = isset( $_POST['expires_at'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['expires_at'] ) ) : '';
 		$expires = $expires !== '' ? $expires . ' 23:59:59' : null;
@@ -407,6 +436,9 @@ final class GiftCardsPage {
 		$note  = isset( $_POST['note'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['note'] ) ) : '';
 
 		try {
+			$currency = GiftCardCurrency::validate(
+				isset( $_POST['currency'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['currency'] ) ) : ''
+			);
 			$result = $this->ledger->issue( $amount, $currency, $expires, $email !== '' ? $email : null, $note !== '' ? $note : null );
 			$id     = $result->get_card()->get_id();
 			$this->flash_issue = array(
@@ -464,7 +496,8 @@ final class GiftCardsPage {
 	}
 
 	private function render_issue_form(): void {
-		$currency = function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'EUR';
+		$currency   = GiftCardCurrency::store_currency();
+		$currencies = GiftCardCurrency::allowed_currencies();
 
 		echo '<h2>' . esc_html__( 'Issue gift card', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<form method="post" class="mp-cg-issue-form" style="max-width:520px;">';
@@ -474,7 +507,9 @@ final class GiftCardsPage {
 		echo '<tr><th scope="row"><label for="mp_cp_gc_amount">' . esc_html__( 'Amount', 'mp-commerce-promotions' ) . '</label></th>';
 		echo '<td><input name="amount" id="mp_cp_gc_amount" type="number" step="0.01" min="0.01" class="regular-text" required /></td></tr>';
 		echo '<tr><th scope="row"><label for="mp_cp_gc_currency">' . esc_html__( 'Currency', 'mp-commerce-promotions' ) . '</label></th>';
-		echo '<td><input name="currency" id="mp_cp_gc_currency" type="text" class="regular-text" value="' . esc_attr( $currency ) . '" maxlength="10" /></td></tr>';
+		echo '<td>';
+		$this->render_currency_select( 'currency', 'mp_cp_gc_currency', $currency, $currencies );
+		echo '</td></tr>';
 		echo '<tr><th scope="row"><label for="mp_cp_gc_expires">' . esc_html__( 'Expires (optional)', 'mp-commerce-promotions' ) . '</label></th>';
 		echo '<td><input name="expires_at" id="mp_cp_gc_expires" type="date" class="regular-text" /></td></tr>';
 		echo '<tr><th scope="row"><label for="mp_cp_gc_email">' . esc_html__( 'Recipient email (optional)', 'mp-commerce-promotions' ) . '</label></th>';

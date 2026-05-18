@@ -46,10 +46,7 @@ final class GiftCardLedger {
 			throw new InvalidArgumentException( 'Gift card amount must be greater than zero.' );
 		}
 
-		$currency = strtoupper( trim( $currency ) );
-		if ( $currency === '' ) {
-			throw new InvalidArgumentException( 'Gift card currency is required.' );
-		}
+		$currency = GiftCardCurrency::validate( $currency );
 
 		$plain_code = $this->code_generator->generate_plain_code();
 		$hash       = GiftCardRepository::hash_plain_code( $plain_code );

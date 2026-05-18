@@ -93,6 +93,8 @@ $report_keys = array(
 foreach ( $report_keys as $key ) {
 	sc_smoke_assert( array_key_exists( $key, $summary ), 'report key: ' . $key );
 }
+sc_smoke_assert( array_key_exists( 'liability_by_currency', $summary ), 'report key: liability_by_currency' );
+sc_smoke_assert( is_array( $summary['liability_by_currency'] ), 'liability_by_currency is array' );
 
 $diag   = new GiftCardIntegrityDiagnostics( $wpdb, $repo, $ledger );
 $issues = $diag->analyze();

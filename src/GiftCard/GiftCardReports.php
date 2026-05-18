@@ -37,7 +37,8 @@ final class GiftCardReports {
 	 *   refund_to_credit_total: float,
 	 *   manual_adjustment_total: float,
 	 *   depleted_count: int,
-	 *   expired_count: int
+	 *   expired_count: int,
+	 *   liability_by_currency: list<array{currency: string, gift_card_liability: float, store_credit_liability: float, combined_liability: float}>
 	 * }
 	 */
 	public function summary(): array {
@@ -153,7 +154,68 @@ final class GiftCardReports {
 			'manual_adjustment_total'           => GiftCard::money( $manual_adjustment ),
 			'depleted_count'                    => max( 0, $depleted ),
 			'expired_count'                     => max( 0, $expired ),
+			'liability_by_currency'             => $this->liability_by_currency(),
 		);
+	}
+
+	/**
+	 * Active outstanding liability grouped by currency (do not sum across currencies).
+	 *
+	 * @return list<array{currency: string, gift_card_liability: float, store_credit_liability: float, combined_liability: float}>
+	 */
+	public function liability_by_currency(): array {
+		$table = $this->cards_table();
+
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			"SELECT currency, source_type, COALESCE(SUM(balance), 0) AS liability
+			FROM {$table}
+			WHERE status = %s
+			GROUP BY currency, source_type
+			ORDER BY currency ASC",
+			array( GiftCard::STATUS_ACTIVE )
+		);
+
+		/** @var array<string, array{currency: string, gift_card_liability: float, store_credit_liability: float, combined_liability: float}> $by_currency */
+		$by_currency = array();
+
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$currency = GiftCardCurrency::normalize( (string) ( $row['currency'] ?? '' ) );
+			if ( $currency === '' ) {
+				continue;
+			}
+
+			if ( ! isset( $by_currency[ $currency ] ) ) {
+				$by_currency[ $currency ] = array(
+					'currency'                => $currency,
+					'gift_card_liability'     => 0.0,
+					'store_credit_liability'  => 0.0,
+					'combined_liability'      => 0.0,
+				);
+			}
+
+			$amount = GiftCard::money( (float) ( $row['liability'] ?? 0 ) );
+			$source = (string) ( $row['source_type'] ?? GiftCard::SOURCE_GIFT_CARD );
+
+			if ( $source === GiftCard::SOURCE_STORE_CREDIT ) {
+				$by_currency[ $currency ]['store_credit_liability'] = GiftCard::money(
+					$by_currency[ $currency ]['store_credit_liability'] + $amount
+				);
+			} else {
+				$by_currency[ $currency ]['gift_card_liability'] = GiftCard::money(
+					$by_currency[ $currency ]['gift_card_liability'] + $amount
+				);
+			}
+
+			$by_currency[ $currency ]['combined_liability'] = GiftCard::money(
+				$by_currency[ $currency ]['gift_card_liability'] + $by_currency[ $currency ]['store_credit_liability']
+			);
+		}
+
+		return array_values( $by_currency );
 	}
 
 	private function cards_table(): string {
