@@ -60,6 +60,13 @@ final class GiftCardEmailSenderTest extends TestCase {
 		$this->assertFalse( $sender->resolve_for_send()['from_header_set'] );
 	}
 
+	public function test_stored_custom_without_email_normalizes_to_default_for_ui(): void {
+		update_option( Settings::OPTION_GIFT_CARD_SENDER_MODE, Settings::GIFT_CARD_SENDER_MODE_CUSTOM, false );
+
+		$this->assertSame( Settings::GIFT_CARD_SENDER_MODE_DEFAULT, $this->settings->gift_card_sender_mode() );
+		$this->assertSame( Settings::GIFT_CARD_SENDER_MODE_DEFAULT, ( new GiftCardEmailSender( $this->settings ) )->configured_mode() );
+	}
+
 	public function test_diagnostics_analyze_includes_sender_mode(): void {
 		$this->settings->set_gift_card_sender_mode( Settings::GIFT_CARD_SENDER_MODE_CUSTOM );
 		$this->settings->set_gift_card_sender_email( 'sender@store.test' );

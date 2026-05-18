@@ -36,7 +36,6 @@ if ( $recipient === '' ) {
 	$recipient = 'postmaster@biopentra.eu';
 }
 $settings  = new Settings();
-$settings->set_gift_card_sender_mode( \MP\CommercePromotions\Service\Settings::GIFT_CARD_SENDER_MODE_DEFAULT );
 $mailer    = new GiftCardDeliveryMailer( $settings );
 $manual    = new GiftCardManualIssueDelivery( $mailer, new GiftCardManualDeliveryStore() );
 $repo      = new GiftCardRepository( $wpdb );
@@ -53,6 +52,14 @@ $fail = static function ( string $label, string $detail = '' ) use ( &$failures 
 };
 
 echo "=== Gift card mail smoke ===\n";
+
+delete_option( Settings::OPTION_GIFT_CARD_SENDER_MODE );
+if ( $settings->gift_card_sender_mode() !== Settings::GIFT_CARD_SENDER_MODE_DEFAULT ) {
+	$fail( 'unset sender mode defaults to site mail' );
+} else {
+	$pass( 'unset sender mode defaults to site mail' );
+}
+$settings->set_gift_card_sender_mode( Settings::GIFT_CARD_SENDER_MODE_DEFAULT );
 
 $issued = $ledger->issue(
 	1.0,
@@ -149,6 +156,14 @@ if ( isset( $diag['sender_mode'] ) && isset( $diag['effective_sender_mode'] ) ) 
 	$pass( 'diagnostics sender keys present' );
 } else {
 	$fail( 'diagnostics sender keys present' );
+}
+
+$settings->set_gift_card_sender_mode( Settings::GIFT_CARD_SENDER_MODE_DEFAULT );
+$settings->set_gift_card_sender_email( '' );
+if ( $settings->gift_card_sender_mode() !== Settings::GIFT_CARD_SENDER_MODE_DEFAULT ) {
+	$fail( 'restore default sender mode after smoke' );
+} else {
+	$pass( 'restore default sender mode after smoke' );
 }
 
 echo "=== Done; failures: {$failures} ===\n";

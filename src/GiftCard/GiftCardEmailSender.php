@@ -99,11 +99,12 @@ final class GiftCardEmailSender {
 	public function analyze(): array {
 		$configured = $this->configured_mode();
 		$effective  = $this->effective_mode();
+		$stored     = $this->settings->gift_card_sender_mode_stored();
 		$email      = $this->settings->gift_card_sender_email();
 		$valid      = $this->is_custom_sender_valid();
 		$warnings   = array();
 
-		if ( $configured === Settings::GIFT_CARD_SENDER_MODE_CUSTOM && ! $valid ) {
+		if ( $stored === Settings::GIFT_CARD_SENDER_MODE_CUSTOM && ! $valid ) {
 			$warnings[] = __( 'Custom sender email is invalid; delivery uses the default sender (WooCommerce / WP Mail SMTP / site mail).', 'mp-commerce-promotions' );
 		}
 

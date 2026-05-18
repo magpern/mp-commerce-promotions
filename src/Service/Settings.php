@@ -391,11 +391,54 @@ final class Settings {
 		update_option( self::OPTION_GIFT_CARD_SENDER_EMAIL, sanitize_email( trim( $email ) ), false );
 	}
 
+	/**
+	 * Stored sender mode (valid default/custom only; does not require a custom email).
+	 */
+	public function gift_card_sender_mode_stored(): string {
+		return self::normalize_gift_card_sender_mode(
+			get_option( self::OPTION_GIFT_CARD_SENDER_MODE, false ),
+			'',
+			false
+		);
+	}
+
+	/**
+	 * Effective sender mode for UI and delivery (custom only when stored and email is valid).
+	 */
 	public function gift_card_sender_mode(): string {
-		$raw = get_option( self::OPTION_GIFT_CARD_SENDER_MODE, self::GIFT_CARD_SENDER_MODE_DEFAULT );
-		$mode = is_string( $raw ) ? sanitize_key( $raw ) : self::GIFT_CARD_SENDER_MODE_DEFAULT;
+		return self::normalize_gift_card_sender_mode(
+			get_option( self::OPTION_GIFT_CARD_SENDER_MODE, false ),
+			$this->gift_card_sender_email(),
+			true
+		);
+	}
+
+	/**
+	 * @param mixed $raw Option value from the database.
+	 */
+	public static function normalize_gift_card_sender_mode(
+		$raw,
+		string $custom_email = '',
+		bool $require_valid_email_for_custom = true
+	): string {
+		if ( $raw === false || $raw === null ) {
+			return self::GIFT_CARD_SENDER_MODE_DEFAULT;
+		}
+		if ( ! is_string( $raw ) ) {
+			return self::GIFT_CARD_SENDER_MODE_DEFAULT;
+		}
+		$trimmed = trim( $raw );
+		if ( $trimmed === '' ) {
+			return self::GIFT_CARD_SENDER_MODE_DEFAULT;
+		}
+		$mode = sanitize_key( $trimmed );
 		if ( ! in_array( $mode, self::gift_card_sender_modes(), true ) ) {
 			return self::GIFT_CARD_SENDER_MODE_DEFAULT;
+		}
+		if ( $mode === self::GIFT_CARD_SENDER_MODE_CUSTOM && $require_valid_email_for_custom ) {
+			if ( $custom_email === '' || ! function_exists( 'is_email' ) || ! is_email( $custom_email ) ) {
+				return self::GIFT_CARD_SENDER_MODE_DEFAULT;
+			}
 		}
 
 		return $mode;
