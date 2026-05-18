@@ -55,6 +55,7 @@ final class PromotionFactory {
 			PromotionCouponBehavior::DEFAULT_BEHAVIOR,
 			PromotionAllocationMode::DEFAULT_MODE,
 			PromotionDiscountApplicationMode::DEFAULT_MODE,
+			false,
 			$created_by,
 			null,
 			null
@@ -100,6 +101,7 @@ final class PromotionFactory {
 			$source->get_coupon_behavior(),
 			$source->get_allocation_mode(),
 			$source->get_discount_application_mode(),
+			$source->is_dry_run(),
 			$created_by,
 			null,
 			null

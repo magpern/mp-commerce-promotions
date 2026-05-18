@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **GA stabilization closure (schema 1.16.0)** — Settings UI for global **promotion dry-run**; per-promotion `dry_run` column + edit checkbox + list badge; `PromotionDryRunGuard` (no fees/gifts/line/redemptions); `ScheduleConflictPreviewService` on edit + Diagnostics; `scripts/ga-stress-smoke.php`; `docs/GA_READINESS_DELTA.md`; `tests/Unit/GaClosureTest.php`.
+
 - **GA stabilization phase** — `EcosystemCompatibilityRegistry` matrix + `KnownLimitationsRegistry`; `SystemHealthService` score and recovery recommendations; `PromotionComplexityScorer` and `MerchantSafetyAdvisor`; promotion **dry-run** setting; planner **timing buckets**; request memoization for `find_active_for_planner()`; stale lock cleanup; Diagnostics ecosystem/health/safety panels; `scripts/ga-stabilization-smoke.php`; docs `COMPATIBILITY_MATRIX.md`, `KNOWN_LIMITATIONS.md`, `PERFORMANCE_GUIDE.md`, `MERCHANT_SAFETY.md`, `SCALING_GUIDE.md`, `TROUBLESHOOTING.md`.
 
 ### Fixed

@@ -86,6 +86,12 @@ if ( $wpdb instanceof wpdb ) {
 
 $settings = new Settings();
 ga_smoke_assert( method_exists( $settings, 'promotion_dry_run_enabled' ), 'promotion dry-run setting' );
+$settings->set_promotion_dry_run_enabled( true );
+ga_smoke_assert( $settings->promotion_dry_run_enabled(), 'promotion dry-run toggle persistence' );
+$settings->set_promotion_dry_run_enabled( false );
+
+$preview = new \MP\CommercePromotions\Service\ScheduleConflictPreviewService();
+ga_smoke_assert( is_array( $preview->preview_site_summary( array(), 5 ) ), 'schedule conflict preview service' );
 
 echo str_repeat( '-', 40 ) . "\n";
 echo "GA stabilization smoke: {$ok} passed, {$fail} failed\n";

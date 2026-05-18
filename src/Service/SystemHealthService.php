@@ -36,12 +36,12 @@ final class SystemHealthService {
 		?PromotionHealthMonitor $promotion_health = null,
 		?PromotionRepository $promotions = null
 	) {
-		$this->settings          = $settings;
-		$this->profiler          = $profiler;
-		$this->concurrency       = $concurrency;
-		$this->ecosystem         = $ecosystem ?? new EcosystemCompatibilityRegistry();
-		$this->promotion_health  = $promotion_health;
-		$this->promotions        = $promotions;
+		$this->settings         = $settings;
+		$this->profiler         = $profiler;
+		$this->concurrency      = $concurrency;
+		$this->ecosystem        = $ecosystem ?? new EcosystemCompatibilityRegistry();
+		$this->promotion_health = $promotion_health;
+		$this->promotions       = $promotions;
 	}
 
 	/**
@@ -92,19 +92,19 @@ final class SystemHealthService {
 		);
 
 		$result = array(
-			'score'              => $score,
-			'label'              => $this->score_label( $score ),
-			'ecosystem_score'    => (int) ( $eco['score'] ?? 0 ),
-			'promotion_issues'   => $promo_cnt,
-			'degraded'           => ! empty( $perf['degraded']['active'] ),
-			'recommendations'    => $recommendations,
-			'last_failure'       => $last_failure,
-			'components'         => array(
-				'ecosystem'        => $eco,
-				'pricing_compat'   => $pricing,
-				'performance'      => $perf,
-				'feature_flags'    => $this->settings->to_feature_flags(),
-				'stale_locks'      => $this->concurrency->purge_stale_locks( false ),
+			'score'            => $score,
+			'label'            => $this->score_label( $score ),
+			'ecosystem_score'  => (int) ( $eco['score'] ?? 0 ),
+			'promotion_issues' => $promo_cnt,
+			'degraded'         => ! empty( $perf['degraded']['active'] ),
+			'recommendations'  => $recommendations,
+			'last_failure'     => $last_failure,
+			'components'       => array(
+				'ecosystem'      => $eco,
+				'pricing_compat' => $pricing,
+				'performance'    => $perf,
+				'feature_flags'  => $this->settings->to_feature_flags(),
+				'stale_locks'    => $this->concurrency->purge_stale_locks( false ),
 			),
 		);
 
@@ -151,9 +151,9 @@ final class SystemHealthService {
 	}
 
 	/**
-	 * @param array<string, mixed> $eco
-	 * @param array<string, mixed> $pricing
-	 * @param array<string, mixed> $perf
+	 * @param array<string, mixed>       $eco
+	 * @param array<string, mixed>       $pricing
+	 * @param array<string, mixed>       $perf
 	 * @param list<array<string, mixed>> $warnings
 	 * @return list<string>
 	 */

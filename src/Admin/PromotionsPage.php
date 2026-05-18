@@ -1105,13 +1105,25 @@ final class PromotionsPage {
 
 	private function format_application_summary_html( Promotion $promotion ): string {
 		$text = esc_html( $this->format_application_summary( $promotion ) );
-		$badge = LineDiscountModeHelper::list_badge_label( $promotion->get_discount_application_mode() );
-		if ( $badge === null ) {
+		$badges = array();
+		$badge  = LineDiscountModeHelper::list_badge_label( $promotion->get_discount_application_mode() );
+		if ( $badge !== null ) {
+			$badges[] = $badge;
+		}
+		if ( $promotion->is_dry_run() ) {
+			$badges[] = __( 'Dry run', 'mp-commerce-promotions' );
+		}
+		if ( $badges === array() ) {
 			return $text;
 		}
 
-		return $text . ' <span class="mp-cp-badge" style="display:inline-block;margin-left:4px;padding:1px 6px;border-radius:3px;background:#dba617;color:#1d2327;font-size:11px;font-weight:600;">'
-			. esc_html( $badge ) . '</span>';
+		$html = $text;
+		foreach ( $badges as $label ) {
+			$html .= ' <span class="mp-cp-badge" style="display:inline-block;margin-left:4px;padding:1px 6px;border-radius:3px;background:#dba617;color:#1d2327;font-size:11px;font-weight:600;">'
+				. esc_html( $label ) . '</span>';
+		}
+
+		return $html;
 	}
 
 	private function promotion_has_scoped_rules( Promotion $promotion ): bool {

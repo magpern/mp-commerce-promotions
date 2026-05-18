@@ -39,6 +39,7 @@ use MP\CommercePromotions\Engine\PromotionPlanExplainer;
 use MP\CommercePromotions\Engine\PromotionPlanner;
 use MP\CommercePromotions\Service\PromotionConflictAnalyzer;
 use MP\CommercePromotions\Service\PromotionScheduleAnalyzer;
+use MP\CommercePromotions\Service\ScheduleConflictPreviewService;
 use MP\CommercePromotions\Engine\RuleRegistry;
 use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
 use MP\CommercePromotions\Engine\RuleTypes;
@@ -210,6 +211,7 @@ final class PromotionEditPage {
 		$this->render_recent_snapshots_section( $promotion );
 		$this->render_rule_validation_section( $promotion );
 		$this->render_schedule_warnings_section( $promotion );
+		$this->render_schedule_conflict_preview_section( $promotion );
 		$this->render_cart_preview_section( $promotion );
 		$this->render_promotion_codes_section( $promotion );
 		$this->render_usage_redemptions_section( $promotion );
@@ -1565,6 +1567,7 @@ final class PromotionEditPage {
 					$orchestration_meta['orchestration_group']
 				)
 				->with_pricing_fields( $priority_tier, $coupon_behavior, $allocation_mode, $discount_application_mode )
+				->with_dry_run( isset( $_POST['promotion_dry_run'] ) && sanitize_text_field( wp_unslash( (string) $_POST['promotion_dry_run'] ) ) === '1' )
 				->with_rules( $conditions, $actions, $restrictions );
 
 			$this->promotion_service->update_promotion( $updated, (int) get_current_user_id() );
@@ -2116,6 +2119,14 @@ final class PromotionEditPage {
 			'mp-commerce-promotions'
 		) . '</p></td></tr>';
 
+		$dry_run_checked = $promotion->is_dry_run() ? ' checked="checked"' : '';
+		echo '<tr><th scope="row">' . esc_html__( 'Dry run', 'mp-commerce-promotions' ) . '</th><td>';
+		echo '<label for="mp_cp_promotion_dry_run"><input type="checkbox" id="mp_cp_promotion_dry_run" name="promotion_dry_run" value="1"' . $dry_run_checked . ' /> ';
+		echo esc_html__( 'Evaluate in planner trace only (no fees, gifts, line mutations, or redemptions)', 'mp-commerce-promotions' );
+		echo '</label>';
+		echo '<p class="description">' . esc_html__( 'Global dry-run in Settings overrides all promotions.', 'mp-commerce-promotions' ) . '</p>';
+		echo '</td></tr>';
+
 		echo '</tbody></table></div>';
 	}
 
@@ -2380,6 +2391,46 @@ final class PromotionEditPage {
 				echo '</ul>';
 			},
 			__( 'Read-only checks against supported condition and action types. Passing validation does not guarantee the promotion will apply to a specific cart.', 'mp-commerce-promotions' ),
+			array(
+				'heading' => 'h2',
+				'width'   => 'narrow',
+			)
+		);
+	}
+
+	private function render_schedule_conflict_preview_section( Promotion $promotion ): void {
+		$catalog = $this->load_schedulable_catalog();
+		$rows    = ( new ScheduleConflictPreviewService() )->preview_for_promotion( $promotion, $catalog );
+
+		if ( $rows === array() ) {
+			return;
+		}
+
+		AdminSection::render(
+			__( 'Schedule conflict preview', 'mp-commerce-promotions' ),
+			function () use ( $rows ): void {
+				echo '<table class="widefat striped" style="max-width:100%;"><thead><tr>';
+				echo '<th scope="col">' . esc_html__( 'Source', 'mp-commerce-promotions' ) . '</th>';
+				echo '<th scope="col">' . esc_html__( 'Severity', 'mp-commerce-promotions' ) . '</th>';
+				echo '<th scope="col">' . esc_html__( 'Type', 'mp-commerce-promotions' ) . '</th>';
+				echo '<th scope="col">' . esc_html__( 'Promotions', 'mp-commerce-promotions' ) . '</th>';
+				echo '<th scope="col">' . esc_html__( 'Message', 'mp-commerce-promotions' ) . '</th>';
+				echo '</tr></thead><tbody>';
+				foreach ( $rows as $row ) {
+					$ids = isset( $row['promotion_ids'] ) && is_array( $row['promotion_ids'] )
+						? implode( ', ', array_map( 'strval', $row['promotion_ids'] ) )
+						: '';
+					echo '<tr>';
+					echo '<td>' . esc_html( (string) ( $row['source'] ?? '' ) ) . '</td>';
+					echo '<td>' . esc_html( (string) ( $row['severity'] ?? '' ) ) . '</td>';
+					echo '<td>' . esc_html( (string) ( $row['type'] ?? '' ) ) . '</td>';
+					echo '<td>' . esc_html( $ids ) . '</td>';
+					echo '<td>' . esc_html( (string) ( $row['message'] ?? '' ) ) . '</td>';
+					echo '</tr>';
+				}
+				echo '</tbody></table>';
+			},
+			__( 'Overlapping schedules, exclusive/orchestration conflicts, and budget overlap risk (read-only).', 'mp-commerce-promotions' ),
 			array(
 				'heading' => 'h2',
 				'width'   => 'narrow',

@@ -84,6 +84,8 @@ final class Promotion {
 
 	private string $discount_application_mode;
 
+	private bool $dry_run;
+
 	private ?int $created_by;
 
 	private ?string $created_at;
@@ -123,6 +125,7 @@ final class Promotion {
 		string $coupon_behavior = PromotionCouponBehavior::DEFAULT_BEHAVIOR,
 		string $allocation_mode = PromotionAllocationMode::DEFAULT_MODE,
 		string $discount_application_mode = PromotionDiscountApplicationMode::DEFAULT_MODE,
+		bool $dry_run = false,
 		?int $created_by = null,
 		?string $created_at = null,
 		?string $updated_at = null
@@ -210,6 +213,7 @@ final class Promotion {
 		$this->coupon_behavior        = $coupon_behavior;
 		$this->allocation_mode              = $allocation_mode;
 		$this->discount_application_mode    = $discount_application_mode;
+		$this->dry_run                      = $dry_run;
 		$this->created_by                   = $created_by;
 		$this->created_at   = $created_at;
 		$this->updated_at   = $updated_at;
@@ -294,6 +298,7 @@ final class Promotion {
 			PromotionCouponBehavior::normalize( self::optional_string( $data['coupon_behavior'] ?? null ) ),
 			PromotionAllocationMode::normalize( self::optional_string( $data['allocation_mode'] ?? null ) ),
 			PromotionDiscountApplicationMode::normalize( self::optional_string( $data['discount_application_mode'] ?? null ) ),
+			self::normalize_dry_run( $data['dry_run'] ?? false ),
 			$created_by,
 			self::optional_string( $data['created_at'] ?? null ),
 			self::optional_string( $data['updated_at'] ?? null )
@@ -337,6 +342,7 @@ final class Promotion {
 			'coupon_behavior'        => $this->coupon_behavior,
 			'allocation_mode'             => $this->allocation_mode,
 			'discount_application_mode'   => $this->discount_application_mode,
+			'dry_run'                     => $this->dry_run,
 			'created_by'                  => $this->created_by,
 			'created_at'   => $this->created_at,
 			'updated_at'   => $this->updated_at,
@@ -530,6 +536,7 @@ final class Promotion {
 			$discount_application_mode !== null
 				? PromotionDiscountApplicationMode::normalize( $discount_application_mode )
 				: $this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -609,10 +616,56 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
 		);
+	}
+
+	public function with_dry_run( bool $dry_run ): self {
+		return new self(
+			$this->id,
+			$this->uuid,
+			$this->name,
+			$this->description,
+			$this->status,
+			$this->priority,
+			$this->starts_at,
+			$this->ends_at,
+			$this->conditions,
+			$this->actions,
+			$this->restrictions,
+			$this->usage_limit,
+			$this->customer_usage_limit,
+			$this->usage_count,
+			$this->application_mode,
+			$this->stop_processing,
+			$this->max_applications,
+			$this->excluded_promotion_ids,
+			$this->excluded_product_ids,
+			$this->excluded_category_ids,
+			$this->campaign_label,
+			$this->internal_notes,
+			$this->admin_color,
+			$this->budget_amount,
+			$this->budget_spent,
+			$this->budget_currency,
+			$this->cooldown_hours,
+			$this->orchestration_group,
+			$this->priority_tier,
+			$this->coupon_behavior,
+			$this->allocation_mode,
+			$this->discount_application_mode,
+			$dry_run,
+			$this->created_by,
+			$this->created_at,
+			$this->updated_at
+		);
+	}
+
+	public function is_dry_run(): bool {
+		return $this->dry_run;
 	}
 
 	public function with_description( ?string $description ): self {
@@ -649,6 +702,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -689,6 +743,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -729,6 +784,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -769,6 +825,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -816,6 +873,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -856,6 +914,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -901,6 +960,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -944,6 +1004,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -988,6 +1049,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -1028,6 +1090,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -1068,6 +1131,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -1112,6 +1176,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -1156,6 +1221,7 @@ final class Promotion {
 			$this->coupon_behavior,
 			$this->allocation_mode,
 			$this->discount_application_mode,
+			$this->dry_run,
 			$this->created_by,
 			$this->created_at,
 			$this->updated_at
@@ -1349,6 +1415,21 @@ final class Promotion {
 		}
 
 		return true;
+	}
+
+	/**
+	 * @param mixed $value Raw DB value.
+	 */
+	private static function normalize_dry_run( $value ): bool {
+		if ( $value === true || $value === 1 || $value === '1' ) {
+			return true;
+		}
+		if ( is_string( $value ) ) {
+			$lower = strtolower( trim( $value ) );
+			return in_array( $lower, array( 'yes', 'true', '1' ), true );
+		}
+
+		return false;
 	}
 
 	/**

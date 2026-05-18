@@ -17,6 +17,7 @@ use MP\CommercePromotions\Service\PromotionConcurrencyGuard;
 use MP\CommercePromotions\Service\PromotionHealthMonitor;
 use MP\CommercePromotions\Service\PromotionPerformanceProfiler;
 use MP\CommercePromotions\Service\Settings;
+use MP\CommercePromotions\Service\ScheduleConflictPreviewService;
 use MP\CommercePromotions\Service\SystemHealthService;
 
 final class EcosystemCompatibilityPanel {
@@ -155,6 +156,39 @@ final class EcosystemCompatibilityPanel {
 				esc_html( (string) ( $row['name'] ?? '' ) ),
 				(int) ( $row['score'] ?? 0 ),
 				esc_html( (string) ( $row['tier'] ?? '' ) )
+			);
+		}
+		echo '</tbody></table>';
+	}
+
+	public static function render_schedule_conflict_preview( PromotionRepository $repo, int $limit = 15 ): void {
+		$catalog = $repo->find_filtered( array( 'limit' => 200 ) );
+		$rows    = ( new ScheduleConflictPreviewService() )->preview_site_summary( $catalog, $limit );
+
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Schedule conflict preview', 'mp-commerce-promotions' ) . '</h2>';
+		if ( $rows === array() ) {
+			echo '<p>' . esc_html__( 'No schedule or orchestration conflicts detected among draft, paused, or active promotions.', 'mp-commerce-promotions' ) . '</p>';
+			return;
+		}
+
+		echo '<table class="widefat striped" style="max-width:960px;"><thead><tr>';
+		echo '<th>' . esc_html__( 'Source', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th>' . esc_html__( 'Severity', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th>' . esc_html__( 'Type', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th>' . esc_html__( 'Promotions', 'mp-commerce-promotions' ) . '</th>';
+		echo '<th>' . esc_html__( 'Message', 'mp-commerce-promotions' ) . '</th>';
+		echo '</tr></thead><tbody>';
+		foreach ( $rows as $row ) {
+			$ids = isset( $row['promotion_ids'] ) && is_array( $row['promotion_ids'] )
+				? implode( ', ', array_map( 'strval', $row['promotion_ids'] ) )
+				: '';
+			printf(
+				'<tr><td>%1$s</td><td>%2$s</td><td>%3$s</td><td>%4$s</td><td>%5$s</td></tr>',
+				esc_html( (string) ( $row['source'] ?? '' ) ),
+				esc_html( (string) ( $row['severity'] ?? '' ) ),
+				esc_html( (string) ( $row['type'] ?? '' ) ),
+				esc_html( $ids ),
+				esc_html( (string) ( $row['message'] ?? '' ) )
 			);
 		}
 		echo '</tbody></table>';

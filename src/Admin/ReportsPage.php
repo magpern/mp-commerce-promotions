@@ -273,6 +273,7 @@ final class ReportsPage {
 			__( 'Active promotions with budget cap', 'mp-commerce-promotions' ) => (string) $summary['active_budgeted_promotions'],
 			__( 'Active promotions with exhausted budget', 'mp-commerce-promotions' ) => (string) $summary['exhausted_promotions'],
 			__( 'Active promotions with cooldown configured', 'mp-commerce-promotions' ) => (string) $summary['cooldown_active_promotions'],
+			__( 'Promotions in dry-run mode', 'mp-commerce-promotions' ) => (string) ( $summary['dry_run_promotions'] ?? 0 ),
 			__( 'Avg discount per recorded redemption', 'mp-commerce-promotions' ) => function_exists( 'wc_format_localized_price' )
 				? wc_format_localized_price( $summary['avg_recorded_discount_per_redemption'] )
 				: number_format( $summary['avg_recorded_discount_per_redemption'], 2, '.', '' ),

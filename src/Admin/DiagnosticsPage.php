@@ -238,6 +238,7 @@ final class DiagnosticsPage {
 			$promo_repo = new \MP\CommercePromotions\Domain\PromotionRepository( $wpdb );
 			EcosystemCompatibilityPanel::render_merchant_safety( $promo_repo );
 			EcosystemCompatibilityPanel::render_complexity( $promo_repo );
+			EcosystemCompatibilityPanel::render_schedule_conflict_preview( $promo_repo );
 		}
 		$this->render_support_export_section();
 		$this->render_automation_runner_section();

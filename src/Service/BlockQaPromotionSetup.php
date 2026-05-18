@@ -232,10 +232,16 @@ final class BlockQaPromotionSetup {
 		$created[] = $this->create_paused(
 			BlockTestPages::QA_PROMOTION_PREFIX . ' — Fee 10%',
 			array(
-				array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 0.01 ),
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 0.01,
+				),
 			),
 			array(
-				array( 'type' => RuleTypes::ACTION_PERCENTAGE_DISCOUNT, 'percentage' => 10 ),
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 10,
+				),
 			),
 			PromotionDiscountApplicationMode::FEE_BASED,
 			PromotionApplicationMode::EXCLUSIVE,
@@ -245,10 +251,16 @@ final class BlockQaPromotionSetup {
 		$created[] = $this->create_paused(
 			BlockTestPages::QA_PROMOTION_PREFIX . ' — Fixed 5',
 			array(
-				array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 0.01 ),
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 0.01,
+				),
 			),
 			array(
-				array( 'type' => RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT, 'amount' => 5 ),
+				array(
+					'type'   => RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT,
+					'amount' => 5,
+				),
 			),
 			PromotionDiscountApplicationMode::FEE_BASED,
 			PromotionApplicationMode::EXCLUSIVE,
@@ -258,10 +270,16 @@ final class BlockQaPromotionSetup {
 		$created[] = $this->create_paused(
 			BlockTestPages::QA_PROMOTION_PREFIX . ' — Stack 3%',
 			array(
-				array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 0.01 ),
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 0.01,
+				),
 			),
 			array(
-				array( 'type' => RuleTypes::ACTION_PERCENTAGE_DISCOUNT, 'percentage' => 3 ),
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 3,
+				),
 			),
 			PromotionDiscountApplicationMode::FEE_BASED,
 			PromotionApplicationMode::STACKABLE,
@@ -271,10 +289,16 @@ final class BlockQaPromotionSetup {
 		$created[] = $this->create_paused(
 			BlockTestPages::QA_PROMOTION_PREFIX . ' — Stack 2 fixed',
 			array(
-				array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 0.01 ),
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 0.01,
+				),
 			),
 			array(
-				array( 'type' => RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT, 'amount' => 2 ),
+				array(
+					'type'   => RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT,
+					'amount' => 2,
+				),
 			),
 			PromotionDiscountApplicationMode::FEE_BASED,
 			PromotionApplicationMode::STACKABLE,
@@ -284,7 +308,10 @@ final class BlockQaPromotionSetup {
 		$created[] = $this->create_paused(
 			BlockTestPages::QA_PROMOTION_PREFIX . ' — Free shipping',
 			array(
-				array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 0.01 ),
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 0.01,
+				),
 			),
 			array(
 				array( 'type' => RuleTypes::ACTION_FREE_SHIPPING ),
@@ -298,7 +325,10 @@ final class BlockQaPromotionSetup {
 			$created[] = $this->create_paused(
 				BlockTestPages::QA_PROMOTION_PREFIX . ' — Free gift',
 				array(
-					array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 0.01 ),
+					array(
+						'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+						'amount' => 0.01,
+					),
 				),
 				array(
 					array(
@@ -316,10 +346,16 @@ final class BlockQaPromotionSetup {
 		$created[] = $this->create_paused(
 			BlockTestPages::QA_PROMOTION_PREFIX . ' — Line 10%',
 			array(
-				array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 0.01 ),
+				array(
+					'type'   => RuleTypes::CONDITION_MINIMUM_SUBTOTAL,
+					'amount' => 0.01,
+				),
 			),
 			array(
-				array( 'type' => RuleTypes::ACTION_PERCENTAGE_DISCOUNT, 'percentage' => 10 ),
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 10,
+				),
 			),
 			PromotionDiscountApplicationMode::LINE_ITEM,
 			PromotionApplicationMode::EXCLUSIVE,
@@ -327,9 +363,9 @@ final class BlockQaPromotionSetup {
 		);
 
 		return array(
-			'archived'      => $archived,
-			'created'       => $created,
-			'product_pair'  => array(
+			'archived'     => $archived,
+			'created'      => $created,
+			'product_pair' => array(
 				'paid_product_id' => $paid_product_id,
 				'gift_product_id' => $gift_product_id,
 				'note'            => $pair['note'],

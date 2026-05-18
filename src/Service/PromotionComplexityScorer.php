@@ -26,7 +26,7 @@ final class PromotionComplexityScorer {
 	 * @return list<array{promotion_id: int, name: string, score: int, tier: string, factors: list<string>}>
 	 */
 	public function score_active_promotions( int $limit = 100 ): array {
-		$rows  = array();
+		$rows   = array();
 		$promos = $this->promotions->find_active_for_planner( $limit );
 
 		foreach ( $promos as $promotion ) {
@@ -74,22 +74,22 @@ final class PromotionComplexityScorer {
 		}
 
 		if ( $promotion->get_excluded_promotion_ids() !== array() ) {
-			$score += 10;
+			$score    += 10;
 			$factors[] = 'exclusions';
 		}
 		if ( $promotion->get_orchestration_group() !== null && $promotion->get_orchestration_group() !== '' ) {
-			$score += 8;
+			$score    += 8;
 			$factors[] = 'orchestration_group';
 		}
 		if ( $promotion->has_budget_cap() ) {
 			$score += 5;
 		}
 		if ( PromotionDiscountApplicationMode::uses_line_mutation( $promotion->get_discount_application_mode() ) ) {
-			$score += 15;
+			$score    += 15;
 			$factors[] = 'line_item_mode';
 		}
 		if ( $promotion->get_application_mode() === PromotionApplicationMode::STACKABLE ) {
-			$score += 6;
+			$score    += 6;
 			$factors[] = 'stackable';
 		}
 

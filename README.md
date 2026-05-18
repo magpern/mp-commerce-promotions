@@ -73,7 +73,7 @@ Provide a structured foundation for commerce promotions using:
 
 ## Database
 
-- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.15.0`** (see `Schema::SCHEMA_VERSION`; adds `discount_application_mode` on promotions).
+- **Schema version (option):** `mp_cp_schema_version` — current target is **`1.16.0`** (see `Schema::SCHEMA_VERSION`; adds `dry_run` on promotions; prior **1.15.0** added `discount_application_mode`).
 - **Tables** (after activation / migration), using the site table prefix (e.g. `wp_`):
   - `{prefix}mp_cp_promotions` — promotion definitions (JSON-like rules in `LONGTEXT` columns).
   - `{prefix}mp_cp_redemptions` — usage against orders; **unique** `(order_id, promotion_id)` as **`order_promotion_unique`** (MySQL allows multiple `NULL` `order_id` rows; real checkouts use non-null `order_id`). Migration to **1.1.0** **refuses** `dbDelta` / version bump if duplicate non-null `(order_id, promotion_id)` pairs already exist (see `MigrationRunner`).
@@ -164,7 +164,7 @@ bash scripts/sync-to-live.sh
 bash scripts/verify-plugin.sh
 ```
 
-**Plugin version:** `0.2.0-beta.1` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). Database schema version is separate (`mp_cp_schema_version`, currently **1.15.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
+**Plugin version:** `0.2.0-beta.1` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). Database schema version is separate (`mp_cp_schema_version`, currently **1.16.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
 
 **Release zip** (no `.git` / `vendor`):
 

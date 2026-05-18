@@ -166,11 +166,11 @@ final class PromotionPricingRecovery {
 	 */
 	public function repair_stuck_line_discount_sessions( bool $dry_run = true ): array {
 		$would_clear = array(
-			'session_keys'    => array(
+			'session_keys'      => array(
 				CartSessionHelper::LINE_ALLOCATIONS_SESSION_KEY,
 				'mp_cp_applied_promotion',
 			),
-			'cart_item_meta'  => array(
+			'cart_item_meta'    => array(
 				\MP\CommercePromotions\Engine\AppliedLineDiscount::META_ORIGINAL_PRICE,
 				\MP\CommercePromotions\Engine\AppliedLineDiscount::META_MUTATED_BY,
 			),
@@ -179,7 +179,7 @@ final class PromotionPricingRecovery {
 				'LinePriceMutationGuard',
 				'AllocationContextCache (request)',
 			),
-			'optional_stats'  => array(
+			'optional_stats'    => array(
 				'mp_cp_line_discount_usage_stats (not cleared by default)',
 				LineDiscountFallbackTelemetry::OPTION_STATS . ' (not cleared by default)',
 			),

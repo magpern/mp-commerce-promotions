@@ -319,6 +319,10 @@ final class OrderPromotionRecorder {
 		?string $currency,
 		string $now
 	): ?array {
+		if ( ! empty( $entry['dry_run_mode'] ) ) {
+			return null;
+		}
+
 		if ( ! AppliedPromotionSession::is_valid_entry( $entry ) ) {
 			return null;
 		}

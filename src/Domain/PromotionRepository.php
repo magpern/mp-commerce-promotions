@@ -195,6 +195,7 @@ final class PromotionRepository {
 			'coupon_behavior'        => $promotion->get_coupon_behavior(),
 			'allocation_mode'             => $promotion->get_allocation_mode(),
 			'discount_application_mode'   => $promotion->get_discount_application_mode(),
+			'dry_run'                     => $promotion->is_dry_run() ? 1 : 0,
 			'created_by'                    => $promotion->get_created_by(),
 			'created_at'                    => $promotion->get_created_at() ?? $now,
 			'updated_at'             => $promotion->get_updated_at() ?? $now,
@@ -234,6 +235,7 @@ final class PromotionRepository {
 			'%s',
 			'%s',
 			'%s',
+			'%d',
 			'%d',
 			'%s',
 			'%s',
@@ -297,6 +299,7 @@ final class PromotionRepository {
 			'coupon_behavior'        => $promotion->get_coupon_behavior(),
 			'allocation_mode'             => $promotion->get_allocation_mode(),
 			'discount_application_mode'   => $promotion->get_discount_application_mode(),
+			'dry_run'                     => $promotion->is_dry_run() ? 1 : 0,
 			'created_by'                    => $promotion->get_created_by(),
 			'updated_at'                    => $now,
 		);
@@ -335,6 +338,7 @@ final class PromotionRepository {
 			'%s',
 			'%s',
 			'%s',
+			'%d',
 			'%d',
 			'%s',
 		);
@@ -389,6 +393,14 @@ final class PromotionRepository {
 	 */
 	public function count_all(): int {
 		return $this->count_filtered( array() );
+	}
+
+	public function count_dry_run_promotions(): int {
+		$table = $this->promotions_table();
+		$sql   = "SELECT COUNT(*) FROM {$table} WHERE dry_run = 1";
+		$count = DbQuery::get_var( $this->wpdb, $sql, array() );
+
+		return is_numeric( $count ) ? (int) $count : 0;
 	}
 
 	/**

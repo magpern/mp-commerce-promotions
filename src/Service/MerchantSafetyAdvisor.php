@@ -77,7 +77,7 @@ final class MerchantSafetyAdvisor {
 			}
 			$type = (string) ( $action['type'] ?? '' );
 			if ( $type === RuleTypes::ACTION_PERCENTAGE_DISCOUNT ) {
-				$pct = (float) ( $action['percentage'] ?? 0 );
+				$pct    = (float) ( $action['percentage'] ?? 0 );
 				$total += $reference_subtotal * ( $pct / 100 );
 			} elseif ( $type === RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT ) {
 				$total += (float) ( $action['amount'] ?? 0 );

@@ -388,15 +388,15 @@ final class PromotionReports {
 		$savings  = (float) ( $usage['total_savings'] ?? 0.0 );
 
 		return array(
-			'line_item_promotions'       => $line_item_count,
-			'hybrid_promotions'          => $hybrid_count,
-			'fee_based_promotions'       => $fee_based_count,
-			'fallback_total'             => (int) ( $fallback['total'] ?? 0 ),
-			'last_fallback_reason'       => (string) ( $fallback['last_reason'] ?? '' ),
-			'last_fallback_at'           => (string) ( $fallback['last_recorded_at'] ?? '' ),
-			'line_allocation_applications' => $apps,
+			'line_item_promotions'           => $line_item_count,
+			'hybrid_promotions'              => $hybrid_count,
+			'fee_based_promotions'           => $fee_based_count,
+			'fallback_total'                 => (int) ( $fallback['total'] ?? 0 ),
+			'last_fallback_reason'           => (string) ( $fallback['last_reason'] ?? '' ),
+			'last_fallback_at'               => (string) ( $fallback['last_recorded_at'] ?? '' ),
+			'line_allocation_applications'   => $apps,
 			'average_effective_line_savings' => $apps > 0 ? round( $savings / $apps, 4 ) : 0.0,
-			'total_line_savings_recorded'  => round( $savings, 4 ),
+			'total_line_savings_recorded'    => round( $savings, 4 ),
 		);
 	}
 
@@ -559,6 +559,7 @@ final class PromotionReports {
 			'active_budgeted_promotions'           => $this->promotions->count_active_budgeted(),
 			'exhausted_promotions'                 => $this->promotions->count_budget_exhausted_active(),
 			'cooldown_active_promotions'           => $this->promotions->count_cooldown_active_promotions(),
+			'dry_run_promotions'                   => $this->promotions->count_dry_run_promotions(),
 			'avg_recorded_discount_per_redemption' => $recorded_count > 0
 				? $this->redemptions->avg_recorded_discount_amount( $sum_filters )
 				: 0.0,

@@ -136,6 +136,12 @@ final class SettingsPage {
 			__( 'Blocks simulation runs until disabled.', 'mp-commerce-promotions' ),
 			$this->settings->simulation_paused()
 		);
+		$this->checkbox_row(
+			'mp_cp_promotion_dry_run',
+			__( 'Promotion dry-run (global)', 'mp-commerce-promotions' ),
+			__( 'Evaluates promotions but does not apply fees, gifts, or line mutations.', 'mp-commerce-promotions' ),
+			$this->settings->promotion_dry_run_enabled()
+		);
 		echo '<tr><th scope="row"><label for="mp_cp_telemetry_retention_days">';
 		echo esc_html__( 'Telemetry retention (days)', 'mp-commerce-promotions' );
 		echo '</label></th><td>';
@@ -224,6 +230,7 @@ final class SettingsPage {
 		$this->settings->set_allow_codes_in_safe_mode( $this->post_yes( 'mp_cp_allow_codes_in_safe_mode' ) );
 		$this->settings->set_telemetry_paused( $this->post_yes( 'mp_cp_telemetry_paused' ) );
 		$this->settings->set_simulation_paused( $this->post_yes( 'mp_cp_simulation_paused' ) );
+		$this->settings->set_promotion_dry_run_enabled( $this->post_yes( 'mp_cp_promotion_dry_run' ) );
 		if ( isset( $_POST['mp_cp_telemetry_retention_days'] ) ) {
 			$this->settings->set_telemetry_retention_days(
 				(int) sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_telemetry_retention_days'] ) )

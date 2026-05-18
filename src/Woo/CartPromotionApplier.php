@@ -22,6 +22,7 @@ use MP\CommercePromotions\Engine\PromotionPlanner;
 use MP\CommercePromotions\Engine\PromotionEvaluationPlan;
 use MP\CommercePromotions\Service\PlannerTelemetryRecorder;
 use MP\CommercePromotions\Service\PromotionConcurrencyGuard;
+use MP\CommercePromotions\Service\PromotionDryRunGuard;
 use MP\CommercePromotions\Service\PromotionPerformanceProfiler;
 use MP\CommercePromotions\Service\Settings;
 use Throwable;
@@ -62,6 +63,8 @@ final class CartPromotionApplier {
 
 	private LineItemDiscountApplier $line_discount_applier;
 
+	private PromotionDryRunGuard $dry_run_guard;
+
 	public function __construct(
 		PromotionRepository $promotions,
 		PromotionCodeRepository $promotion_codes,
@@ -86,6 +89,7 @@ final class CartPromotionApplier {
 		$this->telemetry_recorder  = $telemetry_recorder;
 		$this->profiler              = $profiler;
 		$this->line_discount_applier = $line_discount_applier ?? new LineItemDiscountApplier();
+		$this->dry_run_guard         = new PromotionDryRunGuard( $settings );
 	}
 
 	/**
@@ -115,6 +119,11 @@ final class CartPromotionApplier {
 		LinePriceMutationGuard::begin_cycle();
 
 		if ( ! $this->settings->automatic_promotions_enabled() ) {
+			CartSessionHelper::clear_line_allocations();
+			return;
+		}
+
+		if ( $this->dry_run_guard->is_global_dry_run() ) {
 			CartSessionHelper::clear_line_allocations();
 			return;
 		}
@@ -286,7 +295,7 @@ final class CartPromotionApplier {
 
 			$this->gift_synchronizer->sync(
 				$cart,
-				$this->collect_desired_gifts_from_decisions( $decisions )
+				$this->desired_gifts_for_decisions( $decisions )
 			);
 
 			if ( $entries !== array() ) {
@@ -324,7 +333,7 @@ final class CartPromotionApplier {
 
 		$this->gift_synchronizer->sync(
 			$cart,
-			$this->collect_desired_gifts_from_decisions( $decisions )
+			$this->desired_gifts_for_decisions( $decisions )
 		);
 
 		if ( $entries !== array() ) {
@@ -333,6 +342,24 @@ final class CartPromotionApplier {
 		}
 
 		$this->clear_applied_promotion_session();
+	}
+
+	/**
+	 * @param list<PromotionEvaluationDecision> $decisions
+	 * @return list<array{
+	 *     promotion_id: int,
+	 *     product_id: int,
+	 *     variation_id: int|null,
+	 *     quantity: int,
+	 *     promotion: Promotion
+	 * }>
+	 */
+	private function desired_gifts_for_decisions( array $decisions ): array {
+		if ( $this->dry_run_guard->is_global_dry_run() ) {
+			return array();
+		}
+
+		return $this->collect_desired_gifts_from_decisions( $decisions );
 	}
 
 	/**
@@ -361,6 +388,10 @@ final class CartPromotionApplier {
 			$promotion = $decision->get_promotion();
 			$pid       = $promotion->get_id();
 			if ( $pid === null || $pid <= 0 ) {
+				continue;
+			}
+
+			if ( $this->dry_run_guard->is_promotion_dry_run( $promotion ) ) {
 				continue;
 			}
 
@@ -422,6 +453,21 @@ final class CartPromotionApplier {
 			$promotion = $decision->get_promotion();
 			$pid       = (int) ( $promotion->get_id() ?? 0 );
 			$mode      = $promotion->get_discount_application_mode();
+
+			if ( $this->dry_run_guard->is_promotion_dry_run( $promotion ) ) {
+				$preview = $this->build_dry_run_session_entry(
+					$decision,
+					$context,
+					$subtotal,
+					$remaining_allowance,
+					$cart,
+					$promotion_code
+				);
+				if ( $preview !== null ) {
+					$session_entries[] = $preview;
+				}
+				continue;
+			}
 
 			if ( PromotionDiscountApplicationMode::uses_line_mutation( $mode ) && $pid > 0 ) {
 				$line_total = LineDiscountPlanCache::get_line_applied_total( $pid );
@@ -519,6 +565,11 @@ final class CartPromotionApplier {
 			}
 			$entry['promotion_code_last4'] = $promotion_code->get_code_last4();
 			$entry['entered_code_hash']    = $promotion_code->get_code_hash();
+		}
+
+		if ( $this->dry_run_guard->is_promotion_dry_run( $promotion ) ) {
+			$entry['dry_run_mode'] = true;
+			$entry['skip_reason']  = PromotionDryRunGuard::REASON_DRY_RUN_MODE;
 		}
 
 		return $entry;
@@ -720,6 +771,17 @@ final class CartPromotionApplier {
 		);
 		if ( $variation_id !== null ) {
 			$gift_payload['variation_id'] = $variation_id;
+		}
+
+		if ( ! $this->dry_run_guard->should_apply_storefront( $promotion ) ) {
+			return array(
+				'promotion'    => $promotion,
+				'discount'     => 0.0,
+				'action_type'  => self::ACTION_FREE_GIFT_PRODUCT,
+				'product_id'   => $product_id,
+				'variation_id' => $variation_id,
+				'quantity'     => $quantity,
+			);
 		}
 
 		if ( ! $this->free_gift_handler->apply_gift( $promotion, $gift_payload, $cart ) ) {
@@ -975,11 +1037,40 @@ final class CartPromotionApplier {
 			}
 		}
 
-		if ( $this->settings->promotion_dry_run_enabled() ) {
+		if ( ! $this->dry_run_guard->should_apply_storefront( $promotion ) ) {
 			return;
 		}
 
 		$cart->add_fee( $label, -$discount, false );
+	}
+
+	/**
+	 * @return array<string, mixed>|null
+	 */
+	private function build_dry_run_session_entry(
+		PromotionEvaluationDecision $decision,
+		EvaluationContext $context,
+		float $subtotal,
+		float $remaining_allowance,
+		$cart,
+		?PromotionCode $promotion_code
+	): ?array {
+		$applied = $this->apply_first_discount_fee_for_decision(
+			$decision,
+			$context,
+			$subtotal,
+			$remaining_allowance,
+			$cart,
+			$promotion_code
+		);
+
+		if ( ! is_array( $applied ) ) {
+			return null;
+		}
+
+		$entry = $this->build_session_entry_from_applied( $applied, $promotion_code );
+
+		return $entry;
 	}
 
 	/**

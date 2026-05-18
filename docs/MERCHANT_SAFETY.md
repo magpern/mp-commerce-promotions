@@ -2,7 +2,9 @@
 
 ## Promotion dry-run
 
-Option: `mp_cp_promotion_dry_run` (Diagnostics → Performance & hardening).
+**Global dry-run:** Settings → Production safety → **Promotion dry-run (global)** (`mp_cp_promotion_dry_run`). Evaluates promotions but does not apply fees, gifts, or line mutations.
+
+**Per-promotion dry-run:** Edit promotion → **Dry run** checkbox (`dry_run=1` in DB). Appears in planner trace; session entries include `dry_run_mode`; redemptions are not recorded. Global dry-run overrides all promotions.
 
 When enabled:
 

@@ -40,18 +40,18 @@ final class PromotionPerformanceProfiler {
 		$aggregates['allocation_cache_hits']   += (int) ( $cache['allocation_hits'] ?? 0 );
 		$aggregates['allocation_cache_misses'] += (int) ( $cache['allocation_misses'] ?? 0 );
 
-		$slow                     = array(
+		$slow                         = array(
 			'duration_ms'           => $ms,
 			'promotions_considered' => (int) ( $metrics['promotions_considered'] ?? 0 ),
 			'selected_count'        => (int) ( $metrics['selected_count'] ?? 0 ),
 			'recorded_at'           => gmdate( 'c' ),
 		);
-		$aggregates['slow_runs']  = $this->push_slow_run( (array) ( $aggregates['slow_runs'] ?? array() ), $slow );
-		$bucket                   = $this->timing_bucket( $ms );
-		$buckets                  = is_array( $aggregates['timing_buckets'] ?? null ) ? $aggregates['timing_buckets'] : array();
-		$buckets[ $bucket ]       = (int) ( $buckets[ $bucket ] ?? 0 ) + 1;
+		$aggregates['slow_runs']      = $this->push_slow_run( (array) ( $aggregates['slow_runs'] ?? array() ), $slow );
+		$bucket                       = $this->timing_bucket( $ms );
+		$buckets                      = is_array( $aggregates['timing_buckets'] ?? null ) ? $aggregates['timing_buckets'] : array();
+		$buckets[ $bucket ]           = (int) ( $buckets[ $bucket ] ?? 0 ) + 1;
 		$aggregates['timing_buckets'] = $buckets;
-		$aggregates['updated_at'] = gmdate( 'c' );
+		$aggregates['updated_at']     = gmdate( 'c' );
 		$this->save( $aggregates );
 	}
 

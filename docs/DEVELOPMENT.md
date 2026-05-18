@@ -46,7 +46,33 @@ Writes `mp-commerce-promotions-{version}.zip` to `/home/magpern/mp-commerce-prom
 
 Full release steps: [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md). History: [CHANGELOG.md](../CHANGELOG.md).
 
-**Plugin version** (`0.1.0` today) is independent of **schema version** (`Schema::SCHEMA_VERSION` / `mp_cp_schema_version`).
+**Plugin version** (`0.2.0-beta.1` today) is independent of **schema version** (`Schema::SCHEMA_VERSION` / `mp_cp_schema_version`, currently **1.16.0**).
+
+### Docker Composer verification (recommended)
+
+From the plugin root on the host (no local PHP/Composer required):
+
+```bash
+cd /home/magpern/mp-commerce-promotions-staging/mp-commerce-promotions
+docker run --rm -v "$(pwd):/plugin" -w /plugin composer:2 bash -c '
+  composer validate --strict &&
+  composer install -q &&
+  composer run lint:php &&
+  composer run test &&
+  composer run lint:phpcs
+'
+bash scripts/build-zip.sh
+bash scripts/release-audit.sh
+```
+
+After sync to live (`bash scripts/sync-to-live.sh` from staging):
+
+```bash
+cd /home/magpern/woocommerce
+bash wp-content/plugins/mp-commerce-promotions/scripts/verify-plugin.sh
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/ga-stabilization-smoke.php
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/ga-stress-smoke.php
+```
 
 ## Composer (tooling only)
 

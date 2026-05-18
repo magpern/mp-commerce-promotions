@@ -19,6 +19,7 @@ use MP\CommercePromotions\Engine\LineDiscountAllocationResult;
 use MP\CommercePromotions\Engine\PromotionEvaluationDecision;
 use MP\CommercePromotions\Engine\PromotionEvaluationPlan;
 use MP\CommercePromotions\Engine\RuleTypes;
+use MP\CommercePromotions\Service\PromotionDryRunGuard;
 use MP\CommercePromotions\Service\Settings;
 
 final class LineItemDiscountApplier {
@@ -60,9 +61,17 @@ final class LineItemDiscountApplier {
 			return new LineDiscountAllocationResult( array(), 0.0 );
 		}
 
+		$dry_run_guard = new PromotionDryRunGuard( $this->settings );
+		if ( $dry_run_guard->is_global_dry_run() ) {
+			return new LineDiscountAllocationResult( array(), 0.0 );
+		}
+
 		$line_capable = array();
 		foreach ( $selected as $decision ) {
 			$promotion = $decision->get_promotion();
+			if ( $dry_run_guard->is_promotion_dry_run( $promotion ) ) {
+				continue;
+			}
 			if ( ! PromotionDiscountApplicationMode::uses_line_mutation( $promotion->get_discount_application_mode() ) ) {
 				continue;
 			}
