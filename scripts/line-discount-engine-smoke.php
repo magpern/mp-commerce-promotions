@@ -75,23 +75,22 @@ $context = new EvaluationContext(
 	100.0,
 	'EUR',
 	array(
-		'items' => array(
-			array(
-				'item_key'      => 'line_a',
-				'product_id'    => 101,
-				'line_subtotal' => 60.0,
-				'unit_price'    => 30.0,
-				'quantity'      => 2,
-			),
-			array(
-				'item_key'      => 'line_b',
-				'product_id'    => 202,
-				'line_subtotal' => 40.0,
-				'unit_price'    => 40.0,
-				'quantity'      => 1,
-			),
+		array(
+			'item_key'      => 'line_a',
+			'product_id'    => 101,
+			'line_subtotal' => 60.0,
+			'unit_price'    => 30.0,
+			'quantity'      => 2,
 		),
-	)
+		array(
+			'item_key'      => 'line_b',
+			'product_id'    => 202,
+			'line_subtotal' => 40.0,
+			'unit_price'    => 40.0,
+			'quantity'      => 1,
+		),
+	),
+	array()
 );
 
 $promotion_pct = Promotion::from_array(
