@@ -54,6 +54,11 @@ final class GettingStartedPage {
 		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Admin shortcuts', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p>';
 		printf(
+			'<a class="button button-primary" href="%1$s">%2$s</a> ',
+			esc_url( AdminUrl::tab( AdminNavigation::TAB_CAMPAIGN_BUILDER ) ),
+			esc_html__( 'Campaign Builder', 'mp-commerce-promotions' )
+		);
+		printf(
 			'<a class="button" href="%1$s">%2$s</a> ',
 			esc_url( AdminUrl::list_promotions() ),
 			esc_html__( 'All Promotions', 'mp-commerce-promotions' )

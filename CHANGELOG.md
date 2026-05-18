@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Merchant Campaign Builder** — new admin tab (`tab=campaign-builder`) with goal cards, simplified campaign form, plain-language preview, smart warnings, draft creation via `PromotionTemplate` / standard rules, optional coupon codes, latest-campaigns table, and Advanced Editor escape hatch; `scripts/campaign-builder-smoke.php`; `docs/manual-campaign-builder-test.md`.
+
 - **Production pilot hardening** — `scripts/regression-suite.php`; snapshot diff preview; operational rollback + production profile presets; runtime anomaly heuristics; retention hardening (telemetry/certification/snapshots); expanded load harness; `docs/MERCHANT_WORKFLOWS.md`.
 
 - **Ecosystem certification tooling (schema 1.17.0)** — `mp_cp_certification_runs` table; coupon coexistence matrix + preview + telemetry counters; tax compatibility analyzer; multi-currency confidence snapshot; emergency operations (Diagnostics); `scripts/coupon-compatibility-smoke.php`, `scripts/load-harness.php`; ops docs (`OPERATIONS_RUNBOOK`, `PRODUCTION_DEPLOYMENT`, `INCIDENT_RESPONSE`, `COUPON_COMPATIBILITY`, `TAX_COMPATIBILITY`).

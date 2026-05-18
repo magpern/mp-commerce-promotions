@@ -1,0 +1,152 @@
+.mp-cb-wrap {
+	max-width: 1400px;
+}
+
+.mp-cb-summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin: 16px 0 24px;
+}
+
+.mp-cb-summary-card {
+	flex: 1 1 140px;
+	min-width: 120px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	padding: 12px 14px;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.mp-cb-summary-card strong {
+	display: block;
+	font-size: 22px;
+	line-height: 1.2;
+}
+
+.mp-cb-summary-card span {
+	color: #646970;
+	font-size: 12px;
+}
+
+.mp-cb-summary-card.is-warning strong {
+	color: #b32d2e;
+}
+
+.mp-cb-layout {
+	display: grid;
+	grid-template-columns: 1fr 320px;
+	gap: 20px;
+	align-items: start;
+}
+
+@media (max-width: 1100px) {
+	.mp-cb-layout {
+		grid-template-columns: 1fr;
+	}
+}
+
+.mp-cb-goals {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 12px;
+	margin: 12px 0 24px;
+}
+
+.mp-cb-goal-card {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	padding: 14px;
+}
+
+.mp-cb-goal-card.is-selected {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+.mp-cb-goal-card h3 {
+	margin: 8px 0 4px;
+	font-size: 14px;
+}
+
+.mp-cb-goal-card p {
+	margin: 0 0 8px;
+	color: #50575e;
+	font-size: 12px;
+}
+
+.mp-cb-goal-card .best-for {
+	font-style: italic;
+	color: #646970;
+}
+
+.mp-cb-form-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+}
+
+@media (max-width: 782px) {
+	.mp-cb-form-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.mp-cb-panel {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	padding: 16px;
+	margin-bottom: 16px;
+}
+
+.mp-cb-preview dl {
+	margin: 0;
+}
+
+.mp-cb-preview dt {
+	font-weight: 600;
+	margin-top: 10px;
+}
+
+.mp-cb-preview dd {
+	margin: 4px 0 0;
+	color: #1d2327;
+}
+
+.mp-cb-warnings {
+	background: #fcf9e8;
+	border-left: 4px solid #dba617;
+	padding: 10px 12px;
+	margin: 12px 0;
+}
+
+.mp-cb-warnings ul {
+	margin: 6px 0 0 1.2em;
+}
+
+.mp-cb-escape {
+	margin-top: 24px;
+	padding-top: 16px;
+	border-top: 1px solid #dcdcde;
+}
+
+.mp-cb-success-actions .button {
+	margin-right: 8px;
+	margin-bottom: 8px;
+}
+
+.mp-cb-checklist {
+	max-height: 160px;
+	overflow: auto;
+	border: 1px solid #dcdcde;
+	padding: 8px;
+	background: #f6f7f7;
+}
+
+.mp-cb-checklist label {
+	display: block;
+	margin: 4px 0;
+}

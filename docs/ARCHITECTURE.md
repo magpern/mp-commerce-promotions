@@ -363,6 +363,10 @@ Promotion rows store optional **`campaign_label`** (varchar 191), **`internal_no
 
 **Archive hygiene** (Diagnostics tab): `PromotionService::archive_expired_active_promotions()` archives active promotions with `ends_at` in the past; `archive_old_drafts( $days )` archives drafts older than N days by `created_at`. Uses `change_status()` → `archived` with audit; no hard deletes. See [manual-campaign-operations-test.md](manual-campaign-operations-test.md).
 
+### Merchant Campaign Builder (admin UI; no schema change)
+
+Read-only merchant layer: **`CampaignBuilderPage`** (`tab=campaign-builder`) maps goals to **`PromotionTemplate::build()`** (or equivalent standard conditions/actions), then **`PromotionService::create_draft()`** + `update_promotion()`. Goal key stored in `internal_notes` as `campaign_builder_goal:{goal}`. Stackable → `application_mode=stackable`, `stop_processing=false`; exclusive inverts. Optional codes via **`PromotionCodeFactory`** (hashed storage; plain code shown once via transient). **`MerchantSafetyAdvisor`**, **`PromotionConflictAnalyzer`**, **`PromotionRuleValidator`**, and **`PromotionScheduleAnalyzer`** power preview warnings only — no new engine behavior. Advanced promotion edit screen remains authoritative for JSON and orchestration. See [manual-campaign-builder-test.md](manual-campaign-builder-test.md).
+
 ### Orchestration and segmentation (schema 1.11.0)
 
 - **Promotion fields** — `cooldown_hours` (per-customer repeat redemption window after last recorded redemption) and `orchestration_group` (planner selects at most one eligible promotion per group per cart plan).

@@ -17,6 +17,8 @@ final class AdminNavigation {
 
 	public const TAB_GETTING_STARTED = 'getting-started';
 
+	public const TAB_CAMPAIGN_BUILDER = 'campaign-builder';
+
 	public const TAB_SETTINGS = 'settings';
 
 	public const TAB_DIAGNOSTICS = 'diagnostics';
@@ -36,6 +38,7 @@ final class AdminNavigation {
 		return array(
 			self::TAB_ALL,
 			self::TAB_GETTING_STARTED,
+			self::TAB_CAMPAIGN_BUILDER,
 			self::TAB_SETTINGS,
 			self::TAB_DIAGNOSTICS,
 			self::TAB_REPORTS,
@@ -75,25 +78,29 @@ final class AdminNavigation {
 		$active = $active_tab ?? self::get_current_tab();
 
 		$tabs = array(
-			self::TAB_ALL              => array(
-				'label' => __( 'All Promotions', 'mp-commerce-promotions' ),
-				'url'   => self::tab_url( self::TAB_ALL ),
-			),
 			self::TAB_GETTING_STARTED  => array(
 				'label' => __( 'Getting Started', 'mp-commerce-promotions' ),
 				'url'   => self::tab_url( self::TAB_GETTING_STARTED ),
 			),
-			self::TAB_SETTINGS         => array(
-				'label' => __( 'Settings', 'mp-commerce-promotions' ),
-				'url'   => self::tab_url( self::TAB_SETTINGS ),
+			self::TAB_CAMPAIGN_BUILDER => array(
+				'label' => __( 'Campaign Builder', 'mp-commerce-promotions' ),
+				'url'   => self::tab_url( self::TAB_CAMPAIGN_BUILDER ),
 			),
-			self::TAB_DIAGNOSTICS => array(
+			self::TAB_ALL              => array(
+				'label' => __( 'All Promotions', 'mp-commerce-promotions' ),
+				'url'   => self::tab_url( self::TAB_ALL ),
+			),
+			self::TAB_REPORTS          => array(
+				'label' => __( 'Reports', 'mp-commerce-promotions' ),
+				'url'   => self::tab_url( self::TAB_REPORTS ),
+			),
+			self::TAB_DIAGNOSTICS      => array(
 				'label' => __( 'Diagnostics', 'mp-commerce-promotions' ),
 				'url'   => self::tab_url( self::TAB_DIAGNOSTICS ),
 			),
-			self::TAB_REPORTS     => array(
-				'label' => __( 'Reports', 'mp-commerce-promotions' ),
-				'url'   => self::tab_url( self::TAB_REPORTS ),
+			self::TAB_SETTINGS         => array(
+				'label' => __( 'Settings', 'mp-commerce-promotions' ),
+				'url'   => self::tab_url( self::TAB_SETTINGS ),
 			),
 		);
 

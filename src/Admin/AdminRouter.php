@@ -21,18 +21,22 @@ final class AdminRouter {
 
 	private ?ReportsPage $reports_page;
 
+	private ?CampaignBuilderPage $campaign_builder_page;
+
 	public function __construct(
 		?PromotionsPage $promotions_page,
 		SettingsPage $settings_page,
 		GettingStartedPage $getting_started_page,
 		?DiagnosticsPage $diagnostics_page = null,
-		?ReportsPage $reports_page = null
+		?ReportsPage $reports_page = null,
+		?CampaignBuilderPage $campaign_builder_page = null
 	) {
-		$this->promotions_page       = $promotions_page;
-		$this->settings_page         = $settings_page;
-		$this->getting_started_page  = $getting_started_page;
-		$this->diagnostics_page = $diagnostics_page;
-		$this->reports_page     = $reports_page;
+		$this->promotions_page         = $promotions_page;
+		$this->settings_page           = $settings_page;
+		$this->getting_started_page    = $getting_started_page;
+		$this->diagnostics_page        = $diagnostics_page;
+		$this->reports_page            = $reports_page;
+		$this->campaign_builder_page   = $campaign_builder_page;
 	}
 
 	public function register_legacy_redirects(): void {
@@ -88,6 +92,13 @@ final class AdminRouter {
 			case AdminNavigation::TAB_REPORTS:
 				if ( $this->reports_page !== null ) {
 					$this->reports_page->render();
+					return;
+				}
+				break;
+
+			case AdminNavigation::TAB_CAMPAIGN_BUILDER:
+				if ( $this->campaign_builder_page !== null ) {
+					$this->campaign_builder_page->render();
 					return;
 				}
 				break;

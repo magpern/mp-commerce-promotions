@@ -11,6 +11,7 @@ namespace MP\CommercePromotions;
 
 use MP\CommercePromotions\Admin\AdminMenu;
 use MP\CommercePromotions\Admin\AdminRouter;
+use MP\CommercePromotions\Admin\CampaignBuilderPage;
 use MP\CommercePromotions\Admin\DiagnosticsPage;
 use MP\CommercePromotions\Admin\ReportsPage;
 use MP\CommercePromotions\Admin\PromotionEditPage;
@@ -33,6 +34,9 @@ use MP\CommercePromotions\Engine\PromotionEvaluator;
 use MP\CommercePromotions\Admin\AdminProductionNotices;
 use MP\CommercePromotions\Engine\AllocationContextCache;
 use MP\CommercePromotions\Engine\PromotionPlanner;
+use MP\CommercePromotions\Service\CampaignBuilderDraftCreator;
+use MP\CommercePromotions\Service\CampaignBuilderPreview;
+use MP\CommercePromotions\Service\CampaignBuilderSummaryCounts;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\PlannerTelemetryRecorder;
 use MP\CommercePromotions\Service\PromotionAutomationRunner;
@@ -190,7 +194,8 @@ final class Plugin {
 			$this->woo_bridge->set_cart_context_builder( $cart_builder );
 		}
 
-		$promotions_page = null;
+		$promotions_page       = null;
+		$campaign_builder_page = null;
 		if ( $this->promotion_repository !== null && $this->promotion_service !== null ) {
 			global $wpdb;
 			$rule_validator = new PromotionRuleValidator();
@@ -234,6 +239,22 @@ final class Plugin {
 				$this->promotion_repository,
 				new PromotionConflictAnalyzer()
 			);
+
+			$cb_draft_creator = new CampaignBuilderDraftCreator(
+				$this->promotion_service,
+				$code_factory,
+				$this->promotion_code_repository
+			);
+			$campaign_builder_page = new CampaignBuilderPage(
+				$this->promotion_repository,
+				$this->promotion_service,
+				$cb_draft_creator,
+				new CampaignBuilderPreview( $cb_draft_creator, $this->promotion_repository, $rule_validator ),
+				new CampaignBuilderSummaryCounts( $this->promotion_repository, $health_monitor ),
+				$rule_validator,
+				$health_monitor
+			);
+			$campaign_builder_page->register_assets();
 
 			$campaign_bulk = null;
 			$pricing_bulk  = null;
@@ -419,7 +440,8 @@ final class Plugin {
 			$settings_page,
 			$getting_started_page,
 			$diagnostics_page,
-			$reports_page
+			$reports_page,
+			$campaign_builder_page
 		);
 
 		if ( is_admin() ) {

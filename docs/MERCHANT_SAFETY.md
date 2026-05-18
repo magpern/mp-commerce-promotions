@@ -12,9 +12,13 @@ When enabled:
 - **Cart fees are not applied** (`CartPromotionApplier::add_promotion_fee` returns early).
 - Use on staging to preview which promotions would apply without customer-facing discounts.
 
+## Campaign Builder
+
+The **Campaign Builder** tab (`tab=campaign-builder`) reuses `MerchantSafetyAdvisor`, `PromotionConflictAnalyzer`, `PromotionRuleValidator`, and `PromotionScheduleAnalyzer` for **read-only** preview warnings before/after draft creation. It does not change storefront evaluation. Merchants should still review the Advanced Editor before activation.
+
 ## Heuristic warnings
 
-`MerchantSafetyAdvisor` flags (Diagnostics → Merchant safety):
+`MerchantSafetyAdvisor` flags (Diagnostics → Merchant safety and Campaign Builder preview):
 
 - High percentage discounts (≥30% warning, ≥50% critical)
 - Large fixed discounts without budget caps

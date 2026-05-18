@@ -17,6 +17,7 @@ Living task list for development priorities. See [ARCHITECTURE.md](ARCHITECTURE.
 
 ## Recently completed
 
+- **Merchant Campaign Builder** — `tab=campaign-builder`, goal→template mapping, draft creation, preview warnings, smoke + `docs/manual-campaign-builder-test.md` (no new engine behavior)
 - **Browser QA beta release prep** — runbook, classic certification, block draft pages, release evidence, beta-release-prep smoke
 - **Beta readiness certification** — BETA_READINESS, blocks doc (not declared), POT, PHPCBF on staging, CI PHPCS soft gate, beta smoke
 - **Production hardening closure** — Reports production dashboard, checkout recording lock, redemption memoization, simulation request cache, expanded `release-audit.sh`, closure smoke/tests, docs

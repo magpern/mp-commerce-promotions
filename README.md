@@ -67,6 +67,7 @@ Provide a structured foundation for commerce promotions using:
 ## Commercial readiness (beta)
 
 - **Getting Started** admin tab (`?page=mp-commerce-promotions&tab=getting-started`) — onboarding, limitations, workflow.
+- **Campaign Builder** admin tab (`?page=mp-commerce-promotions&tab=campaign-builder`) — merchant-friendly goals, simple forms, draft creation (Advanced Editor unchanged).
 - **Settings** — feature gates (telemetry, CSV export, simulations, free gift/shipping, pricing explainability) and opt-in **delete all data on uninstall** (default: retain).
 - **Compatibility status** on Reports and Diagnostics; **support bundle** JSON export on Diagnostics (no PII).
 - See [docs/COMMERCIAL_READINESS.md](docs/COMMERCIAL_READINESS.md).

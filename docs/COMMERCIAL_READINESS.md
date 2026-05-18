@@ -12,6 +12,7 @@ Commerce Promotions is suitable for **staged rollouts and merchant pilots**. It 
 - Rule-driven promotions with planner orchestration, codes, redemptions, reports, diagnostics
 - HPOS compatibility declared (`custom_order_tables`)
 - Getting Started onboarding tab
+- Merchant **Campaign Builder** tab (simple goals → draft promotions; Advanced Editor unchanged)
 - Settings governance (telemetry, CSV, simulations, gift/shipping actions, pricing explainability)
 - Compatibility status panel (environment snapshot)
 - Support bundle export (redacted JSON)
