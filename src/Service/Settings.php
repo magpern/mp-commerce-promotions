@@ -51,6 +51,8 @@ final class Settings {
 
 	public const OPTION_LINE_ITEM_MODE_DISABLED = 'mp_cp_line_item_mode_disabled';
 
+	public const OPTION_PLANNER_TRACE_VERBOSE = 'mp_cp_planner_trace_verbose';
+
 	private const VALUE_YES = 'yes';
 
 	private const VALUE_NO = 'no';
@@ -229,6 +231,14 @@ final class Settings {
 		$this->set_enabled( self::OPTION_LINE_ITEM_MODE_DISABLED, $disabled );
 	}
 
+	public function planner_trace_verbose(): bool {
+		return $this->is_enabled( self::OPTION_PLANNER_TRACE_VERBOSE, false );
+	}
+
+	public function set_planner_trace_verbose( bool $enabled ): void {
+		$this->set_enabled( self::OPTION_PLANNER_TRACE_VERBOSE, $enabled );
+	}
+
 	/**
 	 * @return array<string, bool|int>
 	 */
@@ -254,6 +264,7 @@ final class Settings {
 			'blocks_hook_debug'         => $this->blocks_hook_debug_enabled(),
 			'promotion_dry_run'         => $this->promotion_dry_run_enabled(),
 			'line_item_mode_disabled'   => $this->line_item_mode_disabled(),
+			'planner_trace_verbose'     => $this->planner_trace_verbose(),
 		);
 	}
 

@@ -89,6 +89,60 @@ final class PromotionSnapshotRepository {
 		return $this->rows_to_snapshots( $rows );
 	}
 
+	public function prune_older_than( string $cutoff_mysql, int $keep_per_promotion = 5 ): int {
+		$keep_per_promotion = max( 1, min( 20, $keep_per_promotion ) );
+		$table              = $this->table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$promotion_ids = $this->wpdb->get_col(
+			$this->wpdb->prepare(
+				"SELECT DISTINCT promotion_id FROM {$table} WHERE created_at < %s",
+				$cutoff_mysql
+			)
+		);
+
+		if ( ! is_array( $promotion_ids ) || $promotion_ids === array() ) {
+			return 0;
+		}
+
+		$deleted = 0;
+		foreach ( $promotion_ids as $promotion_id ) {
+			$pid = (int) $promotion_id;
+			if ( $pid <= 0 ) {
+				continue;
+			}
+
+			$keep_rows = DbQuery::get_results(
+				$this->wpdb,
+				"SELECT id FROM {$table} WHERE promotion_id = %d ORDER BY created_at DESC, id DESC LIMIT %d",
+				array( $pid, $keep_per_promotion )
+			);
+			$keep_ids = array();
+			foreach ( $keep_rows as $row ) {
+				if ( isset( $row['id'] ) ) {
+					$keep_ids[] = (int) $row['id'];
+				}
+			}
+			if ( $keep_ids === array() ) {
+				continue;
+			}
+
+			$placeholders = implode( ',', array_fill( 0, count( $keep_ids ), '%d' ) );
+			$params       = array_merge( array( $pid, $cutoff_mysql ), $keep_ids );
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$result = $this->wpdb->query(
+				$this->wpdb->prepare(
+					"DELETE FROM {$table} WHERE promotion_id = %d AND created_at < %s AND id NOT IN ({$placeholders})",
+					$params
+				)
+			);
+			if ( false !== $result ) {
+				$deleted += (int) $result;
+			}
+		}
+
+		return $deleted;
+	}
+
 	public function count_for_promotion( int $promotion_id, ?string $snapshot_type = null ): int {
 		if ( $promotion_id <= 0 ) {
 			return 0;

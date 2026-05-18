@@ -425,6 +425,30 @@ final class PromotionRepository {
 	}
 
 	/**
+	 * @return list<Promotion>
+	 */
+	public function find_with_dry_run_enabled( int $limit = 100 ): array {
+		$limit = max( 1, min( 500, $limit ) );
+		$table = $this->promotions_table();
+		$rows  = DbQuery::get_results(
+			$this->wpdb,
+			"SELECT * FROM {$table} WHERE dry_run = 1 ORDER BY updated_at DESC, id DESC LIMIT %d",
+			array( $limit )
+		);
+
+		$out = array();
+		foreach ( $rows as $row ) {
+			try {
+				$out[] = Promotion::from_array( $row );
+			} catch ( \InvalidArgumentException $e ) {
+				continue;
+			}
+		}
+
+		return $out;
+	}
+
+	/**
 	 * @param array{
 	 *     status?: string|null,
 	 *     search?: string|null,

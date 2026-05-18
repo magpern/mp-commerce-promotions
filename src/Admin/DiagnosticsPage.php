@@ -19,7 +19,11 @@ use MP\CommercePromotions\Service\PromotionOperationalRecovery;
 use MP\CommercePromotions\Service\PromotionRecommendationEngine;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Service\Settings;
+use MP\CommercePromotions\Admin\AdminPilotHardeningPanel;
 use MP\CommercePromotions\Admin\EcosystemCertificationPanel;
+use MP\CommercePromotions\Domain\AuditLogRepository;
+use MP\CommercePromotions\Domain\PromotionSnapshotRepository;
+use MP\CommercePromotions\Service\PromotionSnapshotService;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\SupportBundleExporter;
 use MP\CommercePromotions\Service\UsageDiagnostics;
@@ -221,7 +225,20 @@ final class DiagnosticsPage {
 
 		global $wpdb;
 		if ( $wpdb instanceof \wpdb ) {
-			$promo_repo = new \MP\CommercePromotions\Domain\PromotionRepository( $wpdb );
+			$promo_repo         = new \MP\CommercePromotions\Domain\PromotionRepository( $wpdb );
+			$snapshot_repo      = new PromotionSnapshotRepository( $wpdb );
+			$audit_log_repo     = new AuditLogRepository( $wpdb );
+			$snapshot_service   = $this->audit_logger !== null
+				? new PromotionSnapshotService( $promo_repo, $snapshot_repo, $this->audit_logger )
+				: null;
+			AdminPilotHardeningPanel::handle_post(
+				$this->settings,
+				$snapshot_service,
+				$promo_repo,
+				$snapshot_repo,
+				$audit_log_repo,
+				$this->audit_logger
+			);
 			EcosystemCertificationPanel::handle_emergency_post(
 				$this->settings,
 				$promo_repo,
@@ -272,6 +289,14 @@ final class DiagnosticsPage {
 				null
 			);
 			EcosystemCertificationPanel::render_emergency_operations( $emergency );
+			AdminPilotHardeningPanel::render(
+				$this->settings,
+				$this->profiler,
+				$snapshot_service,
+				$promo_repo,
+				$snapshot_repo,
+				$audit_log_repo
+			);
 		}
 		$this->render_support_export_section();
 		$this->render_automation_runner_section();

@@ -89,6 +89,8 @@ final class PromotionPerformanceProfiler {
 		++$aggregates['planner_failures'];
 		$aggregates['updated_at'] = gmdate( 'c' );
 		$this->save( $aggregates );
+
+		( new RuntimeAnomalyDetector() )->record_degraded_activation();
 	}
 
 	public function clear_degraded_state(): void {

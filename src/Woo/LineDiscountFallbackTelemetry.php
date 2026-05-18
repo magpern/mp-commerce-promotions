@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Woo;
 
 use MP\CommercePromotions\Service\PromotionPerformanceProfiler;
+use MP\CommercePromotions\Service\RuntimeAnomalyDetector;
 
 final class LineDiscountFallbackTelemetry {
 
@@ -53,6 +54,7 @@ final class LineDiscountFallbackTelemetry {
 
 		self::persist_stats( $reason, $promotion_id, $detail );
 		self::bump_profiler_counters( $reason );
+		( new RuntimeAnomalyDetector() )->record_line_fallback();
 	}
 
 	private static function bump_profiler_counters( string $reason ): void {

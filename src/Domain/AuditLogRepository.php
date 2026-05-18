@@ -91,6 +91,37 @@ final class AuditLogRepository {
 		return $out;
 	}
 
+	/**
+	 * @param list<string> $actions
+	 * @return list<AuditLogEntry>
+	 */
+	public function find_actions_since( array $actions, string $since_mysql, int $limit = 200 ): array {
+		if ( $actions === array() ) {
+			return array();
+		}
+
+		$limit = max( 1, min( 1000, $limit ) );
+		$table = $this->audit_log_table();
+		$placeholders = implode( ',', array_fill( 0, count( $actions ), '%s' ) );
+		$params       = array_merge( $actions, array( $since_mysql, $limit ) );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- placeholders built from action list.
+		$sql = "SELECT * FROM {$table} WHERE action IN ({$placeholders}) AND created_at >= %s ORDER BY created_at DESC, id DESC LIMIT %d";
+
+		$rows = DbQuery::get_results( $this->wpdb, $sql, $params );
+
+		$out = array();
+		foreach ( $rows as $row ) {
+			try {
+				$out[] = AuditLogEntry::from_array( $row );
+			} catch ( InvalidArgumentException $e ) {
+				continue;
+			}
+		}
+
+		return $out;
+	}
+
 	private function audit_log_table(): string {
 		return TableName::assert_valid( Schema::audit_log_table( $this->wpdb ) );
 	}

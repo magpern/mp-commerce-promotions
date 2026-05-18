@@ -19,6 +19,7 @@ use MP\CommercePromotions\Admin\GettingStartedPage;
 use MP\CommercePromotions\Admin\SettingsPage;
 use MP\CommercePromotions\Domain\AuditLogRepository;
 use MP\CommercePromotions\Domain\AutomationRunRepository;
+use MP\CommercePromotions\Domain\CertificationRunRepository;
 use MP\CommercePromotions\Domain\PlannerTelemetryRepository;
 use MP\CommercePromotions\Domain\SimulationScenarioRepository;
 use MP\CommercePromotions\Domain\PromotionCodeBatchRepository;
@@ -276,7 +277,9 @@ final class Plugin {
 				$this->settings,
 				new AutomationRunRepository( $wpdb ),
 				new PlannerTelemetryRepository( $wpdb ),
-				new SimulationScenarioRepository( $wpdb )
+				new SimulationScenarioRepository( $wpdb ),
+				new CertificationRunRepository( $wpdb ),
+				new PromotionSnapshotRepository( $wpdb )
 			);
 			$subsystem_recovery = new PromotionSubsystemRecovery(
 				new PlannerTelemetryRepository( $wpdb ),

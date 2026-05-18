@@ -12,6 +12,7 @@ namespace MP\CommercePromotions\Engine;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionApplicationMode;
 use MP\CommercePromotions\Service\PromotionPerformanceProfiler;
+use MP\CommercePromotions\Service\RuntimeAnomalyDetector;
 use MP\CommercePromotions\Woo\CouponCoexistenceEvaluator;
 
 final class PromotionPlanner {
@@ -187,20 +188,24 @@ final class PromotionPlanner {
 		$duration_ms = (int) round( ( microtime( true ) - $started ) * 1000 );
 		AllocationContextCache::record_planner_timing( $duration_ms );
 
+		$planner_metrics = array(
+			'duration_ms'              => $duration_ms,
+			'evaluator_calls'          => $evaluator_calls,
+			'condition_checks'         => $condition_checks,
+			'action_count'             => $action_count,
+			'promotions_considered'    => $considered,
+			'promotions_prefiltered'   => $prefiltered_skipped,
+			'selected_count'           => $selected_count,
+			'skipped_count'            => $skipped_count,
+			'blocked_by_coupon_count'  => $blocked_by_coupon_count,
+			'blocked_by_budget_count'  => $blocked_by_budget_count,
+		);
+
 		if ( $this->profiler !== null ) {
-			$this->profiler->record_planner_run(
-				array(
-					'duration_ms'             => $duration_ms,
-					'evaluator_calls'         => $evaluator_calls,
-					'condition_checks'        => $condition_checks,
-					'action_count'            => $action_count,
-					'promotions_considered'   => $considered,
-					'promotions_prefiltered'  => $prefiltered_skipped,
-					'selected_count'          => $selected_count,
-					'blocked_by_coupon_count' => $blocked_by_coupon_count,
-				)
-			);
+			$this->profiler->record_planner_run( $planner_metrics );
 		}
+
+		( new RuntimeAnomalyDetector() )->record_planner_sample( $planner_metrics );
 
 		return new PromotionEvaluationPlan(
 			$decisions,

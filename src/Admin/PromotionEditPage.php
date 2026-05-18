@@ -54,6 +54,7 @@ use MP\CommercePromotions\Domain\PromotionSnapshot;
 use MP\CommercePromotions\Service\PromotionService;
 use MP\CommercePromotions\Service\Settings;
 use MP\CommercePromotions\Service\PromotionSimulationEngine;
+use MP\CommercePromotions\Service\PromotionSnapshotDiffService;
 use MP\CommercePromotions\Service\PromotionSnapshotService;
 use MP\CommercePromotions\Service\SimulationScenario;
 use MP\CommercePromotions\Service\SimpleRuleBuilder;
@@ -2157,6 +2158,32 @@ final class PromotionEditPage {
 		$display = array_slice( $snapshots, 0, 10 );
 		if ( $display === array() ) {
 			return;
+		}
+
+		$latest = $snapshots[0] ?? null;
+		if ( $latest instanceof PromotionSnapshot ) {
+			$diff = ( new PromotionSnapshotDiffService() )->diff_against_snapshot( $promotion, $latest );
+			echo '<div class="card" style="max-width:100%;padding:12px 16px;margin:0 0 12px;">';
+			echo '<h3 style="margin-top:0;">' . esc_html__( 'Latest snapshot diff', 'mp-commerce-promotions' ) . '</h3>';
+			echo '<p>' . esc_html( (string) ( $diff['summary'] ?? '' ) ) . '</p>';
+			if ( ! empty( $diff['risk_indicators'] ) && is_array( $diff['risk_indicators'] ) ) {
+				echo '<ul style="list-style:disc;margin-left:1.5em;">';
+				foreach ( $diff['risk_indicators'] as $risk ) {
+					echo '<li><strong>' . esc_html( (string) ( $risk['severity'] ?? '' ) ) . '</strong>: ';
+					echo esc_html( (string) ( $risk['message'] ?? '' ) ) . '</li>';
+				}
+				echo '</ul>';
+			}
+			if ( ! empty( $diff['changed_fields'] ) && is_array( $diff['changed_fields'] ) ) {
+				echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Field', 'mp-commerce-promotions' ) . '</th><th>' . esc_html__( 'Snapshot', 'mp-commerce-promotions' ) . '</th><th>' . esc_html__( 'Current', 'mp-commerce-promotions' ) . '</th></tr></thead><tbody>';
+				foreach ( $diff['changed_fields'] as $row ) {
+					echo '<tr><td><code>' . esc_html( (string) ( $row['field'] ?? '' ) ) . '</code></td>';
+					echo '<td>' . esc_html( wp_json_encode( $row['before'] ?? null ) ?: '—' ) . '</td>';
+					echo '<td>' . esc_html( wp_json_encode( $row['after'] ?? null ) ?: '—' ) . '</td></tr>';
+				}
+				echo '</tbody></table>';
+			}
+			echo '</div>';
 		}
 
 		echo '<h2 class="mp-cp-edit-section-title" style="margin:1.5em 0 0.5em;">' . esc_html__( 'Recent snapshots', 'mp-commerce-promotions' );

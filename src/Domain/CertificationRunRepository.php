@@ -142,6 +142,19 @@ final class CertificationRunRepository {
 		);
 	}
 
+	public function delete_older_than( string $cutoff_mysql ): int {
+		$table = $this->table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$deleted = $this->wpdb->query(
+			$this->wpdb->prepare(
+				"DELETE FROM {$table} WHERE certified_at < %s",
+				$cutoff_mysql
+			)
+		);
+
+		return false === $deleted ? 0 : (int) $deleted;
+	}
+
 	private function table(): string {
 		return Schema::certification_runs_table( $this->wpdb );
 	}

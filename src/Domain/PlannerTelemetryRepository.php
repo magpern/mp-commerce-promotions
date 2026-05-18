@@ -91,6 +91,30 @@ final class PlannerTelemetryRepository {
 		return false === $deleted ? 0 : (int) $deleted;
 	}
 
+	public function count_older_than( string $cutoff_mysql ): int {
+		$table = $this->table();
+		$value = DbQuery::get_var(
+			$this->wpdb,
+			"SELECT COUNT(*) FROM {$table} WHERE last_seen_at < %s",
+			array( $cutoff_mysql )
+		);
+
+		return is_numeric( $value ) ? (int) $value : 0;
+	}
+
+	public function delete_older_than( string $cutoff_mysql ): int {
+		$table = $this->table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$deleted = $this->wpdb->query(
+			$this->wpdb->prepare(
+				"DELETE FROM {$table} WHERE last_seen_at < %s",
+				$cutoff_mysql
+			)
+		);
+
+		return false === $deleted ? 0 : (int) $deleted;
+	}
+
 	/**
 	 * @return list<array{promotion_id: int, selected_count: int, skipped_count: int, blocked_by_group_count: int, blocked_by_cooldown_count: int, blocked_by_budget_count: int, blocked_by_exclusion_count: int, name: string}>
 	 */

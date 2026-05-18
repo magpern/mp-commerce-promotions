@@ -155,21 +155,25 @@ final class AdminPerformanceHardeningPanel {
 			$preview   = $retention->run_daily_cleanup( true );
 			echo '<h3>' . esc_html__( 'Storage & cleanup', 'mp-commerce-promotions' ) . '</h3>';
 			echo '<table class="widefat striped"><tbody>';
-			foreach ( $estimates as $key => $count ) {
+			foreach ( $estimates as $key => $value ) {
+				$display = is_int( $value ) ? (string) $value : ( is_string( $value ) ? $value : wp_json_encode( $value ) );
 				printf(
-					'<tr><th>%s</th><td>%d rows</td></tr>',
+					'<tr><th>%s</th><td>%s</td></tr>',
 					esc_html( (string) $key ),
-					(int) $count
+					esc_html( (string) $display )
 				);
 			}
 			echo '</tbody></table>';
 			echo '<p class="description">';
 			printf(
-				/* translators: 1: retention days, 2: automation rows, 3: scenarios */
-				esc_html__( 'Retention: %1$d days. Dry-run would remove ~%2$d automation runs and archive ~%3$d scenarios.', 'mp-commerce-promotions' ),
+				/* translators: 1: retention days, 2: automation, 3: telemetry, 4: scenarios, 5: certification, 6: snapshots */
+				esc_html__( 'Retention: %1$d days. Dry-run cleanup: automation %2$d, telemetry %3$d, scenarios %4$d, certification %5$d, snapshots %6$d; profiler/anomaly counters reset on apply.', 'mp-commerce-promotions' ),
 				$settings->telemetry_retention_days(),
 				(int) ( $preview['automation_runs'] ?? 0 ),
-				(int) ( $preview['scenarios_archived'] ?? 0 )
+				(int) ( $preview['planner_telemetry_rows'] ?? 0 ),
+				(int) ( $preview['scenarios_archived'] ?? 0 ),
+				(int) ( $preview['certification_runs'] ?? 0 ),
+				(int) ( $preview['snapshots_pruned'] ?? 0 )
 			);
 			echo '</p>';
 			echo '<form method="post" style="margin:0.5em 0;" onsubmit="return confirm(\'' . esc_js( __( 'Run retention cleanup now?', 'mp-commerce-promotions' ) ) . '\');">';
