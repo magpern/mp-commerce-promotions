@@ -124,7 +124,7 @@ $stack_a = $make_active(
 	$repo,
 	'Regression stack A',
 	array( array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 1 ) ),
-	array( array( 'type' => RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT, 'amount' => 5 ) ),
+	array( array( 'type' => RuleTypes::ACTION_PERCENTAGE_DISCOUNT, 'percentage' => 5 ) ),
 	PromotionApplicationMode::STACKABLE
 );
 $stack_b = $make_active(
@@ -132,9 +132,22 @@ $stack_b = $make_active(
 	$repo,
 	'Regression stack B',
 	array( array( 'type' => RuleTypes::CONDITION_MINIMUM_SUBTOTAL, 'amount' => 1 ) ),
-	array( array( 'type' => RuleTypes::ACTION_FIXED_AMOUNT_DISCOUNT, 'amount' => 3 ) ),
+	array( array( 'type' => RuleTypes::ACTION_PERCENTAGE_DISCOUNT, 'percentage' => 3 ) ),
 	PromotionApplicationMode::STACKABLE
 );
+// stop_processing must be false for multi-stack selection.
+if ( $stack_a > 0 ) {
+	$pa = $repo->find( $stack_a );
+	if ( $pa !== null ) {
+		$service->update_promotion( $pa->with_application_rules( PromotionApplicationMode::STACKABLE, false, null ) );
+	}
+}
+if ( $stack_b > 0 ) {
+	$pb = $repo->find( $stack_b );
+	if ( $pb !== null ) {
+		$service->update_promotion( $pb->with_application_rules( PromotionApplicationMode::STACKABLE, false, null ) );
+	}
+}
 $stack_only = array();
 foreach ( array( $stack_a, $stack_b ) as $sid ) {
 	$p = $repo->find( $sid );
