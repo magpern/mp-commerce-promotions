@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -35,9 +35,9 @@ jobs:
       - name: PHPUnit unit tests
         run: composer run test
 
-      - name: PHPCS (informational, non-blocking)
+      - name: PHPCS advisory
         continue-on-error: true
-        run: composer run lint:phpcs
+        run: composer run lint:phpcs || true
 
       - name: Build release zip
         env:
@@ -57,7 +57,7 @@ jobs:
           echo "OK: ${ZIP_PATH}"
 
       - name: Upload release ZIP artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: mp-commerce-promotions-${{ env.VERSION }}
           path: ${{ env.ZIP_PATH }}
@@ -102,7 +102,7 @@ jobs:
           echo "path=${NOTES}" >> "${GITHUB_OUTPUT}"
 
       - name: Create or update GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.release_meta.outputs.tag }}
           name: Commerce Promotions ${{ steps.release_meta.outputs.version }}

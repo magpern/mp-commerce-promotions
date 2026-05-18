@@ -13,7 +13,7 @@ See [CHANGELOG.md](../CHANGELOG.md) for user-facing release notes and [DEVELOPME
 - [ ] [PILOT_RELEASE_0.3.0_PILOT1.md](PILOT_RELEASE_0.3.0_PILOT1.md) reviewed for pilot audience.
 - [ ] `composer install` (dev dependencies for lint only).
 - [ ] `composer run lint:php` — must pass (syntax).
-- [ ] `composer run lint:phpcs` — record counts in release notes; **non-blocking** in CI (see [BETA_READINESS.md](BETA_READINESS.md)).
+- [ ] `composer run lint:phpcs` — record counts in release notes; **non-blocking** in CI (see [PHPCS_BASELINE.md](PHPCS_BASELINE.md)).
 - [ ] `bash scripts/build-zip.sh` — produces `../build/mp-commerce-promotions-{version}.zip`.
 - [ ] Inspect zip: no `.git/`, `vendor/`, `node_modules/`, or cache directories (see script output / `unzip -l`).
 

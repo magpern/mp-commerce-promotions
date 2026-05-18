@@ -217,7 +217,7 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) on `push` / 
 
 **PHP matrix:** 8.1, 8.2, 8.3 (matches `composer.json` `require.php`).
 
-PHPCS is installed via Composer for local incremental cleanup; the baseline is **not clean** (see PHPCS section above). GitHub Actions runs `composer run lint:phpcs` with **`continue-on-error: true`** (informational only). See [BETA_READINESS.md](BETA_READINESS.md). PHPCS will become a **gating** step after the target subset is stable and the team agrees on an error budget.
+PHPCS is installed via Composer for local incremental cleanup; the baseline is **not clean** (see [PHPCS_BASELINE.md](PHPCS_BASELINE.md)). GitHub Actions runs **PHPCS advisory** (`continue-on-error: true`, `|| true`) — not a merge gate. `composer run lint` runs **PHP syntax only**; use `composer run lint:phpcs` for WPCS. PHPCS becomes gating after 1.0 cleanup (see [BETA_READINESS.md](BETA_READINESS.md)).
 
 **Target-path PHPCBF (2026-05-17):** `src/Service`, key Admin pages, and selected `src/Woo` files — run on staging via Docker Composer image; commit safe auto-fixes. Example:
 

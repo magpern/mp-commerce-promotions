@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -42,9 +42,10 @@ jobs:
       - name: PHPUnit unit tests
         run: composer run test
 
-      - name: PHPCS (informational, non-blocking)
+      # Advisory only — never fails the job. Hard gates: validate, lint:php, test, build zip.
+      - name: PHPCS advisory
         continue-on-error: true
-        run: composer run lint:phpcs
+        run: composer run lint:phpcs || true
 
       - name: Build release zip
         env:
@@ -60,5 +61,3 @@ jobs:
             exit 1
           fi
           echo "OK: ${ZIP_PATH}"
-
-      # PHPCS is informational only (continue-on-error). Not gating merges yet — see docs/BETA_READINESS.md.

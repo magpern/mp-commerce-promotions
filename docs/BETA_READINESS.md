@@ -34,7 +34,7 @@
 
 ## PHPCS status
 
-- **Policy:** Not gating merges; CI runs `composer run lint:phpcs` with `continue-on-error: true`
+- **Policy:** Not gating merges; CI runs **PHPCS advisory** (`continue-on-error: true`, `|| true`). See [PHPCS_BASELINE.md](PHPCS_BASELINE.md).
 - **Target paths** (Service + key Admin/Woo): PHPCBF applied on staging; see CHANGELOG / release notes for counts
 - **Goal:** Trend down errors/warnings per milestone; enable gating when target subset is stable
 

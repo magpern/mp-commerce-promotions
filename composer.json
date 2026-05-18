@@ -26,10 +26,7 @@
 			"bash -c 'find . \\( -path ./vendor -o -path ./node_modules \\) -prune -o -name \"*.php\" -print0 | xargs -0 -n1 php -l'"
 		],
 		"lint:phpcs": "phpcs",
-		"lint": [
-			"@lint:php",
-			"@lint:phpcs"
-		],
+		"lint": "@lint:php",
 		"test": "phpunit"
 	}
 }

@@ -45,6 +45,9 @@
 				<element value="MP"/>
 			</property>
 		</properties>
+		<!-- Deferred until 1.0: PSR-4 namespace vs WPCS prefix rules; MP_ constant prefix length. -->
+		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
+		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedNamespaceFound"/>
 	</rule>
 
 	<rule ref="WordPress.WP.I18n">
