@@ -672,6 +672,7 @@ final class PromotionRuleValidatorTest extends TestCase {
 
 		$ref  = new ReflectionClass( $promotion );
 		$prop = $ref->getProperty( 'excluded_promotion_ids' );
+		$prop->setAccessible( true );
 		$prop->setValue( $promotion, array( 10, 12 ) );
 
 		$issues = $this->validator->validate( $promotion );

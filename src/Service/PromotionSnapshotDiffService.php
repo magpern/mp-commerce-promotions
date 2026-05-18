@@ -147,7 +147,11 @@ final class PromotionSnapshotDiffService {
 		);
 	}
 
-	private function values_differ( mixed $a, mixed $b ): bool {
+	/**
+	 * @param mixed $a
+	 * @param mixed $b
+	 */
+	private function values_differ( $a, $b ): bool {
 		if ( is_float( $a ) || is_float( $b ) ) {
 			return abs( (float) $a - (float) $b ) > 0.0001;
 		}
