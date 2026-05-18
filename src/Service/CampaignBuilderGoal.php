@@ -153,6 +153,26 @@ final class CampaignBuilderGoal {
 		return $defs[ $goal ]['title'] ?? $goal;
 	}
 
+	/**
+	 * Visual theme slug for goal cards (discount, shipping, gift, coupon, vip, budget).
+	 */
+	public static function visual_theme( string $goal ): string {
+		$map = array(
+			self::CATEGORY_DISCOUNT => 'discount',
+			self::PRODUCT_DISCOUNT  => 'discount',
+			self::BUY_X_GET_Y       => 'discount',
+			self::SCHEDULED         => 'discount',
+			self::FIRST_ORDER       => 'discount',
+			self::FREE_SHIPPING     => 'shipping',
+			self::FREE_GIFT         => 'gift',
+			self::COUPON_CODE       => 'coupon',
+			self::VIP_ROLE          => 'vip',
+			self::BUDGETED          => 'budget',
+		);
+
+		return $map[ $goal ] ?? 'discount';
+	}
+
 	public static function encode_internal_notes( string $goal, ?string $merchant_notes = null ): string {
 		$line = self::NOTES_PREFIX . $goal;
 		if ( $merchant_notes !== null && trim( $merchant_notes ) !== '' ) {

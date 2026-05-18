@@ -6,18 +6,20 @@ Merchant-facing layer on top of the existing promotion engine. Creates **normal 
 
 `wp-admin/admin.php?page=mp-commerce-promotions&tab=campaign-builder`
 
-With a goal selected:
+With a goal selected (wizard step):
 
-`...&tab=campaign-builder&campaign_goal=category_discount`
+`...&tab=campaign-builder&campaign_goal=category_discount&cb_step=targeting`
 
-## Layout (merchant cockpit)
+## Layout (guided merchant cockpit)
 
-- Page header with subtitle and **Merchant-friendly** badge
-- Horizontal summary cards (Live, Scheduled, Drafts, Needs attention, Budget exhausted) link to filtered All Promotions
-- **Choose campaign type** goal grid; selected goal highlighted
-- **Configure campaign** form (left) + **Campaign preview** sidebar (right) with smart advice and Advanced Editor link
-- **Recent campaigns** table with status/health badges
-- Styles scoped to `.mp-cb-wrap` via `assets/css/admin-campaign-builder.css`
+- **Simple Campaign Builder** / **Advanced Editor** mode switch
+- Progress bar: Goal → Targeting → Offer → Schedule → Review
+- Step 1: goal grid with color themes and merchant teasers
+- Steps 2–5: wizard with Back/Next; state preserved via transient token (`cb_token`)
+- Searchable category/product pickers (AJAX) + manual ID fallback
+- Preview card: headline, confidence badge, timeline, benefit, targeting, limits, smart advice
+- Recent campaigns: summary column, lifecycle chips, budget progress bars
+- Styles scoped to `.mp-cb-wrap` via `assets/css/admin-campaign-builder.css` + `admin-campaign-builder.js`
 
 ## Checklist
 

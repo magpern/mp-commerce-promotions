@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Merchant Campaign Builder** — new admin tab (`tab=campaign-builder`) with goal cards, simplified campaign form, plain-language preview, smart warnings, draft creation via `PromotionTemplate` / standard rules, optional coupon codes, latest-campaigns table, and Advanced Editor escape hatch; `scripts/campaign-builder-smoke.php`; `docs/manual-campaign-builder-test.md`.
 - **Campaign Builder UI polish** — merchant cockpit layout (header, horizontal summary cards, two-column preview sidebar, grouped form, status/health badges, scoped `admin-campaign-builder.css`).
+- **Campaign Builder Phase 3** — guided 5-step wizard (goal → targeting → offer → schedule → review), `CampaignSummaryFormatter` merchant copy, searchable product/category pickers (AJAX), confidence/risk panel via existing safety analyzers, lifecycle timeline + budget bars, goal color themes, Simple vs Advanced mode switch, `tests/Unit/CampaignSummaryFormatterTest.php`.
 
 - **Production pilot hardening** — `scripts/regression-suite.php`; snapshot diff preview; operational rollback + production profile presets; runtime anomaly heuristics; retention hardening (telemetry/certification/snapshots); expanded load harness; `docs/MERCHANT_WORKFLOWS.md`.
 

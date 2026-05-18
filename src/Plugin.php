@@ -11,6 +11,7 @@ namespace MP\CommercePromotions;
 
 use MP\CommercePromotions\Admin\AdminMenu;
 use MP\CommercePromotions\Admin\AdminRouter;
+use MP\CommercePromotions\Admin\CampaignBuilderAjax;
 use MP\CommercePromotions\Admin\CampaignBuilderPage;
 use MP\CommercePromotions\Admin\DiagnosticsPage;
 use MP\CommercePromotions\Admin\ReportsPage;
@@ -255,6 +256,7 @@ final class Plugin {
 				$health_monitor
 			);
 			$campaign_builder_page->register_assets();
+			( new CampaignBuilderAjax() )->register();
 
 			$campaign_bulk = null;
 			$pricing_bulk  = null;

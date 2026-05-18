@@ -23,6 +23,8 @@ use MP\CommercePromotions\Domain\PromotionFactory;
 use MP\CommercePromotions\Service\AuditLogger;
 use MP\CommercePromotions\Service\CampaignBuilderDraftCreator;
 use MP\CommercePromotions\Service\CampaignBuilderGoal;
+use MP\CommercePromotions\Service\CampaignBuilderStep;
+use MP\CommercePromotions\Service\CampaignSummaryFormatter;
 use MP\CommercePromotions\Service\PromotionService;
 
 $GLOBALS['smoke_failures'] = 0;
@@ -52,6 +54,15 @@ $creator       = new CampaignBuilderDraftCreator( $service, $code_factory, $code
 
 $goals = CampaignBuilderGoal::all();
 cb_smoke_assert( count( $goals ) === 10, 'ten campaign goals registered' );
+cb_smoke_assert(
+	CampaignBuilderStep::initial_after_goal( CampaignBuilderGoal::CATEGORY_DISCOUNT ) === CampaignBuilderStep::TARGETING,
+	'wizard initial step for category discount'
+);
+$headline = CampaignSummaryFormatter::headline(
+	CampaignBuilderGoal::FREE_SHIPPING,
+	array( 'minimum_subtotal' => '100' )
+);
+cb_smoke_assert( str_contains( $headline, 'Free shipping' ), 'summary formatter free shipping' );
 
 foreach ( $goals as $goal ) {
 	$form = cb_smoke_form_for_goal( $goal );
