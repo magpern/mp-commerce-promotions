@@ -200,11 +200,31 @@ if ( $controls_js !== '' && strpos( $controls_js, 'mp-cp-gc-choose-logo' ) !== f
 	&& strpos( $controls_js, 'wp.media' ) !== false
 	&& strpos( $controls_js, 'mpCpGiftCardEmailPreview' ) === false
 	&& strpos( $controls_js, 'initLogoPicker' ) !== false
-	&& strpos( $controls_js, 'initColorPicker' ) !== false ) {
+	&& strpos( $controls_js, 'initColorPicker' ) !== false
+	&& strpos( $controls_js, 'ui.color.toString' ) !== false
+	&& strpos( $controls_js, 'applyAccentColor' ) !== false
+	&& strpos( $controls_js, 'irischange.mpCpAccent' ) !== false ) {
 	$pass( 'settings controls JS is independent and initializes logo/color' );
 } else {
 	$fail( 'settings controls JS is independent and initializes logo/color' );
 }
+
+if ( $handler_src !== '' && strpos( $handler_src, 'mp_cp_gift_card_accent_color' ) !== false
+	&& strpos( $handler_src, 'wp-color-picker' ) !== false
+	&& strpos( $handler_src, 'data-default-color' ) !== false ) {
+	$pass( 'accent color input markup present' );
+} else {
+	$fail( 'accent color input markup present' );
+}
+
+$settings_persist = new Settings();
+$settings_persist->set_gift_card_accent_color( '#a51d2d' );
+if ( $settings_persist->gift_card_accent_color_saved() === '#a51d2d' ) {
+	$pass( 'changed accent hex persists on save' );
+} else {
+	$fail( 'changed accent hex persists on save', $settings_persist->gift_card_accent_color_saved() );
+}
+$settings_persist->reset_gift_card_accent_color_to_default();
 
 $preview_js = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/gift-card-email-preview.js' );
 if ( $preview_js !== '' && strpos( $preview_js, 'initLogoPicker' ) === false

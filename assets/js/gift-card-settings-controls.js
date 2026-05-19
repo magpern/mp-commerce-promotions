@@ -16,6 +16,7 @@
 	var mediaNoticeShown = false;
 	var colorNoticeShown = false;
 	var mediaFrame = null;
+	var syncingAccent = false;
 
 	function isDebug() {
 		return Boolean(
@@ -56,6 +57,154 @@
 		}
 		node.dispatchEvent( new Event( 'input', { bubbles: true } ) );
 		node.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+	}
+
+	function expandShortHex( hex ) {
+		if ( ! /^#[0-9a-fA-F]{3}$/.test( hex ) ) {
+			return hex;
+		}
+		return (
+			'#'
+			+ hex.charAt( 1 )
+			+ hex.charAt( 1 )
+			+ hex.charAt( 2 )
+			+ hex.charAt( 2 )
+			+ hex.charAt( 3 )
+			+ hex.charAt( 3 )
+		).toLowerCase();
+	}
+
+	function normalizeHex( color ) {
+		if ( color === null || color === undefined ) {
+			return '';
+		}
+
+		var value = String( color ).trim();
+		if ( value === '' ) {
+			return '';
+		}
+
+		if ( value.charAt( 0 ) !== '#' ) {
+			value = '#' + value;
+		}
+
+		if ( /^#[0-9a-fA-F]{6}$/.test( value ) ) {
+			return value.toLowerCase();
+		}
+
+		if ( /^#[0-9a-fA-F]{3}$/.test( value ) ) {
+			return expandShortHex( value );
+		}
+
+		return '';
+	}
+
+	function colorFromUi( ui ) {
+		if ( ui && ui.color && typeof ui.color.toString === 'function' ) {
+			return ui.color.toString();
+		}
+		return '';
+	}
+
+	function getAccentDefault( $field ) {
+		return normalizeHex( $field.attr( 'data-default-color' ) || '#2271b1' ) || '#2271b1';
+	}
+
+	function notifyAccentChange( node ) {
+		dispatchInput( node );
+		if ( typeof window.CustomEvent === 'function' ) {
+			document.dispatchEvent(
+				new CustomEvent( 'mp-cp-gift-card-accent-change', { bubbles: true } )
+			);
+		}
+	}
+
+	function applyAccentColor( $, color, options ) {
+		options = options || {};
+		var $field = $( '#' + ACCENT_INPUT_ID );
+		if ( ! $field.length || syncingAccent ) {
+			return;
+		}
+
+		var hex = normalizeHex( color );
+		if ( hex === '' && options.useDefaultOnEmpty ) {
+			hex = getAccentDefault( $field );
+		}
+
+		if ( hex === '' && ! options.allowEmpty ) {
+			return;
+		}
+
+		syncingAccent = true;
+
+		$field.val( hex );
+
+		if ( $field.hasClass( 'wp-color-picker' ) && $.fn.wpColorPicker ) {
+			try {
+				$field.wpColorPicker( 'color', hex || getAccentDefault( $field ) );
+			} catch ( e ) {
+				// Picker may not be fully initialized yet.
+			}
+		}
+
+		syncingAccent = false;
+		notifyAccentChange( $field.get( 0 ) );
+	}
+
+	function onAccentPickerChange( $, source, ui ) {
+		var raw = colorFromUi( ui );
+		if ( raw === '' && source ) {
+			raw = $( source ).val();
+		}
+		applyAccentColor( $, raw );
+	}
+
+	function attachAccentIrisListeners( $, $field ) {
+		$field.off( 'irischange.mpCpAccent' );
+		$field.on( 'irischange.mpCpAccent', function ( event, ui ) {
+			onAccentPickerChange( $, $field.get( 0 ), ui );
+		} );
+
+		$field.closest( '.wp-picker-container' ).off( 'click.mpCpAccent', '.wp-picker-clear' );
+		$field.closest( '.wp-picker-container' ).on( 'click.mpCpAccent', '.wp-picker-clear', function () {
+			window.setTimeout( function () {
+				applyAccentColor( $, '', { useDefaultOnEmpty: true } );
+			}, 10 );
+		} );
+	}
+
+	function bindAccentManualInput( $, $field ) {
+		var node = $field && $field.length ? $field.get( 0 ) : document.getElementById( ACCENT_INPUT_ID );
+		if ( ! node ) {
+			return;
+		}
+
+		var handler = function () {
+			if ( syncingAccent ) {
+				return;
+			}
+			var raw = $field && $field.length ? $field.val() : node.value;
+			var hex = normalizeHex( raw );
+			if ( hex !== '' && $ ) {
+				applyAccentColor( $, hex );
+				return;
+			}
+			if ( hex !== '' ) {
+				node.value = hex;
+			}
+			notifyAccentChange( node );
+		};
+
+		if ( $ && $field && $field.length ) {
+			$field.off( 'input.mpCpAccent change.mpCpAccent' );
+			$field.on( 'input.mpCpAccent change.mpCpAccent', handler );
+			return;
+		}
+
+		node.removeEventListener( 'input', handler );
+		node.removeEventListener( 'change', handler );
+		node.addEventListener( 'input', handler );
+		node.addEventListener( 'change', handler );
 	}
 
 	function showInlineNotice( anchor, className, message ) {
@@ -173,25 +322,37 @@
 				);
 				colorNoticeShown = true;
 			}
+			bindAccentManualInput( null, null );
 			return;
 		}
 
-		if ( $( input ).closest( '.wp-picker-container' ).length ) {
+		var $field = $( input );
+		var fallback = getAccentDefault( $field );
+		var alreadyWrapped = $field.closest( '.wp-picker-container' ).length > 0;
+
+		if ( alreadyWrapped ) {
+			attachAccentIrisListeners( $, $field );
+			bindAccentManualInput( $, $field );
 			return;
 		}
 
-		var fallback = input.getAttribute( 'data-default-color' ) || '#2271b1';
+		var current = normalizeHex( $field.val() );
+		if ( current !== '' ) {
+			$field.val( current );
+		}
 
-		$( input ).wpColorPicker( {
+		$field.wpColorPicker( {
 			defaultColor: fallback,
-			change: function () {
-				dispatchInput( input );
+			change: function ( event, ui ) {
+				onAccentPickerChange( $, this, ui );
 			},
 			clear: function () {
-				input.value = fallback;
-				dispatchInput( input );
+				applyAccentColor( $, '', { useDefaultOnEmpty: true } );
 			},
 		} );
+
+		attachAccentIrisListeners( $, $field );
+		bindAccentManualInput( $, $field );
 	}
 
 	function init() {

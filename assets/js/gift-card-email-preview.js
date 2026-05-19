@@ -185,5 +185,6 @@
 	$( function () {
 		bindPreviewFields();
 		initTestEmail();
+		document.addEventListener( 'mp-cp-gift-card-accent-change', schedulePreview );
 	} );
 }( window.jQuery ) );
