@@ -137,6 +137,7 @@ final class CartPromotionApplier {
 		}
 
 		$active = PromotionPriorityTier::sort_promotions( $this->promotions->find_active_for_planner( 200 ) );
+		$active = PromotionCartExclusionSession::filter_promotions( $active );
 		$plan   = $this->plan_with_resilience( $active, $context );
 		if ( $plan === null ) {
 			CartSessionHelper::clear_line_allocations();
@@ -272,7 +273,11 @@ final class CartPromotionApplier {
 			}
 
 			$promotion_id = $promotion_code->get_promotion_id();
-			$promotion    = $this->promotions->find( $promotion_id );
+			if ( PromotionCartExclusionSession::is_excluded( $promotion_id ) ) {
+				continue;
+			}
+
+			$promotion = $this->promotions->find( $promotion_id );
 			if ( $promotion === null ) {
 				$this->clear_applied_promotion_session();
 				return true;
@@ -315,6 +320,7 @@ final class CartPromotionApplier {
 	 */
 	private function apply_automatic_promotions( $cart, EvaluationContext $context, float $subtotal ): void {
 		$active = PromotionPriorityTier::sort_promotions( $this->promotions->find_active_for_planner( 200 ) );
+		$active = PromotionCartExclusionSession::filter_promotions( $active );
 		$plan   = $this->plan_with_resilience( $active, $context );
 		if ( $plan === null ) {
 			$this->clear_applied_promotion_session();
@@ -453,6 +459,10 @@ final class CartPromotionApplier {
 			$promotion = $decision->get_promotion();
 			$pid       = (int) ( $promotion->get_id() ?? 0 );
 			$mode      = $promotion->get_discount_application_mode();
+
+			if ( $pid > 0 && PromotionCartExclusionSession::is_excluded( $pid ) ) {
+				continue;
+			}
 
 			if ( $this->dry_run_guard->is_promotion_dry_run( $promotion ) ) {
 				$preview = $this->build_dry_run_session_entry(

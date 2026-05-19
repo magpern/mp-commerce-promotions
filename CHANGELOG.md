@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Remove applied promotions from cart** — shoppers can remove a specific Commerce promotion fee from cart totals (session exclusion `mp_cp_excluded_promotion_ids`); **Restore** clears exclusions; code-linked promotions also drop the WooCommerce coupon when removed; does not pause or delete promotions globally; `promotion-remove-from-cart-smoke.php`.
+
 ### Fixed
 
 - **Cart layout with gift card accordion** — cart redemption UI renders inside the cart form coupon row (`woocommerce_cart_coupon`) as `.mp-cp-credit-inline` without nested forms, keeping cart totals in the right sidebar; fallback `woocommerce_cart_actions` when coupons are disabled.

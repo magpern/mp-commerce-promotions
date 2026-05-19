@@ -249,6 +249,29 @@
 	text-decoration: underline dotted;
 }
 
+/* Cart totals: remove / restore Commerce promotions (scoped) */
+.mp-cp-cart-promotion-remove {
+	margin-left: 0.35em;
+	font-size: 0.85em;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.mp-cp-cart-promotion-remove:hover,
+.mp-cp-cart-promotion-remove:focus {
+	text-decoration: underline;
+}
+
+.mp-cp-cart-promotion-restore-notice {
+	margin: 0 0 0.75em;
+	font-size: 0.9em;
+	color: #50575e;
+}
+
+.mp-cp-cart-promotion-restore-link {
+	text-decoration: underline;
+}
+
 .mp-cp-gc-title {
 	margin: 0 0 0.5em;
 	font-size: 1.25em;

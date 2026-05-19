@@ -73,6 +73,15 @@ On the **storefront** (not wp-admin), in a browser session with a cart:
 - [ ] Confirm the fee amount is **approximately 10% of cart subtotal** (before the fee; subtotal × 10 / 100, clamped to subtotal)
 - [ ] Confirm **only one** commerce promotion fee appears (no duplicate promotion fees)
 
+### 3a. Remove / restore promotion (shopper)
+
+- [ ] With an automatic promotion fee visible, confirm a subtle **Remove** link appears on that fee row (cart totals)
+- [ ] Click **Remove** — fee disappears after cart recalculates; promotion is **not** deleted in admin
+- [ ] Confirm notice: **Some promotions were removed from this cart.** with **Restore**
+- [ ] Click **Restore** — promotion fee returns (if still eligible)
+- [ ] **Code-linked promotion:** apply via promotion code, remove from cart — fee gone and WooCommerce coupon removed from cart; re-enter code to re-apply
+- [ ] WP-CLI smoke: `./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/promotion-remove-from-cart-smoke.php`
+
 ---
 
 ## 4. Checkout / order test

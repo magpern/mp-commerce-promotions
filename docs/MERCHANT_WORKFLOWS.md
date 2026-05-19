@@ -49,6 +49,15 @@ Operational playbooks for real merchant pilots using Commerce Promotions for Woo
 2. Use automation to pause exhausted promotions (manual or cron when enabled).
 3. Watch anomaly indicator **budget_exhaustion_spike** under load.
 
+## Shopper removes a promotion from cart
+
+1. On **cart**, each Commerce promotion fee can show **Remove** (session-only; promotion stays active in admin).
+2. Excluded promotion IDs live in session (`mp_cp_excluded_promotion_ids`) until **Restore** or cart/session reset.
+3. **Code-linked** promotions: removing also drops the WooCommerce coupon; customer must re-enter the code to re-apply.
+4. **Automatic** promotions: restore or new session re-applies when still eligible.
+5. Removed promotions are **not** recorded on the order; unrelated promotions still apply.
+6. Smoke: `./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/promotion-remove-from-cart-smoke.php`
+
 ## Stackable orchestration strategy
 
 - Use **stackable** for additive perks (shipping + small cart %).

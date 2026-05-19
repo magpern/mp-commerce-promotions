@@ -74,6 +74,7 @@ use MP\CommercePromotions\GiftCard\StoreCreditWallet;
 use MP\CommercePromotions\Woo\BlocksHookAudit;
 use MP\CommercePromotions\Woo\CartContextBuilder;
 use MP\CommercePromotions\Woo\CartPromotionApplier;
+use MP\CommercePromotions\Woo\CartPromotionRemovalController;
 use MP\CommercePromotions\Woo\FreeGiftCartSynchronizer;
 use MP\CommercePromotions\Woo\GiftCardCartApplier;
 use MP\CommercePromotions\GiftCard\GiftCardBalanceChecker;
@@ -185,6 +186,8 @@ final class Plugin {
 				$profiler
 			);
 			$this->woo_bridge->set_cart_promotion_applier( $cart_applier );
+
+			( new CartPromotionRemovalController( $this->promotion_code_repository ) )->register();
 
 			add_action(
 				'shutdown',
