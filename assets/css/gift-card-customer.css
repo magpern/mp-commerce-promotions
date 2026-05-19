@@ -121,23 +121,19 @@
 	margin: 0;
 }
 
-.mp-cp-credit-cart-coupon-row .input-text {
+.mp-cp-credit-cart-coupon-row > .input-text {
 	flex: 1 1 auto;
 	min-width: 0;
 	width: 100%;
 	max-width: none;
 	margin: 0;
-	height: auto;
-	min-height: 0;
 	box-sizing: border-box;
 }
 
-.mp-cp-credit-cart-coupon-row .button {
+.mp-cp-credit-cart-coupon-row > .button {
 	flex: 0 0 auto;
 	margin: 0;
-	height: auto;
-	min-height: 0;
-	align-self: auto;
+	align-self: stretch;
 	white-space: nowrap;
 }
 
@@ -561,21 +557,17 @@
 
 	.mp-cp-credit-form-row,
 	.mp-cp-credit-accordion__form-row,
-	.mp-cp-credit-accordion__form--inline {
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	.mp-cp-credit-form-row .input-text,
-	.mp-cp-credit-accordion__form-row .input-text,
-	.mp-cp-credit-accordion__form--inline .input-text,
+	.mp-cp-credit-accordion__form--inline,
 	.mp-cp-credit-cart-coupon-row {
 		flex-direction: column;
 		align-items: stretch;
 	}
 
-	.mp-cp-credit-cart-coupon-row .input-text,
-	.mp-cp-credit-cart-coupon-row .button {
+	.mp-cp-credit-form-row > .input-text,
+	.mp-cp-credit-accordion__form-row > .input-text,
+	.mp-cp-credit-accordion__form--inline > .input-text,
+	.mp-cp-credit-cart-coupon-row > .input-text,
+	.mp-cp-credit-cart-coupon-row > .button {
 		width: 100%;
 	}
 
