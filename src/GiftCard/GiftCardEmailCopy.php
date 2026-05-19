@@ -114,7 +114,9 @@ final class GiftCardEmailCopy {
 			} elseif ( $key === 'email_style' ) {
 				$out[ $key ] = sanitize_text_field( $raw );
 			} else {
-				$out[ $key ] = sanitize_textarea_field( $raw );
+				$out[ $key ] = GiftCardEmailCopyDefaults::replace_known_smoke_string(
+					sanitize_textarea_field( $raw )
+				);
 			}
 		}
 

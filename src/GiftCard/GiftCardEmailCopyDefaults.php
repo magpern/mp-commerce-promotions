@@ -22,8 +22,10 @@ final class GiftCardEmailCopyDefaults {
 		return array(
 			'Merchant QA subject line'     => GiftCardEmailPlaceholders::default_subject(),
 			'Merchant QA heading'          => GiftCardEmailPlaceholders::default_heading(),
-			'Custom preview heading'       => GiftCardEmailPlaceholders::default_heading(),
+			'Custom preview heading'         => GiftCardEmailPlaceholders::default_heading(),
 			'Custom preview intro text.'   => GiftCardEmailPlaceholders::default_intro(),
+			'Real custom preview heading'    => GiftCardEmailPlaceholders::default_heading(),
+			'Real custom preview intro text.' => GiftCardEmailPlaceholders::default_intro(),
 			'Merchant QA support'          => GiftCardEmailPlaceholders::default_support_text(),
 			'Smoke persist subject'        => GiftCardEmailPlaceholders::default_subject(),
 			'Smoke persist heading'        => GiftCardEmailPlaceholders::default_heading(),

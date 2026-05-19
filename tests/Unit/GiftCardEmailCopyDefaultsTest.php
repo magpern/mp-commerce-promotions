@@ -40,6 +40,40 @@ final class GiftCardEmailCopyDefaultsTest extends TestCase {
 			GiftCardEmailPlaceholders::default_intro(),
 			GiftCardEmailCopyDefaults::replace_known_smoke_string( 'Custom preview intro text.' )
 		);
+		$this->assertSame(
+			GiftCardEmailPlaceholders::default_heading(),
+			GiftCardEmailCopyDefaults::replace_known_smoke_string( 'Real custom preview heading' )
+		);
+		$this->assertSame(
+			GiftCardEmailPlaceholders::default_intro(),
+			GiftCardEmailCopyDefaults::replace_known_smoke_string( 'Real custom preview intro text.' )
+		);
+	}
+
+	public function test_real_custom_preview_strings_cleaned_on_save_and_read(): void {
+		$settings = new Settings();
+		$settings->set_gift_card_email_heading( 'Real custom preview heading' );
+		$settings->set_gift_card_email_intro( 'Real custom preview intro text.' );
+		$this->assertSame( GiftCardEmailPlaceholders::default_heading(), $settings->gift_card_email_heading() );
+		$this->assertSame( GiftCardEmailPlaceholders::default_intro(), $settings->gift_card_email_intro() );
+	}
+
+	public function test_reset_save_reload_keeps_production_defaults(): void {
+		$settings = new Settings();
+		$settings->set_gift_card_email_heading( 'Real custom preview heading' );
+		$settings->set_gift_card_email_intro( 'Real custom preview intro text.' );
+		( new \MP\CommercePromotions\GiftCard\GiftCardEmailTemplateReset() )->apply( $settings );
+		$settings->set_gift_card_email_heading( $settings->gift_card_email_heading() );
+		$settings->set_gift_card_email_intro( $settings->gift_card_email_intro() );
+		$reloaded = new Settings();
+		$this->assertSame( GiftCardEmailPlaceholders::default_heading(), $reloaded->gift_card_email_heading() );
+		$this->assertSame( GiftCardEmailPlaceholders::default_intro(), $reloaded->gift_card_email_intro() );
+	}
+
+	public function test_custom_merchant_copy_not_in_qa_list_is_preserved(): void {
+		$settings = new Settings();
+		$settings->set_gift_card_email_heading( 'Real merchant persist heading' );
+		$this->assertSame( 'Real merchant persist heading', $settings->gift_card_email_heading() );
 	}
 
 	public function test_qa_accent_color_constant(): void {

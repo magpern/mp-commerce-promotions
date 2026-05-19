@@ -577,7 +577,9 @@ final class Settings {
 	}
 
 	private function set_gift_card_email_text_option( string $option, string $text ): void {
-		update_option( $option, sanitize_textarea_field( $text ), false );
+		$text = sanitize_textarea_field( $text );
+		$text = \MP\CommercePromotions\GiftCard\GiftCardEmailCopyDefaults::replace_known_smoke_string( $text );
+		update_option( $option, $text, false );
 	}
 
 	public static function default_gift_card_accent(): string {

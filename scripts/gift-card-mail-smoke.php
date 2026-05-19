@@ -286,16 +286,49 @@ if ( $settings->gift_card_email_template() === Settings::GIFT_CARD_TEMPLATE_CLAS
 	$fail( 'one-template mode (legacy holiday slug ignored)' );
 }
 
+update_option( Settings::OPTION_GIFT_CARD_EMAIL_HEADING, 'Real custom preview heading', false );
+update_option( Settings::OPTION_GIFT_CARD_EMAIL_INTRO, 'Real custom preview intro text.', false );
+$qa_cleaned = new Settings();
+if ( $qa_cleaned->gift_card_email_heading() === GiftCardEmailPlaceholders::default_heading()
+	&& $qa_cleaned->gift_card_email_intro() === GiftCardEmailPlaceholders::default_intro() ) {
+	$pass( 'Real custom preview strings cleaned to production defaults on read' );
+} else {
+	$fail( 'Real custom preview strings cleaned to production defaults on read' );
+}
+
 $settings->set_gift_card_email_heading( 'Real custom preview heading' );
 $settings->set_gift_card_email_intro( 'Real custom preview intro text.' );
-$settings->set_gift_card_accent_color( '#112233' );
-$custom_preview = GiftCardEmailPreview::render( $settings );
-if ( strpos( $custom_preview, 'Real custom preview heading' ) !== false
-	&& strpos( $custom_preview, 'Real custom preview intro' ) !== false
-	&& strpos( $custom_preview, '#112233' ) !== false ) {
-	$pass( 'preview renders custom heading/body/accent' );
+if ( $settings->gift_card_email_heading() === GiftCardEmailPlaceholders::default_heading()
+	&& $settings->gift_card_email_intro() === GiftCardEmailPlaceholders::default_intro() ) {
+	$pass( 'Real custom preview strings rejected on save' );
 } else {
-	$fail( 'preview renders custom heading/body/accent' );
+	$fail( 'Real custom preview strings rejected on save' );
+}
+
+$merchant_overrides = array(
+	'heading'      => 'Real merchant persist heading',
+	'intro'        => 'Merchant intro for preview smoke.',
+	'accent_color' => '#112233',
+);
+$custom_preview = GiftCardEmailPreview::render( $settings, null, 25.0, 'EUR', $merchant_overrides );
+if ( strpos( $custom_preview, 'Real merchant persist heading' ) !== false
+	&& strpos( $custom_preview, 'Merchant intro for preview smoke.' ) !== false
+	&& strpos( $custom_preview, '#112233' ) !== false
+	&& strpos( $custom_preview, 'Real custom preview' ) === false ) {
+	$pass( 'preview uses unsaved merchant overrides without persisting QA strings' );
+} else {
+	$fail( 'preview uses unsaved merchant overrides without persisting QA strings' );
+}
+
+( new GiftCardEmailTemplateReset() )->apply( $settings );
+$settings->set_gift_card_email_heading( $settings->gift_card_email_heading() );
+$settings->set_gift_card_email_intro( $settings->gift_card_email_intro() );
+$after_reset_reload = new Settings();
+if ( $after_reset_reload->gift_card_email_heading() === GiftCardEmailPlaceholders::default_heading()
+	&& $after_reset_reload->gift_card_email_intro() === GiftCardEmailPlaceholders::default_intro() ) {
+	$pass( 'reset then save then reload keeps production defaults' );
+} else {
+	$fail( 'reset then save then reload keeps production defaults' );
 }
 
 $defaults_preview = GiftCardEmailPreview::render( new Settings() );
@@ -425,6 +458,14 @@ if ( $settings->gift_card_sender_mode() !== Settings::GIFT_CARD_SENDER_MODE_DEFA
 	$fail( 'restore default sender mode after smoke' );
 } else {
 	$pass( 'restore default sender mode after smoke' );
+}
+
+( new GiftCardEmailTemplateReset() )->apply( $settings );
+if ( $settings->gift_card_email_heading() === GiftCardEmailPlaceholders::default_heading()
+	&& $settings->gift_card_email_intro() === GiftCardEmailPlaceholders::default_intro() ) {
+	$pass( 'smoke restores production email copy defaults' );
+} else {
+	$fail( 'smoke restores production email copy defaults' );
 }
 
 echo "=== Done; failures: {$failures} ===\n";
