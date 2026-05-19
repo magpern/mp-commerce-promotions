@@ -175,15 +175,16 @@ bash scripts/sync-to-live.sh
 bash scripts/verify-plugin.sh
 ```
 
-**Plugin version:** `0.3.0-pilot.3` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). **Pilot release** — see [docs/PILOT_RELEASE_0.3.0_PILOT3.md](docs/PILOT_RELEASE_0.3.0_PILOT3.md). **0.3.0-pilot.2 and pilot.1 are superseded** for new pilots. Database schema version is separate (`mp_cp_schema_version`, currently **1.19.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
+**Plugin version:** `0.3.0-pilot.4` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). **Pilot release** — see [docs/PILOT_RELEASE_0.3.0_PILOT4.md](docs/PILOT_RELEASE_0.3.0_PILOT4.md). **0.3.0-pilot.3 and earlier pilots are superseded** for new production ZIP installs. Database schema version is separate (`mp_cp_schema_version`, currently **1.19.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
 
-**Release zip** (no `.git` / `vendor`):
+**Production release zip** (runtime files only — no `scripts/`, `tests/`, `docs/`, `.github/`, `.git/`, or `vendor/`):
 
 ```bash
 bash scripts/build-zip.sh
+bash scripts/release-audit.sh
 ```
 
-Output: `/home/magpern/mp-commerce-promotions-staging/build/mp-commerce-promotions-0.3.0-pilot.3.zip`. See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) and [docs/PILOT_RELEASE_0.3.0_PILOT3.md](docs/PILOT_RELEASE_0.3.0_PILOT3.md). Pushing a `v*` tag runs [.github/workflows/release.yml](.github/workflows/release.yml) to attach the ZIP to a GitHub Release.
+Output: `/home/magpern/mp-commerce-promotions-staging/build/mp-commerce-promotions-0.3.0-pilot.4.zip`. See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) and [docs/PILOT_RELEASE_0.3.0_PILOT4.md](docs/PILOT_RELEASE_0.3.0_PILOT4.md). Pushing a `v*` tag runs [.github/workflows/release.yml](.github/workflows/release.yml) to attach the ZIP to a GitHub Release.
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for paths, exclusions (never copy `.git` or `vendor` to live), Composer lint/test commands (`composer run test` — pure PHP unit tests only; WordPress integration tests are future work).
 

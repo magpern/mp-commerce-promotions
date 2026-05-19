@@ -31,7 +31,7 @@ function pilot_smoke_assert( bool $ok, string $label ): void {
 	WP_CLI::warning( 'FAIL: ' . $label );
 }
 
-$expected_version = '0.3.0-pilot.3';
+$expected_version = '0.3.0-pilot.4';
 
 pilot_smoke_assert(
 	defined( 'MP_COMMERCE_PROMOTIONS_VERSION' )

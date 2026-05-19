@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Maturity:** Early MVP. Suitable for testing and staged rollouts — not a stable, production-complete, or marketplace-certified release without your own review.
 
+## [0.3.0-pilot.4] - 2026-05-19
+
+**Packaging-only pilot release** — supersedes **0.3.0-pilot.3**. **Schema 1.19.0** unchanged. **No promotion-engine behavior changes.**
+
+### Changed
+
+- **Production release ZIP** — `scripts/build-zip.sh` now ships runtime files only (`src/`, `assets/`, `languages/`, `readme.txt`, `CHANGELOG.md`, `LICENSE`, `uninstall.php`, main plugin file). Excludes `scripts/`, `tests/`, `docs/`, `.github/`, Composer/PHPCS/PHPUnit dev files, and local env/cache artifacts.
+- **Release audit** — `scripts/release-audit.sh` separates repository checks (dev tree may contain scripts/tests/docs) from artifact checks; `scripts/lib/verify-release-zip.py` fails the build if forbidden paths appear in the ZIP.
+
+### Notes
+
+- QA/smoke scripts remain in the Git repository and staging sync tree; run via WP-CLI from those paths, not from the distributed ZIP. See [QA_SCRIPT_SAFETY.md](docs/QA_SCRIPT_SAFETY.md).
+- Replace **0.3.0-pilot.3** GitHub Release ZIPs that included dev paths when deploying to production.
+
 ## [0.3.0-pilot.3] - 2026-05-19
 
 **Pilot release** for controlled merchant testing — supersedes **0.3.0-pilot.2**. **Schema 1.19.0** unchanged.
@@ -253,7 +267,8 @@ First **public beta** for technical pilot users on **classic shortcode** cart an
 - Database schema version is tracked separately (`mp_cp_schema_version`; see `Schema::SCHEMA_VERSION` in code).
 - PHPCS baseline is not clean; automated tests and CI are not yet in place.
 
-[Unreleased]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.3...HEAD
+[Unreleased]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.4...HEAD
+[0.3.0-pilot.4]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.3...v0.3.0-pilot.4
 [0.3.0-pilot.3]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.2...v0.3.0-pilot.3
 [0.3.0-pilot.2]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.1...v0.3.0-pilot.2
 [0.3.0-pilot.1]: https://github.com/magpern/mp-commerce-promotions/compare/v0.2.0-beta.1...v0.3.0-pilot.1

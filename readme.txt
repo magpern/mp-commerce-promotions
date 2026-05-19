@@ -4,11 +4,11 @@ Tags: woocommerce, promotions, discounts, coupons, vouchers
 Requires at least: 6.5
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 0.3.0-pilot.3
+Stable tag: 0.3.0-pilot.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Pilot release 0.3.0-pilot.3** — merchant-facing admin copy; supersedes pilot.2; not GA.
+Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Pilot release 0.3.0-pilot.4** — production ZIP packaging; supersedes pilot.3; not GA.
 
 == Description ==
 
@@ -115,6 +115,9 @@ No. Full codes are displayed once after generation. Download the CSV before leav
 3. Generated code batch show-once screen (placeholder).
 
 == Changelog ==
+
+= 0.3.0-pilot.4 =
+* Production release ZIP excludes scripts/, tests/, docs/, and .github/; runtime-only artifact verified by scripts/release-audit.sh. No promotion-engine or schema changes (1.19.0). See docs/PILOT_RELEASE_0.3.0_PILOT4.md.
 
 = 0.3.0-pilot.3 =
 * Merchant-facing admin UI: removed “Pilot checklist” shortcut and “pilot warning” wording; operational notices retained.

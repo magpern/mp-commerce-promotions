@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 #
-# Release artifact validation for mp-commerce-promotions.
+# Release validation for mp-commerce-promotions.
+# Repo checks: dev tree completeness (scripts, tests, docs allowed).
+# Artifact checks: production ZIP must not contain dev-only paths.
 #
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+VERIFY_ZIP="${SCRIPT_DIR}/lib/verify-release-zip.py"
 PLUGIN_SLUG="mp-commerce-promotions"
 MAIN_FILE="${REPO_ROOT}/${PLUGIN_SLUG}.php"
 BUILD_ROOT="${MP_CP_BUILD_ROOT:-$(cd "${REPO_ROOT}/.." && pwd)/build}"
@@ -22,6 +25,11 @@ warn() {
 	echo "    WARN: $*"
 }
 
+# --- Repository checks (dev tree; scripts/tests/docs expected here) ---
+
+echo ""
+echo "==> Repository checks"
+
 [[ -f "${MAIN_FILE}" ]] || fail "Missing main plugin file: ${MAIN_FILE}"
 
 grep -q "Plugin Name:" "${MAIN_FILE}" || fail "Plugin header missing Plugin Name"
@@ -31,10 +39,12 @@ VERSION_CONST="$(grep -E "define\s*\(\s*'MP_COMMERCE_PROMOTIONS_VERSION'" "${MAI
 HEADER_VERSION="$(grep -E '^\s*\*\s*Version:\s*' "${MAIN_FILE}" | head -n1 | sed -E 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*//')"
 [[ -n "${VERSION_CONST}" ]] || fail "MP_COMMERCE_PROMOTIONS_VERSION not found"
 [[ "${VERSION_CONST}" == "${HEADER_VERSION}" ]] || fail "Version mismatch: header=${HEADER_VERSION} const=${VERSION_CONST}"
+echo "    Version: header and MP_COMMERCE_PROMOTIONS_VERSION = ${VERSION_CONST}"
 
 for doc in \
 	readme.txt \
 	CHANGELOG.md \
+	LICENSE \
 	README.md \
 	docs/ARCHITECTURE.md \
 	docs/COMMERCIAL_READINESS.md \
@@ -42,11 +52,17 @@ for doc in \
 	docs/manual-performance-and-hardening-test.md \
 	docs/manual-automation-and-observability-test.md
 do
-	[[ -f "${REPO_ROOT}/${doc}" ]] || fail "Missing required doc: ${doc}"
+	[[ -f "${REPO_ROOT}/${doc}" ]] || fail "Missing required repo file: ${doc}"
 done
 
+[[ -d "${REPO_ROOT}/scripts" ]] || fail "Missing scripts/ (dev tree)"
+[[ -d "${REPO_ROOT}/tests" ]] || fail "Missing tests/ (dev tree)"
+[[ -d "${REPO_ROOT}/docs" ]] || fail "Missing docs/ (dev tree)"
+[[ -f "${REPO_ROOT}/.github/workflows/release.yml" ]] || fail "Missing .github/workflows/release.yml"
+echo "    Dev tree: scripts/, tests/, docs/, .github/ present (expected in repo)"
+
 if [[ -d "${REPO_ROOT}/vendor" ]]; then
-	warn "vendor/ present in dev tree (excluded from release zip by build-zip.sh)"
+	warn "vendor/ present in dev tree (excluded from production ZIP)"
 fi
 
 if [[ -d "${REPO_ROOT}/languages" ]]; then
@@ -63,8 +79,9 @@ SCHEMA_VERSION="$(grep -E "const SCHEMA_VERSION" "${SCHEMA_FILE}" | head -n1 | s
 if ! grep -q "${SCHEMA_VERSION}" "${REPO_ROOT}/docs/ARCHITECTURE.md" && ! grep -q "${SCHEMA_VERSION}" "${REPO_ROOT}/README.md"; then
 	fail "Schema version ${SCHEMA_VERSION} not documented in ARCHITECTURE.md or README.md"
 fi
+echo "    Schema version: ${SCHEMA_VERSION}"
 
-echo "==> Required PHP entrypoints"
+echo "==> Required PHP entrypoints (repository)"
 for path in \
 	"src/Plugin.php" \
 	"src/Service/PromotionPerformanceProfiler.php" \
@@ -87,53 +104,60 @@ if [[ "${POT_LINES}" -lt 100 ]]; then
 fi
 echo "    POT: ${POT_LINES} lines"
 
-[[ -f "${REPO_ROOT}/docs/BETA_READINESS.md" ]] || fail "Missing docs/BETA_READINESS.md"
-[[ -f "${REPO_ROOT}/docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md" ]] || fail "Missing docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md"
-[[ -f "${REPO_ROOT}/docs/BROWSER_QA_RUNBOOK.md" ]] || fail "Missing docs/BROWSER_QA_RUNBOOK.md"
-[[ -f "${REPO_ROOT}/docs/CLASSIC_CHECKOUT_CERTIFICATION.md" ]] || fail "Missing docs/CLASSIC_CHECKOUT_CERTIFICATION.md"
-[[ -f "${REPO_ROOT}/docs/BLOCK_CHECKOUT_INVESTIGATION.md" ]] || fail "Missing docs/BLOCK_CHECKOUT_INVESTIGATION.md"
-[[ -f "${REPO_ROOT}/docs/RELEASE_EVIDENCE_0.2.0_BETA1.md" ]] || fail "Missing docs/RELEASE_EVIDENCE_0.2.0_BETA1.md"
-[[ -f "${REPO_ROOT}/docs/PILOT_RELEASE_0.3.0_PILOT1.md" ]] || fail "Missing docs/PILOT_RELEASE_0.3.0_PILOT1.md"
-[[ -f "${REPO_ROOT}/docs/PILOT_RELEASE_0.3.0_PILOT2.md" ]] || fail "Missing docs/PILOT_RELEASE_0.3.0_PILOT2.md"
-[[ -f "${REPO_ROOT}/docs/PILOT_RELEASE_0.3.0_PILOT3.md" ]] || fail "Missing docs/PILOT_RELEASE_0.3.0_PILOT3.md"
-[[ -f "${REPO_ROOT}/docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT1.md" ]] || fail "Missing docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT1.md"
-[[ -f "${REPO_ROOT}/docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT2.md" ]] || fail "Missing docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT2.md"
-[[ -f "${REPO_ROOT}/docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT3.md" ]] || fail "Missing docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT3.md"
+for doc in \
+	docs/BETA_READINESS.md \
+	docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md \
+	docs/BROWSER_QA_RUNBOOK.md \
+	docs/CLASSIC_CHECKOUT_CERTIFICATION.md \
+	docs/BLOCK_CHECKOUT_INVESTIGATION.md \
+	docs/RELEASE_EVIDENCE_0.2.0_BETA1.md \
+	docs/PILOT_RELEASE_0.3.0_PILOT1.md \
+	docs/PILOT_RELEASE_0.3.0_PILOT2.md \
+	docs/PILOT_RELEASE_0.3.0_PILOT3.md \
+	docs/PILOT_RELEASE_0.3.0_PILOT4.md \
+	docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT1.md \
+	docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT2.md \
+	docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT3.md \
+	docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT4.md
+do
+	[[ -f "${REPO_ROOT}/${doc}" ]] || fail "Missing ${doc}"
+done
+
 [[ -f "${REPO_ROOT}/scripts/commerce-growth-navigation-smoke.php" ]] || fail "Missing scripts/commerce-growth-navigation-smoke.php"
 [[ -f "${REPO_ROOT}/scripts/pilot-release-smoke.php" ]] || fail "Missing scripts/pilot-release-smoke.php"
-[[ -f "${REPO_ROOT}/.github/workflows/release.yml" ]] || fail "Missing .github/workflows/release.yml"
+[[ -f "${REPO_ROOT}/uninstall.php" ]] || fail "Missing uninstall.php"
+
+echo "    Repository checks passed"
+
+# --- Artifact checks (production ZIP) ---
+
+echo ""
+echo "==> Release artifact checks"
 
 ZIP_PATH="${BUILD_ROOT}/${PLUGIN_SLUG}-${VERSION_CONST}.zip"
 if [[ ! -f "${ZIP_PATH}" ]]; then
-	echo "==> Building release zip for artifact checks"
+	echo "    Building release zip (not found: ${ZIP_PATH})"
 	bash "${SCRIPT_DIR}/build-zip.sh"
 fi
 
 [[ -f "${ZIP_PATH}" ]] || fail "Release zip not found: ${ZIP_PATH}"
+echo "    Zip: ${ZIP_PATH}"
 
-echo "==> Verifying release zip contents"
-python3 - "${ZIP_PATH}" "${PLUGIN_SLUG}" <<'PY'
-import sys
-import zipfile
+[[ -f "${VERIFY_ZIP}" ]] || fail "Missing verifier: ${VERIFY_ZIP}"
+python3 "${VERIFY_ZIP}" "${ZIP_PATH}" "${PLUGIN_SLUG}"
 
-zip_path = sys.argv[1]
-plugin_slug = sys.argv[2]
-forbidden = {".git", "vendor", "node_modules", ".phpcs-cache"}
-with zipfile.ZipFile(zip_path) as zf:
-    for name in zf.namelist():
-        parts = name.split("/")
-        if any(part in forbidden for part in parts):
-            print(f"ERROR: zip contains forbidden segment: {name}", file=sys.stderr)
-            sys.exit(1)
-    main = f"{plugin_slug}/{plugin_slug}.php"
-    if main not in zf.namelist():
-        print(f"ERROR: missing {main}", file=sys.stderr)
-        sys.exit(1)
-    root_prefix = f"{plugin_slug}/"
-    if any(n and not n.startswith(root_prefix) for n in zf.namelist()):
-        print(f"ERROR: zip entries must be under {root_prefix}", file=sys.stderr)
-        sys.exit(1)
-print(f"OK: zip artifact clean ({len(zf.namelist())} entries)")
-PY
+echo ""
+echo "==> Forbidden-path spot check (artifact must be empty)"
+if command -v unzip >/dev/null 2>&1; then
+	HITS="$(unzip -l "${ZIP_PATH}" | grep -E 'scripts/|tests/|docs/|\.github/' || true)"
+	if [[ -n "${HITS}" ]]; then
+		echo "${HITS}" >&2
+		fail "Release zip contains forbidden dev paths (see above)"
+	fi
+	echo "    OK: no scripts/, tests/, docs/, or .github/ in zip listing"
+else
+	warn "unzip not installed; skipped grep spot check (verify-release-zip.py already passed)"
+fi
 
+echo ""
 echo "==> Release audit passed (version ${VERSION_CONST}, schema ${SCHEMA_VERSION})"

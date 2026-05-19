@@ -15,7 +15,8 @@ See [CHANGELOG.md](../CHANGELOG.md) for user-facing release notes and [DEVELOPME
 - [ ] `composer run lint:php` — must pass (syntax).
 - [ ] `composer run lint:phpcs` — record counts in release notes; **non-blocking** in CI (see [PHPCS_BASELINE.md](PHPCS_BASELINE.md)).
 - [ ] `bash scripts/build-zip.sh` — produces `../build/mp-commerce-promotions-{version}.zip`.
-- [ ] Inspect zip: no `.git/`, `vendor/`, `node_modules/`, or cache directories (see script output / `unzip -l`).
+- [ ] `bash scripts/release-audit.sh` — repo + artifact checks pass.
+- [ ] Inspect zip: **production artifact only** — no `scripts/`, `tests/`, `docs/`, `.github/`, `.git/`, `vendor/`, `node_modules/`, `build/`, composer/PHPCS/PHPUnit dev files (see `scripts/lib/verify-release-zip.py` and script summary output).
 
 ## Deploy to local live (this VPS)
 
@@ -102,6 +103,18 @@ Do **not** change `Schema::SCHEMA_VERSION` unless you have a deliberate schema m
 
 ## Package contents reminder
 
-The zip from `scripts/build-zip.sh` includes plugin source, `docs/`, `scripts/`, `languages/`, `README.md`, `readme.txt`, `LICENSE`, `CHANGELOG.md`, `composer.json`, and `phpcs.xml.dist`.
+**Production ZIP** (`scripts/build-zip.sh`) **includes**:
 
-It **excludes**: `.git`, `vendor`, `node_modules`, `.phpcs-cache`, `.phpunit.result.cache`, and `build/`.
+- `mp-commerce-promotions.php`, `src/`, `assets/`, `languages/`
+- `readme.txt`, `CHANGELOG.md`, `LICENSE`, `uninstall.php`
+
+**Production ZIP excludes** (remain in the Git repo only):
+
+- `scripts/`, `tests/`, `docs/`, `.github/`
+- `.git/`, `vendor/`, `node_modules/`, `build/`
+- `.phpcs-cache`, `.phpunit.result.cache`
+- `composer.json`, `composer.lock`, `composer.phar`, `phpcs.xml.dist`, `phpunit.xml.dist`
+- `README.md` (developer readme; merchant-facing text is in `readme.txt`)
+- `.env*`, `*.log`, `*.sql`, and other local/cache files
+
+QA/smoke scripts run from the **repository** or staging sync tree via WP-CLI — not from the distributed ZIP. See [QA_SCRIPT_SAFETY.md](QA_SCRIPT_SAFETY.md).

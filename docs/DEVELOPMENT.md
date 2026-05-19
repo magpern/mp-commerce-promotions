@@ -10,7 +10,9 @@ Local tooling and verification for **Commerce Promotions for WooCommerce**. See 
 | `/home/magpern/woocommerce/wp-content/plugins/mp-commerce-promotions` | Live WordPress plugin directory (host bind mount; sync target) |
 | `scripts/sync-to-live.sh` | Safe staging → container sync (excludes dev paths) |
 | `scripts/verify-plugin.sh` | Post-sync WP-CLI checks |
-| `scripts/build-zip.sh` | Distributable zip under `../build/` (excludes dev paths) |
+| `scripts/build-zip.sh` | Production release zip under `../build/` (runtime files only; see below) |
+| `scripts/release-audit.sh` | Repo completeness + production ZIP verification |
+| `scripts/lib/verify-release-zip.py` | Shared ZIP rules used by build and audit |
 | [CHANGELOG.md](../CHANGELOG.md) | Release notes (Keep a Changelog) |
 | [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) | Version bump, tag, zip, sync, manual tests |
 
@@ -50,7 +52,11 @@ From the plugin root:
 bash scripts/build-zip.sh
 ```
 
-Writes `mp-commerce-promotions-{version}.zip` to `/home/magpern/mp-commerce-promotions-staging/build/`, where `{version}` is read from `MP_COMMERCE_PROMOTIONS_VERSION` (must match the plugin header `Version:`). The archive root folder is `mp-commerce-promotions/`. Excludes `.git`, `vendor`, `node_modules`, and PHPCS/PHPUnit caches.
+Writes `mp-commerce-promotions-{version}.zip` to `/home/magpern/mp-commerce-promotions-staging/build/`, where `{version}` is read from `MP_COMMERCE_PROMOTIONS_VERSION` (must match the plugin header `Version:`). The archive root folder is `mp-commerce-promotions/`.
+
+**Production ZIP includes:** `mp-commerce-promotions.php`, `src/`, `assets/`, `languages/`, `readme.txt`, `CHANGELOG.md`, `LICENSE`, `uninstall.php`.
+
+**Production ZIP excludes:** `scripts/`, `tests/`, `docs/`, `.github/`, `.git/`, `vendor/`, `node_modules/`, `build/`, composer/PHPCS/PHPUnit dev files, `README.md`, and local env/log/cache files. Run `bash scripts/release-audit.sh` after building to verify the artifact.
 
 Full release steps: [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md). History: [CHANGELOG.md](../CHANGELOG.md).
 

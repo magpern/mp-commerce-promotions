@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Build a distributable plugin zip from the staging Git working tree.
-# Does not run git commands. Excludes dev-only paths.
+# Build a production release ZIP from the Git working tree.
+# Does not run git commands. Excludes dev-only paths (see scripts/lib/verify-release-zip.py).
 #
 set -euo pipefail
 
@@ -11,6 +11,7 @@ readonly VPS_BUILD_ROOT="/home/magpern/mp-commerce-promotions-staging/build"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+VERIFY_ZIP="${SCRIPT_DIR}/lib/verify-release-zip.py"
 
 if [[ -n "${MP_CP_SOURCE:-}" ]]; then
 	SOURCE="${MP_CP_SOURCE}"
@@ -31,7 +32,7 @@ fi
 readonly SOURCE BUILD_ROOT
 readonly MAIN_FILE="${SOURCE}/${PLUGIN_SLUG}.php"
 
-echo "==> MP Commerce Promotions: build release zip"
+echo "==> MP Commerce Promotions: build production release zip"
 echo "    Source: ${SOURCE}"
 
 if [[ ! -f "${MAIN_FILE}" ]]; then
@@ -72,14 +73,37 @@ echo "    Output:  ${ZIP_PATH}"
 rm -rf "${STAGING_DIR}"
 mkdir -p "${PACKAGE_DIR}" "${BUILD_ROOT}"
 
-echo "==> Copying plugin files (excluding dev paths)"
+echo "==> Copying production files (excluding dev-only paths)"
 tar -C "${SOURCE}" \
 	--exclude='.git' \
+	--exclude='.github' \
 	--exclude='vendor' \
 	--exclude='node_modules' \
+	--exclude='scripts' \
+	--exclude='tests' \
+	--exclude='docs' \
+	--exclude='build' \
 	--exclude='.phpcs-cache' \
 	--exclude='.phpunit.result.cache' \
-	--exclude='build' \
+	--exclude='composer.json' \
+	--exclude='composer.lock' \
+	--exclude='composer.phar' \
+	--exclude='phpcs.xml.dist' \
+	--exclude='phpunit.xml.dist' \
+	--exclude='README.md' \
+	--exclude='.gitignore' \
+	--exclude='.editorconfig' \
+	--exclude='.cursorignore' \
+	--exclude='.env' \
+	--exclude='.env.*' \
+	--exclude='*.log' \
+	--exclude='*.sql' \
+	--exclude='*.sql.gz' \
+	--exclude='*.dump' \
+	--exclude='*.sqlite' \
+	--exclude='.write-test' \
+	--exclude='.DS_Store' \
+	--exclude='Thumbs.db' \
 	-cf - . \
 	| tar -C "${PACKAGE_DIR}" -xf -
 
@@ -107,48 +131,36 @@ with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
     for dirpath, _dirnames, filenames in os.walk(root):
         for name in filenames:
             full = Path(dirpath) / name
-            zf.write(full, full.relative_to(staging_dir))
+            zf.write(full, full.relative_to(staging_dir).as_posix())
 PY
 fi
 
 rm -rf "${STAGING_DIR}"
 
-echo "==> Verifying zip exclusions"
+echo "==> Verifying production zip"
+python3 "${VERIFY_ZIP}" "${ZIP_PATH}" "${PLUGIN_SLUG}"
+
+echo "==> Zip summary"
 python3 - "${ZIP_PATH}" "${PLUGIN_SLUG}" <<'PY'
 import sys
 import zipfile
+from collections import Counter
 
-zip_path = sys.argv[1]
-plugin_slug = sys.argv[2]
-excluded_segments = {
-    ".git",
-    "vendor",
-    "node_modules",
-    ".phpcs-cache",
-    ".phpunit.result.cache",
-}
-
-
-def has_excluded_segment(path: str) -> bool:
-    return any(part in excluded_segments for part in path.split("/"))
-
-
+zip_path, slug = sys.argv[1], sys.argv[2]
+prefix = f"{slug}/"
 with zipfile.ZipFile(zip_path) as zf:
-    names = zf.namelist()
-    bad = [n for n in names if has_excluded_segment(n)]
-    if bad:
-        print("ERROR: Zip contains excluded paths:", bad[:5], file=sys.stderr)
-        sys.exit(1)
-    root_prefix = f"{plugin_slug}/"
-    non_root = [n for n in names if n and not n.startswith(root_prefix)]
-    if non_root:
-        print("ERROR: Zip entries must live under", root_prefix, non_root[:5], file=sys.stderr)
-        sys.exit(1)
-    main = f"{plugin_slug}/{plugin_slug}.php"
-    if main not in names:
-        print(f"ERROR: Zip is missing {main}", file=sys.stderr)
-        sys.exit(1)
-    print(f"OK: {len(names)} entries under {root_prefix}; {main} present; no .git/vendor/caches.")
+    names = sorted(n for n in zf.namelist() if n.startswith(prefix))
+    tops = Counter(n[len(prefix) :].split("/")[0] for n in names if n != prefix)
+    print(f"    Path: {zip_path}")
+    print(f"    Total entries: {len(names)}")
+    print("    Top-level under plugin root:")
+    for key in sorted(tops):
+        print(f"      {key}/  ({tops[key]} paths)")
+    print("    Sample paths:")
+    for line in names[:12]:
+        print(f"      {line}")
+    if len(names) > 12:
+        print(f"      ... ({len(names) - 12} more)")
 PY
 
 echo "==> ${ZIP_PATH}"
