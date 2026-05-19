@@ -54,11 +54,16 @@ final class StoreCreditCheckoutService {
 		}
 
 		$wallet = $this->get_wallet_for_customer( $customer_id, $currency );
-		if ( $wallet === null || ! $this->redemption->is_redeemable( $wallet ) ) {
+		if ( $wallet === null || ! $wallet->is_store_credit_wallet() ) {
 			return 0.0;
 		}
 
-		return $this->redemption->preview_apply_amount( $wallet, $cart_payable );
+		$payable = GiftCard::money( $cart_payable );
+		if ( $payable <= 0 || $wallet->get_balance() <= 0 ) {
+			return 0.0;
+		}
+
+		return GiftCard::money( min( $wallet->get_balance(), $payable ) );
 	}
 
 	/**

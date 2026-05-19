@@ -57,6 +57,16 @@ final class PromotionTestFixtures {
 		array $items = array(),
 		array $metadata = array()
 	): EvaluationContext {
+		if ( $items === array() && $subtotal !== null && $subtotal > 0 ) {
+			$items = array(
+				array(
+					'product_id'    => 1,
+					'quantity'      => 1,
+					'line_subtotal' => $subtotal,
+				),
+			);
+		}
+
 		return new EvaluationContext( $customer_id, $subtotal, 'USD', $items, $metadata );
 	}
 }
