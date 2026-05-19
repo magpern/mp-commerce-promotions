@@ -14,6 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 return array(
+	// Production data hygiene (audit default; --apply needs MP_CP_PRODUCTION_DATA_RESET).
+	'production-data-reset'               => array( 'capabilities' => array( QaRuntimeGuard::CAP_READONLY ) ),
+
 	// Read-only evaluator / diagnostics (allowed on production).
 	'cheapest-item-smoke'                 => array( 'capabilities' => array( QaRuntimeGuard::CAP_READONLY ) ),
 	'commerce-growth-navigation-smoke'    => array( 'capabilities' => array( QaRuntimeGuard::CAP_READONLY ) ),

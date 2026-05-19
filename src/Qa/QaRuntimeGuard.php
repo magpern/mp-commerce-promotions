@@ -21,6 +21,10 @@ final class QaRuntimeGuard {
 
 	public const ENV_ALLOW_PERSISTENT_SETUP = 'MP_CP_ALLOW_PERSISTENT_QA_SETUP';
 
+	public const ENV_QA_APPLY = 'MP_CP_QA_APPLY';
+
+	public const ENV_PRODUCTION_DATA_RESET = 'MP_CP_PRODUCTION_DATA_RESET';
+
 	public const CAP_READONLY = 'readonly';
 
 	public const CAP_PERSISTENT = 'persistent';
@@ -61,8 +65,8 @@ final class QaRuntimeGuard {
 		$this->allow_live_qa = self::env_is_truthy( self::ENV_ALLOW_LIVE_QA );
 		$this->allow_qa_emails = self::env_is_truthy( self::ENV_ALLOW_QA_EMAILS );
 		$this->allow_persistent_setup = self::env_is_truthy( self::ENV_ALLOW_PERSISTENT_SETUP );
-		$this->dry_run = self::env_is_truthy( self::ENV_QA_DRY_RUN );
-		$this->cleanup_enabled = ! self::env_is_set( self::ENV_QA_CLEANUP ) || self::env_is_truthy( self::ENV_QA_CLEANUP );
+		$this->dry_run                = self::resolve_dry_run_default();
+		$this->cleanup_enabled        = ! self::env_is_set( self::ENV_QA_CLEANUP ) || self::env_is_truthy( self::ENV_QA_CLEANUP );
 	}
 
 	public function get_script_name(): string {
@@ -243,6 +247,20 @@ final class QaRuntimeGuard {
 		}
 
 		return null;
+	}
+
+	private function resolve_dry_run_default(): bool {
+		if ( self::env_is_truthy( self::ENV_QA_DRY_RUN ) ) {
+			return true;
+		}
+		if ( self::env_is_set( self::ENV_QA_DRY_RUN ) && ! self::env_is_truthy( self::ENV_QA_DRY_RUN ) ) {
+			return false;
+		}
+		if ( $this->requires_persistent() && $this->is_production_like && $this->allow_live_qa && ! self::env_is_truthy( self::ENV_QA_APPLY ) ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private static function resolve_site_url(): string {

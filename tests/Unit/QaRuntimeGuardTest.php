@@ -17,6 +17,8 @@ final class QaRuntimeGuardTest extends TestCase {
 		putenv( QaRuntimeGuard::ENV_ALLOW_LIVE_QA );
 		putenv( QaRuntimeGuard::ENV_ALLOW_QA_EMAILS );
 		putenv( QaRuntimeGuard::ENV_ALLOW_PERSISTENT_SETUP );
+		putenv( QaRuntimeGuard::ENV_QA_APPLY );
+		putenv( QaRuntimeGuard::ENV_QA_DRY_RUN );
 		parent::tearDown();
 	}
 
@@ -48,7 +50,16 @@ final class QaRuntimeGuardTest extends TestCase {
 		$prop->setValue( $guard, true );
 
 		$guard->assert_may_run();
-		$this->assertFalse( $guard->is_dry_run() );
+		$this->assertTrue( $guard->is_dry_run(), 'live QA on production defaults to dry-run until MP_CP_QA_APPLY=1' );
+
+		putenv( QaRuntimeGuard::ENV_QA_APPLY . '=1' );
+		$guard_apply = new QaRuntimeGuard(
+			'test-smoke',
+			array( QaRuntimeGuard::CAP_PERSISTENT )
+		);
+		$prop->setValue( $guard_apply, true );
+		$guard_apply->assert_may_run();
+		$this->assertFalse( $guard_apply->is_dry_run() );
 	}
 
 	public function test_readonly_script_allowed_on_production(): void {

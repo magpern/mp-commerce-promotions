@@ -20,6 +20,9 @@ Production-like means `WP_ENVIRONMENT_TYPE=production` (or unset on a non-local 
 | `MP_CP_ALLOW_QA_EMAILS=1` | Allow real `wp_mail` during QA scripts |
 | `MP_CP_QA_DRY_RUN=1` | Force dry-run (setup scripts log intent, skip writes) |
 | `MP_CP_QA_CLEANUP=0` | Disable automatic tagged cleanup at script end |
+| `MP_CP_QA_APPLY=1` | Allow persistent QA scripts to write on production (otherwise dry-run) |
+| `MP_CP_PRODUCTION_DATA_RESET=1` | Allow destructive production data reset script |
+| `MP_CP_PRODUCTION_DATA_RESET_APPLY=1` | Actually delete during reset (with reset flag + live QA) |
 
 Admin **Send test gift card email** (merchant click) is unchanged — only automated scripts respect `MP_CP_ALLOW_QA_EMAILS`.
 
