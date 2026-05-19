@@ -38,6 +38,7 @@ final class GiftCardProductAdminHelperTest extends TestCase {
 		$options = GiftCardProductAdminHelper::amount_mode_options();
 		$this->assertArrayHasKey( GiftCardProductMeta::AMOUNT_MODE_PRODUCT_PRICE, $options );
 		$this->assertArrayHasKey( GiftCardProductMeta::AMOUNT_MODE_FIXED, $options );
+		$this->assertArrayHasKey( GiftCardProductMeta::AMOUNT_MODE_CUSTOMER_AMOUNT, $options );
 	}
 
 	public function test_recipient_mode_options_labels(): void {

@@ -16,8 +16,9 @@ final class GiftCardProductAdminHelper {
 	 */
 	public static function amount_mode_options(): array {
 		return array(
-			GiftCardProductMeta::AMOUNT_MODE_PRODUCT_PRICE => __( 'Product price', 'mp-commerce-promotions' ),
-			GiftCardProductMeta::AMOUNT_MODE_FIXED         => __( 'Fixed amount', 'mp-commerce-promotions' ),
+			GiftCardProductMeta::AMOUNT_MODE_PRODUCT_PRICE  => __( 'Product price', 'mp-commerce-promotions' ),
+			GiftCardProductMeta::AMOUNT_MODE_FIXED          => __( 'Fixed amount', 'mp-commerce-promotions' ),
+			GiftCardProductMeta::AMOUNT_MODE_CUSTOMER_AMOUNT => __( 'Customer enters amount', 'mp-commerce-promotions' ),
 		);
 	}
 
@@ -38,6 +39,10 @@ final class GiftCardProductAdminHelper {
 	public static function amount_preview_text( array $config, float $product_price, string $currency = '' ): string {
 		if ( ! $config['sells'] ) {
 			return '';
+		}
+
+		if ( GiftCardProductCustomerAmount::is_customer_amount_mode( $config ) ) {
+			return __( 'Customers choose the gift card amount on the product page before adding to cart.', 'mp-commerce-promotions' );
 		}
 
 		$amount = $config['amount_mode'] === GiftCardProductMeta::AMOUNT_MODE_FIXED
@@ -116,5 +121,108 @@ final class GiftCardProductAdminHelper {
 		}
 
 		return (string) $amount;
+	}
+
+	/**
+	 * @param array{
+	 *   sells: bool,
+	 *   amount_mode: string,
+	 *   fixed_amount: float,
+	 *   expiry_days: ?int,
+	 *   recipient_mode: string,
+	 *   min_amount: float,
+	 *   max_amount: ?float,
+	 *   suggested_amounts: list<float>,
+	 *   default_amount: ?float
+	 * } $config
+	 */
+	public static function suggested_amounts_input_value( array $config ): string {
+		if ( empty( $config['suggested_amounts'] ) ) {
+			return '';
+		}
+
+		return implode(
+			',',
+			array_map(
+				static function ( float $v ): string {
+					return (string) $v;
+				},
+				$config['suggested_amounts']
+			)
+		);
+	}
+
+	/**
+	 * @param array{
+	 *   sells: bool,
+	 *   amount_mode: string,
+	 *   fixed_amount: float,
+	 *   expiry_days: ?int,
+	 *   recipient_mode: string,
+	 *   min_amount: float,
+	 *   max_amount: ?float,
+	 *   suggested_amounts: list<float>,
+	 *   default_amount: ?float
+	 * } $config
+	 */
+	public static function default_amount_input_value( array $config ): string {
+		if ( $config['amount_mode'] !== GiftCardProductMeta::AMOUNT_MODE_CUSTOMER_AMOUNT ) {
+			return '';
+		}
+
+		$amount = $config['default_amount'] ?? null;
+		if ( $amount === null || $amount <= 0 ) {
+			return '';
+		}
+
+		return (string) GiftCard::money( (float) $amount );
+	}
+
+	/**
+	 * @param array{
+	 *   sells: bool,
+	 *   amount_mode: string,
+	 *   fixed_amount: float,
+	 *   expiry_days: ?int,
+	 *   recipient_mode: string,
+	 *   min_amount: float,
+	 *   max_amount: ?float,
+	 *   suggested_amounts: list<float>,
+	 *   default_amount: ?float
+	 * } $config
+	 */
+	public static function min_amount_input_value( array $config ): string {
+		if ( $config['amount_mode'] !== GiftCardProductMeta::AMOUNT_MODE_CUSTOMER_AMOUNT ) {
+			return '';
+		}
+
+		$min = GiftCard::money( (float) ( $config['min_amount'] ?? 0 ) );
+		return $min > 0 ? (string) $min : '';
+	}
+
+	/**
+	 * @param array{
+	 *   sells: bool,
+	 *   amount_mode: string,
+	 *   fixed_amount: float,
+	 *   expiry_days: ?int,
+	 *   recipient_mode: string,
+	 *   min_amount: float,
+	 *   max_amount: ?float,
+	 *   suggested_amounts: list<float>,
+	 *   default_amount: ?float
+	 * } $config
+	 */
+	public static function max_amount_input_value( array $config ): string {
+		if ( $config['amount_mode'] !== GiftCardProductMeta::AMOUNT_MODE_CUSTOMER_AMOUNT ) {
+			return '';
+		}
+
+		$max = $config['max_amount'] ?? null;
+		if ( $max === null || $max <= 0 ) {
+			return '';
+		}
+
+		return (string) GiftCard::money( (float) $max );
 	}
 }

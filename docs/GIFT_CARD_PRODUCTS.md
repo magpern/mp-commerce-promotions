@@ -15,8 +15,12 @@ On the product edit screen (General tab for simple products; variation rows for 
 | Setting | Meta key | Notes |
 |--------|----------|--------|
 | This product sells a gift card | `_mp_cp_sells_gift_card` | `yes` / `no` (not `_mp_cp_is_gift_card`) |
-| Amount mode | `_mp_cp_gift_card_amount_mode` | `product_price` or `fixed_amount` |
+| Amount mode | `_mp_cp_gift_card_amount_mode` | `product_price`, `fixed_amount`, or `customer_amount` |
 | Fixed amount | `_mp_cp_gift_card_fixed_amount` | Used when mode is `fixed_amount` |
+| Minimum amount | `_mp_cp_gift_card_min_amount` | Required when mode is `customer_amount` |
+| Maximum amount | `_mp_cp_gift_card_max_amount` | Optional cap for `customer_amount` |
+| Suggested amounts | `_mp_cp_gift_card_suggested_amounts` | Comma-separated quick picks (e.g. `25,50,100`) |
+| Default amount | `_mp_cp_gift_card_default_amount` | Optional prefill on the product page |
 | Expiry (days) | `_mp_cp_gift_card_expiry_days` | Optional; expiry = paid date + N days |
 | Recipient mode | `_mp_cp_gift_card_recipient_mode` | See below |
 
@@ -29,6 +33,20 @@ On the product edit screen (General tab for simple products; variation rows for 
 | `recipient_email_and_message` | Above + optional personal message (length capped) | Same, message included in plain email |
 
 Recipient fields appear under **Gift card delivery** at checkout (one field group per gift-card line that allows recipients). Quantity &gt; 1 uses the same recipient data for every card on that line (MVP).
+
+### Amount modes
+
+| Mode | Customer experience | Generated value |
+|------|---------------------|-----------------|
+| `product_price` | Normal product price | WooCommerce line subtotal ÷ quantity |
+| `fixed_amount` | Normal product price (set to fixed value) | Configured fixed amount |
+| `customer_amount` | **Gift card amount** field on product page; loop shows **Choose amount** or **From {min}**; loop button **Select amount** | Amount chosen at add to cart (stored on line item meta `_mp_cp_gift_card_amount`) |
+
+For `customer_amount`, the WooCommerce product price may be empty — the cart line price is set from the customer’s chosen amount. Quantity &gt; 1 issues multiple cards, each for the chosen per-unit amount.
+
+```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-customer-amount-smoke.php
+```
 
 ### QA demo product (WP-CLI, idempotent)
 

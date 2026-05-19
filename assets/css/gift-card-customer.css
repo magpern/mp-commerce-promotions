@@ -9,13 +9,15 @@
 	background: #fff;
 }
 
-/* Cart: subtle link disclosure below coupon row (plugin classes only) */
+/* Cart: WooCommerce-native gift card / store credit disclosure (plugin classes only) */
 .mp-cp-credit-cart-disclosure {
 	display: block;
 	clear: both;
 	width: 100%;
-	margin: 0.75em 0 0;
+	max-width: 100%;
+	margin: 0.5em 0 0;
 	padding: 0;
+	box-sizing: border-box;
 }
 
 .mp-cp-credit-cart-disclosure__details {
@@ -26,23 +28,19 @@
 }
 
 .mp-cp-credit-cart-disclosure__trigger {
-	display: inline;
+	display: block;
 	list-style: none;
 	cursor: pointer;
-	font-size: 0.95em;
-	color: #2271b1;
-	text-decoration: underline;
-	font-weight: 400;
+	margin: 0;
+	padding: 0.35em 0;
+	font-size: inherit;
 	line-height: 1.5;
+	color: inherit;
+	text-decoration: none;
 }
 
 .mp-cp-credit-cart-disclosure__trigger::-webkit-details-marker {
 	display: none;
-}
-
-.mp-cp-credit-cart-disclosure__trigger:hover,
-.mp-cp-credit-cart-disclosure__trigger:focus {
-	color: #135e96;
 }
 
 .mp-cp-credit-cart-disclosure__trigger:focus-visible {
@@ -51,52 +49,123 @@
 	border-radius: 2px;
 }
 
-.mp-cp-credit-cart-disclosure__panel {
-	margin: 0.5em 0 0;
-	padding: 0;
-	max-width: 36em;
+.mp-cp-credit-cart-disclosure__trigger:hover .mp-cp-credit-cart-disclosure__label,
+.mp-cp-credit-cart-disclosure__trigger:focus .mp-cp-credit-cart-disclosure__label {
+	color: #135e96;
 }
 
-.mp-cp-credit-cart-disclosure__help {
-	margin: 0.5em 0 0;
-	font-size: 0.85em;
-	color: #646970;
+.mp-cp-credit-cart-disclosure__trigger-row {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+}
+
+.mp-cp-credit-cart-disclosure__chevron {
+	display: inline-block;
+	width: 0.45em;
+	height: 0.45em;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(-45deg);
+	margin-top: -0.12em;
+	opacity: 0.7;
+	flex-shrink: 0;
+	transition: transform 0.15s ease;
+}
+
+.mp-cp-credit-cart-disclosure__details[open] .mp-cp-credit-cart-disclosure__chevron {
+	transform: rotate(45deg);
+	margin-top: 0.08em;
+}
+
+.mp-cp-credit-cart-disclosure__label {
+	color: #2271b1;
+	font-weight: 400;
+}
+
+.mp-cp-credit-cart-disclosure__hint,
+.mp-cp-credit-cart-disclosure__meta {
+	display: block;
+	margin: 0.2em 0 0 1.15em;
+	font-size: 0.875em;
 	line-height: 1.45;
+	color: #646970;
 }
 
-.mp-cp-credit-cart-disclosure .mp-cp-credit-form-row,
-.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__form-row {
+.mp-cp-credit-cart-disclosure__meta {
+	margin-top: 0.1em;
+}
+
+.mp-cp-credit-cart-disclosure__panel {
+	margin: 0.45em 0 0;
+	padding: 0;
+	max-width: 100%;
+}
+
+.mp-cp-credit-cart-disclosure__panel-inner {
+	margin: 0;
+	padding: 0.85em 0.9em;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #f9f9f9;
+	max-width: 36em;
+	box-sizing: border-box;
+}
+
+.mp-cp-credit-cart-coupon-row {
 	display: flex;
 	flex-wrap: nowrap;
 	align-items: stretch;
-	gap: 12px;
+	gap: 0.75em;
 	width: 100%;
+	margin: 0;
 }
 
-.mp-cp-credit-cart-disclosure .mp-cp-credit-form-row .input-text,
-.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__form-row .input-text {
+.mp-cp-credit-cart-coupon-row .input-text {
 	flex: 1 1 auto;
 	min-width: 0;
-	width: auto;
+	width: 100%;
 	max-width: none;
 	margin: 0;
+	height: auto;
+	min-height: 0;
+	box-sizing: border-box;
 }
 
-.mp-cp-credit-cart-disclosure .mp-cp-credit-form-row .button,
-.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__form-row .button {
+.mp-cp-credit-cart-coupon-row .button {
 	flex: 0 0 auto;
 	margin: 0;
+	height: auto;
+	min-height: 0;
+	align-self: auto;
 	white-space: nowrap;
 }
 
-.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__section {
-	margin-top: 0.5em;
+.mp-cp-credit-cart-disclosure__wallet {
+	margin-top: 0.65em;
+	padding-top: 0.65em;
+	border-top: 1px solid #e8e8e8;
 }
 
-.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__section--wallet {
-	padding-top: 0.5em;
-	margin-top: 0.65em;
-	border-top: 1px dashed #dcdcde;
+.mp-cp-credit-cart-disclosure__wallet-apply {
+	padding: 0;
+	height: auto;
+	min-height: 0;
+	line-height: 1.5;
+	font-size: inherit;
+	font-weight: 400;
+	text-decoration: none;
+}
+
+.mp-cp-credit-cart-disclosure__wallet-apply:hover {
+	text-decoration: underline;
+}
+
+.mp-cp-credit-cart-disclosure__help--expanded {
+	margin: 0.65em 0 0;
+	font-size: 0.8125em;
+	color: #646970;
+	line-height: 1.45;
 }
 
 /* Checkout: compact gift card + store credit accordion (plugin classes only) */
@@ -500,16 +569,43 @@
 	.mp-cp-credit-form-row .input-text,
 	.mp-cp-credit-accordion__form-row .input-text,
 	.mp-cp-credit-accordion__form--inline .input-text,
-	.mp-cp-credit-cart-disclosure .mp-cp-credit-form-row,
-	.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__form-row {
+	.mp-cp-credit-cart-coupon-row {
 		flex-direction: column;
 		align-items: stretch;
 	}
 
-	.mp-cp-credit-cart-disclosure .mp-cp-credit-form-row .input-text,
-	.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__form-row .input-text,
-	.mp-cp-credit-cart-disclosure .mp-cp-credit-form-row .button,
-	.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__form-row .button {
+	.mp-cp-credit-cart-coupon-row .input-text,
+	.mp-cp-credit-cart-coupon-row .button {
 		width: 100%;
 	}
+
+	.mp-cp-credit-cart-disclosure__panel-inner {
+		max-width: none;
+	}
+}
+
+/* Customer-entered gift card amount (single product) */
+.mp-cp-gc-customer-amount {
+	margin: 0 0 1.25em;
+}
+
+.mp-cp-gc-customer-amount .description {
+	display: block;
+	margin-top: 0.35em;
+}
+
+.mp-cp-gc-suggested-label {
+	margin: 0 0 0.35em;
+	font-weight: 600;
+}
+
+.mp-cp-gc-suggested-amounts {
+	margin: 0 0 0.5em;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em;
+}
+
+.mp-cp-gc-suggested-amount {
+	margin: 0;
 }

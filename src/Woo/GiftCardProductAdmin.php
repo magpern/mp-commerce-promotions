@@ -258,9 +258,18 @@ final class GiftCardProductAdmin {
 		$name_recipient = $is_variation && $loop !== null ? 'mp_cp_gift_card_recipient_mode_var[' . (int) $loop . ']' : 'mp_cp_gift_card_recipient_mode';
 		$mode           = (string) ( $config['recipient_mode'] ?? GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY );
 
-		$show_if_sells = $is_variation ? '' : ' show_if_mp_cp_sells_gift_card';
-		$fixed_show    = $config['amount_mode'] === GiftCardProductMeta::AMOUNT_MODE_FIXED ? '' : ' mp-cp-hidden';
-		$row_class     = $is_variation ? ' form-row form-row-full' : '';
+		$show_if_sells     = $is_variation ? '' : ' show_if_mp_cp_sells_gift_card';
+		$fixed_show        = $config['amount_mode'] === GiftCardProductMeta::AMOUNT_MODE_FIXED ? '' : ' mp-cp-hidden';
+		$customer_show     = $config['amount_mode'] === GiftCardProductMeta::AMOUNT_MODE_CUSTOMER_AMOUNT ? '' : ' mp-cp-hidden';
+		$row_class         = $is_variation ? ' form-row form-row-full' : '';
+		$id_min            = 'mp_cp_gift_card_min_amount' . $suffix;
+		$name_min          = $is_variation && $loop !== null ? 'mp_cp_gift_card_min_amount_var[' . (int) $loop . ']' : 'mp_cp_gift_card_min_amount';
+		$id_max            = 'mp_cp_gift_card_max_amount' . $suffix;
+		$name_max          = $is_variation && $loop !== null ? 'mp_cp_gift_card_max_amount_var[' . (int) $loop . ']' : 'mp_cp_gift_card_max_amount';
+		$id_suggested      = 'mp_cp_gift_card_suggested_amounts' . $suffix;
+		$name_suggested    = $is_variation && $loop !== null ? 'mp_cp_gift_card_suggested_amounts_var[' . (int) $loop . ']' : 'mp_cp_gift_card_suggested_amounts';
+		$id_default        = 'mp_cp_gift_card_default_amount' . $suffix;
+		$name_default      = $is_variation && $loop !== null ? 'mp_cp_gift_card_default_amount_var[' . (int) $loop . ']' : 'mp_cp_gift_card_default_amount';
 
 		woocommerce_wp_select(
 			array(
@@ -288,6 +297,66 @@ final class GiftCardProductAdmin {
 					'step' => '0.01',
 				),
 				'wrapper_class'     => 'mp_cp_gift_card_fixed_amount_field' . $show_if_sells . $fixed_show . $row_class,
+			)
+		);
+
+		woocommerce_wp_text_input(
+			array(
+				'id'                => $id_min,
+				'name'              => $name_min,
+				'value'             => GiftCardProductAdminHelper::min_amount_input_value( $config ),
+				'label'             => __( 'Minimum amount', 'mp-commerce-promotions' ),
+				'description'       => __( 'Required when customers enter the amount. Must be greater than zero.', 'mp-commerce-promotions' ),
+				'type'              => 'number',
+				'custom_attributes' => array(
+					'min'  => '0.01',
+					'step' => '0.01',
+				),
+				'wrapper_class'     => 'mp_cp_gift_card_customer_amount_field' . $show_if_sells . $customer_show . $row_class,
+			)
+		);
+
+		woocommerce_wp_text_input(
+			array(
+				'id'                => $id_max,
+				'name'              => $name_max,
+				'value'             => GiftCardProductAdminHelper::max_amount_input_value( $config ),
+				'label'             => __( 'Maximum amount', 'mp-commerce-promotions' ),
+				'description'       => __( 'Optional upper limit for customer-entered amounts.', 'mp-commerce-promotions' ),
+				'type'              => 'number',
+				'custom_attributes' => array(
+					'min'  => '0',
+					'step' => '0.01',
+				),
+				'wrapper_class'     => 'mp_cp_gift_card_customer_amount_field' . $show_if_sells . $customer_show . $row_class,
+			)
+		);
+
+		woocommerce_wp_text_input(
+			array(
+				'id'          => $id_suggested,
+				'name'        => $name_suggested,
+				'value'       => GiftCardProductAdminHelper::suggested_amounts_input_value( $config ),
+				'label'       => __( 'Suggested amounts', 'mp-commerce-promotions' ),
+				'description' => __( 'Comma-separated values shown as quick picks on the product page (e.g. 25,50,100).', 'mp-commerce-promotions' ),
+				'placeholder' => '25,50,100',
+				'wrapper_class' => 'mp_cp_gift_card_customer_amount_field' . $show_if_sells . $customer_show . $row_class,
+			)
+		);
+
+		woocommerce_wp_text_input(
+			array(
+				'id'                => $id_default,
+				'name'              => $name_default,
+				'value'             => GiftCardProductAdminHelper::default_amount_input_value( $config ),
+				'label'             => __( 'Default amount (optional)', 'mp-commerce-promotions' ),
+				'description'       => __( 'Prefills the amount field on the product page when within min/max.', 'mp-commerce-promotions' ),
+				'type'              => 'number',
+				'custom_attributes' => array(
+					'min'  => '0',
+					'step' => '0.01',
+				),
+				'wrapper_class'     => 'mp_cp_gift_card_customer_amount_field' . $show_if_sells . $customer_show . $row_class,
 			)
 		);
 
@@ -329,11 +398,15 @@ final class GiftCardProductAdmin {
 			&& GiftCardProductMeta::VALUE_YES === sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_sells_gift_card'] ) );
 
 		return array(
-			'sells'          => $sells ? GiftCardProductMeta::VALUE_YES : GiftCardProductMeta::VALUE_NO,
-			'amount_mode'    => isset( $_POST['mp_cp_gift_card_amount_mode'] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_amount_mode'] ) ) : '',
-			'fixed_amount'   => isset( $_POST['mp_cp_gift_card_fixed_amount'] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_fixed_amount'] ) : '',
-			'expiry_days'    => isset( $_POST['mp_cp_gift_card_expiry_days'] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_expiry_days'] ) : '',
-			'recipient_mode' => isset( $_POST['mp_cp_gift_card_recipient_mode'] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_recipient_mode'] ) ) : '',
+			'sells'              => $sells ? GiftCardProductMeta::VALUE_YES : GiftCardProductMeta::VALUE_NO,
+			'amount_mode'        => isset( $_POST['mp_cp_gift_card_amount_mode'] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_amount_mode'] ) ) : '',
+			'fixed_amount'       => isset( $_POST['mp_cp_gift_card_fixed_amount'] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_fixed_amount'] ) : '',
+			'min_amount'         => isset( $_POST['mp_cp_gift_card_min_amount'] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_min_amount'] ) : '',
+			'max_amount'         => isset( $_POST['mp_cp_gift_card_max_amount'] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_max_amount'] ) : '',
+			'suggested_amounts'  => isset( $_POST['mp_cp_gift_card_suggested_amounts'] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_suggested_amounts'] ) : '',
+			'default_amount'     => isset( $_POST['mp_cp_gift_card_default_amount'] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_default_amount'] ) : '',
+			'expiry_days'        => isset( $_POST['mp_cp_gift_card_expiry_days'] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_expiry_days'] ) : '',
+			'recipient_mode'     => isset( $_POST['mp_cp_gift_card_recipient_mode'] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_recipient_mode'] ) ) : '',
 		);
 	}
 
@@ -342,10 +415,14 @@ final class GiftCardProductAdmin {
 	 */
 	private function read_post_input_variation( int $loop ): array {
 		return array(
-			'amount_mode'    => isset( $_POST['mp_cp_gift_card_amount_mode_var'][ $loop ] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_amount_mode_var'][ $loop ] ) ) : '',
-			'fixed_amount'   => isset( $_POST['mp_cp_gift_card_fixed_amount_var'][ $loop ] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_fixed_amount_var'][ $loop ] ) : '',
-			'expiry_days'    => isset( $_POST['mp_cp_gift_card_expiry_days_var'][ $loop ] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_expiry_days_var'][ $loop ] ) : '',
-			'recipient_mode' => isset( $_POST['mp_cp_gift_card_recipient_mode_var'][ $loop ] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_recipient_mode_var'][ $loop ] ) ) : '',
+			'amount_mode'       => isset( $_POST['mp_cp_gift_card_amount_mode_var'][ $loop ] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_amount_mode_var'][ $loop ] ) ) : '',
+			'fixed_amount'      => isset( $_POST['mp_cp_gift_card_fixed_amount_var'][ $loop ] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_fixed_amount_var'][ $loop ] ) : '',
+			'min_amount'        => isset( $_POST['mp_cp_gift_card_min_amount_var'][ $loop ] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_min_amount_var'][ $loop ] ) : '',
+			'max_amount'        => isset( $_POST['mp_cp_gift_card_max_amount_var'][ $loop ] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_max_amount_var'][ $loop ] ) : '',
+			'suggested_amounts' => isset( $_POST['mp_cp_gift_card_suggested_amounts_var'][ $loop ] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_suggested_amounts_var'][ $loop ] ) : '',
+			'default_amount'    => isset( $_POST['mp_cp_gift_card_default_amount_var'][ $loop ] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_default_amount_var'][ $loop ] ) : '',
+			'expiry_days'       => isset( $_POST['mp_cp_gift_card_expiry_days_var'][ $loop ] ) ? wp_unslash( (string) $_POST['mp_cp_gift_card_expiry_days_var'][ $loop ] ) : '',
+			'recipient_mode'    => isset( $_POST['mp_cp_gift_card_recipient_mode_var'][ $loop ] ) ? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_recipient_mode_var'][ $loop ] ) ) : '',
 		);
 	}
 }

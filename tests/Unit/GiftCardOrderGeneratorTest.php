@@ -12,6 +12,7 @@ use MP\CommercePromotions\GiftCard\GiftCardGeneratedOrderState;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
 use MP\CommercePromotions\GiftCard\GiftCardOrderGenerator;
 use MP\CommercePromotions\GiftCard\GiftCardOrderReversal;
+use MP\CommercePromotions\GiftCard\GiftCardProductCustomerAmount;
 use MP\CommercePromotions\GiftCard\GiftCardProductMeta;
 use MP\CommercePromotions\GiftCard\GiftCardProductService;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
@@ -141,6 +142,44 @@ final class GiftCardOrderGeneratorTest extends TestCase {
 		$this->assertSame( 'customer@example.com', $card->get_recipient_email() );
 	}
 
+	public function test_customer_amount_from_order_item_meta(): void {
+		$product_id = 9010;
+		GiftCardProductMeta::save(
+			$product_id,
+			array(
+				'sells'             => GiftCardProductMeta::VALUE_YES,
+				'amount_mode'       => GiftCardProductMeta::AMOUNT_MODE_CUSTOMER_AMOUNT,
+				'min_amount'        => '10',
+				'max_amount'        => '500',
+				'suggested_amounts' => '25,50,100',
+				'fixed_amount'      => '',
+				'expiry_days'       => '',
+			)
+		);
+
+		$order = $this->make_order(
+			array(
+				9010 => array(
+					'product_id'   => $product_id,
+					'variation_id' => 0,
+					'qty'          => 2,
+					'total'        => 100.0,
+					'unit_amount'  => 50.0,
+				),
+			),
+			0,
+			'buyer@example.com'
+		);
+
+		$generated = $this->generator->generate_for_order( $order );
+		$this->assertCount( 2, $generated );
+		foreach ( $generated as $row ) {
+			$card = $this->cards->find( (int) $row['gift_card_id'] );
+			$this->assertNotNull( $card );
+			$this->assertSame( 50.0, $card->get_initial_amount() );
+		}
+	}
+
 	public function test_cancelled_unused_card_voided(): void {
 		$product_id = 9004;
 		GiftCardProductMeta::save(
@@ -210,7 +249,7 @@ final class GiftCardOrderGeneratorTest extends TestCase {
 	}
 
 	/**
-	 * @param array<int, array{product_id: int, variation_id: int, qty: int, total: float}> $lines
+	 * @param array<int, array{product_id: int, variation_id: int, qty: int, total: float, unit_amount?: float}> $lines
 	 */
 	private function make_order( array $lines, int $customer_id = 0, string $billing_email = '' ): GiftCardOrderTestStub {
 		$order = new GiftCardOrderTestStub();
@@ -226,6 +265,9 @@ final class GiftCardOrderGeneratorTest extends TestCase {
 			$item->set_variation_id( $line['variation_id'] );
 			$item->set_quantity( $line['qty'] );
 			$item->set_total( $line['total'] );
+			if ( isset( $line['unit_amount'] ) ) {
+				GiftCardProductCustomerAmount::write_amount_to_order_item( $item, (float) $line['unit_amount'] );
+			}
 			$order->add_item( $item );
 		}
 
@@ -337,6 +379,9 @@ final class GiftCardOrderLineStub extends WC_Order_Item_Product {
 
 	private float $total = 0.0;
 
+	/** @var array<string, mixed> */
+	private array $meta = array();
+
 	public function set_id( int $id ): void {
 		$this->item_id = $id;
 	}
@@ -375,5 +420,23 @@ final class GiftCardOrderLineStub extends WC_Order_Item_Product {
 
 	public function get_total(): float {
 		return $this->total;
+	}
+
+	/**
+	 * @param string $key
+	 * @param bool $single
+	 * @return mixed
+	 */
+	public function get_meta( $key, $single = true ) {
+		unset( $single );
+		return $this->meta[ (string) $key ] ?? '';
+	}
+
+	/**
+	 * @param string $key
+	 * @param mixed $value
+	 */
+	public function update_meta_data( $key, $value ): void {
+		$this->meta[ (string) $key ] = $value;
 	}
 }

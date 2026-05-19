@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Tests\Unit;
 
 use InvalidArgumentException;
+use MP\CommercePromotions\GiftCard\GiftCardProductCustomerAmount;
 use MP\CommercePromotions\GiftCard\GiftCardProductMeta;
 use MP\CommercePromotions\GiftCard\GiftCardProductService;
 use PHPUnit\Framework\TestCase;
@@ -67,6 +68,31 @@ final class GiftCardProductServiceTest extends TestCase {
 		$expires = $this->service->resolve_expires_at( 30, '2026-01-01 12:00:00' );
 		$this->assertNotNull( $expires );
 		$this->assertStringContainsString( '2026', $expires );
+	}
+
+	public function test_amount_from_customer_chosen_amount(): void {
+		$config = array(
+			'sells'             => true,
+			'amount_mode'       => GiftCardProductMeta::AMOUNT_MODE_CUSTOMER_AMOUNT,
+			'fixed_amount'      => 0.0,
+			'expiry_days'       => null,
+			'recipient_mode'    => GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY,
+			'min_amount'        => 10.0,
+			'max_amount'        => 500.0,
+			'suggested_amounts' => array(),
+			'default_amount'    => null,
+		);
+
+		$this->assertSame( 50.0, $this->service->resolve_unit_amount( $config, 100.0, 2, 50.0 ) );
+	}
+
+	public function test_read_amount_from_cart_item(): void {
+		$amount = GiftCardProductCustomerAmount::read_amount_from_cart_item(
+			array(
+				GiftCardProductCustomerAmount::CART_ITEM_KEY => 75.0,
+			)
+		);
+		$this->assertSame( 75.0, $amount );
 	}
 
 	public function test_zero_amount_rejected(): void {

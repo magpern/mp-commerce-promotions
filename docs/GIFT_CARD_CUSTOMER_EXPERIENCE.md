@@ -34,13 +34,15 @@ Masked code, balance, status, expiry, and delivery status are shown. One-time �
 
 Gift card products show a purchase panel: delivery, redemption, partial payment, recipient help, collapsible **email preview** (masked sample code only).
 
-Mark products with `_mp_cp_sells_gift_card=yes` (see [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md)). For QA, run `scripts/gift-card-product-setup.php` to create SKU `mp-cg-gift-card-qa`. Test recipient: `postmaster@biopentra.eu`.
+**Customer-entered amount** products (`_mp_cp_gift_card_amount_mode=customer_amount`) show a required **Gift card amount** field and optional suggested amount buttons before add to cart. Catalog/shop price shows **Choose amount** or **From {minimum}** instead of `0,00`; loop add-to-cart links read **Select amount** and go to the product page. The chosen amount is shown in cart/checkout and stored on the order line as **Gift card amount**.
+
+Mark products with `_mp_cp_sells_gift_card=yes` (see [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md)). For QA, run `scripts/gift-card-product-setup.php` to create SKU `mp-cg-gift-card-qa`. Test recipient: `postmaster@biopentra.eu`. Customer-amount smoke: `scripts/gift-card-customer-amount-smoke.php`.
 
 Pilot: [GIFT_CARD_PILOT_CHECKLIST.md](GIFT_CARD_PILOT_CHECKLIST.md). If `/gift-card-balance/` 404s, run **Diagnostics → Create balance page & flush endpoints**.
 
 ## Checkout redemption
 
-On **cart**, a subtle link disclosure (**Apply gift card or store credit**) renders after the cart table via `woocommerce_after_cart_table` (outside the coupon flex row, still inside the cart form). Clicking expands a compact form (gift card code + store credit when logged in with balance). Collapsed copy shows wallet **Available: {amount}** when relevant; when applied, **Gift card ****{last4} applied · Change/remove** (or store credit applied). On **checkout**, the compact bordered **Gift card or store credit** accordion remains before the checkout form. Both UIs expand when a gift card or store credit is applied, when WooCommerce success/error notices are present, or when a logged-in customer has store credit available. Expanded gift card input uses a coupon-proportioned flex row (input left, **Apply gift card** right; stacks on narrow screens). Ledger, session, and fee behavior are unchanged.
+On **cart**, a WooCommerce-style disclosure (**Apply gift card or store credit**) renders after the cart table via `woocommerce_after_cart_table` (own row below coupon controls, still inside the cart form). Collapsed state shows a chevron, link-style label, muted helper (*Use a gift card code, store credit, or both. Partial payments supported.*), and **Available store credit: {amount}** when relevant. Expanded state opens a light coupon-like box: full-width gift card input + **Apply gift card**, then a secondary **Apply available store credit ({amount})** link when a wallet balance exists. When applied, summary shows **Gift card ****{last4} applied · Change/remove** (or store credit applied). On **checkout**, the compact bordered **Gift card or store credit** accordion remains before the checkout form. Both UIs auto-expand when a gift card or store credit is applied, when notices are present, or when a logged-in customer has store credit available. Ledger, session, and fee behavior are unchanged.
 
 ### WooCommerce Blocks
 

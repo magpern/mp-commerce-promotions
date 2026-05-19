@@ -97,7 +97,8 @@ final class GiftCardOrderGenerator {
 			}
 
 			$line_total  = (float) $item->get_total();
-			$unit_amount = $this->products->resolve_unit_amount( $config, $line_total, $qty );
+			$chosen      = GiftCardProductCustomerAmount::read_amount_from_order_item( $item );
+			$unit_amount = $this->products->resolve_unit_amount( $config, $line_total, $qty, $chosen );
 			$delivery    = $this->resolve_line_delivery( $config, $item, $billing_mail );
 
 			for ( $unit_index = 0; $unit_index < $qty; ++$unit_index ) {

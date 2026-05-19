@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Customer-entered gift card amounts** — amount mode `customer_amount` with min/max/suggested/default product meta; product-page amount field; cart line pricing; order item meta; catalog **Choose amount** / **From {min}** price display; loop **Select amount** link; `GiftCardProductCustomerAmount`, `GiftCardCustomerAmountCart`, `GiftCardProductPriceDisplay`; `scripts/gift-card-customer-amount-smoke.php`; docs updated.
 - **Gift card ledger CSV export** — Dashboard and Settings export gift cards (masked last4 only), transactions, and outstanding liability by currency; POST + nonce + `manage_woocommerce`; audit `gift_card.export_csv`; export timestamps and Diagnostics stale-export warning; [GIFT_CARD_BACKUP_EXPORT.md](docs/GIFT_CARD_BACKUP_EXPORT.md); `gift-card-export-smoke.php`.
 
 ### Changed

@@ -18,7 +18,8 @@
 	padding: 0 12px;
 }
 
-#mp_cp_gift_card_product_data .mp_cp_gift_card_fixed_amount_field.mp-cp-hidden {
+#mp_cp_gift_card_product_data .mp_cp_gift_card_fixed_amount_field.mp-cp-hidden,
+#mp_cp_gift_card_product_data .mp_cp_gift_card_customer_amount_field.mp-cp-hidden {
 	display: none !important;
 }
 

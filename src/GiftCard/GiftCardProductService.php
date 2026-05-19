@@ -26,7 +26,17 @@ final class GiftCardProductService {
 	/**
 	 * Resolve config for a line item (variation or simple product).
 	 *
-	 * @return array{sells: bool, amount_mode: string, fixed_amount: float, expiry_days: ?int, recipient_mode: string}|null
+	 * @return array{
+	 *   sells: bool,
+	 *   amount_mode: string,
+	 *   fixed_amount: float,
+	 *   expiry_days: ?int,
+	 *   recipient_mode: string,
+	 *   min_amount: float,
+	 *   max_amount: ?float,
+	 *   suggested_amounts: list<float>,
+	 *   default_amount: ?float
+	 * }|null
 	 */
 	public function get_line_config( int $product_id, int $variation_id = 0 ): ?array {
 		$target = $variation_id > 0 ? $variation_id : $product_id;
@@ -45,13 +55,29 @@ final class GiftCardProductService {
 	/**
 	 * Per-unit gift card amount for a purchased line.
 	 *
-	 * @param array{sells: bool, amount_mode: string, fixed_amount: float, expiry_days: ?int, recipient_mode: string} $config
+	 * @param array{
+	 *   sells: bool,
+	 *   amount_mode: string,
+	 *   fixed_amount: float,
+	 *   expiry_days: ?int,
+	 *   recipient_mode: string,
+	 *   min_amount: float,
+	 *   max_amount: ?float,
+	 *   suggested_amounts: list<float>,
+	 *   default_amount: ?float
+	 * } $config
 	 */
-	public function resolve_unit_amount( array $config, float $line_subtotal, int $quantity ): float {
+	public function resolve_unit_amount( array $config, float $line_subtotal, int $quantity, ?float $customer_chosen_amount = null ): float {
 		$quantity = max( 1, $quantity );
 
 		if ( $config['amount_mode'] === GiftCardProductMeta::AMOUNT_MODE_FIXED ) {
 			$amount = GiftCard::money( $config['fixed_amount'] );
+		} elseif ( $config['amount_mode'] === GiftCardProductMeta::AMOUNT_MODE_CUSTOMER_AMOUNT ) {
+			if ( $customer_chosen_amount !== null && $customer_chosen_amount > 0 ) {
+				$amount = GiftCard::money( $customer_chosen_amount );
+			} else {
+				$amount = GiftCard::money( $line_subtotal / $quantity );
+			}
 		} else {
 			$amount = GiftCard::money( $line_subtotal / $quantity );
 		}

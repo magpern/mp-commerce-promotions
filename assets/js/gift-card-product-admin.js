@@ -21,7 +21,7 @@
 		$root.find( '.mp-cp-gift-card-product-options' ).toggle( checked );
 	}
 
-	function toggleFixedAmount( $scope ) {
+	function toggleAmountModeFields( $scope ) {
 		var $containers = $scope && $scope.length
 			? $scope.find( '.mp-cp-gift-card-product-options, .mp-cp-gift-card-variation-fields' )
 			: $( PANEL ).find( '.mp-cp-gift-card-product-options' ).add(
@@ -36,10 +36,15 @@
 
 			var mode = $container.find( '.mp_cp_gift_card_amount_mode_field select' ).val();
 			var showFixed = mode === 'fixed_amount';
+			var showCustomer = mode === 'customer_amount';
 			$container
 				.find( '.mp_cp_gift_card_fixed_amount_field' )
 				.toggle( showFixed )
 				.toggleClass( 'mp-cp-hidden', ! showFixed );
+			$container
+				.find( '.mp_cp_gift_card_customer_amount_field' )
+				.toggle( showCustomer )
+				.toggleClass( 'mp-cp-hidden', ! showCustomer );
 		} );
 	}
 
@@ -52,7 +57,7 @@
 		$fields.toggle( checked );
 
 		if ( checked ) {
-			toggleFixedAmount( $row );
+			toggleAmountModeFields( $row );
 		}
 	}
 
@@ -81,18 +86,18 @@
 		if ( $panel.length ) {
 			$( '#mp_cp_sells_gift_card' ).on( 'change.mpCpGiftCard', function () {
 				toggleShowIfSellsGiftCard( $panel );
-				toggleFixedAmount( $panel );
+				toggleAmountModeFields( $panel );
 			} );
 
 			$panel.on( 'change.mpCpGiftCard', '.mp_cp_gift_card_amount_mode_field select', function () {
 				var $container = $( this ).closest(
 					'.mp-cp-gift-card-product-options, .mp-cp-gift-card-variation-fields'
 				);
-				toggleFixedAmount( $container.length ? $container : $panel );
+				toggleAmountModeFields( $container.length ? $container : $panel );
 			} );
 
 			toggleShowIfSellsGiftCard( $panel );
-			toggleFixedAmount( $panel );
+			toggleAmountModeFields( $panel );
 		}
 
 		bindVariationRows();
