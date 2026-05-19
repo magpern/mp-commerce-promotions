@@ -1,38 +1,42 @@
-/* Gift card fields inside WooCommerce product data → General */
-.mp-cp-gift-card-product-fields .mp-cp-gc-admin-intro {
-	margin: 0 0 0.5em;
-	padding: 0 12px;
+/* Gift card product data tab (not General). */
+#mp_cp_gift_card_product_data .mp-cp-gc-admin-intro {
+	margin: 0;
 }
 
-.mp-cp-gift-card-product-options {
-	padding-top: 0;
+#mp_cp_gift_card_product_data .mp-cp-gift-card-panel-intro {
+	padding-bottom: 0;
 }
 
-.mp-cp-gift-card-product-options .mp-cp-gc-admin-preview,
-.mp-cp-gift-card-product-options .mp-cp-gc-admin-warning {
+#mp_cp_gift_card_product_data .show_if_mp_cp_sells_gift_card,
+#mp_cp_gift_card_product_data .mp-cp-gift-card-product-options {
+	display: none;
+}
+
+#mp_cp_gift_card_product_data .mp-cp-gift-card-product-options .mp-cp-gc-admin-preview,
+#mp_cp_gift_card_product_data .mp-cp-gift-card-product-options .mp-cp-gc-admin-warning {
 	margin: 0 0 0.75em;
 	padding: 0 12px;
 }
 
-.mp-cp-gift-card-variation-fields {
-	clear: both;
-	width: 100%;
-	padding: 0 12px 8px;
-	box-sizing: border-box;
+#mp_cp_gift_card_product_data .mp_cp_gift_card_fixed_amount_field.mp-cp-hidden {
+	display: none !important;
+}
+
+.mp-cp-gift-card-variation-block {
+	margin-top: 0.5em;
+	padding-top: 0.5em;
+	border-top: 1px solid #eee;
+}
+
+.mp-cp-gift-card-variation-block .mp-cp-gc-variation-heading {
+	margin: 0 0 0.5em;
+}
+
+.mp-cp-gift-card-variation-fields--hidden {
+	display: none !important;
 }
 
 .mp-cp-gift-card-variation-fields .form-field {
 	padding: 5px 0 !important;
 	margin: 0 !important;
-}
-
-.mp_cp_gift_card_amount_mode_field fieldset {
-	margin: 0;
-	padding: 0;
-	border: 0;
-}
-
-.mp_cp_gift_card_amount_mode_field .mp-cp-amount-mode-radios label {
-	display: block;
-	margin: 0.25em 0;
 }

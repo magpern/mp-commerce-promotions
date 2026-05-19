@@ -82,6 +82,13 @@ final class GiftCardProductAdminHelper {
 		return __( 'Gift cards are usually sold as virtual products (no shipping). Consider enabling “Virtual” in the Product data box.', 'mp-commerce-promotions' );
 	}
 
+	public static function variable_parent_admin_notice(): string {
+		return __(
+			'Configure gift card settings on each variation under Variations → expand a variation → Gift card (in the pricing section).',
+			'mp-commerce-promotions'
+		);
+	}
+
 	/**
 	 * Expiry input value: empty string when unset; preserve 0 for “no expiry”.
 	 */

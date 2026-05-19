@@ -156,6 +156,12 @@ gcp_smoke_assert( strpos( $admin_src, 'Fixed gift card amount' ) !== false, 'adm
 gcp_smoke_assert( strpos( $admin_src, 'Expiry days' ) !== false, 'admin label: expiry days' );
 gcp_smoke_assert( strpos( $admin_src, '0 = no expiry' ) !== false, 'admin help: expiry' );
 gcp_smoke_assert( strpos( $admin_src, 'woocommerce_wp_text_input' ) !== false, 'admin uses WC field helpers' );
+gcp_smoke_assert(
+	strpos( $admin_src, 'woocommerce_product_options_general_product_data' ) === false,
+	'admin does not hook general product data tab'
+);
+gcp_smoke_assert( strpos( $admin_src, 'woocommerce_product_data_tabs' ) !== false, 'admin registers gift card tab' );
+gcp_smoke_assert( strpos( $admin_src, 'mp_cp_gift_card_product_data' ) !== false, 'admin dedicated panel id' );
 
 if ( $GLOBALS['gcp_smoke_failures'] > 0 ) {
 	WP_CLI::error( 'Gift card product smoke finished with ' . (int) $GLOBALS['gcp_smoke_failures'] . ' failure(s).' );
