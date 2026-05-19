@@ -92,4 +92,12 @@ final class AdminUrl {
 	public static function diagnostics( array $extra_query = array() ): string {
 		return add_query_arg( $extra_query, self::tab( AdminNavigation::TAB_DIAGNOSTICS ) );
 	}
+
+	/**
+	 * @param GiftCardModuleSections::SECTION_*|string $section
+	 * @param array<string, string|int>                $extra_query
+	 */
+	public static function gift_cards_section( string $section, array $extra_query = array() ): string {
+		return GiftCardModuleSections::section_url( $section, $extra_query );
+	}
 }

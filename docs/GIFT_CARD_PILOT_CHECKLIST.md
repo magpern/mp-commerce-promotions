@@ -5,7 +5,7 @@ Use this before enabling gift card sales for real customers.
 ## Prerequisites
 
 - [ ] **Configure SMTP** (or reliable transactional email). Verify a test message delivers to a real inbox.
-- [ ] **Gift card email** — Settings → template style, preview (`****SAMPLE`), test email; **Default** sender unless SMTP authorizes custom From ([GIFT_CARD_EMAILS.md](GIFT_CARD_EMAILS.md)).
+- [ ] **Gift card email** — **Gift Cards & Store Credit → Settings** (template, preview `****SAMPLE`, test email); **Default** sender unless SMTP authorizes custom From ([GIFT_CARD_EMAILS.md](GIFT_CARD_EMAILS.md)).
 - [ ] **Email style** — Commerce Growth template (default) or WooCommerce email style if Woo mailer is available.
 - [ ] **Do not go live** until you have confirmed at least one gift card email with the real code.
 - [ ] WooCommerce **Commerce Growth** plugin active; schema **1.19.0+**.

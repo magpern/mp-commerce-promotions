@@ -393,13 +393,16 @@ final class Plugin {
 			null,
 			$this->audit_logger
 		);
-		$gift_cards_page = new GiftCardsPage(
+		$gift_card_settings_handler = new \MP\CommercePromotions\Admin\GiftCardSettingsHandler( $this->settings );
+		$gift_cards_page            = new GiftCardsPage(
 			$gift_ledger,
 			$gift_card_repo,
 			$sc_wallet,
 			$sc_accounts,
 			$manual_gc_delivery,
-			$gift_transfers_admin
+			$gift_transfers_admin,
+			$this->settings,
+			$gift_card_settings_handler
 		);
 
 		$profiler_global     = new PromotionPerformanceProfiler();

@@ -22,7 +22,7 @@ Store credit is **customer-account balance** on the same ledger as gift cards. I
 
 ## Admin
 
-**Commerce Growth → Gift Cards & Store Credit → Store Credit**
+**Commerce Growth → Gift Cards & Store Credit → Store credit** (`gift_cards_section=store-credit`). Gift-card-specific settings (email, My Account, cron) live under **Settings** in the same module, not under global Commerce Growth **Settings**.
 
 - Look up customer by ID, email, or login; choose **currency** from the WooCommerce currency list (store default).
 - Grant or deduct with **required note**.

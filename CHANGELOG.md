@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Gift card settings module** — gift card email, delivery, and storefront toggles moved from global **Commerce Growth → Settings** to **Gift Cards & Store Credit → Settings** (`gift_cards_section=settings`); dashboard sub-nav (`gift_cards_section`); same `mp_cp_*` option keys; backward-compatible save from legacy global POST; `GiftCardSettingsHandler`, `GiftCardModuleSections`.
+
+### Changed
+
 - **Gift card & store credit stabilization** — clearer redemption errors (voided, expired, currency mismatch), cart fee label fix, admin nav copy, consolidated `gift-card-module-smoke.php`, diagnostics scheduled/mail summary, pilot checklist “do not pilot until”; [GIFT_CARD_QA_EVIDENCE.md](docs/GIFT_CARD_QA_EVIDENCE.md).
 
 ### Added

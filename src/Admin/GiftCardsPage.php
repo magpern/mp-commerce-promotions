@@ -18,17 +18,18 @@ use MP\CommercePromotions\GiftCard\GiftCardManualDeliveryStore;
 use MP\CommercePromotions\GiftCard\GiftCardManualIssueDelivery;
 use MP\CommercePromotions\GiftCard\GiftCardRepository;
 use MP\CommercePromotions\GiftCard\GiftCardSourceLabel;
+use MP\CommercePromotions\GiftCard\GiftCardPilotReadiness;
+use MP\CommercePromotions\GiftCard\GiftCardQaProductSetup;
+use MP\CommercePromotions\GiftCard\GiftCardReports;
+use MP\CommercePromotions\GiftCard\GiftCardMailDiagnostics;
 use MP\CommercePromotions\GiftCard\GiftCardTransferService;
 use MP\CommercePromotions\GiftCard\GiftCardTransferStore;
 use MP\CommercePromotions\GiftCard\StoreCreditAccountService;
 use MP\CommercePromotions\GiftCard\StoreCreditWallet;
+use MP\CommercePromotions\Service\Settings;
 use RuntimeException;
 
 final class GiftCardsPage {
-
-	private const PANEL_GIFT_CARDS = 'gift_cards';
-
-	private const PANEL_STORE_CREDIT = 'store_credit';
 
 	private const NONCE_ISSUE = 'mp_cp_issue_gift_card';
 
@@ -56,6 +57,10 @@ final class GiftCardsPage {
 
 	private GiftCardTransferService $transfers;
 
+	private Settings $settings;
+
+	private GiftCardSettingsHandler $gift_card_settings;
+
 	/** @var array{plain_code?: string, card_id?: int, delivery?: array<string, string>}|null */
 	private ?array $flash_issue = null;
 
@@ -68,14 +73,18 @@ final class GiftCardsPage {
 		StoreCreditWallet $store_credit,
 		StoreCreditAccountService $store_credit_accounts,
 		?GiftCardManualIssueDelivery $manual_delivery = null,
-		?GiftCardTransferService $transfers = null
+		?GiftCardTransferService $transfers = null,
+		?Settings $settings = null,
+		?GiftCardSettingsHandler $gift_card_settings = null
 	) {
 		$this->ledger                 = $ledger;
 		$this->cards                  = $cards;
 		$this->store_credit           = $store_credit;
 		$this->store_credit_accounts  = $store_credit_accounts;
+		$this->settings               = $settings ?? new Settings();
+		$this->gift_card_settings     = $gift_card_settings ?? new GiftCardSettingsHandler( $this->settings );
 		$this->manual_delivery        = $manual_delivery ?? new GiftCardManualIssueDelivery(
-			new \MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer( new \MP\CommercePromotions\Service\Settings() ),
+			new \MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer( $this->settings ),
 			new GiftCardManualDeliveryStore()
 		);
 		$this->transfers              = $transfers ?? new GiftCardTransferService( $ledger, $cards );
@@ -86,9 +95,11 @@ final class GiftCardsPage {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mp-commerce-promotions' ) );
 		}
 
+		$this->gift_card_settings->handle_post_save();
+		$this->gift_card_settings->handle_settings_test_email();
 		$this->handle_post();
 
-		$panel     = isset( $_GET['mp_cp_gc_panel'] ) ? sanitize_key( (string) $_GET['mp_cp_gc_panel'] ) : self::PANEL_GIFT_CARDS;
+		$section   = GiftCardModuleSections::current_section();
 		$detail_id = isset( $_GET['gift_card_id'] ) ? (int) $_GET['gift_card_id'] : 0;
 
 		if ( isset( $_GET['customer_id'] ) ) {
@@ -101,40 +112,113 @@ final class GiftCardsPage {
 
 		global $wpdb;
 		if ( $wpdb instanceof \wpdb ) {
-			\MP\CommercePromotions\GiftCard\GiftCardPilotReadiness::render_admin_pilot_email_warning( $wpdb );
+			GiftCardPilotReadiness::render_admin_pilot_email_warning( $wpdb );
 		}
 
-		$this->render_panel_nav( $panel );
+		GiftCardModuleSections::render_sub_nav( $section );
 		$this->render_notices();
 
-		if ( $panel === self::PANEL_STORE_CREDIT ) {
-			$this->render_store_credit_panel();
-		} elseif ( $detail_id > 0 ) {
-			$this->render_detail( $detail_id );
-		} else {
-			$this->render_issue_form();
-			if ( $this->flash_issue !== null ) {
-				$this->render_issue_success();
-			}
-			$this->render_list();
+		switch ( $section ) {
+			case GiftCardModuleSections::SECTION_SETTINGS:
+				$this->render_settings_section();
+				break;
+			case GiftCardModuleSections::SECTION_STORE_CREDIT:
+				$this->render_store_credit_panel();
+				break;
+			case GiftCardModuleSections::SECTION_GIFT_CARDS:
+				if ( $detail_id > 0 ) {
+					$this->render_detail( $detail_id );
+				} else {
+					$this->render_issue_form();
+					if ( $this->flash_issue !== null ) {
+						$this->render_issue_success();
+					}
+					$this->render_list();
+				}
+				break;
+			case GiftCardModuleSections::SECTION_DASHBOARD:
+			default:
+				$this->render_dashboard( $wpdb instanceof \wpdb ? $wpdb : null );
+				break;
 		}
 
 		echo '</div>';
 	}
 
-	private function render_panel_nav( string $active ): void {
-		$base = AdminUrl::tab( AdminNavigation::TAB_GIFT_CARDS );
-		$tabs = array(
-			self::PANEL_GIFT_CARDS   => __( 'Gift Cards', 'mp-commerce-promotions' ),
-			self::PANEL_STORE_CREDIT => __( 'Store Credit', 'mp-commerce-promotions' ),
-		);
-		echo '<nav class="nav-tab-wrapper" style="margin:1em 0;">';
-		foreach ( $tabs as $key => $label ) {
-			$url   = add_query_arg( 'mp_cp_gc_panel', $key, $base );
-			$class = $active === $key ? ' nav-tab nav-tab-active' : ' nav-tab';
-			echo '<a href="' . esc_url( $url ) . '" class="' . esc_attr( trim( $class ) ) . '">' . esc_html( $label ) . '</a>';
+	private function render_settings_section(): void {
+		$this->gift_card_settings->render();
+	}
+
+	/**
+	 * @param \wpdb|null $wpdb
+	 */
+	private function render_dashboard( ?\wpdb $wpdb ): void {
+		$gc_liability    = 0.0;
+		$sc_liability    = 0.0;
+		$pending_sched   = 0;
+		$failed_emails   = 0;
+		$active_products = 0;
+
+		if ( $wpdb instanceof \wpdb ) {
+			$summary       = ( new GiftCardReports( $wpdb ) )->summary();
+			$gc_liability  = (float) ( $summary['gift_card_outstanding_liability'] ?? 0 );
+			$sc_liability  = (float) ( $summary['store_credit_outstanding_liability'] ?? 0 );
+			$pending_sched = (int) ( $summary['scheduled_pending'] ?? 0 );
+			$failed_emails = (int) ( $summary['gift_cards_delivery_failed'] ?? 0 );
+			$mail_diag     = ( new GiftCardMailDiagnostics( $wpdb, $this->settings ) )->analyze();
+			$failed_emails = max( $failed_emails, (int) ( $mail_diag['recent_delivery_failed'] ?? 0 ) );
 		}
-		echo '</nav>';
+
+		if ( function_exists( 'wc_get_orders' ) ) {
+			$active_products = GiftCardQaProductSetup::count_published_gift_card_products();
+		}
+
+		$currency = function_exists( 'get_woocommerce_currency' ) ? (string) get_woocommerce_currency() : '';
+		$format_amount = static function ( float $amount ) use ( $currency ): string {
+			if ( function_exists( 'wc_price' ) ) {
+				return (string) wc_price( $amount, array( 'currency' => $currency ) );
+			}
+
+			return number_format( $amount, 2 ) . ( $currency !== '' ? ' ' . $currency : '' );
+		};
+
+		echo '<div class="mp-cg-gc-dashboard" style="margin-top:1em;">';
+		echo '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:1.5em;">';
+		$this->render_dashboard_stat_card( __( 'Gift card liability', 'mp-commerce-promotions' ), $format_amount( $gc_liability ) );
+		$this->render_dashboard_stat_card( __( 'Store credit liability', 'mp-commerce-promotions' ), $format_amount( $sc_liability ) );
+		$this->render_dashboard_stat_card( __( 'Pending scheduled deliveries', 'mp-commerce-promotions' ), (string) $pending_sched );
+		$this->render_dashboard_stat_card( __( 'Failed gift card emails', 'mp-commerce-promotions' ), (string) $failed_emails );
+		$this->render_dashboard_stat_card( __( 'Active gift card products', 'mp-commerce-promotions' ), (string) $active_products );
+		echo '</div>';
+
+		echo '<h2 class="title">' . esc_html__( 'Shortcuts', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<p class="mp-cg-gc-shortcuts">';
+		$shortcuts = array(
+			array( GiftCardModuleSections::section_url( GiftCardModuleSections::SECTION_GIFT_CARDS ), __( 'Issue gift card', 'mp-commerce-promotions' ) ),
+			array( GiftCardModuleSections::section_url( GiftCardModuleSections::SECTION_GIFT_CARDS ), __( 'Manage gift cards', 'mp-commerce-promotions' ) ),
+			array( GiftCardModuleSections::section_url( GiftCardModuleSections::SECTION_STORE_CREDIT ), __( 'Manage store credit', 'mp-commerce-promotions' ) ),
+			array( GiftCardModuleSections::section_url( GiftCardModuleSections::SECTION_SETTINGS ), __( 'Settings', 'mp-commerce-promotions' ) ),
+		);
+		$pilot_doc = defined( 'MP_COMMERCE_PROMOTIONS_URL' )
+			? MP_COMMERCE_PROMOTIONS_URL . 'docs/GIFT_CARD_PILOT_CHECKLIST.md'
+			: '';
+		if ( $pilot_doc !== '' ) {
+			$shortcuts[] = array( $pilot_doc, __( 'Pilot checklist', 'mp-commerce-promotions' ) );
+		}
+		foreach ( $shortcuts as $idx => $link ) {
+			if ( $idx > 0 ) {
+				echo ' · ';
+			}
+			echo '<a href="' . esc_url( $link[0] ) . '">' . esc_html( $link[1] ) . '</a>';
+		}
+		echo '</p></div>';
+	}
+
+	private function render_dashboard_stat_card( string $label, string $value ): void {
+		echo '<div style="background:#fff;border:1px solid #c3c4c7;padding:12px 16px;border-radius:4px;">';
+		echo '<p style="margin:0 0 4px;font-size:12px;color:#646970;">' . esc_html( $label ) . '</p>';
+		echo '<p style="margin:0;font-size:20px;font-weight:600;">' . wp_kses_post( $value ) . '</p>';
+		echo '</div>';
 	}
 
 	private function handle_post(): void {
@@ -306,18 +390,12 @@ final class GiftCardsPage {
 		echo '<h2>' . esc_html__( 'Customer store credit', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p>' . esc_html__( 'Store credit is tied to a customer account (no code at checkout when logged in). Gift cards remain code-based.', 'mp-commerce-promotions' ) . '</p>';
 
-		$search_url = add_query_arg(
-			array(
-				'page'            => AdminNavigation::PAGE_SLUG,
-				'tab'             => AdminNavigation::TAB_GIFT_CARDS,
-				'mp_cp_gc_panel'  => self::PANEL_STORE_CREDIT,
-			),
-			admin_url( 'admin.php' )
-		);
+		$search_url = GiftCardModuleSections::section_url( GiftCardModuleSections::SECTION_STORE_CREDIT );
 		echo '<form method="get" style="max-width:520px;margin-bottom:1.5em;">';
 		echo '<input type="hidden" name="page" value="' . esc_attr( AdminNavigation::PAGE_SLUG ) . '" />';
 		echo '<input type="hidden" name="tab" value="' . esc_attr( AdminNavigation::TAB_GIFT_CARDS ) . '" />';
-		echo '<input type="hidden" name="mp_cp_gc_panel" value="' . esc_attr( self::PANEL_STORE_CREDIT ) . '" />';
+		echo '<input type="hidden" name="' . esc_attr( GiftCardModuleSections::QUERY_ARG ) . '" value="'
+			. esc_attr( GiftCardModuleSections::SECTION_STORE_CREDIT ) . '" />';
 		echo '<p><label for="sc_currency_lookup">' . esc_html__( 'Currency', 'mp-commerce-promotions' ) . '</label><br />';
 		$this->render_currency_select( 'sc_currency', 'sc_currency_lookup', $currency, $currencies );
 		echo '</p>';
@@ -337,9 +415,8 @@ final class GiftCardsPage {
 				wp_safe_redirect(
 					add_query_arg(
 						array(
-							'customer_id'    => $found,
-							'mp_cp_gc_panel' => self::PANEL_STORE_CREDIT,
-							'sc_currency'    => $currency,
+							'customer_id' => $found,
+							'sc_currency' => $currency,
 						),
 						$search_url
 					)
@@ -839,14 +916,7 @@ final class GiftCardsPage {
 	}
 
 	private function render_list_filters(): void {
-		$base = add_query_arg(
-			array(
-				'page'            => AdminNavigation::PAGE_SLUG,
-				'tab'             => AdminNavigation::TAB_GIFT_CARDS,
-				'mp_cp_gc_panel'  => self::PANEL_GIFT_CARDS,
-			),
-			admin_url( 'admin.php' )
-		);
+		$base = GiftCardModuleSections::section_url( GiftCardModuleSections::SECTION_GIFT_CARDS );
 
 		$origin = isset( $_GET['mp_cp_gc_origin'] ) ? sanitize_key( (string) $_GET['mp_cp_gc_origin'] ) : '';
 		$order  = isset( $_GET['mp_cp_gc_order_id'] ) ? (int) $_GET['mp_cp_gc_order_id'] : 0;
@@ -854,7 +924,8 @@ final class GiftCardsPage {
 		echo '<form method="get" style="margin:1em 0;max-width:720px;">';
 		echo '<input type="hidden" name="page" value="' . esc_attr( AdminNavigation::PAGE_SLUG ) . '" />';
 		echo '<input type="hidden" name="tab" value="' . esc_attr( AdminNavigation::TAB_GIFT_CARDS ) . '" />';
-		echo '<input type="hidden" name="mp_cp_gc_panel" value="' . esc_attr( self::PANEL_GIFT_CARDS ) . '" />';
+		echo '<input type="hidden" name="' . esc_attr( GiftCardModuleSections::QUERY_ARG ) . '" value="'
+			. esc_attr( GiftCardModuleSections::SECTION_GIFT_CARDS ) . '" />';
 		echo '<label>' . esc_html__( 'Source', 'mp-commerce-promotions' ) . ' ';
 		echo '<select name="mp_cp_gc_origin">';
 		echo '<option value="">' . esc_html__( 'All gift cards', 'mp-commerce-promotions' ) . '</option>';

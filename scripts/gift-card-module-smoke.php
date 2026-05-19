@@ -30,6 +30,8 @@ use MP\CommercePromotions\GiftCard\StoreCreditAccountService;
 use MP\CommercePromotions\GiftCard\StoreCreditWallet;
 use MP\CommercePromotions\Infrastructure\Database\MigrationRunner;
 use MP\CommercePromotions\Infrastructure\Database\Schema;
+use MP\CommercePromotions\Admin\GiftCardModuleSections;
+use MP\CommercePromotions\Admin\GiftCardSettingsHandler;
 use MP\CommercePromotions\Service\Settings;
 
 global $wpdb;
@@ -206,6 +208,30 @@ if ( isset( $scheduled['overdue'], $scheduled['unpaid_pending'], $scheduled['fai
 } else {
 	$fail( 'scheduled diagnostics keys' );
 }
+
+$settings_url = GiftCardModuleSections::section_url( GiftCardModuleSections::SECTION_SETTINGS );
+if (
+	strpos( $settings_url, 'tab=gift-cards' ) !== false
+	&& strpos( $settings_url, GiftCardModuleSections::QUERY_ARG . '=' . GiftCardModuleSections::SECTION_SETTINGS ) !== false
+) {
+	$pass( 'gift card settings admin route' );
+} else {
+	$fail( 'gift card settings admin route', $settings_url );
+}
+
+if ( $settings->gift_card_sender_mode() === Settings::GIFT_CARD_SENDER_MODE_DEFAULT ) {
+	$pass( 'default gift card sender mode' );
+} else {
+	$fail( 'default gift card sender mode', $settings->gift_card_sender_mode() );
+}
+
+$handler = new GiftCardSettingsHandler( $settings );
+if ( GiftCardSettingsHandler::NONCE_ACTION === 'mp_cp_save_gift_card_settings' ) {
+	$pass( 'gift card settings save nonce action' );
+} else {
+	$fail( 'gift card settings save nonce action' );
+}
+unset( $handler );
 
 echo "=== Done; failures: {$failures} ===\n";
 exit( $failures > 0 ? 1 : 0 );

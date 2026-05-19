@@ -11,7 +11,7 @@
 
 No image files are generated or stored — only the template slug and HTML at send time.
 
-Per-template overrides (logo, accent, footer, support) are stored in **Commerce Growth → Settings → Gift cards & store credit** for the selected template style.
+Per-template overrides (logo, accent, footer, support) are stored in **Commerce Growth → Gift Cards & Store Credit → Settings** for the selected template style. Platform-wide Commerce Growth toggles remain under **Commerce Growth → Settings**.
 
 ## Email style
 
@@ -28,7 +28,9 @@ Per-template overrides (logo, accent, footer, support) are stored in **Commerce 
 - Redeem-at-checkout instructions
 - Optional logo URL, accent color, footer text, support contact text
 
-## Settings UI (Commerce Growth → Settings)
+## Settings UI (Gift Cards & Store Credit → Settings)
+
+`?page=mp-commerce-promotions&tab=gift-cards&gift_cards_section=settings`
 
 - **Template style** — classic, birthday, holiday, minimal
 - **Email style** — Commerce Growth vs WooCommerce wrapper
@@ -54,9 +56,9 @@ SMTP providers often reject custom From addresses that are not owned by the auth
 
 ## Testing gift card email
 
-1. Enable **Send gift card codes by email** in Settings.
+1. Enable **Send gift card codes by email** under **Gift Cards & Store Credit → Settings**.
 2. Prefer **Default** sender mode unless SMTP authorizes your custom address.
-3. Use **Settings → Template preview** and **Send test gift card email** (sample `****TEST` only).
+3. Use **Gift Cards & Store Credit → Settings → Preview selected template** and **Send test gift card email** (sample `****TEST` only).
 4. Open **Diagnostics → Gift card email deliverability** for sender mode, template, Woo style availability, SMTP hint, last failure, and test email.
 
 CLI smoke:

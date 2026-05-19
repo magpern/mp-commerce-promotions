@@ -73,9 +73,9 @@ Provide a structured foundation for commerce promotions using:
 - **Commerce Growth** admin shell — WooCommerce submenu label; slug remains `mp-commerce-promotions` for backward-compatible URLs.
 - **Campaign Builder** (`?page=mp-commerce-promotions` or `tab=campaign-builder`) — **default entrypoint**: guided goals, simple forms, draft creation.
 - **Advanced Promotions** (`tab=all`) — expert mode: list, raw JSON rules, orchestration, codes, cart simulation, and per-promotion **Advanced editor**.
-- **Gift Cards & Store Credit** (`tab=gift-cards`) — issue/adjust/void, hashed codes, ledger, checkout credit MVP, **sell via normal Woo products** (recipient email/message, send now or scheduled; codes generated at delivery for scheduled sends; never stored in order meta; reissue on failure) ([docs/GIFT_CARDS_STORE_CREDIT.md](docs/GIFT_CARDS_STORE_CREDIT.md), [docs/GIFT_CARD_PRODUCTS.md](docs/GIFT_CARD_PRODUCTS.md)).
+- **Gift Cards & Store Credit** (`tab=gift-cards`) — dashboard, gift cards, store credit, and module **Settings** (`gift_cards_section=dashboard|gift-cards|store-credit|settings`); issue/adjust/void, hashed codes, ledger, checkout credit MVP, email templates/sender/test mail, **sell via normal Woo products** ([docs/GIFT_CARDS_STORE_CREDIT.md](docs/GIFT_CARDS_STORE_CREDIT.md), [docs/GIFT_CARD_PRODUCTS.md](docs/GIFT_CARD_PRODUCTS.md)).
 - **Getting Started** (`tab=getting-started`) — legacy onboarding tab (hidden from nav bar; still reachable by URL).
-- **Settings** — feature gates (telemetry, CSV export, simulations, free gift/shipping, pricing explainability) and opt-in **delete all data on uninstall** (default: retain).
+- **Settings** (`tab=settings`) — platform-wide Commerce Growth gates (telemetry, CSV export, simulations, cart discounts, automation, safe mode, data retention). Gift card–specific options moved to **Gift Cards & Store Credit → Settings**.
 - **Compatibility status** on Reports and Diagnostics; **support bundle** JSON export on Diagnostics (no PII).
 - See [docs/COMMERCIAL_READINESS.md](docs/COMMERCIAL_READINESS.md).
 
@@ -127,6 +127,7 @@ WooCommerce
 └── Promotions
     ├── Campaign Builder tab (default) (?page=mp-commerce-promotions)
     ├── Advanced Promotions tab (?page=mp-commerce-promotions&tab=all)
+    ├── Gift Cards tab       (?page=mp-commerce-promotions&tab=gift-cards&gift_cards_section=…)
     ├── Settings tab         (?page=mp-commerce-promotions&tab=settings)
     ├── Diagnostics tab      (?page=mp-commerce-promotions&tab=diagnostics)
     └── Reports tab          (?page=mp-commerce-promotions&tab=reports)

@@ -241,6 +241,62 @@ if ( ! function_exists( 'sanitize_email' ) ) {
 	}
 }
 
+if ( ! function_exists( 'admin_url' ) ) {
+	/**
+	 * @param string $path
+	 */
+	function admin_url( $path = '' ) {
+		return 'https://example.org/wp-admin/' . ltrim( (string) $path, '/' );
+	}
+}
+
+if ( ! function_exists( 'add_query_arg' ) ) {
+	/**
+	 * @param array<string, scalar|null>|string $key
+	 * @param scalar|null|string              $value
+	 * @param string                          $url
+	 */
+	function add_query_arg( $key, $value = null, $url = null ) {
+		if ( is_array( $key ) ) {
+			$args = $key;
+			$url  = is_string( $value ) ? $value : '';
+		} else {
+			$args = array( (string) $key => $value );
+			$url  = is_string( $url ) ? $url : '';
+		}
+
+		$parts = array();
+		foreach ( $args as $k => $v ) {
+			if ( $v === null || $v === '' ) {
+				continue;
+			}
+			$parts[] = rawurlencode( (string) $k ) . '=' . rawurlencode( (string) $v );
+		}
+
+		if ( $parts === array() ) {
+			return $url;
+		}
+
+		$sep = strpos( $url, '?' ) === false ? '?' : '&';
+
+		return $url . $sep . implode( '&', $parts );
+	}
+}
+
+if ( ! function_exists( 'wp_unslash' ) ) {
+	/**
+	 * @param string|array<mixed> $value
+	 * @return string|array<mixed>
+	 */
+	function wp_unslash( $value ) {
+		if ( is_array( $value ) ) {
+			return array_map( 'wp_unslash', $value );
+		}
+
+		return stripslashes( (string) $value );
+	}
+}
+
 if ( ! function_exists( 'sanitize_text_field' ) ) {
 	/**
 	 * @param string $str
