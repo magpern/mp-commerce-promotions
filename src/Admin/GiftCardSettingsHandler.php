@@ -47,6 +47,9 @@ final class GiftCardSettingsHandler {
 	/** Script handle for gift card email settings UI. */
 	public const SCRIPT_HANDLE = 'mp-cp-gift-card-email-preview';
 
+	/** Script handle for logo + accent controls (independent of preview AJAX). */
+	public const CONTROLS_SCRIPT_HANDLE = 'mp-cp-gift-card-settings-controls';
+
 	/** Query args for admin notices after redirect. */
 	public const NOTICE_TYPE_QUERY = 'mp_cp_settings_notice';
 
@@ -98,11 +101,37 @@ final class GiftCardSettingsHandler {
 
 		wp_enqueue_media();
 		wp_enqueue_script( 'wp-color-picker' );
+
+		$controls_path = dirname( __DIR__, 2 ) . '/assets/js/gift-card-settings-controls.js';
+		$controls_ver  = self::asset_version( $controls_path );
+
+		wp_enqueue_script(
+			self::CONTROLS_SCRIPT_HANDLE,
+			MP_COMMERCE_PROMOTIONS_URL . 'assets/js/gift-card-settings-controls.js',
+			array( 'jquery', 'wp-color-picker', 'media-editor', 'media-views' ),
+			$controls_ver,
+			true
+		);
+		wp_localize_script(
+			self::CONTROLS_SCRIPT_HANDLE,
+			'mpCpGiftCardSettingsControls',
+			array(
+				'debug' => defined( 'WP_DEBUG' ) && WP_DEBUG,
+				'i18n'  => array(
+					'chooseLogo'        => __( 'Choose logo', 'mp-commerce-promotions' ),
+					'useLogo'           => __( 'Use image', 'mp-commerce-promotions' ),
+					'mediaUnavailable'  => __( 'Media library is not available on this screen. Paste a logo URL manually.', 'mp-commerce-promotions' ),
+					'colorUnavailable'  => __( 'Color picker could not load.', 'mp-commerce-promotions' ),
+				),
+			)
+		);
+
+		$preview_path = dirname( __DIR__, 2 ) . '/assets/js/gift-card-email-preview.js';
 		wp_enqueue_script(
 			self::SCRIPT_HANDLE,
 			MP_COMMERCE_PROMOTIONS_URL . 'assets/js/gift-card-email-preview.js',
-			array( 'jquery', 'wp-color-picker', 'media-models', 'media-views' ),
-			MP_COMMERCE_PROMOTIONS_VERSION,
+			array( 'jquery', self::CONTROLS_SCRIPT_HANDLE ),
+			self::asset_version( $preview_path ),
 			true
 		);
 		wp_localize_script(
@@ -167,11 +196,29 @@ final class GiftCardSettingsHandler {
 	 */
 	public static function required_asset_handles(): array {
 		return array(
+			self::CONTROLS_SCRIPT_HANDLE,
 			self::SCRIPT_HANDLE,
 			'wp-color-picker',
+			'media-editor',
 			'media-views',
-			'media-models',
 		);
+	}
+
+	/**
+	 * Cache-busting version for admin JS (plugin version + filemtime).
+	 */
+	private static function asset_version( string $absolute_path ): string {
+		$base = defined( 'MP_COMMERCE_PROMOTIONS_VERSION' )
+			? (string) MP_COMMERCE_PROMOTIONS_VERSION
+			: '1.0.0';
+		if ( is_readable( $absolute_path ) ) {
+			$mtime = filemtime( $absolute_path );
+			if ( $mtime !== false ) {
+				return $base . '.' . (string) $mtime;
+			}
+		}
+
+		return $base;
 	}
 
 	public function render(): void {

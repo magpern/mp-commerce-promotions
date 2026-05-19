@@ -161,6 +161,9 @@ if ( strpos( $handler_src, 'wp_enqueue_media' ) !== false
 	&& strpos( $handler_src, 'load-' ) !== false
 	&& strpos( $handler_src, 'ADMIN_PAGE_HOOK' ) !== false
 	&& strpos( $handler_src, 'media-views' ) !== false
+	&& strpos( $handler_src, 'media-editor' ) !== false
+	&& strpos( $handler_src, 'CONTROLS_SCRIPT_HANDLE' ) !== false
+	&& strpos( $handler_src, 'gift-card-settings-controls.js' ) !== false
 	&& strpos( $handler_src, 'mp-cp-color-field' ) !== false ) {
 	$pass( 'settings screen enqueues media and color picker assets' );
 } else {
@@ -191,14 +194,25 @@ if ( $asset_ok ) {
 	$pass( 'gift card settings asset handles enqueued on route' );
 }
 
-$js_src = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/gift-card-email-preview.js' );
-if ( $js_src !== '' && strpos( $js_src, 'mp-cp-gc-choose-logo' ) !== false
-	&& strpos( $js_src, 'wpColorPicker' ) !== false
-	&& strpos( $js_src, 'wp.media' ) !== false
-	&& strpos( $js_src, 'if ( ! cfg || ! cfg.ajaxUrl )' ) === false ) {
-	$pass( 'settings JS initializes logo and color picker without hard exit' );
+$controls_js = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/gift-card-settings-controls.js' );
+if ( $controls_js !== '' && strpos( $controls_js, 'mp-cp-gc-choose-logo' ) !== false
+	&& strpos( $controls_js, 'wpColorPicker' ) !== false
+	&& strpos( $controls_js, 'wp.media' ) !== false
+	&& strpos( $controls_js, 'mpCpGiftCardEmailPreview' ) === false
+	&& strpos( $controls_js, 'initLogoPicker' ) !== false
+	&& strpos( $controls_js, 'initColorPicker' ) !== false ) {
+	$pass( 'settings controls JS is independent and initializes logo/color' );
 } else {
-	$fail( 'settings JS initializes logo and color picker without hard exit' );
+	$fail( 'settings controls JS is independent and initializes logo/color' );
+}
+
+$preview_js = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/gift-card-email-preview.js' );
+if ( $preview_js !== '' && strpos( $preview_js, 'initLogoPicker' ) === false
+	&& strpos( $preview_js, 'initColorPicker' ) === false
+	&& strpos( $preview_js, 'typeof $ === \'undefined\'' ) !== false ) {
+	$pass( 'preview JS does not duplicate logo/color init' );
+} else {
+	$fail( 'preview JS does not duplicate logo/color init' );
 }
 
 if ( strpos( $handler_src, 'SUBMIT_RESET_TEMPLATE' ) !== false

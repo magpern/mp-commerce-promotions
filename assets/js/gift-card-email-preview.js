@@ -1,8 +1,14 @@
 /**
- * Gift card email settings: live preview, AJAX test email, media logo picker, color picker.
+ * Gift card email settings: live preview and AJAX test email.
+ *
+ * Logo/color pickers: assets/js/gift-card-settings-controls.js
  */
 ( function ( $ ) {
 	'use strict';
+
+	if ( typeof $ === 'undefined' ) {
+		return;
+	}
 
 	var cfg = window.mpCpGiftCardEmailPreview || {};
 
@@ -18,7 +24,6 @@
 	};
 
 	var previewTimer = null;
-	var mediaNoticeShown = false;
 
 	function hasPreviewAjax() {
 		return Boolean( cfg.ajaxUrl && cfg.nonce && cfg.previewAction );
@@ -103,7 +108,7 @@
 
 	function bindPreviewFields() {
 		if ( ! hasPreviewAjax() ) {
-			debugWarn( 'Preview AJAX config missing; logo and color picker still work.' );
+			debugWarn( 'Preview AJAX config missing; email preview updates are disabled.' );
 			return;
 		}
 
@@ -127,139 +132,6 @@
 				node.addEventListener( 'change', schedulePreview );
 			}
 		} );
-	}
-
-	function showMediaUnavailableNotice() {
-		if ( mediaNoticeShown ) {
-			return;
-		}
-		mediaNoticeShown = true;
-
-		var message = ( cfg.i18n && cfg.i18n.mediaUnavailable )
-			? cfg.i18n.mediaUnavailable
-			: 'Media library is unavailable. Paste a logo URL instead.';
-
-		var logoField = document.querySelector( '.mp-cp-gc-logo-field' );
-		if ( ! logoField ) {
-			return;
-		}
-
-		var notice = document.createElement( 'div' );
-		notice.className = 'notice notice-warning inline mp-cp-gc-media-unavailable-notice';
-		notice.setAttribute( 'role', 'status' );
-		notice.innerHTML = '<p>' + message + '</p>';
-		logoField.parentNode.insertBefore( notice, logoField );
-	}
-
-	function initLogoPicker() {
-		var chooseBtn = document.getElementById( 'mp-cp-gc-choose-logo' );
-		var removeBtn = document.getElementById( 'mp-cp-gc-remove-logo' );
-		var input = document.getElementById( fieldIds.logo );
-		if ( ! chooseBtn || ! input ) {
-			return;
-		}
-
-		var frame;
-
-		chooseBtn.addEventListener( 'click', function ( e ) {
-			e.preventDefault();
-
-			if ( typeof wp === 'undefined' || ! wp.media ) {
-				debugWarn( 'wp.media is not available on this screen.' );
-				showMediaUnavailableNotice();
-				return;
-			}
-
-			if ( ! frame ) {
-				frame = wp.media( {
-					title: cfg.i18n && cfg.i18n.chooseLogo ? cfg.i18n.chooseLogo : 'Choose logo',
-					button: { text: cfg.i18n && cfg.i18n.useLogo ? cfg.i18n.useLogo : 'Use image' },
-					library: { type: 'image' },
-					multiple: false,
-				} );
-				frame.on( 'select', function () {
-					var attachment = frame.state().get( 'selection' ).first().toJSON();
-					if ( attachment && attachment.url ) {
-						input.value = attachment.url;
-						input.dispatchEvent( new Event( 'input', { bubbles: true } ) );
-						updateLogoThumb( attachment.url );
-						schedulePreview();
-					}
-				} );
-			}
-
-			frame.open();
-		} );
-
-		if ( removeBtn ) {
-			removeBtn.addEventListener( 'click', function ( e ) {
-				e.preventDefault();
-				input.value = '';
-				input.dispatchEvent( new Event( 'input', { bubbles: true } ) );
-				updateLogoThumb( '' );
-				removeBtn.style.display = 'none';
-				schedulePreview();
-			} );
-		}
-
-		input.addEventListener( 'input', function () {
-			updateLogoThumb( input.value );
-			if ( removeBtn ) {
-				removeBtn.style.display = input.value ? '' : 'none';
-			}
-		} );
-	}
-
-	function initColorPicker() {
-		var input = document.getElementById( fieldIds.accent );
-		if ( ! input ) {
-			return;
-		}
-
-		if ( ! $.fn.wpColorPicker ) {
-			debugWarn( 'wpColorPicker is not available; accent field stays a plain text input.' );
-			return;
-		}
-
-		if ( $( input ).closest( '.wp-picker-container' ).length ) {
-			return;
-		}
-
-		var $input = $( input );
-		var fallback = input.getAttribute( 'data-default-color' ) || '#2271b1';
-
-		$input.wpColorPicker( {
-			defaultColor: fallback,
-			change: function () {
-				schedulePreview();
-			},
-			clear: function () {
-				input.value = fallback;
-				schedulePreview();
-			},
-		} );
-
-		$input.on( 'input change', schedulePreview );
-	}
-
-	function updateLogoThumb( url ) {
-		var wrap = document.querySelector( '.mp-cp-gc-logo-thumb-wrap' );
-		var img = document.getElementById( 'mp-cp-gc-logo-thumb' );
-		if ( ! wrap || ! img ) {
-			return;
-		}
-		if ( url ) {
-			img.src = url;
-			wrap.style.display = '';
-		} else {
-			img.removeAttribute( 'src' );
-			wrap.style.display = 'none';
-		}
-
-		var removeBtn = document.getElementById( 'mp-cp-gc-remove-logo' );
-		if ( removeBtn ) {
-			removeBtn.style.display = url ? '' : 'none';
-		}
 	}
 
 	function initTestEmail() {
@@ -311,9 +183,7 @@
 	}
 
 	$( function () {
-		initColorPicker();
-		initLogoPicker();
 		bindPreviewFields();
 		initTestEmail();
 	} );
-}( jQuery ) );
+}( window.jQuery ) );
