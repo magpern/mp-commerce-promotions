@@ -3,7 +3,7 @@
  * Plugin Name:       Commerce Promotions for WooCommerce
  * Plugin URI:        https://github.com/magpern/mp-commerce-promotions
  * Description:       Generic WooCommerce promotion engine for discounts, promotion codes, and voucher workflows.
- * Version:           0.3.0-pilot.4
+ * Version:           0.4.0
  * Requires at least: 6.5
  * Requires PHP:      8.1
  * Author:            Magpern
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MP_COMMERCE_PROMOTIONS_VERSION', '0.3.0-pilot.4' );
+define( 'MP_COMMERCE_PROMOTIONS_VERSION', '0.4.0' );
 define( 'MP_COMMERCE_PROMOTIONS_FILE', __FILE__ );
 define( 'MP_COMMERCE_PROMOTIONS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MP_COMMERCE_PROMOTIONS_URL', plugin_dir_url( __FILE__ ) );
@@ -74,5 +74,21 @@ function mp_commerce_promotions_bootstrap(): void {
 	}
 }
 
+/**
+ * GitHub Release updater (admin / cron only — no frontend HTTP).
+ */
+function mp_commerce_promotions_init_github_updater(): void {
+	if ( ! is_admin() && ! ( function_exists( 'wp_doing_cron' ) && wp_doing_cron() ) ) {
+		return;
+	}
+
+	if ( ! class_exists( \MP\CommercePromotions\Infrastructure\GithubUpdater::class, true ) ) {
+		return;
+	}
+
+	\MP\CommercePromotions\Infrastructure\GithubUpdater::maybe_init();
+}
+
 add_action( 'plugins_loaded', 'mp_commerce_promotions_load_textdomain', 0 );
 add_action( 'plugins_loaded', 'mp_commerce_promotions_bootstrap', 10 );
+add_action( 'plugins_loaded', 'mp_commerce_promotions_init_github_updater', 15 );

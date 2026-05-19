@@ -175,7 +175,7 @@ bash scripts/sync-to-live.sh
 bash scripts/verify-plugin.sh
 ```
 
-**Plugin version:** `0.3.0-pilot.4` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). **Pilot release** — see [docs/PILOT_RELEASE_0.3.0_PILOT4.md](docs/PILOT_RELEASE_0.3.0_PILOT4.md). **0.3.0-pilot.3 and earlier pilots are superseded** for new production ZIP installs. Database schema version is separate (`mp_cp_schema_version`, currently **1.19.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
+**Plugin version:** `0.4.0` (`MP_COMMERCE_PROMOTIONS_VERSION` in `mp-commerce-promotions.php`). **Stable release** — see [docs/GITHUB_RELEASE_NOTES_0.4.0.md](docs/GITHUB_RELEASE_NOTES_0.4.0.md). **0.3.0-pilot.4 and earlier pilots are superseded** for new production ZIP installs. Database schema version is separate (`mp_cp_schema_version`, currently **1.19.0**). Storefront discounts default to **fee-based**; **line_item** / **hybrid** modes are experimental (see `PromotionDiscountApplicationMode`).
 
 **Production release zip** (runtime files only — no `scripts/`, `tests/`, `docs/`, `.github/`, `.git/`, or `vendor/`):
 
@@ -184,7 +184,22 @@ bash scripts/build-zip.sh
 bash scripts/release-audit.sh
 ```
 
-Output: `/home/magpern/mp-commerce-promotions-staging/build/mp-commerce-promotions-0.3.0-pilot.4.zip`. See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) and [docs/PILOT_RELEASE_0.3.0_PILOT4.md](docs/PILOT_RELEASE_0.3.0_PILOT4.md). Pushing a `v*` tag runs [.github/workflows/release.yml](.github/workflows/release.yml) to attach the ZIP to a GitHub Release.
+Output: `/home/magpern/mp-commerce-promotions-staging/build/mp-commerce-promotions-0.4.0.zip`. See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md). Pushing a `v*` tag runs [.github/workflows/release.yml](.github/workflows/release.yml) to attach the ZIP to a GitHub Release.
+
+### GitHub Release updater (production)
+
+On sites with `WP_ENVIRONMENT_TYPE` set to `production`, the plugin checks `https://api.github.com/repos/magpern/mp-commerce-promotions/releases/latest` and offers updates when a newer **stable** release exists with asset `mp-commerce-promotions-X.Y.Z.zip`.
+
+**Disable on development/staging** (recommended for this repo checkout):
+
+```php
+// wp-config.php
+define( 'MP_CP_DISABLE_GITHUB_UPDATER', true );
+```
+
+Or: `add_filter( 'mp_cp_github_updater_enabled', '__return_false' );`
+
+**Latest stable:** [v0.4.0](https://github.com/magpern/mp-commerce-promotions/releases/tag/v0.4.0)
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for paths, exclusions (never copy `.git` or `vendor` to live), Composer lint/test commands (`composer run test` — pure PHP unit tests only; WordPress integration tests are future work).
 

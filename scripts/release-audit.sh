@@ -118,10 +118,13 @@ for doc in \
 	docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT1.md \
 	docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT2.md \
 	docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT3.md \
-	docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT4.md
+	docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT4.md \
+	docs/GITHUB_RELEASE_NOTES_0.4.0.md
 do
 	[[ -f "${REPO_ROOT}/${doc}" ]] || fail "Missing ${doc}"
 done
+
+[[ -f "${REPO_ROOT}/src/Infrastructure/GithubUpdater.php" ]] || fail "Missing src/Infrastructure/GithubUpdater.php"
 
 [[ -f "${REPO_ROOT}/scripts/commerce-growth-navigation-smoke.php" ]] || fail "Missing scripts/commerce-growth-navigation-smoke.php"
 [[ -f "${REPO_ROOT}/scripts/pilot-release-smoke.php" ]] || fail "Missing scripts/pilot-release-smoke.php"
@@ -155,8 +158,18 @@ if command -v unzip >/dev/null 2>&1; then
 		fail "Release zip contains forbidden dev paths (see above)"
 	fi
 	echo "    OK: no scripts/, tests/, docs/, or .github/ in zip listing"
+	if ! unzip -l "${ZIP_PATH}" | grep -q 'src/Infrastructure/GithubUpdater.php'; then
+		fail "Release zip missing src/Infrastructure/GithubUpdater.php"
+	fi
+	echo "    OK: GithubUpdater.php present in zip"
 else
 	warn "unzip not installed; skipped grep spot check (verify-release-zip.py already passed)"
+	if command -v python3 >/dev/null 2>&1; then
+		if ! python3 -c "import sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); sys.exit(0 if any('GithubUpdater.php' in n for n in z.namelist()) else 1)" "${ZIP_PATH}"; then
+			fail "Release zip missing GithubUpdater.php (python check)"
+		fi
+		echo "    OK: GithubUpdater.php present in zip (python check)"
+	fi
 fi
 
 echo ""

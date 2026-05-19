@@ -17,6 +17,9 @@ See [CHANGELOG.md](../CHANGELOG.md) for user-facing release notes and [DEVELOPME
 - [ ] `bash scripts/build-zip.sh` — produces `../build/mp-commerce-promotions-{version}.zip`.
 - [ ] `bash scripts/release-audit.sh` — repo + artifact checks pass.
 - [ ] Inspect zip: **production artifact only** — no `scripts/`, `tests/`, `docs/`, `.github/`, `.git/`, `vendor/`, `node_modules/`, `build/`, composer/PHPCS/PHPUnit dev files (see `scripts/lib/verify-release-zip.py` and script summary output).
+- [ ] Zip includes `src/Infrastructure/GithubUpdater.php` (production update channel).
+- [ ] `docs/GITHUB_RELEASE_NOTES_{version}.md` present for the tag (e.g. `docs/GITHUB_RELEASE_NOTES_0.4.0.md`).
+- [ ] Dev/staging: document `MP_CP_DISABLE_GITHUB_UPDATER` in `wp-config.php` when using repo/sync (not ZIP-only deploy).
 
 ## Deploy to local live (this VPS)
 

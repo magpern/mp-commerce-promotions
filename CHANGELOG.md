@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Maturity:** Early MVP. Suitable for testing and staged rollouts — not a stable, production-complete, or marketplace-certified release without your own review.
 
+## [0.4.0] - 2026-05-19
+
+**First stable release** — GitHub Release updater for production ZIP deployments. **Schema 1.19.0** unchanged.
+
+### Added
+
+- `src/Infrastructure/GithubUpdater.php` — WordPress updates from [GitHub Releases](https://github.com/magpern/mp-commerce-promotions/releases/latest) using asset `mp-commerce-promotions-X.Y.Z.zip` (not source archives).
+- Environment guard: updater enabled on `WP_ENVIRONMENT_TYPE=production` by default; disable on dev with `MP_CP_DISABLE_GITHUB_UPDATER` or filter `mp_cp_github_updater_enabled`.
+- Prerelease install handling: pilot/dev/beta/rc installs only see an update when latest stable is newer than the install base version.
+
+### Notes
+
+- Supersedes **0.3.0-pilot.4** for new production installs. Development/staging should keep the updater disabled and use the Git repo or `sync-to-live.sh`.
+- No intentional promotion-engine behavior changes vs **0.3.0-pilot.4** beyond the updater.
+
 ## [0.3.0-pilot.4] - 2026-05-19
 
 **Packaging-only pilot release** — supersedes **0.3.0-pilot.3**. **Schema 1.19.0** unchanged. **No promotion-engine behavior changes.**
