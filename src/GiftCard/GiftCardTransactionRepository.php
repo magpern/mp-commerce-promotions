@@ -90,6 +90,31 @@ class GiftCardTransactionRepository {
 		return $out;
 	}
 
+	/**
+	 * @return list<GiftCardTransaction>
+	 */
+	public function list_for_export( int $limit = 5000, int $offset = 0 ): array {
+		$limit  = max( 1, min( 5000, $limit ) );
+		$offset = max( 0, $offset );
+		$table  = $this->table();
+
+		$rows = DbQuery::get_results(
+			$this->wpdb,
+			"SELECT * FROM {$table} ORDER BY id ASC LIMIT %d OFFSET %d",
+			array( $limit, $offset )
+		);
+
+		$out = array();
+		foreach ( $rows as $row ) {
+			$tx = $this->row_to_transaction( $row );
+			if ( $tx !== null ) {
+				$out[] = $tx;
+			}
+		}
+
+		return $out;
+	}
+
 	public function has_redeemed_for_order( int $gift_card_id, int $order_id ): bool {
 		if ( $gift_card_id <= 0 || $order_id <= 0 ) {
 			return false;

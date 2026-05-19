@@ -4,6 +4,8 @@ Use this before enabling gift card sales for real customers.
 
 ## Prerequisites
 
+- [ ] **Database backups** include `mp_cp_gift_cards` and `mp_cp_gift_card_transactions` (see [GIFT_CARD_BACKUP_EXPORT.md](GIFT_CARD_BACKUP_EXPORT.md)).
+- [ ] **Ledger CSV export** — from **Gift Cards → Dashboard** or **Settings**, run **Export gift cards**, **Export transactions**, and **Export outstanding liability summary**; store files for audit (exports are not a full restore).
 - [ ] **Configure SMTP** (or reliable transactional email). Verify a test message delivers to a real inbox.
 - [ ] **Gift card email** — **Gift Cards & Store Credit → Settings** (merchant copy, live preview `****SAMPLE`, test email `****TEST`); **Default** sender unless SMTP authorizes custom From ([GIFT_CARD_EMAILS.md](GIFT_CARD_EMAILS.md)).
 - [ ] **Email style** — Commerce Growth template (default) or WooCommerce email style if Woo mailer is available.
@@ -36,6 +38,7 @@ Use this before enabling gift card sales for real customers.
 
 ## Diagnostics
 
+- [ ] **Diagnostics → Gift card integrity** — no stale-export warning (or export CSVs if liability exists).
 - [ ] **Diagnostics → Gift card products** — no missing generation on paid orders.
 - [ ] **Diagnostics → Gift card email deliverability** — email style, Woo style available, SMTP likely working; sender **default** or authorized **custom**; **Send test gift card email** (`****TEST` only).
 - [ ] **Support bundle** export includes `gift_card_mail` summary (no secrets).
@@ -54,9 +57,12 @@ Use this before enabling gift card sales for real customers.
 composer run lint:php
 composer run test -- --filter 'GiftCard|StoreCredit'
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-module-smoke.php
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-export-smoke.php
 ```
 
 Optional deeper checks: `gift-card-product-e2e-smoke.php`, `gift-card-mail-smoke.php`.
+
+See [GIFT_CARD_BACKUP_EXPORT.md](GIFT_CARD_BACKUP_EXPORT.md) for backup vs export scope.
 
 See also [GIFT_CARD_QA_EVIDENCE.md](GIFT_CARD_QA_EVIDENCE.md), [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md), [GIFT_CARD_EMAILS.md](GIFT_CARD_EMAILS.md).
 

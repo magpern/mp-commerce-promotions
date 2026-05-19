@@ -405,7 +405,8 @@ final class Plugin {
 			$manual_gc_delivery,
 			$gift_transfers_admin,
 			$this->settings,
-			$gift_card_settings_handler
+			$gift_card_settings_handler,
+			new \MP\CommercePromotions\Admin\GiftCardExportHandler( $this->audit_logger )
 		);
 
 		$profiler_global     = new PromotionPerformanceProfiler();

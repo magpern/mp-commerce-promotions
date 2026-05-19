@@ -2189,6 +2189,21 @@ final class DiagnosticsPage {
 		echo '<h2 style="margin-top:2em;">' . esc_html__( 'Gift card integrity', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p>' . esc_html__( 'Checks ledger consistency and status hygiene for stored-value gift cards.', 'mp-commerce-promotions' ) . '</p>';
 
+		$summary   = ( new \MP\CommercePromotions\GiftCard\GiftCardReports( $wpdb ) )->summary();
+		$liability = (float) ( $summary['combined_outstanding_liability'] ?? 0 );
+		if ( $liability > 0 && \MP\CommercePromotions\GiftCard\GiftCardExportTracker::is_export_stale() ) {
+			echo '<div class="notice notice-warning inline"><p><strong>';
+			echo esc_html__( 'No recent ledger CSV export recorded.', 'mp-commerce-promotions' );
+			echo '</strong> ';
+			echo esc_html__(
+				'Outstanding stored-value liability exists. Export gift cards and transactions from Gift Cards → Dashboard or Settings before pilot sales, and keep normal database backups.',
+				'mp-commerce-promotions'
+			);
+			echo ' <a href="' . esc_url( \MP\CommercePromotions\Admin\GiftCardModuleSections::section_url( \MP\CommercePromotions\Admin\GiftCardModuleSections::SECTION_DASHBOARD ) ) . '">';
+			echo esc_html__( 'Open gift card exports', 'mp-commerce-promotions' );
+			echo '</a></p></div>';
+		}
+
 		$counts = array(
 			__( 'Negative balance', 'mp-commerce-promotions' )              => count( $issues['negative_balance'] ),
 			__( 'Active with zero balance', 'mp-commerce-promotions' )      => count( $issues['active_zero_balance'] ),

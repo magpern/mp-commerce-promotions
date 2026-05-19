@@ -61,6 +61,8 @@ final class GiftCardsPage {
 
 	private GiftCardSettingsHandler $gift_card_settings;
 
+	private GiftCardExportHandler $gift_card_exports;
+
 	/** @var array{plain_code?: string, card_id?: int, delivery?: array<string, string>}|null */
 	private ?array $flash_issue = null;
 
@@ -75,7 +77,8 @@ final class GiftCardsPage {
 		?GiftCardManualIssueDelivery $manual_delivery = null,
 		?GiftCardTransferService $transfers = null,
 		?Settings $settings = null,
-		?GiftCardSettingsHandler $gift_card_settings = null
+		?GiftCardSettingsHandler $gift_card_settings = null,
+		?GiftCardExportHandler $gift_card_exports = null
 	) {
 		$this->ledger                 = $ledger;
 		$this->cards                  = $cards;
@@ -83,6 +86,7 @@ final class GiftCardsPage {
 		$this->store_credit_accounts  = $store_credit_accounts;
 		$this->settings               = $settings ?? new Settings();
 		$this->gift_card_settings     = $gift_card_settings ?? new GiftCardSettingsHandler( $this->settings );
+		$this->gift_card_exports      = $gift_card_exports ?? new GiftCardExportHandler();
 		$this->manual_delivery        = $manual_delivery ?? new GiftCardManualIssueDelivery(
 			new \MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer( $this->settings ),
 			new GiftCardManualDeliveryStore()
@@ -95,6 +99,7 @@ final class GiftCardsPage {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mp-commerce-promotions' ) );
 		}
 
+		$this->gift_card_exports->maybe_send_export();
 		$this->gift_card_settings->handle_template_reset();
 		$this->gift_card_settings->handle_post_save();
 		$this->gift_card_settings->handle_settings_test_email();
@@ -147,6 +152,7 @@ final class GiftCardsPage {
 	}
 
 	private function render_settings_section(): void {
+		$this->gift_card_exports->render_export_panel();
 		$this->gift_card_settings->render();
 	}
 
@@ -212,7 +218,9 @@ final class GiftCardsPage {
 			}
 			echo '<a href="' . esc_url( $link[0] ) . '">' . esc_html( $link[1] ) . '</a>';
 		}
-		echo '</p></div>';
+		echo '</p>';
+		$this->gift_card_exports->render_export_panel();
+		echo '</div>';
 	}
 
 	private function render_dashboard_stat_card( string $label, string $value ): void {
