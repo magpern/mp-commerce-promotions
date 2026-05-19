@@ -26,6 +26,14 @@ The script streams the staging working tree into container `woocommerce-wordpres
 
 **Warning:** **Never** copy `.git/` or `vendor/` into the live plugin directory. `vendor/` is for **development tooling only** (PHPCS, WPCS). Production/runtime loads classes via `src/autoload.php`, not Composer autoload.
 
+### QA / smoke script safety
+
+All `scripts/*smoke*.php` and `scripts/*qa*.php` files load `scripts/lib/qa-bootstrap.php`. On **production**, persistent scripts are blocked unless `MP_CP_ALLOW_LIVE_QA=1`; outbound email is suppressed unless `MP_CP_ALLOW_QA_EMAILS=1`. See [QA_SCRIPT_SAFETY.md](QA_SCRIPT_SAFETY.md).
+
+```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/qa-runtime-guard-smoke.php
+```
+
 ### Post-sync verification
 
 ```bash

@@ -27,6 +27,7 @@ A **lightweight promotion engine** for WooCommerce. This repository is intended 
 - [docs/GIFT_CARD_QA_EVIDENCE.md](docs/GIFT_CARD_QA_EVIDENCE.md) — gift card & store credit storefront QA (CLI + manual notes)
 - [docs/GIFT_CARD_EMAILS.md](docs/GIFT_CARD_EMAILS.md) — delivery templates, WooCommerce email style, settings preview/test, sender modes (default vs custom), SMTP testing
 - [docs/GIFT_CARD_PRODUCTS.md](docs/GIFT_CARD_PRODUCTS.md) — gift card product meta (`product_price`, `fixed_amount`, `customer_amount`) + `gift-card-product-setup.php` QA product + `gift-card-customer-amount-smoke.php`
+- [docs/QA_SCRIPT_SAFETY.md](docs/QA_SCRIPT_SAFETY.md) — production-safe defaults for WP-CLI smoke/QA scripts (env vars, cleanup, email suppression)
 - [docs/GIFT_CARD_PILOT_CHECKLIST.md](docs/GIFT_CARD_PILOT_CHECKLIST.md) — pilot go-live checklist (SMTP, tests, diagnostics)
 - [docs/manual-performance-and-hardening-test.md](docs/manual-performance-and-hardening-test.md) — profiler, safe mode, cron, cleanup, concurrency
 - [docs/BROWSER_QA_MATRIX.md](docs/BROWSER_QA_MATRIX.md) — reproducible browser QA matrix

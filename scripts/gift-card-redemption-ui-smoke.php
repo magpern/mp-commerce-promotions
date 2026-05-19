@@ -12,6 +12,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit( 1 );
 }
 
+require_once __DIR__ . '/lib/qa-bootstrap.php';
+mp_cp_qa_bootstrap_script( __FILE__ );
+
+
 use MP\CommercePromotions\Woo\GiftCardRedemptionCheckout;
 use MP\CommercePromotions\Woo\GiftCardSession;
 
@@ -35,11 +39,17 @@ $required = array(
 	'mp-cp-credit-cart-disclosure',
 	'mp-cp-credit-cart-disclosure__trigger',
 	'mp-cp-credit-cart-disclosure__panel',
-	'mp-cp-credit-cart-disclosure__help',
+	'mp-cp-credit-cart-disclosure__hint',
+	'mp-cp-credit-cart-disclosure__chevron',
+	'mp-cp-credit-cart-disclosure__panel-inner',
+	'mp-cp-credit-cart-disclosure__help--expanded',
+	'mp-cp-credit-cart-coupon-row',
 	'woocommerce_after_cart_table',
 	'render_cart_disclosure',
+	'render_cart_disclosure_summary',
 	'Apply gift card or store credit',
-	'build_cart_disclosure_trigger_text',
+	'Partial payments supported',
+	'Available store credit:',
 	'mp_cp_gift_card_nonce',
 	'mp_cp_gift_card_action',
 	'mp_cp_store_credit_nonce',
@@ -126,7 +136,9 @@ foreach ( $unsafe_css as $selector ) {
 }
 
 if ( $css !== '' && strpos( $css, '.mp-cp-credit-cart-disclosure' ) !== false
-	&& strpos( $css, '.mp-cp-credit-cart-disclosure__trigger' ) !== false ) {
+	&& strpos( $css, '.mp-cp-credit-cart-disclosure__chevron' ) !== false
+	&& strpos( $css, '.mp-cp-credit-cart-coupon-row' ) !== false
+	&& strpos( $css, '.mp-cp-credit-cart-disclosure__panel-inner' ) !== false ) {
 	$pass( 'cart disclosure layout styles present' );
 } else {
 	$fail( 'cart disclosure layout styles present' );

@@ -12,6 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit( 1 );
 }
 
+require_once __DIR__ . '/lib/qa-bootstrap.php';
+mp_cp_qa_bootstrap_script( __FILE__ );
+
 use MP\CommercePromotions\GiftCard\GiftCardProductMeta;
 use MP\CommercePromotions\GiftCard\GiftCardProductService;
 use MP\CommercePromotions\GiftCard\GiftCardQaProductSetup;
@@ -20,8 +23,25 @@ if ( ! class_exists( 'WC_Product_Simple' ) ) {
 	WP_CLI::error( 'WooCommerce is required.' );
 }
 
+$qa = mp_cp_qa_context();
+if ( $qa !== null && $qa->is_dry_run() ) {
+	WP_CLI::log(
+		'DRY RUN: would create/update SKU ' . GiftCardQaProductSetup::PRODUCT_SKU
+		. '. Set MP_CP_ALLOW_PERSISTENT_QA_SETUP=1 on production to persist.'
+	);
+	exit( 0 );
+}
+
+if ( $qa !== null ) {
+	$qa->assert_may_write();
+}
+
 $setup  = new GiftCardQaProductSetup();
 $result = $setup->ensure_demo_product();
+
+if ( $qa !== null ) {
+	$qa->register_product( (int) $result['product_id'] );
+}
 
 $products = new GiftCardProductService();
 $ok       = $products->is_gift_card_product( $result['product_id'] );
@@ -50,8 +70,9 @@ if ( ! $ok ) {
 
 WP_CLI::success(
 	sprintf(
-		'Gift card QA product ready (ID %d, %s).',
+		'Gift card QA product ready (ID %d, %s). Cleanup: tagged _mp_cp_qa_created for run %s.',
 		$result['product_id'],
-		$result['created'] ? 'created' : 'updated'
+		$result['created'] ? 'created' : 'updated',
+		$qa !== null ? $qa->cleanup->get_run_id() : 'n/a'
 	)
 );

@@ -12,6 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit( 1 );
 }
 
+require_once __DIR__ . '/lib/qa-bootstrap.php';
+mp_cp_qa_bootstrap_script( __FILE__ );
+
 use MP\CommercePromotions\Engine\Action\CheapestItemDiscountAction;
 use MP\CommercePromotions\Engine\Action\FixedAmountDiscountAction;
 use MP\CommercePromotions\Engine\Action\PercentageDiscountAction;

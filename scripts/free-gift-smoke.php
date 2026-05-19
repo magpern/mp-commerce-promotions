@@ -16,6 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit( 1 );
 }
 
+require_once __DIR__ . '/lib/qa-bootstrap.php';
+mp_cp_qa_bootstrap_script( __FILE__ );
+
 use MP\CommercePromotions\Domain\PromotionRepository;
 use MP\CommercePromotions\Domain\PromotionStatus;
 use MP\CommercePromotions\Engine\EvaluationContext;

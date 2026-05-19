@@ -13,6 +13,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit( 1 );
 }
 
+require_once __DIR__ . '/lib/qa-bootstrap.php';
+mp_cp_qa_bootstrap_script( __FILE__ );
+
 use MP\CommercePromotions\GiftCard\GiftCard;
 use MP\CommercePromotions\GiftCard\GiftCardBalanceChecker;
 use MP\CommercePromotions\GiftCard\GiftCardCustomerService;
@@ -161,6 +164,10 @@ $order_now = gce2e_create_gift_card_order(
 $order_now->set_status( 'processing', '', true );
 $order_now->save();
 $order_now_id = (int) $order_now->get_id();
+if ( mp_cp_qa_context() !== null ) {
+	mp_cp_qa_context()->register_order( $order_now_id );
+	mp_cp_qa_context()->register_product( $product_id );
+}
 
 $generator->generate_for_order( $order_now );
 $order_now = wc_get_order( $order_now_id );
@@ -201,7 +208,16 @@ foreach ( $received as $row ) {
 gce2e_assert( $found_received, 'My Account received list includes send_now card' );
 
 // Balance checker: separate issued card (product-generated codes are not persisted as plain).
-$issued_for_lookup = $ledger->issue( 12.0, $order_now->get_currency(), null, $test_email );
+$issued_for_lookup = $ledger->issue(
+	12.0,
+	$order_now->get_currency(),
+	null,
+	$test_email,
+	mp_cp_qa_context() !== null ? mp_cp_qa_context()->qa_note( 'balance lookup' ) : 'e2e balance lookup'
+);
+if ( mp_cp_qa_context() !== null && $issued_for_lookup->get_card()->get_id() !== null ) {
+	mp_cp_qa_context()->register_gift_card( (int) $issued_for_lookup->get_card()->get_id() );
+}
 $lookup_plain      = $issued_for_lookup->get_plain_code();
 $lookup            = $checker->lookup( $lookup_plain ?? '' );
 gce2e_assert( ! empty( $lookup['ok'] ), 'balance checker finds issued card' );

@@ -12,6 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit( 1 );
 }
 
+require_once __DIR__ . '/lib/qa-bootstrap.php';
+mp_cp_qa_bootstrap_script( __FILE__ );
+
 use MP\CommercePromotions\Admin\GiftCardsPage;
 use MP\CommercePromotions\GiftCard\GiftCard;
 use MP\CommercePromotions\GiftCard\GiftCardLedger;
@@ -54,7 +57,8 @@ $repo   = new GiftCardRepository( $wpdb );
 $tx     = new GiftCardTransactionRepository( $wpdb );
 $ledger = new GiftCardLedger( $repo, $tx );
 
-$issued = $ledger->issue( 100.0, 'EUR', null, null, 'smoke test issue' );
+$qa_note = mp_cp_qa_context() !== null ? mp_cp_qa_context()->qa_note( 'ledger smoke issue' ) : 'smoke test issue';
+$issued = $ledger->issue( 100.0, 'EUR', null, null, $qa_note );
 $plain  = $issued->get_plain_code();
 gc_smoke_assert( $plain !== '', 'issue returns plain code' );
 WP_CLI::log( 'Plain code (smoke only): ' . $plain );
@@ -66,6 +70,10 @@ gc_smoke_assert( $card !== null && $card->get_balance() === 100.0, 'initial bala
 $id = $card !== null ? $card->get_id() : null;
 gc_smoke_assert( $id !== null && $id > 0, 'card has id' );
 
+if ( $id !== null && mp_cp_qa_context() !== null ) {
+	mp_cp_qa_context()->register_gift_card( $id );
+}
+
 if ( $id !== null ) {
 	$ledger->redeem( $id, 30.0, 900001, null, 'smoke partial' );
 	$after = $ledger->find( $id );
@@ -75,8 +83,11 @@ if ( $id !== null ) {
 	$restored = $ledger->find( $id );
 	gc_smoke_assert( $restored !== null && $restored->get_balance() === 100.0, 'reversal restores balance' );
 
-	$void_test = $ledger->issue( 5.0, 'EUR', null, null, 'void target' );
+	$void_test = $ledger->issue( 5.0, 'EUR', null, null, mp_cp_qa_context() !== null ? mp_cp_qa_context()->qa_note( 'void target' ) : 'void target' );
 	$void_id   = $void_test->get_card()->get_id();
+	if ( $void_id !== null && mp_cp_qa_context() !== null ) {
+		mp_cp_qa_context()->register_gift_card( $void_id );
+	}
 	if ( $void_id !== null ) {
 		$ledger->void_card( $void_id, 'smoke void' );
 		$voided = false;

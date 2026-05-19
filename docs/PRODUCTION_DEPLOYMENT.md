@@ -3,7 +3,8 @@
 1. Deploy plugin via `scripts/sync-to-live.sh` or release zip from `scripts/build-zip.sh`
 2. Deactivate/activate once to run migrations (`1.17.0` adds `mp_cp_certification_runs`)
 3. Verify: `bash scripts/verify-plugin.sh`
-4. Smoke on production clone when possible:
+4. Smoke on production clone when possible (read-only smokes need no flags; data-creating smokes require `MP_CP_ALLOW_LIVE_QA=1` — see [QA_SCRIPT_SAFETY.md](QA_SCRIPT_SAFETY.md)):
+   - `qa-runtime-guard-smoke.php`
    - `coupon-compatibility-smoke.php`
    - `blocks-compatibility-smoke.php` (if blocks in scope)
 5. Record certification rows for classic/blocks/coupon/line as applicable

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **QA/smoke scripts production-safe by default** — `QaRuntimeGuard`, tagged cleanup registry, email suppression via `pre_wp_mail` in scripts only; `scripts/lib/qa-bootstrap.php` + manifest; all smoke/QA scripts bootstrapped; [QA_SCRIPT_SAFETY.md](docs/QA_SCRIPT_SAFETY.md); `scripts/qa-runtime-guard-smoke.php`.
+
 ### Fixed
 
 - **Non-payable items excluded from free shipping qualification** — `ShippingQualifiedSubtotalCalculator` uses paid shippable merchandise only (gift cards, virtual/non-shippable, free gifts, BOGO/cheapest-item free units, line discount allocations); trace `shipping_exclusion_reasons`; `scripts/shipping-qualified-subtotal-smoke.php`.

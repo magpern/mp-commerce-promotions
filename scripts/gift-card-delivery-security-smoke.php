@@ -12,6 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit( 1 );
 }
 
+require_once __DIR__ . '/lib/qa-bootstrap.php';
+mp_cp_qa_bootstrap_script( __FILE__ );
+
 use MP\CommercePromotions\GiftCard\GiftCardDeliveryDiagnostics;
 use MP\CommercePromotions\GiftCard\GiftCardDeliveryStatus;
 use MP\CommercePromotions\GiftCard\GiftCardGeneratedOrderState;

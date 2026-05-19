@@ -17,7 +17,7 @@ Use this before enabling gift card sales for real customers.
 - [ ] Create or mark a **virtual** simple product: **Product data → This product sells a gift card**.
 - [ ] Set amount mode (product price or fixed), expiry days, and recipient mode.
 - [ ] QA shortcut (staging):  
-  `./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-setup.php`  
+  `./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-setup.php` (requires `MP_CP_ALLOW_PERSISTENT_QA_SETUP=1` on production — see [QA_SCRIPT_SAFETY.md](QA_SCRIPT_SAFETY.md))  
   (SKU `mp-cg-gift-card-qa`, test recipient `postmaster@biopentra.eu`)
 
 ## Functional tests
