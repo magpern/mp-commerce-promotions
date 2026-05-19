@@ -79,6 +79,25 @@ if ( $invalid_tpl === Settings::GIFT_CARD_TEMPLATE_CLASSIC ) {
 	$fail( 'invalid template falls back to classic' );
 }
 
+$settings->set_gift_card_email_template( Settings::GIFT_CARD_TEMPLATE_HOLIDAY );
+if ( $settings->gift_card_email_template() === Settings::GIFT_CARD_TEMPLATE_CLASSIC ) {
+	$pass( 'one-template mode (legacy holiday slug ignored)' );
+} else {
+	$fail( 'one-template mode (legacy holiday slug ignored)' );
+}
+
+$settings->set_gift_card_email_heading( 'Smoke heading {amount}' );
+$settings->set_gift_card_email_intro( 'Smoke body with sample only.' );
+$settings->set_gift_card_accent_color( '#aa5500' );
+$custom_preview = GiftCardEmailPreview::render( $settings );
+if ( strpos( $custom_preview, 'Smoke heading' ) !== false
+	&& strpos( $custom_preview, 'Smoke body' ) !== false
+	&& strpos( $custom_preview, '#aa5500' ) !== false ) {
+	$pass( 'preview renders custom heading/body/accent' );
+} else {
+	$fail( 'preview renders custom heading/body/accent' );
+}
+
 $settings->set_gift_card_email_style( Settings::GIFT_CARD_EMAIL_STYLE_WOOCOMMERCE );
 $effective_style = $settings->effective_gift_card_email_style();
 if ( GiftCardWooEmailStyler::is_available() ) {

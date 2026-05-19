@@ -121,7 +121,15 @@ final class GiftCardDeliveryMailer {
 	 *   from_header_set?: bool
 	 * }
 	 */
-	public function send_test_delivery_email( string $to_email, ?float $amount = null, ?string $currency = null ): array {
+	/**
+	 * @param array<string, string>|null $copy_overrides Unsaved settings form values for test send.
+	 */
+	public function send_test_delivery_email(
+		string $to_email,
+		?float $amount = null,
+		?string $currency = null,
+		?array $copy_overrides = null
+	): array {
 		$to_email = sanitize_email( $to_email );
 		if ( $to_email === '' || ! is_email( $to_email ) ) {
 			return array(
@@ -154,7 +162,7 @@ final class GiftCardDeliveryMailer {
 			),
 		);
 
-		$send_meta = $this->send_email( $to_email, 0, $cards, true, true );
+		$send_meta = $this->send_email( $to_email, 0, $cards, true, true, $copy_overrides );
 		$now       = function_exists( 'current_time' ) ? current_time( 'mysql' ) : gmdate( 'Y-m-d H:i:s' );
 		$base      = array(
 			'sender_mode_used' => (string) ( $send_meta['sender_mode_used'] ?? $this->email_sender->effective_mode() ),
@@ -190,46 +198,45 @@ final class GiftCardDeliveryMailer {
 	/**
 	 * @return array{sent: bool, sender_mode_used: string, from_header_set: bool}
 	 */
-	private function send_email( string $to_email, int $order_id, array $cards, bool $is_test = false, bool $manual_issue = false ): array {
-		$site_name = function_exists( 'wp_specialchars_decode' )
-			? wp_specialchars_decode( (string) get_bloginfo( 'name' ), ENT_QUOTES )
-			: 'Store';
+	/**
+	 * @param array<string, string>|null $copy_overrides
+	 */
+	private function send_email(
+		string $to_email,
+		int $order_id,
+		array $cards,
+		bool $is_test = false,
+		bool $manual_issue = false,
+		?array $copy_overrides = null
+	): array {
+		$site_name = GiftCardEmailPlaceholders::site_title();
 
-		if ( $site_name === '' ) {
-			$site_name = 'Store';
-		}
-
-		$subject = sprintf(
-			/* translators: %s: store name */
-			__( 'Your gift card from %s', 'mp-commerce-promotions' ),
-			$site_name
+		$first_card = $cards[0] ?? array();
+		$subject    = GiftCardEmailRenderer::resolve_subject(
+			$this->settings,
+			$first_card,
+			false,
+			$is_test,
+			$copy_overrides
 		);
-		if ( $is_test ) {
-			$subject = sprintf(
-				/* translators: %s: email subject without [Test] prefix */
-				__( '[Test] %s', 'mp-commerce-promotions' ),
-				$subject
-			);
-		}
 
-		$store_url = function_exists( 'home_url' ) ? home_url( '/' ) : '';
-		$template  = $this->settings->gift_card_email_template();
+		$store_url  = function_exists( 'home_url' ) ? home_url( '/' ) : '';
+		$template   = $this->settings->gift_card_email_template();
 		$appearance = $this->settings->resolve_gift_card_email_appearance( $template );
 
 		$html = GiftCardEmailRenderer::render(
 			$this->settings,
 			array(
-				'template_slug' => $template,
-				'site_name'     => $site_name,
-				'store_url'     => $store_url,
-				'order_id'      => $order_id,
-				'accent'        => $appearance['accent_color'],
-				'logo_url'      => $appearance['logo_url'],
-				'footer_text'   => $appearance['footer_text'],
-				'support_text'  => $appearance['support_text'],
-				'cards'         => $cards,
-				'manual_issue'  => $manual_issue,
-				'is_test'       => $is_test,
+				'template_slug'  => $template,
+				'site_name'        => $site_name,
+				'store_url'        => $store_url,
+				'order_id'         => $order_id,
+				'accent'           => $appearance['accent_color'],
+				'logo_url'         => $appearance['logo_url'],
+				'cards'            => $cards,
+				'manual_issue'     => $manual_issue,
+				'is_test'          => $is_test,
+				'copy_overrides'   => $copy_overrides,
 			)
 		);
 

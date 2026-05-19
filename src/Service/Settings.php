@@ -83,6 +83,14 @@ final class Settings {
 
 	public const OPTION_GIFT_CARD_EMAIL_FOOTER_TEXT = 'mp_cp_gift_card_email_footer_text';
 
+	public const OPTION_GIFT_CARD_EMAIL_SUBJECT = 'mp_cp_gift_card_email_subject';
+
+	public const OPTION_GIFT_CARD_EMAIL_HEADING = 'mp_cp_gift_card_email_heading';
+
+	public const OPTION_GIFT_CARD_EMAIL_INTRO = 'mp_cp_gift_card_email_intro';
+
+	public const OPTION_GIFT_CARD_EMAIL_REDEEM_INSTRUCTIONS = 'mp_cp_gift_card_email_redeem_instructions';
+
 	public const OPTION_GIFT_CARD_EMAIL_STYLE = 'mp_cp_gift_card_email_style';
 
 	public const OPTION_GIFT_CARD_EMAIL_TEMPLATE_SETTINGS = 'mp_cp_gift_card_email_template_settings';
@@ -322,33 +330,72 @@ final class Settings {
 	}
 
 	public function gift_card_email_template(): string {
-		$raw = get_option( self::OPTION_GIFT_CARD_EMAIL_TEMPLATE, self::GIFT_CARD_TEMPLATE_CLASSIC );
-		$slug = is_string( $raw ) ? sanitize_key( $raw ) : self::GIFT_CARD_TEMPLATE_CLASSIC;
-		if ( ! in_array( $slug, self::gift_card_email_templates(), true ) ) {
-			return self::GIFT_CARD_TEMPLATE_CLASSIC;
-		}
-
-		return $slug;
+		return self::GIFT_CARD_TEMPLATE_CLASSIC;
 	}
 
 	public function set_gift_card_email_template( string $template ): void {
-		$template = sanitize_key( $template );
-		if ( ! in_array( $template, self::gift_card_email_templates(), true ) ) {
-			$template = self::GIFT_CARD_TEMPLATE_CLASSIC;
-		}
-		update_option( self::OPTION_GIFT_CARD_EMAIL_TEMPLATE, $template, false );
+		unset( $template );
+		update_option( self::OPTION_GIFT_CARD_EMAIL_TEMPLATE, self::GIFT_CARD_TEMPLATE_CLASSIC, false );
 	}
 
 	/**
+	 * Legacy slugs map to the single classic template (options are not deleted).
+	 *
 	 * @return list<string>
 	 */
 	public static function gift_card_email_templates(): array {
-		return array(
-			self::GIFT_CARD_TEMPLATE_CLASSIC,
-			self::GIFT_CARD_TEMPLATE_BIRTHDAY,
-			self::GIFT_CARD_TEMPLATE_HOLIDAY,
-			self::GIFT_CARD_TEMPLATE_MINIMAL,
+		return array( self::GIFT_CARD_TEMPLATE_CLASSIC );
+	}
+
+	/**
+	 * @deprecated All stored template slugs normalize to classic.
+	 */
+	public static function normalize_gift_card_email_template_slug( string $slug ): string {
+		return self::GIFT_CARD_TEMPLATE_CLASSIC;
+	}
+
+	public function gift_card_email_subject(): string {
+		return $this->gift_card_email_text_option(
+			self::OPTION_GIFT_CARD_EMAIL_SUBJECT,
+			\MP\CommercePromotions\GiftCard\GiftCardEmailPlaceholders::default_subject()
 		);
+	}
+
+	public function set_gift_card_email_subject( string $text ): void {
+		$this->set_gift_card_email_text_option( self::OPTION_GIFT_CARD_EMAIL_SUBJECT, $text );
+	}
+
+	public function gift_card_email_heading(): string {
+		return $this->gift_card_email_text_option(
+			self::OPTION_GIFT_CARD_EMAIL_HEADING,
+			\MP\CommercePromotions\GiftCard\GiftCardEmailPlaceholders::default_heading()
+		);
+	}
+
+	public function set_gift_card_email_heading( string $text ): void {
+		$this->set_gift_card_email_text_option( self::OPTION_GIFT_CARD_EMAIL_HEADING, $text );
+	}
+
+	public function gift_card_email_intro(): string {
+		return $this->gift_card_email_text_option(
+			self::OPTION_GIFT_CARD_EMAIL_INTRO,
+			\MP\CommercePromotions\GiftCard\GiftCardEmailPlaceholders::default_intro()
+		);
+	}
+
+	public function set_gift_card_email_intro( string $text ): void {
+		$this->set_gift_card_email_text_option( self::OPTION_GIFT_CARD_EMAIL_INTRO, $text );
+	}
+
+	public function gift_card_email_redeem_instructions(): string {
+		return $this->gift_card_email_text_option(
+			self::OPTION_GIFT_CARD_EMAIL_REDEEM_INSTRUCTIONS,
+			\MP\CommercePromotions\GiftCard\GiftCardEmailPlaceholders::default_redeem_instructions()
+		);
+	}
+
+	public function set_gift_card_email_redeem_instructions( string $text ): void {
+		$this->set_gift_card_email_text_option( self::OPTION_GIFT_CARD_EMAIL_REDEEM_INSTRUCTIONS, $text );
 	}
 
 	public function gift_card_email_style(): string {
@@ -390,9 +437,10 @@ final class Settings {
 	}
 
 	public function gift_card_email_footer_text(): string {
-		$raw = get_option( self::OPTION_GIFT_CARD_EMAIL_FOOTER_TEXT, '' );
-
-		return is_string( $raw ) ? sanitize_textarea_field( $raw ) : '';
+		return $this->gift_card_email_text_option(
+			self::OPTION_GIFT_CARD_EMAIL_FOOTER_TEXT,
+			\MP\CommercePromotions\GiftCard\GiftCardEmailPlaceholders::default_footer_text()
+		);
 	}
 
 	public function set_gift_card_email_footer_text( string $text ): void {
@@ -408,11 +456,11 @@ final class Settings {
 			return array();
 		}
 		$out = array();
-		foreach ( self::gift_card_email_templates() as $slug ) {
-			if ( ! isset( $raw[ $slug ] ) || ! is_array( $raw[ $slug ] ) ) {
+		foreach ( $raw as $slug => $row ) {
+			if ( ! is_string( $slug ) || ! is_array( $row ) ) {
 				continue;
 			}
-			$out[ $slug ] = self::sanitize_template_settings_row( $raw[ $slug ] );
+			$out[ sanitize_key( $slug ) ] = self::sanitize_template_settings_row( $row );
 		}
 
 		return $out;
@@ -423,22 +471,77 @@ final class Settings {
 	 *
 	 * @return array{logo_url: string, accent_color: string, footer_text: string, support_text: string}
 	 */
-	public function resolve_gift_card_email_appearance( string $template_slug ): array {
-		$slug  = sanitize_key( $template_slug );
-		$all   = $this->gift_card_email_template_settings_all();
-		$row   = $all[ $slug ] ?? array(
+	public function resolve_gift_card_email_appearance( string $template_slug = '' ): array {
+		unset( $template_slug );
+		$legacy = $this->legacy_merged_email_appearance();
+
+		$logo = $this->gift_card_logo_url();
+		if ( $logo === '' && $legacy['logo_url'] !== '' ) {
+			$logo = $legacy['logo_url'];
+		}
+
+		$raw_accent = get_option( self::OPTION_GIFT_CARD_ACCENT_COLOR, '' );
+		$has_global_accent = is_string( $raw_accent ) && trim( $raw_accent ) !== '';
+		if ( $has_global_accent ) {
+			$accent = $this->gift_card_accent_color();
+		} elseif ( $legacy['accent_color'] !== '' ) {
+			$accent = $legacy['accent_color'];
+		} else {
+			$accent = self::default_gift_card_accent();
+		}
+
+		$raw_footer = get_option( self::OPTION_GIFT_CARD_EMAIL_FOOTER_TEXT, '' );
+		$has_global_footer = is_string( $raw_footer ) && trim( $raw_footer ) !== '';
+		if ( $has_global_footer ) {
+			$footer = sanitize_textarea_field( $raw_footer );
+		} elseif ( $legacy['footer_text'] !== '' ) {
+			$footer = $legacy['footer_text'];
+		} else {
+			$footer = $this->gift_card_email_footer_text();
+		}
+
+		$support = $this->gift_card_support_email_text();
+		if ( $support === '' && $legacy['support_text'] !== '' ) {
+			$support = $legacy['support_text'];
+		}
+
+		return array(
+			'logo_url'     => $logo,
+			'accent_color' => $accent,
+			'footer_text'  => $footer,
+			'support_text' => $support,
+		);
+	}
+
+	/**
+	 * @return array{logo_url: string, accent_color: string, footer_text: string, support_text: string}
+	 */
+	private function legacy_merged_email_appearance(): array {
+		$merged = array(
 			'logo_url'     => '',
 			'accent_color' => '',
 			'footer_text'  => '',
 			'support_text' => '',
 		);
-
-		return array(
-			'logo_url'     => $row['logo_url'] !== '' ? $row['logo_url'] : $this->gift_card_logo_url(),
-			'accent_color' => $row['accent_color'] !== '' ? $row['accent_color'] : $this->gift_card_accent_color(),
-			'footer_text'  => $row['footer_text'] !== '' ? $row['footer_text'] : $this->gift_card_email_footer_text(),
-			'support_text' => $row['support_text'] !== '' ? $row['support_text'] : $this->gift_card_support_email_text(),
+		$legacy_slugs = array(
+			self::GIFT_CARD_TEMPLATE_CLASSIC,
+			self::GIFT_CARD_TEMPLATE_BIRTHDAY,
+			self::GIFT_CARD_TEMPLATE_HOLIDAY,
+			self::GIFT_CARD_TEMPLATE_MINIMAL,
 		);
+		$all = $this->gift_card_email_template_settings_all();
+		foreach ( $legacy_slugs as $slug ) {
+			if ( ! isset( $all[ $slug ] ) ) {
+				continue;
+			}
+			foreach ( $merged as $key => $value ) {
+				if ( $value === '' && ( $all[ $slug ][ $key ] ?? '' ) !== '' ) {
+					$merged[ $key ] = (string) $all[ $slug ][ $key ];
+				}
+			}
+		}
+
+		return $merged;
 	}
 
 	/**
@@ -446,13 +549,21 @@ final class Settings {
 	 * @return array{logo_url: string, accent_color: string, footer_text: string, support_text: string}
 	 */
 	public function set_gift_card_email_template_settings( string $template_slug, array $row ): void {
-		$slug = sanitize_key( $template_slug );
-		if ( ! in_array( $slug, self::gift_card_email_templates(), true ) ) {
-			return;
-		}
-		$all         = $this->gift_card_email_template_settings_all();
-		$all[ $slug ] = self::sanitize_template_settings_row( $row );
-		update_option( self::OPTION_GIFT_CARD_EMAIL_TEMPLATE_SETTINGS, $all, false );
+		unset( $template_slug, $row );
+	}
+
+	private function gift_card_email_text_option( string $option, string $default ): string {
+		$raw = get_option( $option, '' );
+
+		return is_string( $raw ) && trim( $raw ) !== '' ? sanitize_textarea_field( $raw ) : $default;
+	}
+
+	private function set_gift_card_email_text_option( string $option, string $text ): void {
+		update_option( $option, sanitize_textarea_field( $text ), false );
+	}
+
+	public static function default_gift_card_accent(): string {
+		return self::DEFAULT_GIFT_CARD_ACCENT;
 	}
 
 	/**

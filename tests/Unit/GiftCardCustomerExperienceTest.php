@@ -82,10 +82,10 @@ final class GiftCardCustomerExperienceTest extends TestCase {
 		$html = GiftCardEmailTemplate::render_html(
 			'unknown_slug',
 			array(
-				'site_name' => 'Test Shop',
-				'store_url' => 'https://example.com',
-				'preview'   => true,
-				'cards'     => array(
+				'store_url'     => 'https://example.com',
+				'email_heading' => 'Test Shop',
+				'preview'       => true,
+				'cards'         => array(
 					array(
 						'masked_code' => '****1234',
 						'amount'      => 50.0,

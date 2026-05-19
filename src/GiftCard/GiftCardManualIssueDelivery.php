@@ -104,8 +104,16 @@ final class GiftCardManualIssueDelivery {
 	 *   delivery_error?: string
 	 * }
 	 */
-	public function send_test_email( string $to_email, ?float $amount = null, ?string $currency = null ): array {
-		$result = $this->mailer->send_test_delivery_email( $to_email, $amount, $currency );
+	/**
+	 * @param array<string, string>|null $copy_overrides Unsaved settings values.
+	 */
+	public function send_test_email(
+		string $to_email,
+		?float $amount = null,
+		?string $currency = null,
+		?array $copy_overrides = null
+	): array {
+		$result = $this->mailer->send_test_delivery_email( $to_email, $amount, $currency, $copy_overrides );
 		$this->record_test_result( $result );
 
 		return $result;

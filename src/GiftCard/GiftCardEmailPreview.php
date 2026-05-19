@@ -19,11 +19,17 @@ final class GiftCardEmailPreview {
 
 	/**
 	 * Render HTML preview for settings or product page (never uses a real gift card code).
+	 *
+	 * @param array<string, string>|null $copy_overrides Unsaved admin form values.
 	 */
-	public static function render( Settings $settings, ?string $template_slug = null, ?float $amount = null, ?string $currency = null ): string {
-		$slug = $template_slug !== null && $template_slug !== ''
-			? GiftCardEmailTemplate::normalize_slug( $template_slug )
-			: $settings->gift_card_email_template();
+	public static function render(
+		Settings $settings,
+		?string $template_slug = null,
+		?float $amount = null,
+		?string $currency = null,
+		?array $copy_overrides = null
+	): string {
+		unset( $template_slug );
 
 		$currency = $currency !== null && $currency !== ''
 			? sanitize_text_field( $currency )
@@ -31,28 +37,36 @@ final class GiftCardEmailPreview {
 
 		$amount = $amount !== null && $amount > 0 ? (float) $amount : self::DEFAULT_SAMPLE_AMOUNT;
 
+		$slug       = Settings::GIFT_CARD_TEMPLATE_CLASSIC;
 		$appearance = $settings->resolve_gift_card_email_appearance( $slug );
+
+		$sample = GiftCardEmailPlaceholders::preview_variables( $settings, $amount, $currency );
 
 		return GiftCardEmailRenderer::render(
 			$settings,
 			array(
-				'template_slug' => $slug,
-				'cards'         => array(
+				'template_slug'  => $slug,
+				'cards'          => array(
 					array(
-						'masked_code' => self::SAMPLE_MASKED_CODE,
-						'amount'      => $amount,
-						'currency'    => $currency,
-						'expires_at'  => null,
+						'masked_code'    => self::SAMPLE_MASKED_CODE,
+						'amount'         => $amount,
+						'currency'       => $currency,
+						'expires_at'     => $sample['expiry'],
+						'recipient_name' => $sample['recipient_name'],
+						'purchaser_name' => $sample['purchaser_name'],
+						'message'        => $sample['message'],
 					),
 				),
-				'order_id'      => 0,
-				'preview'       => true,
-				'is_test'       => false,
-				'manual_issue'  => false,
-				'accent'        => $appearance['accent_color'],
-				'logo_url'      => $appearance['logo_url'],
-				'footer_text'   => $appearance['footer_text'],
-				'support_text'  => $appearance['support_text'],
+				'order_id'       => 0,
+				'preview'        => true,
+				'is_test'        => false,
+				'manual_issue'   => false,
+				'accent'         => $appearance['accent_color'],
+				'logo_url'       => $appearance['logo_url'],
+				'copy_overrides' => $copy_overrides,
+				'email_style'    => isset( $copy_overrides['email_style'] )
+					? (string) $copy_overrides['email_style']
+					: $settings->effective_gift_card_email_style(),
 			)
 		);
 	}

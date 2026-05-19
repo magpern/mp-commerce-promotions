@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Gift card email settings simplified** — one configurable classic template (subject, heading, intro, redeem text, footer, logo, accent); legacy template slugs normalize to classic; live admin preview (`****SAMPLE`); test email uses unsaved form values when practical; placeholders documented in [GIFT_CARD_EMAILS.md](docs/GIFT_CARD_EMAILS.md).
+
+### Changed
+
 - **Compact gift card redemption UI** — cart/checkout gift card and store credit use a collapsible accordion (coupon-style); applied chips, wallet summary in header; no ledger/session/fee changes; `gift-card-redemption-ui-smoke.php`.
 
 ### Changed
