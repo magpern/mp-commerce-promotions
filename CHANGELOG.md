@@ -9,9 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Cart gift card disclosure** — cart redemption is a link-style disclosure after the cart table (`woocommerce_after_cart_table`); no bordered accordion in the coupon row; checkout keeps the compact accordion panel.
+
 ### Fixed
 
-- **Cart gift card row layout** — gift card accordion on its own row below coupon input/Apply coupon; coupon button sizing preserved; expanded gift card form uses full-width input + button row (`mp-cp-credit-cart-row`, `mp-cp-credit-form-row`).
+- **Cart gift card row layout** — superseded by cart link disclosure (see above).
 - **Gift card email settings asset loading** — media/color picker scripts load on `tab=gift-cards&gift_cards_section=settings` via `load-woocommerce_page_mp-commerce-promotions`; shared settings handler instance; logo/color UI works even when preview AJAX config is absent.
 - **Gift card email settings controls** — media library logo picker and WordPress color picker on Gift Cards → Settings; production default copy cleanup for known QA/smoke strings; QA accent `#aa5500` fallback; **Reset gift card email template** button (copy/logo/accent/style only).
 

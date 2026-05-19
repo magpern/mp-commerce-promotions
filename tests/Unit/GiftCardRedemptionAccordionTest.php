@@ -60,7 +60,7 @@ final class GiftCardRedemptionAccordionTest extends TestCase {
 		);
 	}
 
-	public function test_renderer_uses_compact_accordion_markup(): void {
+	public function test_checkout_uses_compact_accordion_markup(): void {
 		$src = (string) file_get_contents(
 			dirname( __DIR__, 2 ) . '/src/Woo/GiftCardRedemptionCheckout.php'
 		);
@@ -74,15 +74,18 @@ final class GiftCardRedemptionAccordionTest extends TestCase {
 		$this->assertStringNotContainsString( 'mp-cp-gc-title', $src );
 	}
 
-	public function test_cart_uses_coupon_row_hook_not_collaterals(): void {
+	public function test_cart_uses_link_disclosure_after_cart_table(): void {
 		$src = (string) file_get_contents(
 			dirname( __DIR__, 2 ) . '/src/Woo/GiftCardRedemptionCheckout.php'
 		);
-		$this->assertStringContainsString( 'woocommerce_cart_coupon', $src );
-		$this->assertStringContainsString( 'mp-cp-credit-inline', $src );
-		$this->assertStringContainsString( 'mp-cp-credit-cart-row', $src );
-		$this->assertStringContainsString( 'mp-cp-credit-form-row', $src );
-		$this->assertStringContainsString( 'render_cart_inline', $src );
+		$this->assertStringContainsString( 'woocommerce_after_cart_table', $src );
+		$this->assertStringContainsString( 'render_cart_disclosure', $src );
+		$this->assertStringContainsString( 'mp-cp-credit-cart-disclosure', $src );
+		$this->assertStringContainsString( 'mp-cp-credit-cart-disclosure__trigger', $src );
+		$this->assertStringContainsString( 'build_cart_disclosure_trigger_text', $src );
+		$this->assertStringNotContainsString( 'woocommerce_cart_coupon', $src );
+		$this->assertStringNotContainsString( 'render_cart_inline', $src );
+		$this->assertStringNotContainsString( 'mp-cp-credit-accordion--cart', $src );
 		$this->assertStringNotContainsString( 'woocommerce_before_cart_collaterals', $src );
 		$this->assertStringNotContainsString( 'mp-cp-credit-accordion--cart-collateral', $src );
 	}

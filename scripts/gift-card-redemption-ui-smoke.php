@@ -32,23 +32,21 @@ $css_path = dirname( __DIR__ ) . '/assets/css/gift-card-customer.css';
 $css      = is_readable( $css_path ) ? (string) file_get_contents( $css_path ) : '';
 
 $required = array(
-	'mp-cp-credit-inline',
-	'mp-cp-credit-cart-row',
-	'mp-cp-credit-form-row',
-	'mp-cp-credit-accordion',
-	'mp-cp-credit-accordion__toggle',
-	'mp-cp-credit-accordion__header-main',
-	'mp-cp-credit-accordion__title',
-	'mp-cp-credit-accordion__summary-text',
-	'mp-cp-credit-accordion__form-row',
-	'mp-cp-credit-accordion__body',
-	'mp-cp-credit-chip',
-	'mp-cp-credit-help',
+	'mp-cp-credit-cart-disclosure',
+	'mp-cp-credit-cart-disclosure__trigger',
+	'mp-cp-credit-cart-disclosure__panel',
+	'mp-cp-credit-cart-disclosure__help',
+	'woocommerce_after_cart_table',
+	'render_cart_disclosure',
+	'Apply gift card or store credit',
+	'build_cart_disclosure_trigger_text',
 	'mp_cp_gift_card_nonce',
 	'mp_cp_gift_card_action',
 	'mp_cp_store_credit_nonce',
-	'woocommerce_cart_coupon',
-	'render_cart_inline',
+	'mp-cp-credit-form-row',
+	'mp-cp-credit-accordion',
+	'mp-cp-credit-accordion__toggle',
+	'mp-cp-credit-accordion__form-row',
 );
 
 foreach ( $required as $needle ) {
@@ -59,29 +57,38 @@ foreach ( $required as $needle ) {
 	}
 }
 
+$cart_removed = array(
+	'woocommerce_cart_coupon',
+	'render_cart_inline',
+	'mp-cp-credit-accordion--cart',
+	'mp-cp-credit-inline',
+	'mp-cp-credit-cart-row',
+);
+foreach ( $cart_removed as $needle ) {
+	if ( $src !== '' && strpos( $src, $needle ) === false ) {
+		$pass( 'cart path removed ' . $needle );
+	} else {
+		$fail( 'cart path removed ' . $needle );
+	}
+}
+
+if ( $src !== '' && strpos( $src, 'Gift card ****' ) !== false
+	&& strpos( $src, 'Change/remove' ) !== false ) {
+	$pass( 'applied gift card trigger copy present' );
+} else {
+	$fail( 'applied gift card trigger copy present' );
+}
+
 if ( $src !== '' && strpos( $src, 'mp-cp-gc-title' ) === false ) {
 	$pass( 'legacy large panel title removed' );
 } else {
 	$fail( 'legacy large panel title removed' );
 }
 
-if ( $src !== '' && strpos( $src, 'Gift card or store creditNo store credit' ) === false
-	&& strpos( $src, "Gift card or store credit' ) . esc_html__( 'No store credit" ) === false ) {
-	$pass( 'title and summary are separate elements' );
-} else {
-	$fail( 'title and summary are separate elements' );
-}
-
 if ( $src !== '' && strpos( $src, 'woocommerce_before_cart_collaterals' ) === false ) {
-	$pass( 'cart accordion not hooked before collaterals' );
+	$pass( 'cart UI not hooked before collaterals' );
 } else {
-	$fail( 'cart accordion not hooked before collaterals' );
-}
-
-if ( $src !== '' && strpos( $src, 'mp-cp-credit-accordion--cart-collateral' ) === false ) {
-	$pass( 'cart collateral sidebar class removed' );
-} else {
-	$fail( 'cart collateral sidebar class removed' );
+	$fail( 'cart UI not hooked before collaterals' );
 }
 
 if ( $src !== '' && strpos( $src, "['plain_code']" ) === false && strpos( $src, 'REALGIFTCODE' ) === false ) {
@@ -118,12 +125,11 @@ foreach ( $unsafe_css as $selector ) {
 	}
 }
 
-if ( $css !== '' && strpos( $css, '.mp-cp-credit-cart-row' ) !== false
-	&& strpos( $css, 'flex: 0 0 100%' ) !== false
-	&& strpos( $css, '.mp-cp-credit-form-row' ) !== false ) {
-	$pass( 'cart row + form-row layout styles present' );
+if ( $css !== '' && strpos( $css, '.mp-cp-credit-cart-disclosure' ) !== false
+	&& strpos( $css, '.mp-cp-credit-cart-disclosure__trigger' ) !== false ) {
+	$pass( 'cart disclosure layout styles present' );
 } else {
-	$fail( 'cart row + form-row layout styles present' );
+	$fail( 'cart disclosure layout styles present' );
 }
 
 if ( $css !== '' && strpos( $css, '.woocommerce .coupon' ) === false
@@ -147,16 +153,16 @@ GiftCardSession::set(
 	)
 );
 if ( GiftCardRedemptionCheckout::should_expand_accordion( GiftCardSession::get(), null, 0.0, false, false ) ) {
-	$pass( 'applied gift card expands accordion' );
+	$pass( 'applied gift card expands disclosure' );
 } else {
-	$fail( 'applied gift card expands accordion' );
+	$fail( 'applied gift card expands disclosure' );
 }
 GiftCardSession::clear();
 
 if ( GiftCardRedemptionCheckout::should_expand_accordion( null, null, 20.0, true, false ) ) {
-	$pass( 'available store credit expands accordion' );
+	$pass( 'available store credit expands disclosure' );
 } else {
-	$fail( 'available store credit expands accordion' );
+	$fail( 'available store credit expands disclosure' );
 }
 
 if ( $src !== '' && strpos( $src, 'nested <form>' ) !== false ) {
@@ -165,17 +171,18 @@ if ( $src !== '' && strpos( $src, 'nested <form>' ) !== false ) {
 	$fail( 'cart hook documents nested-form avoidance' );
 }
 
-if ( $src !== '' && strpos( $src, 'mp-cp-credit-chip--summary' ) !== false ) {
-	$pass( 'applied summary chip markup present' );
+$cart_js = dirname( __DIR__ ) . '/assets/js/gift-card-cart-disclosure.js';
+if ( is_readable( $cart_js ) ) {
+	$pass( 'cart disclosure script present' );
 } else {
-	$fail( 'applied summary chip markup present' );
+	$fail( 'cart disclosure script present' );
 }
 
-$js_path = dirname( __DIR__ ) . '/assets/js/gift-card-credit-accordion.js';
-if ( is_readable( $js_path ) ) {
-	$pass( 'accordion script present' );
+$checkout_js = dirname( __DIR__ ) . '/assets/js/gift-card-credit-accordion.js';
+if ( is_readable( $checkout_js ) ) {
+	$pass( 'checkout accordion script present' );
 } else {
-	$fail( 'accordion script present' );
+	$fail( 'checkout accordion script present' );
 }
 
 echo "=== Done; failures: {$failures} ===\n";

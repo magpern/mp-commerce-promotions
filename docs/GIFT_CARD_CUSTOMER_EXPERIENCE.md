@@ -40,7 +40,7 @@ Pilot: [GIFT_CARD_PILOT_CHECKLIST.md](GIFT_CARD_PILOT_CHECKLIST.md). If `/gift-c
 
 ## Checkout redemption
 
-Compact **Gift card or store credit** accordion on **cart** (inside the cart form, on its own row **below** the coupon code field and **Apply coupon** button; update cart stays on the actions row) and on **checkout** before the checkout form — collapsed by default, coupon-style. Expanded gift card input uses a full-width flex row (input left, **Apply gift card** right; stacks on narrow screens). Expands when a gift card or store credit is applied, when WooCommerce success/error notices are present, or when a logged-in customer has store credit available. Collapsed summary shows masked `****{last4}` when applied and wallet balance when relevant. Ledger, session, and fee behavior are unchanged.
+On **cart**, a subtle link disclosure (**Apply gift card or store credit**) renders after the cart table via `woocommerce_after_cart_table` (outside the coupon flex row, still inside the cart form). Clicking expands a compact form (gift card code + store credit when logged in with balance). Collapsed copy shows wallet **Available: {amount}** when relevant; when applied, **Gift card ****{last4} applied · Change/remove** (or store credit applied). On **checkout**, the compact bordered **Gift card or store credit** accordion remains before the checkout form. Both UIs expand when a gift card or store credit is applied, when WooCommerce success/error notices are present, or when a logged-in customer has store credit available. Expanded gift card input uses a coupon-proportioned flex row (input left, **Apply gift card** right; stacks on narrow screens). Ledger, session, and fee behavior are unchanged.
 
 ### WooCommerce Blocks
 

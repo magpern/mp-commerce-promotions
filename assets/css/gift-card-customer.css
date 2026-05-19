@@ -9,7 +9,97 @@
 	background: #fff;
 }
 
-/* Cart / checkout: compact gift card + store credit accordion (plugin classes only) */
+/* Cart: subtle link disclosure below coupon row (plugin classes only) */
+.mp-cp-credit-cart-disclosure {
+	display: block;
+	clear: both;
+	width: 100%;
+	margin: 0.75em 0 0;
+	padding: 0;
+}
+
+.mp-cp-credit-cart-disclosure__details {
+	border: 0;
+	margin: 0;
+	padding: 0;
+	background: transparent;
+}
+
+.mp-cp-credit-cart-disclosure__trigger {
+	display: inline;
+	list-style: none;
+	cursor: pointer;
+	font-size: 0.95em;
+	color: #2271b1;
+	text-decoration: underline;
+	font-weight: 400;
+	line-height: 1.5;
+}
+
+.mp-cp-credit-cart-disclosure__trigger::-webkit-details-marker {
+	display: none;
+}
+
+.mp-cp-credit-cart-disclosure__trigger:hover,
+.mp-cp-credit-cart-disclosure__trigger:focus {
+	color: #135e96;
+}
+
+.mp-cp-credit-cart-disclosure__trigger:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+.mp-cp-credit-cart-disclosure__panel {
+	margin: 0.5em 0 0;
+	padding: 0;
+	max-width: 36em;
+}
+
+.mp-cp-credit-cart-disclosure__help {
+	margin: 0.5em 0 0;
+	font-size: 0.85em;
+	color: #646970;
+	line-height: 1.45;
+}
+
+.mp-cp-credit-cart-disclosure .mp-cp-credit-form-row,
+.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__form-row {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: stretch;
+	gap: 12px;
+	width: 100%;
+}
+
+.mp-cp-credit-cart-disclosure .mp-cp-credit-form-row .input-text,
+.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__form-row .input-text {
+	flex: 1 1 auto;
+	min-width: 0;
+	width: auto;
+	max-width: none;
+	margin: 0;
+}
+
+.mp-cp-credit-cart-disclosure .mp-cp-credit-form-row .button,
+.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__form-row .button {
+	flex: 0 0 auto;
+	margin: 0;
+	white-space: nowrap;
+}
+
+.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__section {
+	margin-top: 0.5em;
+}
+
+.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__section--wallet {
+	padding-top: 0.5em;
+	margin-top: 0.65em;
+	border-top: 1px dashed #dcdcde;
+}
+
+/* Checkout: compact gift card + store credit accordion (plugin classes only) */
 .mp-cp-credit-accordion {
 	margin: 0 0 1em;
 	border: 1px solid #dcdcde;
@@ -17,55 +107,13 @@
 	background: #fff;
 }
 
-.mp-cp-credit-accordion:not(.mp-cp-credit-accordion--cart) .mp-cp-credit-accordion__toggle {
+.mp-cp-credit-accordion .mp-cp-credit-accordion__toggle {
 	padding: 0.65em 0.85em;
 }
 
-.mp-cp-credit-accordion:not(.mp-cp-credit-accordion--cart) .mp-cp-credit-accordion__body {
+.mp-cp-credit-accordion .mp-cp-credit-accordion__body {
 	padding: 0 0.85em 0.85em;
 	border-top: 1px solid #e8e8e8;
-}
-
-/* Own row below coupon input/button inside cart form (plugin classes only). */
-.mp-cp-credit-inline,
-.mp-cp-credit-cart-row {
-	display: block;
-	clear: both;
-	flex: 0 0 100%;
-	width: 100%;
-	max-width: 100%;
-	margin: 0.5em 0 0;
-	align-self: flex-start;
-	box-sizing: border-box;
-}
-
-.mp-cp-credit-inline .mp-cp-credit-accordion,
-.mp-cp-credit-cart-row .mp-cp-credit-accordion {
-	margin: 0;
-	border: 0;
-	border-radius: 0;
-	background: transparent;
-	width: 100%;
-	max-width: 36em;
-}
-
-.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__toggle {
-	padding: 0.35em 0;
-}
-
-.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__header {
-	flex-wrap: nowrap;
-	gap: 0.5rem 1rem;
-}
-
-.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__header-main {
-	flex: 0 1 auto;
-}
-
-.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__summary-text {
-	flex: 1 1 auto;
-	min-width: 0;
-	text-align: right;
 }
 
 .mp-cp-credit-accordion__toggle {
@@ -224,36 +272,12 @@
 	width: 100%;
 }
 
-.mp-cp-credit-accordion--cart .mp-cp-credit-form-row .input-text,
-.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__form-row .input-text {
-	flex: 1 1 auto;
-	min-width: 0;
-	width: auto;
-	max-width: none;
-	margin: 0;
-}
-
-.mp-cp-credit-accordion--cart .mp-cp-credit-form-row .button,
-.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__form-row .button {
-	flex: 0 0 auto;
-	margin: 0;
-	white-space: nowrap;
-	align-self: auto;
-	height: auto;
-	min-height: 0;
-}
-
-.mp-cp-credit-accordion:not(.mp-cp-credit-accordion--cart) .mp-cp-credit-accordion__form-row .input-text,
-.mp-cp-credit-accordion:not(.mp-cp-credit-accordion--cart) .mp-cp-credit-accordion__form--inline .input-text {
+.mp-cp-credit-accordion .mp-cp-credit-accordion__form-row .input-text,
+.mp-cp-credit-accordion .mp-cp-credit-accordion__form--inline .input-text {
 	flex: 0 1 auto;
 	min-width: 8em;
 	max-width: 16em;
 	margin: 0;
-}
-
-.mp-cp-credit-accordion--cart .mp-cp-credit-help {
-	width: 100%;
-	margin-top: 0.65em;
 }
 
 .mp-cp-credit-accordion__wallet-label {
@@ -476,17 +500,16 @@
 	.mp-cp-credit-form-row .input-text,
 	.mp-cp-credit-accordion__form-row .input-text,
 	.mp-cp-credit-accordion__form--inline .input-text,
-	.mp-cp-credit-accordion--cart .mp-cp-credit-form-row .input-text {
-		max-width: none;
-		width: 100%;
+	.mp-cp-credit-cart-disclosure .mp-cp-credit-form-row,
+	.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__form-row {
+		flex-direction: column;
+		align-items: stretch;
 	}
 
-	.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__header {
-		flex-wrap: wrap;
-	}
-
-	.mp-cp-credit-accordion--cart .mp-cp-credit-form-row .button,
-	.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__form-row .button {
+	.mp-cp-credit-cart-disclosure .mp-cp-credit-form-row .input-text,
+	.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__form-row .input-text,
+	.mp-cp-credit-cart-disclosure .mp-cp-credit-form-row .button,
+	.mp-cp-credit-cart-disclosure .mp-cp-credit-accordion__form-row .button {
 		width: 100%;
 	}
 }

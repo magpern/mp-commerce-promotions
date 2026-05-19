@@ -36,16 +36,31 @@ final class GiftCardCustomerAssets {
 			MP_COMMERCE_PROMOTIONS_VERSION,
 			true
 		);
+
+		wp_register_script(
+			'mp-cp-gift-card-cart-disclosure',
+			MP_COMMERCE_PROMOTIONS_URL . 'assets/js/gift-card-cart-disclosure.js',
+			array(),
+			MP_COMMERCE_PROMOTIONS_VERSION,
+			true
+		);
 	}
 
-	public static function enqueue(): void {
+	public static function enqueue( bool $cart_disclosure = false ): void {
 		if ( self::$enqueued ) {
+			if ( $cart_disclosure && wp_script_is( 'mp-cp-gift-card-cart-disclosure', 'registered' ) ) {
+				wp_enqueue_script( 'mp-cp-gift-card-cart-disclosure' );
+			}
 			return;
 		}
 		if ( wp_style_is( 'mp-cp-gift-card-customer', 'registered' ) ) {
 			wp_enqueue_style( 'mp-cp-gift-card-customer' );
 		}
-		if ( wp_script_is( 'mp-cp-gift-card-credit-accordion', 'registered' ) ) {
+		if ( $cart_disclosure ) {
+			if ( wp_script_is( 'mp-cp-gift-card-cart-disclosure', 'registered' ) ) {
+				wp_enqueue_script( 'mp-cp-gift-card-cart-disclosure' );
+			}
+		} elseif ( wp_script_is( 'mp-cp-gift-card-credit-accordion', 'registered' ) ) {
 			wp_enqueue_script( 'mp-cp-gift-card-credit-accordion' );
 		}
 		self::$enqueued = true;

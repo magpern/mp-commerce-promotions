@@ -58,9 +58,8 @@ final class GiftCardRedemptionCheckout {
 		foreach ( $post_hooks as $hook ) {
 			add_action( $hook, array( $this, 'maybe_handle_post' ), 5 );
 		}
-		// Inside the cart form coupon/actions row (no nested <form>; uses parent cart form submit).
-		add_action( 'woocommerce_cart_coupon', array( $this, 'render_cart_inline' ), 20 );
-		add_action( 'woocommerce_cart_actions', array( $this, 'render_cart_inline_fallback' ), 5 );
+		// Below cart table actions (outside .coupon flex); still inside cart form (no nested <form>).
+		add_action( 'woocommerce_after_cart_table', array( $this, 'render_cart_disclosure' ), 15 );
 		add_action( 'woocommerce_before_checkout_form', array( $this, 'render_checkout_panel' ), 12 );
 	}
 
@@ -244,23 +243,48 @@ final class GiftCardRedemptionCheckout {
 	}
 
 
-	public function render_cart_inline(): void {
+	public function render_cart_disclosure(): void {
 		if ( ! function_exists( 'is_cart' ) || ! is_cart() ) {
 			return;
 		}
 
-		$this->render_panel( true );
-	}
-
-	/**
-	 * When coupons are disabled, {@see woocommerce_cart_coupon} does not run.
-	 */
-	public function render_cart_inline_fallback(): void {
-		if ( function_exists( 'wc_coupons_enabled' ) && wc_coupons_enabled() ) {
+		if ( self::$panel_rendered || ! function_exists( 'WC' ) || ! CartSessionHelper::has_wc_session() ) {
 			return;
 		}
 
-		$this->render_cart_inline();
+		self::$panel_rendered = true;
+		GiftCardCustomerAssets::enqueue( true );
+
+		$context = $this->redemption_context();
+		$expand  = self::should_expand_accordion(
+			$context['gift_applied'],
+			$context['sc_applied'],
+			$context['sc_balance'],
+			$context['can_sc'],
+			$this->has_checkout_notices()
+		);
+
+		$panel_id = 'mp-cp-credit-cart-disclosure-panel';
+
+		echo '<div class="mp-cp-credit-cart-disclosure">';
+		echo '<details class="mp-cp-credit-cart-disclosure__details"' . ( $expand ? ' open' : '' ) . '>';
+		echo '<summary class="mp-cp-credit-cart-disclosure__trigger" aria-controls="' . esc_attr( $panel_id ) . '">';
+		echo esc_html( $this->build_cart_disclosure_trigger_text(
+			$context['gift_applied'],
+			$context['sc_applied'],
+			$context['sc_balance'],
+			$context['can_sc']
+		) );
+		echo '</summary>';
+		echo '<div id="' . esc_attr( $panel_id ) . '" class="mp-cp-credit-cart-disclosure__panel">';
+		$this->render_gift_card_form( $context['gift_applied'], true );
+		if ( $context['can_sc'] ) {
+			$this->render_store_credit_form( $context['sc_applied'], $context['sc_balance'], true );
+		}
+		echo '<p class="mp-cp-credit-cart-disclosure__help">';
+		echo esc_html__( 'Use a gift card code or available store credit.', 'mp-commerce-promotions' );
+		echo '</p>';
+		echo '</div></details></div>';
 	}
 
 	public function render_checkout_panel(): void {
@@ -268,21 +292,63 @@ final class GiftCardRedemptionCheckout {
 			return;
 		}
 
-		$this->render_panel( false );
+		$this->render_checkout_accordion();
 	}
 
 	/**
-	 * @param bool $cart_inline Render inside cart form (no nested forms).
+	 * Compact accordion on checkout only (cart uses link disclosure).
 	 */
-	private function render_panel( bool $cart_inline ): void {
+	private function render_checkout_accordion(): void {
 		if ( self::$panel_rendered || ! function_exists( 'WC' ) || ! CartSessionHelper::has_wc_session() ) {
 			return;
 		}
 
 		self::$panel_rendered = true;
 
-		GiftCardCustomerAssets::enqueue();
+		GiftCardCustomerAssets::enqueue( false );
 
+		$context = $this->redemption_context();
+		$expand  = self::should_expand_accordion(
+			$context['gift_applied'],
+			$context['sc_applied'],
+			$context['sc_balance'],
+			$context['can_sc'],
+			$this->has_checkout_notices()
+		);
+
+		$body_id = 'mp-cp-credit-accordion-body';
+
+		echo '<details class="mp-cp-credit-accordion mp-cp-gift-card-checkout"' . ( $expand ? ' open' : '' ) . '>';
+		$this->render_accordion_summary(
+			$context['gift_applied'],
+			$context['sc_applied'],
+			$context['sc_balance'],
+			$context['can_sc']
+		);
+		echo '<div id="' . esc_attr( $body_id ) . '" class="mp-cp-credit-accordion__body">';
+		$this->render_applied_chips( $context['gift_applied'], $context['sc_applied'] );
+		$this->render_gift_card_form( $context['gift_applied'], false );
+		if ( $context['can_sc'] ) {
+			$this->render_store_credit_form( $context['sc_applied'], $context['sc_balance'], false );
+		}
+		echo '<p class="mp-cp-credit-help">';
+		echo esc_html__( 'Enter a gift card code or use available store credit.', 'mp-commerce-promotions' );
+		echo ' <span class="mp-cp-credit-help__hint" title="'
+			. esc_attr__( 'Full codes are not stored after delivery.', 'mp-commerce-promotions' )
+			. '">' . esc_html__( 'Partial payment is supported.', 'mp-commerce-promotions' ) . '</span>';
+		echo '</p>';
+		echo '</div></details>';
+	}
+
+	/**
+	 * @return array{
+	 *   gift_applied: array<string, mixed>|null,
+	 *   sc_applied: array<string, mixed>|null,
+	 *   sc_balance: float,
+	 *   can_sc: bool
+	 * }
+	 */
+	private function redemption_context(): array {
 		$gift_applied = GiftCardSession::get();
 		$can_sc       = $this->store_credit->can_apply();
 		$sc_applied   = $can_sc ? $this->store_credit->get_applied_from_session() : null;
@@ -294,45 +360,46 @@ final class GiftCardRedemptionCheckout {
 			);
 		}
 
-		$expand = self::should_expand_accordion(
-			$gift_applied,
-			$sc_applied,
-			$sc_balance,
-			$can_sc,
-			$this->has_checkout_notices()
+		return array(
+			'gift_applied' => $gift_applied,
+			'sc_applied'   => $sc_applied,
+			'sc_balance'   => $sc_balance,
+			'can_sc'       => $can_sc,
 		);
+	}
 
-		$body_id = 'mp-cp-credit-accordion-body';
-
-		if ( $cart_inline ) {
-			echo '<div class="mp-cp-credit-inline mp-cp-credit-cart-row">';
+	/**
+	 * @param array<string, mixed>|null $gift_applied
+	 * @param array<string, mixed>|null $sc_applied
+	 */
+	private function build_cart_disclosure_trigger_text(
+		?array $gift_applied,
+		?array $sc_applied,
+		float $sc_balance,
+		bool $can_sc
+	): string {
+		if ( $gift_applied !== null ) {
+			return sprintf(
+				/* translators: %s: last four digits of gift card */
+				__( 'Gift card ****%s applied · Change/remove', 'mp-commerce-promotions' ),
+				(string) ( $gift_applied['code_last4'] ?? '' )
+			);
 		}
 
-		$accordion_class = 'mp-cp-credit-accordion mp-cp-gift-card-checkout';
-		if ( $cart_inline ) {
-			$accordion_class .= ' mp-cp-credit-accordion--cart';
+		if ( $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 ) {
+			return __( 'Store credit applied · Change/remove', 'mp-commerce-promotions' );
 		}
-		echo '<details class="' . esc_attr( $accordion_class ) . '"' . ( $expand ? ' open' : '' ) . '>';
-		$this->render_accordion_summary( $gift_applied, $sc_applied, $sc_balance, $can_sc );
-		echo '<div id="' . esc_attr( $body_id ) . '" class="mp-cp-credit-accordion__body">';
-		if ( ! $cart_inline ) {
-			$this->render_applied_chips( $gift_applied, $sc_applied );
-		}
-		$this->render_gift_card_form( $gift_applied, $cart_inline );
-		if ( $can_sc ) {
-			$this->render_store_credit_form( $sc_applied, $sc_balance, $cart_inline );
-		}
-		echo '<p class="mp-cp-credit-help">';
-		echo esc_html__( 'Enter a gift card code or use available store credit.', 'mp-commerce-promotions' );
-		echo ' <span class="mp-cp-credit-help__hint" title="'
-			. esc_attr__( 'Full codes are not stored after delivery.', 'mp-commerce-promotions' )
-			. '">' . esc_html__( 'Partial payment is supported.', 'mp-commerce-promotions' ) . '</span>';
-		echo '</p>';
-		echo '</div></details>';
 
-		if ( $cart_inline ) {
-			echo '</div>';
+		$label = __( 'Apply gift card or store credit', 'mp-commerce-promotions' );
+		if ( $can_sc && $sc_balance > 0 ) {
+			$label .= ' · ' . sprintf(
+				/* translators: %s: formatted wallet balance */
+				__( 'Available: %s', 'mp-commerce-promotions' ),
+				$this->format_price( $sc_balance )
+			);
 		}
+
+		return $label;
 	}
 
 	/**
