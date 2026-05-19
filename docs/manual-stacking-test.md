@@ -2,7 +2,7 @@
 
 Use this checklist to verify **stackable** promotion fees, **subtotal cap**, **exclusive** behavior, **exclusions**, **max applications**, and **code-linked** non-stacking. Run in **staging or local** with WooCommerce active.
 
-**Related:** [manual-checkout-test.md](manual-checkout-test.md) (checkout/redemption), [manual-promotion-code-test.md](manual-promotion-code-test.md) (codes).
+**Related:** [manual-checkout-test.md](manual-checkout-test.md) (checkout/redemption), [manual-promotion-code-test.md](manual-promotion-code-test.md) (codes), [QA_SCRIPT_SAFETY.md](QA_SCRIPT_SAFETY.md) (production-safe smoke defaults).
 
 **WP-CLI smoke (optional):**
 
