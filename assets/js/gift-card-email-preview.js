@@ -111,7 +111,7 @@
 		var chooseBtn = document.getElementById( 'mp-cp-gc-choose-logo' );
 		var removeBtn = document.getElementById( 'mp-cp-gc-remove-logo' );
 		var input = document.getElementById( fieldIds.logo );
-		if ( ! chooseBtn || ! input || typeof wp === 'undefined' || ! wp.media ) {
+		if ( ! chooseBtn || ! input ) {
 			return;
 		}
 
@@ -119,24 +119,29 @@
 
 		chooseBtn.addEventListener( 'click', function ( e ) {
 			e.preventDefault();
-			if ( frame ) {
-				frame.open();
+
+			if ( typeof wp === 'undefined' || ! wp.media ) {
 				return;
 			}
-			frame = wp.media( {
-				title: cfg.i18n && cfg.i18n.chooseLogo ? cfg.i18n.chooseLogo : 'Choose logo',
-				button: { text: cfg.i18n && cfg.i18n.chooseLogo ? cfg.i18n.chooseLogo : 'Use image' },
-				library: { type: 'image' },
-				multiple: false,
-			} );
-			frame.on( 'select', function () {
-				var attachment = frame.state().get( 'selection' ).first().toJSON();
-				if ( attachment && attachment.url ) {
-					input.value = attachment.url;
-					updateLogoThumb( attachment.url );
-					schedulePreview();
-				}
-			} );
+
+			if ( ! frame ) {
+				frame = wp.media( {
+					title: cfg.i18n && cfg.i18n.chooseLogo ? cfg.i18n.chooseLogo : 'Choose logo',
+					button: { text: cfg.i18n && cfg.i18n.useLogo ? cfg.i18n.useLogo : 'Use image' },
+					library: { type: 'image' },
+					multiple: false,
+				} );
+				frame.on( 'select', function () {
+					var attachment = frame.state().get( 'selection' ).first().toJSON();
+					if ( attachment && attachment.url ) {
+						input.value = attachment.url;
+						input.dispatchEvent( new Event( 'input', { bubbles: true } ) );
+						updateLogoThumb( attachment.url );
+						schedulePreview();
+					}
+				} );
+			}
+
 			frame.open();
 		} );
 
@@ -144,13 +149,37 @@
 			removeBtn.addEventListener( 'click', function ( e ) {
 				e.preventDefault();
 				input.value = '';
+				input.dispatchEvent( new Event( 'input', { bubbles: true } ) );
 				updateLogoThumb( '' );
+				removeBtn.style.display = 'none';
 				schedulePreview();
 			} );
 		}
 
 		input.addEventListener( 'input', function () {
 			updateLogoThumb( input.value );
+			if ( removeBtn ) {
+				removeBtn.style.display = input.value ? '' : 'none';
+			}
+		} );
+	}
+
+	function initColorPicker() {
+		var input = document.getElementById( fieldIds.accent );
+		if ( ! input || ! $.fn.wpColorPicker ) {
+			return;
+		}
+
+		var $input = $( input );
+		$input.wpColorPicker( {
+			change: function () {
+				schedulePreview();
+			},
+			clear: function () {
+				var fallback = input.getAttribute( 'data-default-color' ) || '#2271b1';
+				input.value = fallback;
+				schedulePreview();
+			},
 		} );
 	}
 
@@ -166,6 +195,11 @@
 		} else {
 			img.removeAttribute( 'src' );
 			wrap.style.display = 'none';
+		}
+
+		var removeBtn = document.getElementById( 'mp-cp-gc-remove-logo' );
+		if ( removeBtn ) {
+			removeBtn.style.display = url ? '' : 'none';
 		}
 	}
 
@@ -215,6 +249,7 @@
 
 	$( function () {
 		bindPreviewFields();
+		initColorPicker();
 		initLogoPicker();
 		initTestEmail();
 	} );

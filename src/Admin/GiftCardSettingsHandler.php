@@ -65,18 +65,20 @@ final class GiftCardSettingsHandler {
 			return;
 		}
 
+		wp_enqueue_style( 'wp-color-picker' );
 		wp_enqueue_style(
 			'mp-cp-gift-card-email-settings',
 			MP_COMMERCE_PROMOTIONS_URL . 'assets/css/gift-card-email-settings-admin.css',
-			array(),
+			array( 'wp-color-picker' ),
 			MP_COMMERCE_PROMOTIONS_VERSION
 		);
 
 		wp_enqueue_media();
+		wp_enqueue_script( 'wp-color-picker' );
 		wp_enqueue_script(
 			'mp-cp-gift-card-email-preview',
 			MP_COMMERCE_PROMOTIONS_URL . 'assets/js/gift-card-email-preview.js',
-			array( 'jquery' ),
+			array( 'jquery', 'wp-color-picker', 'media-editor' ),
 			MP_COMMERCE_PROMOTIONS_VERSION,
 			true
 		);
@@ -91,6 +93,7 @@ final class GiftCardSettingsHandler {
 				'placeholders'  => GiftCardEmailPlaceholders::supported_keys(),
 				'i18n'          => array(
 					'chooseLogo'   => __( 'Choose logo', 'mp-commerce-promotions' ),
+					'useLogo'      => __( 'Use image', 'mp-commerce-promotions' ),
 					'removeLogo'   => __( 'Remove logo', 'mp-commerce-promotions' ),
 					'sending'      => __( 'Sending…', 'mp-commerce-promotions' ),
 					'sendTest'     => __( 'Send test gift card email', 'mp-commerce-promotions' ),
@@ -254,10 +257,16 @@ final class GiftCardSettingsHandler {
 
 		$this->render_logo_row( $appearance['logo_url'] );
 
+		$accent_saved   = $this->settings->gift_card_accent_color_saved();
+		$accent_display = $accent_saved !== '' ? $accent_saved : $appearance['accent_color'];
+		$accent_default = Settings::resolve_default_gift_card_accent_color();
 		echo '<tr><th scope="row"><label for="mp_cp_gift_card_accent_color">' . esc_html__( 'Accent color', 'mp-commerce-promotions' ) . '</label></th><td>';
-		echo '<input type="text" class="regular-text" name="mp_cp_gift_card_accent_color" id="mp_cp_gift_card_accent_color" value="'
-			. esc_attr( $appearance['accent_color'] ) . '" placeholder="#2271b1" />';
-		echo '<p class="description">' . esc_html__( 'Used for the email header and card accent border.', 'mp-commerce-promotions' ) . '</p></td></tr>';
+		echo '<input type="text" class="mp-cp-gc-accent-color-field regular-text" name="mp_cp_gift_card_accent_color" id="mp_cp_gift_card_accent_color" value="'
+			. esc_attr( $accent_display ) . '" data-default-color="' . esc_attr( $accent_default ) . '" />';
+		echo '<p class="description">' . esc_html__(
+			'Used for the email header and card accent border. Defaults to your store email or theme accent when unset.',
+			'mp-commerce-promotions'
+		) . '</p></td></tr>';
 
 		echo '<tr><th scope="row">' . esc_html__( 'Email preview', 'mp-commerce-promotions' ) . '</th><td>';
 		echo '<p class="description">' . esc_html__(
@@ -287,9 +296,8 @@ final class GiftCardSettingsHandler {
 		echo '<div class="mp-cp-gc-logo-field">';
 		echo '<input type="url" class="regular-text" name="mp_cp_gift_card_logo_url" id="mp_cp_gift_card_logo_url" value="' . esc_attr( $logo_url ) . '" />';
 		echo ' <button type="button" class="button" id="mp-cp-gc-choose-logo">' . esc_html__( 'Choose logo', 'mp-commerce-promotions' ) . '</button>';
-		if ( $logo_url !== '' ) {
-			echo ' <button type="button" class="button-link" id="mp-cp-gc-remove-logo">' . esc_html__( 'Remove', 'mp-commerce-promotions' ) . '</button>';
-		}
+		echo ' <button type="button" class="button-link" id="mp-cp-gc-remove-logo"'
+			. ( $logo_url === '' ? ' style="display:none;"' : '' ) . '>' . esc_html__( 'Remove', 'mp-commerce-promotions' ) . '</button>';
 		echo '<div class="mp-cp-gc-logo-thumb-wrap"' . ( $logo_url === '' ? ' style="display:none;"' : '' ) . '>';
 		echo '<img id="mp-cp-gc-logo-thumb" class="mp-cp-gc-logo-thumb" src="' . esc_url( $logo_url ) . '" alt="" /></div>';
 		echo '</div>';
@@ -392,13 +400,13 @@ final class GiftCardSettingsHandler {
 			? esc_url_raw( wp_unslash( (string) $_POST['mp_cp_gift_card_logo_url'] ) )
 			: '';
 		$accent = isset( $_POST['mp_cp_gift_card_accent_color'] )
-			? sanitize_text_field( wp_unslash( (string) $_POST['mp_cp_gift_card_accent_color'] ) )
+			? Settings::sanitize_hex_color( wp_unslash( (string) $_POST['mp_cp_gift_card_accent_color'] ) )
 			: '';
 		if ( isset( $_POST['mp_cp_gift_card_logo_url'] ) ) {
 			$this->settings->set_gift_card_logo_url( $logo );
 		}
 		if ( isset( $_POST['mp_cp_gift_card_accent_color'] ) ) {
-			$this->settings->set_gift_card_accent_color( $accent );
+			$this->settings->set_gift_card_accent_color( $accent !== '' ? $accent : Settings::resolve_default_gift_card_accent_color() );
 		}
 		$requested_mode = isset( $_POST['mp_cp_gift_card_sender_mode'] )
 			? sanitize_key( wp_unslash( (string) $_POST['mp_cp_gift_card_sender_mode'] ) )

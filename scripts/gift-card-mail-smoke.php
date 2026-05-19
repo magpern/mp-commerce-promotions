@@ -16,6 +16,7 @@ use MP\CommercePromotions\Admin\GiftCardSettingsHandler;
 use MP\CommercePromotions\GiftCard\GiftCardDeliveryStatus;
 use MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer;
 use MP\CommercePromotions\GiftCard\GiftCardEmailCopy;
+use MP\CommercePromotions\GiftCard\GiftCardEmailCopyDefaults;
 use MP\CommercePromotions\GiftCard\GiftCardEmailPlaceholders;
 use MP\CommercePromotions\GiftCard\GiftCardEmailPreview;
 use MP\CommercePromotions\GiftCard\GiftCardEmailSender;
@@ -115,15 +116,48 @@ if ( is_array( $overrides ) && strpos( $unsaved_preview, 'Smoke unsaved heading'
 	$fail( 'preview supports unsaved copy overrides' );
 }
 
-$settings->set_gift_card_email_subject( 'Smoke persist subject' );
-$settings->set_gift_card_email_heading( 'Smoke persist heading' );
-$settings->set_gift_card_support_email_text( 'Smoke persist support' );
-if ( $settings->gift_card_email_subject() === 'Smoke persist subject'
-	&& $settings->gift_card_email_heading() === 'Smoke persist heading'
-	&& $settings->gift_card_support_email_text() === 'Smoke persist support' ) {
+$settings->set_gift_card_email_subject( 'Merchant QA subject line' );
+$settings->set_gift_card_email_heading( 'Merchant QA heading' );
+$settings->set_gift_card_support_email_text( 'Merchant QA support' );
+if ( $settings->gift_card_email_subject() === 'Merchant QA subject line'
+	&& $settings->gift_card_email_heading() === 'Merchant QA heading'
+	&& $settings->gift_card_support_email_text() === 'Merchant QA support' ) {
 	$pass( 'email settings persist via Settings API' );
 } else {
 	$fail( 'email settings persist via Settings API' );
+}
+
+update_option( Settings::OPTION_GIFT_CARD_EMAIL_INTRO, 'Smoke body with sample only.', false );
+$cleaned_intro = ( new Settings() )->gift_card_email_intro();
+if ( $cleaned_intro === GiftCardEmailPlaceholders::default_intro() ) {
+	$pass( 'smoke intro string migrated to production default' );
+} else {
+	$fail( 'smoke intro string migrated to production default', $cleaned_intro );
+}
+
+if ( GiftCardEmailCopyDefaults::is_known_smoke_string( 'Smoke persist subject' ) ) {
+	$pass( 'smoke string registry includes persist subject' );
+} else {
+	$fail( 'smoke string registry includes persist subject' );
+}
+
+$handler_src = (string) file_get_contents(
+	dirname( __DIR__ ) . '/src/Admin/GiftCardSettingsHandler.php'
+);
+if ( strpos( $handler_src, 'wp_enqueue_media' ) !== false
+	&& strpos( $handler_src, 'wp-color-picker' ) !== false
+	&& strpos( $handler_src, 'media-editor' ) !== false ) {
+	$pass( 'settings screen enqueues media and color picker assets' );
+} else {
+	$fail( 'settings screen enqueues media and color picker assets' );
+}
+
+$settings->set_gift_card_accent_color( 'not-valid' );
+$accent_resolved = $settings->gift_card_accent_color();
+if ( preg_match( '/^#[0-9a-f]{6}$/', $accent_resolved ) ) {
+	$pass( 'invalid accent falls back to resolved default' );
+} else {
+	$fail( 'invalid accent falls back to resolved default', $accent_resolved );
 }
 
 $invalid_tpl = GiftCardEmailTemplate::normalize_slug( 'invalid-template-slug' );
@@ -140,12 +174,12 @@ if ( $settings->gift_card_email_template() === Settings::GIFT_CARD_TEMPLATE_CLAS
 	$fail( 'one-template mode (legacy holiday slug ignored)' );
 }
 
-$settings->set_gift_card_email_heading( 'Smoke heading {amount}' );
-$settings->set_gift_card_email_intro( 'Smoke body with sample only.' );
+$settings->set_gift_card_email_heading( 'Custom preview heading' );
+$settings->set_gift_card_email_intro( 'Custom preview intro text.' );
 $settings->set_gift_card_accent_color( '#aa5500' );
 $custom_preview = GiftCardEmailPreview::render( $settings );
-if ( strpos( $custom_preview, 'Smoke heading' ) !== false
-	&& strpos( $custom_preview, 'Smoke body' ) !== false
+if ( strpos( $custom_preview, 'Custom preview heading' ) !== false
+	&& strpos( $custom_preview, 'Custom preview intro' ) !== false
 	&& strpos( $custom_preview, '#aa5500' ) !== false ) {
 	$pass( 'preview renders custom heading/body/accent' );
 } else {

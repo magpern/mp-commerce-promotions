@@ -48,6 +48,10 @@
 	margin-top: 8px;
 }
 
+.mp-cp-gc-accent-color-field.wp-color-picker {
+	max-width: 80px;
+}
+
 .mp-cp-gc-logo-thumb {
 	max-height: 48px;
 	max-width: 200px;

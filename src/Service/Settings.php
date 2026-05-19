@@ -487,7 +487,7 @@ final class Settings {
 		} elseif ( $legacy['accent_color'] !== '' ) {
 			$accent = $legacy['accent_color'];
 		} else {
-			$accent = self::default_gift_card_accent();
+			$accent = self::resolve_default_gift_card_accent_color();
 		}
 
 		$raw_footer = get_option( self::OPTION_GIFT_CARD_EMAIL_FOOTER_TEXT, '' );
@@ -563,7 +563,17 @@ final class Settings {
 			return $default;
 		}
 
-		return is_string( $raw ) ? sanitize_textarea_field( $raw ) : $default;
+		if ( ! is_string( $raw ) ) {
+			return $default;
+		}
+
+		$text = sanitize_textarea_field( $raw );
+		$cleaned = \MP\CommercePromotions\GiftCard\GiftCardEmailCopyDefaults::replace_known_smoke_string( $text );
+		if ( $cleaned !== $text ) {
+			update_option( $option, $cleaned, false );
+		}
+
+		return $cleaned;
 	}
 
 	private function set_gift_card_email_text_option( string $option, string $text ): void {
@@ -572,6 +582,46 @@ final class Settings {
 
 	public static function default_gift_card_accent(): string {
 		return self::DEFAULT_GIFT_CARD_ACCENT;
+	}
+
+	/**
+	 * Store/theme accent when no saved gift card accent exists.
+	 */
+	public static function resolve_default_gift_card_accent_color(): string {
+		if ( function_exists( 'get_option' ) ) {
+			$woo = get_option( 'woocommerce_email_base_color', '' );
+			$sanitized = self::sanitize_hex_color( is_string( $woo ) ? $woo : '' );
+			if ( $sanitized !== '' ) {
+				return $sanitized;
+			}
+		}
+
+		if ( function_exists( 'get_theme_mod' ) ) {
+			foreach ( array( 'woocommerce_email_base_color', 'accent_color', 'link_color', 'primary_color' ) as $mod ) {
+				$mod_value = get_theme_mod( $mod, '' );
+				$sanitized = self::sanitize_hex_color( is_string( $mod_value ) ? $mod_value : '' );
+				if ( $sanitized !== '' ) {
+					return $sanitized;
+				}
+			}
+		}
+
+		return self::DEFAULT_GIFT_CARD_ACCENT;
+	}
+
+	public static function sanitize_hex_color( string $color ): string {
+		$color = trim( $color );
+		if ( preg_match( '/^#([0-9a-fA-F]{3})$/', $color, $matches ) ) {
+			$hex = $matches[1];
+
+			return '#' . $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+		}
+
+		if ( preg_match( '/^#([0-9a-fA-F]{6})$/', $color ) ) {
+			return strtolower( $color );
+		}
+
+		return '';
 	}
 
 	/**
@@ -607,21 +657,38 @@ final class Settings {
 	}
 
 	public function gift_card_accent_color(): string {
-		$raw = get_option( self::OPTION_GIFT_CARD_ACCENT_COLOR, self::DEFAULT_GIFT_CARD_ACCENT );
-		$color = is_string( $raw ) ? trim( $raw ) : self::DEFAULT_GIFT_CARD_ACCENT;
-		if ( ! preg_match( '/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color ) ) {
-			return self::DEFAULT_GIFT_CARD_ACCENT;
+		$not_set = '__mp_cp_option_not_set__';
+		$raw     = get_option( self::OPTION_GIFT_CARD_ACCENT_COLOR, $not_set );
+		if ( $raw === $not_set || ! is_string( $raw ) || trim( $raw ) === '' ) {
+			return self::resolve_default_gift_card_accent_color();
 		}
 
-		return $color;
+		$sanitized = self::sanitize_hex_color( $raw );
+
+		return $sanitized !== '' ? $sanitized : self::resolve_default_gift_card_accent_color();
+	}
+
+	/**
+	 * Raw saved accent for the settings field (empty when unset).
+	 */
+	public function gift_card_accent_color_saved(): string {
+		$not_set = '__mp_cp_option_not_set__';
+		$raw     = get_option( self::OPTION_GIFT_CARD_ACCENT_COLOR, $not_set );
+		if ( $raw === $not_set || ! is_string( $raw ) ) {
+			return '';
+		}
+
+		$sanitized = self::sanitize_hex_color( trim( $raw ) );
+
+		return $sanitized;
 	}
 
 	public function set_gift_card_accent_color( string $color ): void {
-		$color = trim( $color );
-		if ( ! preg_match( '/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color ) ) {
-			$color = self::DEFAULT_GIFT_CARD_ACCENT;
+		$sanitized = self::sanitize_hex_color( trim( $color ) );
+		if ( $sanitized === '' ) {
+			$sanitized = self::resolve_default_gift_card_accent_color();
 		}
-		update_option( self::OPTION_GIFT_CARD_ACCENT_COLOR, $color, false );
+		update_option( self::OPTION_GIFT_CARD_ACCENT_COLOR, $sanitized, false );
 	}
 
 	public function gift_card_sender_name(): string {

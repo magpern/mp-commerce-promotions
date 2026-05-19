@@ -39,7 +39,7 @@ final class GiftCardEmailPlaceholders {
 	}
 
 	public static function default_intro(): string {
-		return __( 'A gift card has been sent to you and can be used on any eligible products in our store.', 'mp-commerce-promotions' );
+		return __( 'A gift card has been sent to you. You can use it toward eligible purchases in our store.', 'mp-commerce-promotions' );
 	}
 
 	public static function default_redeem_instructions(): string {
@@ -47,11 +47,11 @@ final class GiftCardEmailPlaceholders {
 	}
 
 	public static function default_footer_text(): string {
-		return __( 'Keep this email safe. The full code is required at checkout and is not stored after delivery.', 'mp-commerce-promotions' );
+		return __( 'Keep this email safe. The full gift card code is required at checkout and is not stored after delivery.', 'mp-commerce-promotions' );
 	}
 
 	public static function default_support_text(): string {
-		return __( 'Questions? Contact our support team.', 'mp-commerce-promotions' );
+		return __( 'Need help? Contact our support team.', 'mp-commerce-promotions' );
 	}
 
 	/**

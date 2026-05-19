@@ -180,6 +180,17 @@ final class GiftCardEmailConfigurationTest extends TestCase {
 		$this->assertStringContainsString( '{site_title}', GiftCardEmailPlaceholders::default_subject() );
 		$this->assertStringContainsString( 'gift card', strtolower( GiftCardEmailPlaceholders::default_heading() ) );
 		$this->assertStringContainsString( 'checkout', strtolower( GiftCardEmailPlaceholders::default_redeem_instructions() ) );
+		$this->assertStringNotContainsString( 'Smoke persist', GiftCardEmailPlaceholders::default_subject() );
+	}
+
+	public function test_smoke_string_cleanup_on_read(): void {
+		update_option( Settings::OPTION_GIFT_CARD_EMAIL_SUBJECT, 'Smoke persist subject', false );
+		$settings = new Settings();
+		$this->assertSame( GiftCardEmailPlaceholders::default_subject(), $settings->gift_card_email_subject() );
+		$this->assertSame(
+			GiftCardEmailPlaceholders::default_subject(),
+			get_option( Settings::OPTION_GIFT_CARD_EMAIL_SUBJECT )
+		);
 	}
 
 	public function test_custom_subject_via_renderer(): void {

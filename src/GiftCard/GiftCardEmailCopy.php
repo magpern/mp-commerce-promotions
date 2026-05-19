@@ -108,7 +108,10 @@ final class GiftCardEmailCopy {
 			$raw = wp_unslash( (string) $data[ $field ] );
 			if ( $key === 'logo_url' ) {
 				$out[ $key ] = esc_url_raw( $raw );
-			} elseif ( $key === 'accent_color' || $key === 'email_style' ) {
+			} elseif ( $key === 'accent_color' ) {
+				$sanitized = Settings::sanitize_hex_color( $raw );
+				$out[ $key ] = $sanitized !== '' ? $sanitized : Settings::resolve_default_gift_card_accent_color();
+			} elseif ( $key === 'email_style' ) {
 				$out[ $key ] = sanitize_text_field( $raw );
 			} else {
 				$out[ $key ] = sanitize_textarea_field( $raw );

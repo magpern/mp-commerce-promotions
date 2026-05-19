@@ -21,12 +21,12 @@ Legacy template slugs (`birthday`, `holiday`, `minimal`) in the database are **n
 |-------|--------------------------------|
 | **Subject** | Your gift card from {site_title} |
 | **Email heading** | You received a gift card |
-| **Intro / body** | A gift card has been sent to you. |
-| **Redeem instructions** | Enter your gift card code in the “Gift card or store credit” section at checkout. |
-| **Footer / support text** | Keep this email safe. The full code is required at checkout and is not stored after delivery. |
-| **Support contact text** | (optional) |
-| **Logo URL** | (optional) |
-| **Accent color** | `#2271b1` |
+| **Intro / body** | A gift card has been sent to you. You can use it toward eligible purchases in our store. |
+| **Redeem instructions** | Enter your gift card code during checkout in the “Gift card or store credit” section. |
+| **Footer text** | Keep this email safe. The full gift card code is required at checkout and is not stored after delivery. |
+| **Support contact text** | Need help? Contact our support team. |
+| **Logo** | Optional — WordPress media library picker or manual URL |
+| **Accent color** | WordPress color picker; defaults to WooCommerce email base color, then theme accent/link, then `#2271b1` |
 
 ### Placeholders
 
@@ -36,10 +36,12 @@ Legacy template slugs (`birthday`, `holiday`, `minimal`) in the database are **n
 
 `?page=mp-commerce-promotions&tab=gift-cards&gift_cards_section=settings`
 
-- **Gift card email** — subject, heading, intro, redeem text, footer, support, logo, accent
+- **Gift card email** — subject, heading, intro, redeem text, footer, support, logo (media picker), accent (color picker)
 - **Email style** — Commerce Growth vs WooCommerce wrapper
 - **Live preview** — updates as you type; uses `****SAMPLE` only (never a real code)
 - **Send test gift card email** — uses current form values when possible; sends `****TEST` only
+
+Known smoke/test strings from development (e.g. `Smoke persist subject`) are replaced automatically with production defaults when read; merchant-customized text is never changed.
 
 ## Email sender
 
