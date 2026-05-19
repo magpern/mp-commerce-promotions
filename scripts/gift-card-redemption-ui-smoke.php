@@ -35,6 +35,10 @@ $required = array(
 	'mp-cp-credit-inline',
 	'mp-cp-credit-accordion',
 	'mp-cp-credit-accordion__toggle',
+	'mp-cp-credit-accordion__header-main',
+	'mp-cp-credit-accordion__title',
+	'mp-cp-credit-accordion__summary-text',
+	'mp-cp-credit-accordion__form-row',
 	'mp-cp-credit-accordion__body',
 	'mp-cp-credit-chip',
 	'mp-cp-credit-help',
@@ -59,6 +63,13 @@ if ( $src !== '' && strpos( $src, 'mp-cp-gc-title' ) === false ) {
 	$fail( 'legacy large panel title removed' );
 }
 
+if ( $src !== '' && strpos( $src, 'Gift card or store creditNo store credit' ) === false
+	&& strpos( $src, "Gift card or store credit' ) . esc_html__( 'No store credit" ) === false ) {
+	$pass( 'title and summary are separate elements' );
+} else {
+	$fail( 'title and summary are separate elements' );
+}
+
 if ( $src !== '' && strpos( $src, 'woocommerce_before_cart_collaterals' ) === false ) {
 	$pass( 'cart accordion not hooked before collaterals' );
 } else {
@@ -69,6 +80,12 @@ if ( $src !== '' && strpos( $src, 'mp-cp-credit-accordion--cart-collateral' ) ==
 	$pass( 'cart collateral sidebar class removed' );
 } else {
 	$fail( 'cart collateral sidebar class removed' );
+}
+
+if ( $src !== '' && strpos( $src, "['plain_code']" ) === false && strpos( $src, 'REALGIFTCODE' ) === false ) {
+	$pass( 'redemption UI does not render plain gift card codes' );
+} else {
+	$fail( 'redemption UI does not render plain gift card codes' );
 }
 
 $unsafe_markup = array(
@@ -99,10 +116,10 @@ foreach ( $unsafe_css as $selector ) {
 	}
 }
 
-if ( $css !== '' && strpos( $css, '.mp-cp-credit-inline' ) !== false && strpos( $css, 'max-width: 420px' ) !== false ) {
-	$pass( 'inline cart accordion css scoped' );
+if ( $css !== '' && strpos( $css, '.mp-cp-credit-inline' ) !== false && strpos( $css, '.mp-cp-credit-accordion__form-row' ) !== false ) {
+	$pass( 'coupon-row form styles present' );
 } else {
-	$fail( 'inline cart accordion css scoped' );
+	$fail( 'coupon-row form styles present' );
 }
 
 if ( ! GiftCardRedemptionCheckout::should_expand_accordion( null, null, 0.0, false, false ) ) {
@@ -137,10 +154,10 @@ if ( $src !== '' && strpos( $src, 'nested <form>' ) !== false ) {
 	$fail( 'cart hook documents nested-form avoidance' );
 }
 
-if ( $css !== '' && strpos( $css, '.mp-cp-credit-accordion__toggle' ) !== false ) {
-	$pass( 'accordion styles present' );
+if ( $src !== '' && strpos( $src, 'mp-cp-credit-chip--summary' ) !== false ) {
+	$pass( 'applied summary chip markup present' );
 } else {
-	$fail( 'accordion styles present' );
+	$fail( 'applied summary chip markup present' );
 }
 
 $js_path = dirname( __DIR__ ) . '/assets/js/gift-card-credit-accordion.js';

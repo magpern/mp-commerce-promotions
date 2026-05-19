@@ -66,6 +66,9 @@ final class GiftCardRedemptionAccordionTest extends TestCase {
 		);
 		$this->assertStringContainsString( 'mp-cp-credit-accordion', $src );
 		$this->assertStringContainsString( 'mp-cp-credit-accordion__toggle', $src );
+		$this->assertStringContainsString( 'mp-cp-credit-accordion__header-main', $src );
+		$this->assertStringContainsString( 'mp-cp-credit-accordion__summary-text', $src );
+		$this->assertStringContainsString( 'mp-cp-credit-accordion__form-row', $src );
 		$this->assertStringContainsString( 'mp-cp-credit-chip', $src );
 		$this->assertStringContainsString( 'mp_cp_gift_card_nonce', $src );
 		$this->assertStringNotContainsString( 'mp-cp-gc-title', $src );

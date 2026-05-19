@@ -308,10 +308,16 @@ final class GiftCardRedemptionCheckout {
 			echo '<div class="mp-cp-credit-inline">';
 		}
 
-		echo '<details class="mp-cp-credit-accordion mp-cp-gift-card-checkout"' . ( $expand ? ' open' : '' ) . '>';
+		$accordion_class = 'mp-cp-credit-accordion mp-cp-gift-card-checkout';
+		if ( $cart_inline ) {
+			$accordion_class .= ' mp-cp-credit-accordion--cart';
+		}
+		echo '<details class="' . esc_attr( $accordion_class ) . '"' . ( $expand ? ' open' : '' ) . '>';
 		$this->render_accordion_summary( $gift_applied, $sc_applied, $sc_balance, $can_sc );
 		echo '<div id="' . esc_attr( $body_id ) . '" class="mp-cp-credit-accordion__body">';
-		$this->render_applied_chips( $gift_applied, $sc_applied );
+		if ( ! $cart_inline ) {
+			$this->render_applied_chips( $gift_applied, $sc_applied );
+		}
 		$this->render_gift_card_form( $gift_applied, $cart_inline );
 		if ( $can_sc ) {
 			$this->render_store_credit_form( $sc_applied, $sc_balance, $cart_inline );
@@ -340,15 +346,18 @@ final class GiftCardRedemptionCheckout {
 		bool $can_sc
 	): void {
 		echo '<summary class="mp-cp-credit-accordion__toggle">';
-		echo '<span class="mp-cp-credit-accordion__icon" aria-hidden="true">';
-		echo '<svg width="18" height="18" viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10zm-8-7c1.66 0 3-1.34 3-3S13.66 5 12 5 9 6.34 9 8s1.34 3 3 3z"/></svg>';
-		echo '</span>';
-		echo '<span class="mp-cp-credit-accordion__summary">';
-		echo '<span class="mp-cp-credit-accordion__title">' . esc_html__( 'Gift card or store credit', 'mp-commerce-promotions' ) . '</span>';
-		echo '<span class="mp-cp-credit-accordion__meta">';
-		$this->render_summary_meta( $gift_applied, $sc_applied, $sc_balance, $can_sc );
-		echo '</span></span>';
+		echo '<div class="mp-cp-credit-accordion__header">';
+		echo '<div class="mp-cp-credit-accordion__header-main">';
 		echo '<span class="mp-cp-credit-accordion__chevron" aria-hidden="true"></span>';
+		echo '<span class="mp-cp-credit-accordion__icon" aria-hidden="true">';
+		echo '<svg width="16" height="16" viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10zm-8-7c1.66 0 3-1.34 3-3S13.66 5 12 5 9 6.34 9 8s1.34 3 3 3z"/></svg>';
+		echo '</span>';
+		echo '<span class="mp-cp-credit-accordion__title">' . esc_html__( 'Gift card or store credit', 'mp-commerce-promotions' ) . '</span>';
+		echo '</div>';
+		echo '<span class="mp-cp-credit-accordion__summary-text">';
+		$this->render_summary_meta( $gift_applied, $sc_applied, $sc_balance, $can_sc );
+		echo '</span>';
+		echo '</div>';
 		echo '</summary>';
 	}
 
@@ -365,13 +374,13 @@ final class GiftCardRedemptionCheckout {
 		$parts = array();
 
 		if ( $gift_applied !== null ) {
-			$parts[] = esc_html(
+			$parts[] = '<span class="mp-cp-credit-chip mp-cp-credit-chip--summary">' . esc_html(
 				sprintf(
 					/* translators: %s: last four digits */
 					__( 'Gift card ****%s applied', 'mp-commerce-promotions' ),
 					(string) ( $gift_applied['code_last4'] ?? '' )
 				)
-			);
+			) . '</span>';
 		}
 
 		if ( $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 ) {
@@ -458,9 +467,9 @@ final class GiftCardRedemptionCheckout {
 			}
 		} else {
 			if ( ! $cart_inline ) {
-				echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form--inline">';
+				echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
 			} else {
-				echo '<div class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form--inline">';
+				echo '<div class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
 			}
 			wp_nonce_field( self::NONCE_GIFT, self::NONCE_GIFT_FIELD );
 			echo '<input type="hidden" name="mp_cp_gift_card_action" value="apply" />';
@@ -492,9 +501,9 @@ final class GiftCardRedemptionCheckout {
 			}
 		} elseif ( $sc_balance > 0 ) {
 			if ( $cart_inline ) {
-				echo '<div class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form--inline">';
+				echo '<div class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
 			} else {
-				echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form--inline">';
+				echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
 			}
 			echo '<input type="hidden" name="mp_cp_store_credit_action" value="apply" />';
 			wp_nonce_field( self::NONCE_SC, self::NONCE_SC_FIELD );
