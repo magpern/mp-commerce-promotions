@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Maturity:** Early MVP. Suitable for testing and staged rollouts — not a stable, production-complete, or marketplace-certified release without your own review.
 
+## [0.3.0-pilot.3] - 2026-05-19
+
+**Pilot release** for controlled merchant testing — supersedes **0.3.0-pilot.2**. **Schema 1.19.0** unchanged.
+
+### Changed
+
+- **Merchant-facing admin copy** — removed runtime UI strings and shortcuts for “Pilot warning”, “Pilot checklist”, and “before pilot sales”; gift card email and export notices reworded; Gift Cards dashboard shortcuts add Reports and Diagnostics.
+- **Diagnostics** — “Production pilot operations” heading renamed to **Rollback and performance profiles** (behavior unchanged).
+
+### Added
+
+- `docs/PILOT_RELEASE_0.3.0_PILOT3.md`, `docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT3.md`.
+
+### Notes
+
+- Internal docs ([GIFT_CARD_PILOT_CHECKLIST.md](docs/GIFT_CARD_PILOT_CHECKLIST.md), QA evidence) remain in the repository but are not linked from normal merchant admin screens.
+
 ## [Unreleased]
 
 ### Changed
@@ -236,7 +253,8 @@ First **public beta** for technical pilot users on **classic shortcode** cart an
 - Database schema version is tracked separately (`mp_cp_schema_version`; see `Schema::SCHEMA_VERSION` in code).
 - PHPCS baseline is not clean; automated tests and CI are not yet in place.
 
-[Unreleased]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.2...HEAD
+[Unreleased]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.3...HEAD
+[0.3.0-pilot.3]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.2...v0.3.0-pilot.3
 [0.3.0-pilot.2]: https://github.com/magpern/mp-commerce-promotions/compare/v0.3.0-pilot.1...v0.3.0-pilot.2
 [0.3.0-pilot.1]: https://github.com/magpern/mp-commerce-promotions/compare/v0.2.0-beta.1...v0.3.0-pilot.1
 [0.2.0-beta.1]: https://github.com/magpern/mp-commerce-promotions/compare/v0.1.0...v0.2.0-beta.1

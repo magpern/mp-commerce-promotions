@@ -46,7 +46,7 @@ final class AdminPilotHardeningPanel {
 		?PromotionSnapshotRepository $snapshot_repo,
 		?AuditLogRepository $audit_logs
 	): void {
-		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Production pilot operations', 'mp-commerce-promotions' ) . '</h2>';
+		echo '<h2 style="margin-top:1.5em;">' . esc_html__( 'Rollback and performance profiles', 'mp-commerce-promotions' ) . '</h2>';
 
 		self::render_anomaly_table( $profiler );
 		self::render_profile_presets( $settings );

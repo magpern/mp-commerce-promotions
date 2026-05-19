@@ -97,7 +97,7 @@ final class GiftCardExportHandler {
 		echo '<h2 class="title" style="margin-top:0;">' . esc_html__( 'Ledger export (CSV)', 'mp-commerce-promotions' ) . '</h2>';
 		echo '<p class="description">';
 		echo esc_html__(
-			'Download stored-value data for audit and reconciliation before pilot sales. Exports never include full gift card codes or code hashes. For disaster recovery, use your normal site and database backups.',
+			'Download stored-value data for audit, reconciliation, or backup review. Exports never include full gift card codes or code hashes. For disaster recovery, use your normal site and database backups.',
 			'mp-commerce-promotions'
 		);
 		if ( $backup_doc !== '' ) {

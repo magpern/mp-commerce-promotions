@@ -1,6 +1,6 @@
 <?php
 /**
- * Pilot readiness signals for gift cards (products + email).
+ * Gift card email delivery readiness signals (products + mail).
  *
  * @package MP\CommercePromotions
  */
@@ -18,7 +18,7 @@ final class GiftCardPilotReadiness {
 	 *   gift_card_product_count: int,
 	 *   has_gift_card_products: bool,
 	 *   wp_mail_likely_failing: bool,
-	 *   pilot_email_risk: bool
+	 *   email_delivery_risk: bool
 	 * }
 	 */
 	public static function analyze( wpdb $wpdb ): array {
@@ -30,27 +30,30 @@ final class GiftCardPilotReadiness {
 			'gift_card_product_count' => $count,
 			'has_gift_card_products'  => $count > 0,
 			'wp_mail_likely_failing'  => $fail,
-			'pilot_email_risk'        => $count > 0 && $fail,
+			'email_delivery_risk'     => $count > 0 && $fail,
 		);
 	}
 
-	public static function render_admin_pilot_email_warning( wpdb $wpdb ): void {
+	public static function render_admin_email_delivery_warning( wpdb $wpdb ): void {
 		$state = self::analyze( $wpdb );
-		if ( empty( $state['pilot_email_risk'] ) ) {
+		if ( empty( $state['email_delivery_risk'] ) ) {
 			return;
 		}
 
-		echo '<div class="notice notice-error"><p><strong>' . esc_html__( 'Pilot warning:', 'mp-commerce-promotions' ) . '</strong> ';
+		echo '<div class="notice notice-error"><p>';
 		echo esc_html__(
-			'Gift card products are active but email delivery may fail. Configure SMTP and send a test gift card before pilot sales.',
+			'Gift card email delivery may fail. Configure SMTP and send a test gift card before selling gift cards.',
 			'mp-commerce-promotions'
 		);
-		echo ' <a href="' . esc_url( admin_url( 'admin.php?page=mp-commerce-promotions&tab=diagnostics' ) ) . '">'
-			. esc_html__( 'View diagnostics', 'mp-commerce-promotions' ) . '</a>';
-		if ( defined( 'MP_COMMERCE_PROMOTIONS_PATH' ) && is_readable( MP_COMMERCE_PROMOTIONS_PATH . 'docs/GIFT_CARD_PILOT_CHECKLIST.md' ) ) {
-			echo ' · <a href="' . esc_url( plugins_url( 'docs/GIFT_CARD_PILOT_CHECKLIST.md', MP_COMMERCE_PROMOTIONS_PATH . 'mp-commerce-promotions.php' ) ) . '" target="_blank" rel="noopener noreferrer">'
-				. esc_html__( 'Pilot checklist', 'mp-commerce-promotions' ) . '</a>';
-		}
+		echo ' <a href="' . esc_url( admin_url( 'admin.php?page=mp-commerce-promotions&tab=diagnostics' ) ) . '">';
+		echo esc_html__( 'View diagnostics', 'mp-commerce-promotions' ) . '</a>';
 		echo '</p></div>';
+	}
+
+	/**
+	 * @deprecated 0.3.0-pilot.3 Use render_admin_email_delivery_warning().
+	 */
+	public static function render_admin_pilot_email_warning( wpdb $wpdb ): void {
+		self::render_admin_email_delivery_warning( $wpdb );
 	}
 }

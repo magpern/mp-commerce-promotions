@@ -31,7 +31,7 @@ function pilot_smoke_assert( bool $ok, string $label ): void {
 	WP_CLI::warning( 'FAIL: ' . $label );
 }
 
-$expected_version = '0.3.0-pilot.2';
+$expected_version = '0.3.0-pilot.3';
 
 pilot_smoke_assert(
 	defined( 'MP_COMMERCE_PROMOTIONS_VERSION' )
@@ -39,7 +39,7 @@ pilot_smoke_assert(
 	'plugin version is ' . $expected_version
 );
 
-pilot_smoke_assert( Schema::SCHEMA_VERSION === '1.17.0', 'schema version 1.17.0' );
+pilot_smoke_assert( Schema::SCHEMA_VERSION === '1.19.0', 'schema version 1.19.0' );
 
 $stored_schema = get_option( MigrationRunner::OPTION_SCHEMA_VERSION, '' );
 pilot_smoke_assert(
@@ -59,8 +59,8 @@ pilot_smoke_assert( count( CampaignBuilderGoal::all() ) === 10, 'ten campaign go
 
 $repo_root = dirname( __DIR__ );
 $docs      = array(
-	'docs/PILOT_RELEASE_0.3.0_PILOT2.md',
-	'docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT2.md',
+	'docs/PILOT_RELEASE_0.3.0_PILOT3.md',
+	'docs/GITHUB_RELEASE_NOTES_0.3.0_PILOT3.md',
 	'docs/CAMPAIGN_BUILDER_QA_EVIDENCE.md',
 	'docs/manual-campaign-builder-test.md',
 	'scripts/commerce-growth-navigation-smoke.php',

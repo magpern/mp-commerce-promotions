@@ -118,7 +118,7 @@ final class GiftCardsPage {
 
 		global $wpdb;
 		if ( $wpdb instanceof \wpdb ) {
-			GiftCardPilotReadiness::render_admin_pilot_email_warning( $wpdb );
+			GiftCardPilotReadiness::render_admin_email_delivery_warning( $wpdb );
 		}
 
 		GiftCardModuleSections::render_sub_nav( $section );
@@ -205,13 +205,9 @@ final class GiftCardsPage {
 			array( GiftCardModuleSections::section_url( GiftCardModuleSections::SECTION_GIFT_CARDS ), __( 'Manage gift cards', 'mp-commerce-promotions' ) ),
 			array( GiftCardModuleSections::section_url( GiftCardModuleSections::SECTION_STORE_CREDIT ), __( 'Manage store credit', 'mp-commerce-promotions' ) ),
 			array( GiftCardModuleSections::section_url( GiftCardModuleSections::SECTION_SETTINGS ), __( 'Settings', 'mp-commerce-promotions' ) ),
+			array( AdminNavigation::tab_url( AdminNavigation::TAB_REPORTS ), __( 'Reports', 'mp-commerce-promotions' ) ),
+			array( AdminNavigation::tab_url( AdminNavigation::TAB_DIAGNOSTICS ), __( 'Diagnostics', 'mp-commerce-promotions' ) ),
 		);
-		$pilot_doc = defined( 'MP_COMMERCE_PROMOTIONS_URL' )
-			? MP_COMMERCE_PROMOTIONS_URL . 'docs/GIFT_CARD_PILOT_CHECKLIST.md'
-			: '';
-		if ( $pilot_doc !== '' ) {
-			$shortcuts[] = array( $pilot_doc, __( 'Pilot checklist', 'mp-commerce-promotions' ) );
-		}
 		foreach ( $shortcuts as $idx => $link ) {
 			if ( $idx > 0 ) {
 				echo ' · ';

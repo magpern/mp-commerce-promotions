@@ -144,6 +144,18 @@ nav_smoke_assert(
 	'Campaign Builder assets use get_current_tab() not raw $_GET[tab]'
 );
 
+$gift_cards_source = (string) file_get_contents( dirname( __DIR__ ) . '/src/Admin/GiftCardsPage.php' );
+nav_smoke_assert(
+	! str_contains( $gift_cards_source, 'Pilot checklist' ),
+	'Gift cards dashboard shortcuts omit internal pilot checklist link'
+);
+
+$readiness_source = (string) file_get_contents( dirname( __DIR__ ) . '/src/GiftCard/GiftCardPilotReadiness.php' );
+nav_smoke_assert(
+	! str_contains( $readiness_source, 'Pilot warning' ) && ! str_contains( $readiness_source, 'before pilot sales' ),
+	'gift card email warning uses merchant-facing copy'
+);
+
 $edit_url = add_query_arg(
 	array(
 		'page'      => AdminNavigation::PAGE_SLUG,

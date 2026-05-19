@@ -1849,7 +1849,7 @@ final class DiagnosticsPage {
 			return;
 		}
 
-		\MP\CommercePromotions\GiftCard\GiftCardPilotReadiness::render_admin_pilot_email_warning( $wpdb );
+		\MP\CommercePromotions\GiftCard\GiftCardPilotReadiness::render_admin_email_delivery_warning( $wpdb );
 
 		$mail = new \MP\CommercePromotions\GiftCard\GiftCardMailDiagnostics( $wpdb );
 		$info = $mail->analyze();
@@ -2196,7 +2196,7 @@ final class DiagnosticsPage {
 			echo esc_html__( 'No recent ledger CSV export recorded.', 'mp-commerce-promotions' );
 			echo '</strong> ';
 			echo esc_html__(
-				'Outstanding stored-value liability exists. Export gift cards and transactions from Gift Cards → Dashboard or Settings before pilot sales, and keep normal database backups.',
+				'Outstanding stored-value liability exists. Export gift cards and transactions from Gift Cards → Dashboard or Settings for audit and backup review, and keep normal database backups.',
 				'mp-commerce-promotions'
 			);
 			echo ' <a href="' . esc_url( \MP\CommercePromotions\Admin\GiftCardModuleSections::section_url( \MP\CommercePromotions\Admin\GiftCardModuleSections::SECTION_DASHBOARD ) ) . '">';

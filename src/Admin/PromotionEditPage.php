@@ -2910,7 +2910,7 @@ final class PromotionEditPage {
 		echo esc_html__( 'Experimental line discount mode', 'mp-commerce-promotions' );
 		echo '</strong> — ';
 		echo esc_html__(
-			'Fee-based mode remains the site default. Complete docs/manual-line-discount-engine-test.md on staging before pilot use.',
+			'Fee-based mode remains the site default. Complete docs/manual-line-discount-engine-test.md on staging before enabling line-item or hybrid modes in production.',
 			'mp-commerce-promotions'
 		);
 		echo '</p></div>';

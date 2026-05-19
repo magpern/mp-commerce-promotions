@@ -4,11 +4,11 @@ Tags: woocommerce, promotions, discounts, coupons, vouchers
 Requires at least: 6.5
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 0.3.0-pilot.2
+Stable tag: 0.3.0-pilot.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Pilot release 0.3.0-pilot.2** — supersedes pilot.1; Campaign Builder default route fixed; not GA.
+Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Pilot release 0.3.0-pilot.3** — merchant-facing admin copy; supersedes pilot.2; not GA.
 
 == Description ==
 
@@ -115,6 +115,10 @@ No. Full codes are displayed once after generation. Download the CSV before leav
 3. Generated code batch show-once screen (placeholder).
 
 == Changelog ==
+
+= 0.3.0-pilot.3 =
+* Merchant-facing admin UI: removed “Pilot checklist” shortcut and “pilot warning” wording; operational notices retained.
+* Gift Cards dashboard shortcuts include Reports and Diagnostics. Schema 1.19.0 unchanged. See docs/PILOT_RELEASE_0.3.0_PILOT3.md.
 
 = 0.3.0-pilot.2 =
 * Supersedes 0.3.0-pilot.1. Fixes Campaign Builder rendering when opening Promotions without tab=campaign-builder.

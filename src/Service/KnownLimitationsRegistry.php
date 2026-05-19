@@ -91,7 +91,7 @@ final class KnownLimitationsRegistry {
 			),
 			'checkout_blocks_active'         => array(
 				'summary'    => __( 'Blocks checkout uses Store API; recording hooks differ from classic checkout.', 'mp-commerce-promotions' ),
-				'mitigation' => __( 'Use declared block compatibility QA checklist after plugin updates.', 'mp-commerce-promotions' ),
+				'mitigation' => __( 'Use declared block compatibility testing guide after plugin updates.', 'mp-commerce-promotions' ),
 				'doc_anchor' => 'COMPATIBILITY_MATRIX.md#cart-checkout-blocks',
 			),
 		);

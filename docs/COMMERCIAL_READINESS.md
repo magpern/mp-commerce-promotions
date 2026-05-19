@@ -1,7 +1,7 @@
 # Commercial readiness
 
 **Schema:** 1.18.0  
-**Plugin version:** 0.3.0-pilot.2 (pilot — not GA; supersedes pilot.1)
+**Plugin version:** 0.3.0-pilot.3 (pilot — not GA; supersedes pilot.2)
 
 ## Current maturity
 
