@@ -148,6 +148,15 @@ foreach (
 	gcp_smoke_assert( array_key_exists( $key, $issues ), 'diagnostics key: ' . $key );
 }
 
+$admin_src = (string) file_get_contents(
+	dirname( __DIR__ ) . '/src/Woo/GiftCardProductAdmin.php'
+);
+gcp_smoke_assert( strpos( $admin_src, 'Gift card amount mode' ) !== false, 'admin label: amount mode' );
+gcp_smoke_assert( strpos( $admin_src, 'Fixed gift card amount' ) !== false, 'admin label: fixed amount' );
+gcp_smoke_assert( strpos( $admin_src, 'Expiry days' ) !== false, 'admin label: expiry days' );
+gcp_smoke_assert( strpos( $admin_src, '0 = no expiry' ) !== false, 'admin help: expiry' );
+gcp_smoke_assert( strpos( $admin_src, 'woocommerce_wp_text_input' ) !== false, 'admin uses WC field helpers' );
+
 if ( $GLOBALS['gcp_smoke_failures'] > 0 ) {
 	WP_CLI::error( 'Gift card product smoke finished with ' . (int) $GLOBALS['gcp_smoke_failures'] . ' failure(s).' );
 }

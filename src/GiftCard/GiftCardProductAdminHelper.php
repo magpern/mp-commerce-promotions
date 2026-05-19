@@ -12,6 +12,27 @@ namespace MP\CommercePromotions\GiftCard;
 final class GiftCardProductAdminHelper {
 
 	/**
+	 * @return array<string, string>
+	 */
+	public static function amount_mode_options(): array {
+		return array(
+			GiftCardProductMeta::AMOUNT_MODE_PRODUCT_PRICE => __( 'Product price', 'mp-commerce-promotions' ),
+			GiftCardProductMeta::AMOUNT_MODE_FIXED         => __( 'Fixed amount', 'mp-commerce-promotions' ),
+		);
+	}
+
+	/**
+	 * @return array<string, string>
+	 */
+	public static function recipient_mode_options(): array {
+		return array(
+			GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY       => __( 'Purchaser only', 'mp-commerce-promotions' ),
+			GiftCardProductMeta::RECIPIENT_EMAIL                => __( 'Recipient email', 'mp-commerce-promotions' ),
+			GiftCardProductMeta::RECIPIENT_EMAIL_AND_MESSAGE    => __( 'Recipient email + personal message', 'mp-commerce-promotions' ),
+		);
+	}
+
+	/**
 	 * @param array{sells: bool, amount_mode: string, fixed_amount: float, expiry_days: ?int, recipient_mode: string} $config
 	 */
 	public static function amount_preview_text( array $config, float $product_price, string $currency = '' ): string {
@@ -59,5 +80,34 @@ final class GiftCardProductAdminHelper {
 		}
 
 		return __( 'Gift cards are usually sold as virtual products (no shipping). Consider enabling “Virtual” in the Product data box.', 'mp-commerce-promotions' );
+	}
+
+	/**
+	 * Expiry input value: empty string when unset; preserve 0 for “no expiry”.
+	 */
+	public static function expiry_days_input_value( ?int $expiry_days ): string {
+		if ( $expiry_days === null ) {
+			return '';
+		}
+
+		return (string) $expiry_days;
+	}
+
+	/**
+	 * Fixed amount input value: blank when zero and product-price mode avoids a stray “0”.
+	 *
+	 * @param array{sells: bool, amount_mode: string, fixed_amount: float, expiry_days: ?int, recipient_mode: string} $config
+	 */
+	public static function fixed_amount_input_value( array $config ): string {
+		if ( $config['amount_mode'] !== GiftCardProductMeta::AMOUNT_MODE_FIXED ) {
+			return '';
+		}
+
+		$amount = GiftCard::money( $config['fixed_amount'] );
+		if ( $amount <= 0 ) {
+			return '';
+		}
+
+		return (string) $amount;
 	}
 }

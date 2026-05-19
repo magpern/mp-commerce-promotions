@@ -1,0 +1,38 @@
+/* Gift card fields inside WooCommerce product data → General */
+.mp-cp-gift-card-product-fields .mp-cp-gc-admin-intro {
+	margin: 0 0 0.5em;
+	padding: 0 12px;
+}
+
+.mp-cp-gift-card-product-options {
+	padding-top: 0;
+}
+
+.mp-cp-gift-card-product-options .mp-cp-gc-admin-preview,
+.mp-cp-gift-card-product-options .mp-cp-gc-admin-warning {
+	margin: 0 0 0.75em;
+	padding: 0 12px;
+}
+
+.mp-cp-gift-card-variation-fields {
+	clear: both;
+	width: 100%;
+	padding: 0 12px 8px;
+	box-sizing: border-box;
+}
+
+.mp-cp-gift-card-variation-fields .form-field {
+	padding: 5px 0 !important;
+	margin: 0 !important;
+}
+
+.mp_cp_gift_card_amount_mode_field fieldset {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.mp_cp_gift_card_amount_mode_field .mp-cp-amount-mode-radios label {
+	display: block;
+	margin: 0.25em 0;
+}

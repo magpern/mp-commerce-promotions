@@ -33,4 +33,48 @@ final class GiftCardProductAdminHelperTest extends TestCase {
 		$warn = GiftCardProductAdminHelper::virtual_product_warning( false );
 		$this->assertStringContainsString( 'virtual', strtolower( $warn ) );
 	}
+
+	public function test_amount_mode_options_labels(): void {
+		$options = GiftCardProductAdminHelper::amount_mode_options();
+		$this->assertArrayHasKey( GiftCardProductMeta::AMOUNT_MODE_PRODUCT_PRICE, $options );
+		$this->assertArrayHasKey( GiftCardProductMeta::AMOUNT_MODE_FIXED, $options );
+	}
+
+	public function test_recipient_mode_options_labels(): void {
+		$options = GiftCardProductAdminHelper::recipient_mode_options();
+		$this->assertArrayHasKey( GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY, $options );
+		$this->assertArrayHasKey( GiftCardProductMeta::RECIPIENT_EMAIL_AND_MESSAGE, $options );
+	}
+
+	public function test_fixed_amount_input_blank_for_product_price_mode(): void {
+		$value = GiftCardProductAdminHelper::fixed_amount_input_value(
+			array(
+				'sells'          => true,
+				'amount_mode'    => GiftCardProductMeta::AMOUNT_MODE_PRODUCT_PRICE,
+				'fixed_amount'   => 25.0,
+				'expiry_days'    => null,
+				'recipient_mode' => GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY,
+			)
+		);
+		$this->assertSame( '', $value );
+	}
+
+	public function test_expiry_days_preserves_zero(): void {
+		$this->assertSame( '0', GiftCardProductAdminHelper::expiry_days_input_value( 0 ) );
+		$this->assertSame( '', GiftCardProductAdminHelper::expiry_days_input_value( null ) );
+	}
+
+	public function test_admin_uses_woocommerce_field_helpers(): void {
+		$src = (string) file_get_contents(
+			dirname( __DIR__, 2 ) . '/src/Woo/GiftCardProductAdmin.php'
+		);
+		$this->assertStringContainsString( 'woocommerce_wp_select', $src );
+		$this->assertStringContainsString( 'woocommerce_wp_text_input', $src );
+		$this->assertStringContainsString( 'Gift card amount mode', $src );
+		$this->assertStringContainsString( 'Fixed gift card amount', $src );
+		$this->assertStringContainsString( 'Expiry days', $src );
+		$this->assertStringContainsString( '0 = no expiry', $src );
+		$this->assertStringContainsString( 'Recipient mode', $src );
+		$this->assertStringContainsString( 'gift-card-product-admin.js', $src );
+	}
 }

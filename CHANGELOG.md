@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Gift card product admin fields** — restore WooCommerce `form-field` labels and descriptions (amount mode, fixed amount, expiry days, recipient mode); hide options until gift card is enabled; show fixed amount only for fixed mode; admin JS/CSS for layout.
+
 ### Added
 
 - **Gift card ledger CSV export** — Dashboard and Settings export gift cards (masked last4 only), transactions, and outstanding liability by currency; POST + nonce + `manage_woocommerce`; audit `gift_card.export_csv`; export timestamps and Diagnostics stale-export warning; [GIFT_CARD_BACKUP_EXPORT.md](docs/GIFT_CARD_BACKUP_EXPORT.md); `gift-card-export-smoke.php`.

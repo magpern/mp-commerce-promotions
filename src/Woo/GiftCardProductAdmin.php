@@ -18,10 +18,44 @@ final class GiftCardProductAdmin {
 	public function register(): void {
 		add_action( 'woocommerce_product_options_general_product_data', array( $this, 'render_simple_fields' ) );
 		add_action( 'woocommerce_process_product_meta', array( $this, 'save_simple' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 
 		add_action( 'woocommerce_variation_options', array( $this, 'render_variation_checkbox' ), 10, 3 );
 		add_action( 'woocommerce_variation_options_pricing', array( $this, 'render_variation_fields' ), 10, 3 );
 		add_action( 'woocommerce_save_product_variation', array( $this, 'save_variation' ), 10, 2 );
+	}
+
+	/**
+	 * @param string $hook
+	 */
+	public function enqueue_admin_assets( $hook ): void {
+		if ( ! in_array( $hook, array( 'post.php', 'post-new.php' ), true ) ) {
+			return;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( $screen === null || $screen->post_type !== 'product' ) {
+			return;
+		}
+
+		if ( ! defined( 'MP_COMMERCE_PROMOTIONS_URL' ) || ! defined( 'MP_COMMERCE_PROMOTIONS_VERSION' ) ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'mp-cp-gift-card-product-admin',
+			MP_COMMERCE_PROMOTIONS_URL . 'assets/css/gift-card-product-admin.css',
+			array(),
+			MP_COMMERCE_PROMOTIONS_VERSION
+		);
+
+		wp_enqueue_script(
+			'mp-cp-gift-card-product-admin',
+			MP_COMMERCE_PROMOTIONS_URL . 'assets/js/gift-card-product-admin.js',
+			array( 'jquery' ),
+			MP_COMMERCE_PROMOTIONS_VERSION,
+			true
+		);
 	}
 
 	public function render_simple_fields(): void {
@@ -31,7 +65,7 @@ final class GiftCardProductAdmin {
 			return;
 		}
 
-		echo '<div class="options_group mp-cp-gift-card-product-fields">';
+		echo '<div class="options_group mp-cp-gift-card-product-fields show_if_simple show_if_variable">';
 		$this->render_fields( $product_id );
 		echo '</div>';
 	}
@@ -53,7 +87,8 @@ final class GiftCardProductAdmin {
 			array(
 				'id'            => 'mp_cp_sells_gift_card_var[' . $loop . ']',
 				'name'          => 'mp_cp_sells_gift_card_var[' . $loop . ']',
-				'label'         => __( 'Sells gift card', 'mp-commerce-promotions' ),
+				'label'         => __( 'This product sells a gift card', 'mp-commerce-promotions' ),
+				'description'   => __( 'When the order is paid, one gift card is issued per quantity purchased.', 'mp-commerce-promotions' ),
 				'value'         => $config['sells'] ? GiftCardProductMeta::VALUE_YES : GiftCardProductMeta::VALUE_NO,
 				'wrapper_class' => 'form-row form-row-full',
 			)
@@ -73,12 +108,10 @@ final class GiftCardProductAdmin {
 		}
 
 		$config = GiftCardProductMeta::read( $variation_id );
-		if ( ! $config['sells'] ) {
-			return;
-		}
+		$style  = $config['sells'] ? '' : 'display:none;';
 
-		echo '<div class="mp-cp-gift-card-variation-fields form-row form-row-full">';
-		$this->render_fields_inner( $loop, $config, true, $variation_id );
+		echo '<div class="mp-cp-gift-card-variation-fields form-row form-row-full" style="' . esc_attr( $style ) . '">';
+		$this->render_fields_inner( (int) $loop, $config, true, $variation_id );
 		echo '</div>';
 	}
 
@@ -96,6 +129,7 @@ final class GiftCardProductAdmin {
 	 */
 	public function save_variation( $variation_id, $loop ): void {
 		$variation_id = (int) $variation_id;
+		$loop         = (int) $loop;
 		if ( $variation_id <= 0 || ! current_user_can( 'edit_post', $variation_id ) ) {
 			return;
 		}
@@ -105,7 +139,7 @@ final class GiftCardProductAdmin {
 				wp_unslash( (string) $_POST['mp_cp_sells_gift_card_var'][ $loop ] )
 			);
 
-		$input = $this->read_post_input_variation( $loop );
+		$input          = $this->read_post_input_variation( $loop );
 		$input['sells'] = $sells ? GiftCardProductMeta::VALUE_YES : GiftCardProductMeta::VALUE_NO;
 		GiftCardProductMeta::save( $variation_id, $input );
 	}
@@ -130,7 +164,8 @@ final class GiftCardProductAdmin {
 			)
 		);
 
-		echo '<div class="mp-cp-gift-card-product-options">';
+		$options_style = $config['sells'] ? '' : 'display:none;';
+		echo '<div class="mp-cp-gift-card-product-options" style="' . esc_attr( $options_style ) . '">';
 		$this->render_merchant_notices( $config, $price, $virtual );
 		$this->render_fields_inner( null, $config, false, $product_id );
 		echo '</div>';
@@ -164,39 +199,82 @@ final class GiftCardProductAdmin {
 	 * @param array{sells: bool, amount_mode: string, fixed_amount: float, expiry_days: ?int, recipient_mode: string} $config
 	 */
 	private function render_fields_inner( $loop, array $config, bool $is_variation, int $product_id ): void {
-		$suffix = $is_variation && $loop !== null ? '_' . (int) $loop : '';
-		$name_mode = $is_variation && $loop !== null ? 'mp_cp_gift_card_amount_mode_var[' . (int) $loop . ']' : 'mp_cp_gift_card_amount_mode';
+		unset( $product_id );
+
+		$suffix     = $is_variation && $loop !== null ? '_' . (int) $loop : '';
+		$id_mode    = 'mp_cp_gift_card_amount_mode' . $suffix;
+		$name_mode  = $is_variation && $loop !== null ? 'mp_cp_gift_card_amount_mode_var[' . (int) $loop . ']' : 'mp_cp_gift_card_amount_mode';
+		$id_fixed   = 'mp_cp_gift_card_fixed_amount' . $suffix;
 		$name_fixed = $is_variation && $loop !== null ? 'mp_cp_gift_card_fixed_amount_var[' . (int) $loop . ']' : 'mp_cp_gift_card_fixed_amount';
+		$id_expiry  = 'mp_cp_gift_card_expiry_days' . $suffix;
 		$name_expiry = $is_variation && $loop !== null ? 'mp_cp_gift_card_expiry_days_var[' . (int) $loop . ']' : 'mp_cp_gift_card_expiry_days';
-
-		echo '<p><label><strong>' . esc_html__( 'Gift card value', 'mp-commerce-promotions' ) . '</strong></label><br />';
-		echo '<label><input type="radio" name="' . esc_attr( $name_mode ) . '" value="' . esc_attr( GiftCardProductMeta::AMOUNT_MODE_PRODUCT_PRICE ) . '" '
-			. checked( $config['amount_mode'], GiftCardProductMeta::AMOUNT_MODE_PRODUCT_PRICE, false ) . ' /> '
-			. esc_html__( 'Match product price (per unit)', 'mp-commerce-promotions' ) . '</label><br />';
-		echo '<label><input type="radio" name="' . esc_attr( $name_mode ) . '" value="' . esc_attr( GiftCardProductMeta::AMOUNT_MODE_FIXED ) . '" '
-			. checked( $config['amount_mode'], GiftCardProductMeta::AMOUNT_MODE_FIXED, false ) . ' /> '
-			. esc_html__( 'Fixed amount', 'mp-commerce-promotions' ) . '</label></p>';
-
-		echo '<p><label for="mp_cp_gift_card_fixed_amount' . esc_attr( $suffix ) . '">' . esc_html__( 'Fixed amount', 'mp-commerce-promotions' ) . '</label><br />';
-		echo '<input type="number" step="0.01" min="0" class="short" id="mp_cp_gift_card_fixed_amount' . esc_attr( $suffix ) . '" name="' . esc_attr( $name_fixed ) . '" value="' . esc_attr( (string) $config['fixed_amount'] ) . '" /></p>';
-
-		echo '<p><label for="mp_cp_gift_card_expiry_days' . esc_attr( $suffix ) . '">' . esc_html__( 'Expires (days after purchase, optional)', 'mp-commerce-promotions' ) . '</label><br />';
-		echo '<input type="number" step="1" min="0" class="short" id="mp_cp_gift_card_expiry_days' . esc_attr( $suffix ) . '" name="' . esc_attr( $name_expiry ) . '" value="'
-			. esc_attr( $config['expiry_days'] !== null ? (string) $config['expiry_days'] : '' ) . '" /></p>';
-
+		$id_recipient = 'mp_cp_gift_card_recipient_mode' . $suffix;
 		$name_recipient = $is_variation && $loop !== null ? 'mp_cp_gift_card_recipient_mode_var[' . (int) $loop . ']' : 'mp_cp_gift_card_recipient_mode';
-		$mode           = (string) ( $config['recipient_mode'] ?? GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY );
+		$mode       = (string) ( $config['recipient_mode'] ?? GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY );
 
-		echo '<p><label for="mp_cp_gift_card_recipient_mode' . esc_attr( $suffix ) . '"><strong>' . esc_html__( 'Recipient at checkout', 'mp-commerce-promotions' ) . '</strong></label><br />';
-		echo '<select id="mp_cp_gift_card_recipient_mode' . esc_attr( $suffix ) . '" name="' . esc_attr( $name_recipient ) . '">';
-		echo '<option value="' . esc_attr( GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY ) . '" ' . selected( $mode, GiftCardProductMeta::RECIPIENT_PURCHASER_ONLY, false ) . '>'
-			. esc_html__( 'Purchaser only (billing email)', 'mp-commerce-promotions' ) . '</option>';
-		echo '<option value="' . esc_attr( GiftCardProductMeta::RECIPIENT_EMAIL ) . '" ' . selected( $mode, GiftCardProductMeta::RECIPIENT_EMAIL, false ) . '>'
-			. esc_html__( 'Recipient email (+ optional name & schedule)', 'mp-commerce-promotions' ) . '</option>';
-		echo '<option value="' . esc_attr( GiftCardProductMeta::RECIPIENT_EMAIL_AND_MESSAGE ) . '" ' . selected( $mode, GiftCardProductMeta::RECIPIENT_EMAIL_AND_MESSAGE, false ) . '>'
-			. esc_html__( 'Recipient email + personal message', 'mp-commerce-promotions' ) . '</option>';
-		echo '</select></p>';
-		echo '<p class="description">' . esc_html( GiftCardProductAdminHelper::recipient_mode_help( $mode ) ) . '</p>';
+		$fixed_wrapper = 'form-field mp_cp_gift_card_fixed_amount_field';
+		if ( $config['amount_mode'] !== GiftCardProductMeta::AMOUNT_MODE_FIXED ) {
+			$fixed_wrapper .= ' hidden';
+		}
+		$variation_row = $is_variation ? ' form-row form-row-full' : '';
+
+		woocommerce_wp_select(
+			array(
+				'id'            => $id_mode,
+				'name'          => $name_mode,
+				'value'         => $config['amount_mode'],
+				'label'         => __( 'Gift card amount mode', 'mp-commerce-promotions' ),
+				'description'   => __( 'Choose whether the card value follows the WooCommerce product price or a fixed amount.', 'mp-commerce-promotions' ),
+				'options'       => GiftCardProductAdminHelper::amount_mode_options(),
+				'wrapper_class' => 'mp_cp_gift_card_amount_mode_field' . $variation_row,
+			)
+		);
+
+		woocommerce_wp_text_input(
+			array(
+				'id'                => $id_fixed,
+				'name'              => $name_fixed,
+				'value'             => GiftCardProductAdminHelper::fixed_amount_input_value( $config ),
+				'label'             => __( 'Fixed gift card amount', 'mp-commerce-promotions' ),
+				'description'       => __( 'Used only when amount mode is Fixed amount.', 'mp-commerce-promotions' ),
+				'type'              => 'number',
+				'placeholder'       => '50.00',
+				'custom_attributes' => array(
+					'min'  => '0',
+					'step' => '0.01',
+				),
+				'wrapper_class'     => $fixed_wrapper . $variation_row,
+			)
+		);
+
+		woocommerce_wp_text_input(
+			array(
+				'id'                => $id_expiry,
+				'name'              => $name_expiry,
+				'value'             => GiftCardProductAdminHelper::expiry_days_input_value( $config['expiry_days'] ),
+				'label'             => __( 'Expiry days', 'mp-commerce-promotions' ),
+				'description'       => __( '0 = no expiry', 'mp-commerce-promotions' ),
+				'type'              => 'number',
+				'placeholder'       => '365',
+				'custom_attributes' => array(
+					'min'  => '0',
+					'step' => '1',
+				),
+				'wrapper_class'     => 'mp_cp_gift_card_expiry_days_field' . $variation_row,
+			)
+		);
+
+		woocommerce_wp_select(
+			array(
+				'id'            => $id_recipient,
+				'name'          => $name_recipient,
+				'value'         => $mode,
+				'label'         => __( 'Recipient mode', 'mp-commerce-promotions' ),
+				'description'   => GiftCardProductAdminHelper::recipient_mode_help( $mode ),
+				'options'       => GiftCardProductAdminHelper::recipient_mode_options(),
+				'wrapper_class' => 'mp_cp_gift_card_recipient_mode_field' . $variation_row,
+			)
+		);
 	}
 
 	/**
