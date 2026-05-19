@@ -268,23 +268,26 @@ final class GiftCardRedemptionCheckout {
 
 		echo '<div class="mp-cp-credit-cart-disclosure">';
 		echo '<details class="mp-cp-credit-cart-disclosure__details"' . ( $expand ? ' open' : '' ) . '>';
-		echo '<summary class="mp-cp-credit-cart-disclosure__trigger" aria-controls="' . esc_attr( $panel_id ) . '">';
-		echo esc_html( $this->build_cart_disclosure_trigger_text(
+		$this->render_cart_disclosure_summary(
 			$context['gift_applied'],
 			$context['sc_applied'],
 			$context['sc_balance'],
-			$context['can_sc']
-		) );
-		echo '</summary>';
+			$context['can_sc'],
+			$panel_id
+		);
 		echo '<div id="' . esc_attr( $panel_id ) . '" class="mp-cp-credit-cart-disclosure__panel">';
+		echo '<div class="mp-cp-credit-cart-disclosure__panel-inner">';
 		$this->render_gift_card_form( $context['gift_applied'], true );
 		if ( $context['can_sc'] ) {
 			$this->render_store_credit_form( $context['sc_applied'], $context['sc_balance'], true );
 		}
-		echo '<p class="mp-cp-credit-cart-disclosure__help">';
-		echo esc_html__( 'Use a gift card code or available store credit.', 'mp-commerce-promotions' );
+		echo '<p class="mp-cp-credit-cart-disclosure__help mp-cp-credit-cart-disclosure__help--expanded">';
+		echo esc_html__(
+			'Gift cards and store credit can be combined with another payment method if the order total exceeds the available balance.',
+			'mp-commerce-promotions'
+		);
 		echo '</p>';
-		echo '</div></details></div>';
+		echo '</div></div></details></div>';
 	}
 
 	public function render_checkout_panel(): void {
@@ -372,12 +375,50 @@ final class GiftCardRedemptionCheckout {
 	 * @param array<string, mixed>|null $gift_applied
 	 * @param array<string, mixed>|null $sc_applied
 	 */
-	private function build_cart_disclosure_trigger_text(
+	private function render_cart_disclosure_summary(
 		?array $gift_applied,
 		?array $sc_applied,
 		float $sc_balance,
-		bool $can_sc
-	): string {
+		bool $can_sc,
+		string $panel_id
+	): void {
+		$is_applied = $gift_applied !== null
+			|| ( $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 );
+
+		echo '<summary class="mp-cp-credit-cart-disclosure__trigger" aria-controls="' . esc_attr( $panel_id ) . '">';
+		echo '<span class="mp-cp-credit-cart-disclosure__trigger-row">';
+		echo '<span class="mp-cp-credit-cart-disclosure__chevron" aria-hidden="true"></span>';
+		echo '<span class="mp-cp-credit-cart-disclosure__label">';
+		echo esc_html( $this->build_cart_disclosure_summary_label( $gift_applied, $sc_applied ) );
+		echo '</span></span>';
+
+		if ( ! $is_applied ) {
+			echo '<span class="mp-cp-credit-cart-disclosure__hint">';
+			echo esc_html__(
+				'Use a gift card code, store credit, or both. Partial payments supported.',
+				'mp-commerce-promotions'
+			);
+			echo '</span>';
+
+			if ( $can_sc && $sc_balance > 0 ) {
+				echo '<span class="mp-cp-credit-cart-disclosure__meta">';
+				printf(
+					/* translators: %s: formatted wallet balance */
+					esc_html__( 'Available store credit: %s', 'mp-commerce-promotions' ),
+					esc_html( $this->format_price( $sc_balance ) )
+				);
+				echo '</span>';
+			}
+		}
+
+		echo '</summary>';
+	}
+
+	/**
+	 * @param array<string, mixed>|null $gift_applied
+	 * @param array<string, mixed>|null $sc_applied
+	 */
+	private function build_cart_disclosure_summary_label( ?array $gift_applied, ?array $sc_applied ): string {
 		if ( $gift_applied !== null ) {
 			return sprintf(
 				/* translators: %s: last four digits of gift card */
@@ -390,16 +431,7 @@ final class GiftCardRedemptionCheckout {
 			return __( 'Store credit applied · Change/remove', 'mp-commerce-promotions' );
 		}
 
-		$label = __( 'Apply gift card or store credit', 'mp-commerce-promotions' );
-		if ( $can_sc && $sc_balance > 0 ) {
-			$label .= ' · ' . sprintf(
-				/* translators: %s: formatted wallet balance */
-				__( 'Available: %s', 'mp-commerce-promotions' ),
-				$this->format_price( $sc_balance )
-			);
-		}
-
-		return $label;
+		return __( 'Apply gift card or store credit', 'mp-commerce-promotions' );
 	}
 
 	/**
@@ -520,7 +552,10 @@ final class GiftCardRedemptionCheckout {
 	 * @param array<string, mixed>|null $gift_applied
 	 */
 	private function render_gift_card_form( ?array $gift_applied, bool $cart_inline = false ): void {
-		echo '<div class="mp-cp-credit-accordion__section">';
+		$section_class = $cart_inline
+			? 'mp-cp-credit-cart-disclosure__gift'
+			: 'mp-cp-credit-accordion__section';
+		echo '<div class="' . esc_attr( $section_class ) . '">';
 
 		if ( $gift_applied !== null ) {
 			if ( ! $cart_inline ) {
@@ -533,10 +568,13 @@ final class GiftCardRedemptionCheckout {
 				echo '</form>';
 			}
 		} else {
+			$row_class = $cart_inline
+				? 'mp-cp-credit-cart-coupon-row'
+				: 'mp-cp-credit-accordion__form mp-cp-credit-form-row mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline';
 			if ( ! $cart_inline ) {
-				echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-form-row mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
+				echo '<form method="post" class="' . esc_attr( $row_class ) . '">';
 			} else {
-				echo '<div class="mp-cp-credit-accordion__form mp-cp-credit-form-row mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
+				echo '<div class="' . esc_attr( $row_class ) . '">';
 			}
 			wp_nonce_field( self::NONCE_GIFT, self::NONCE_GIFT_FIELD );
 			echo '<input type="hidden" name="mp_cp_gift_card_action" value="apply" />';
@@ -554,7 +592,10 @@ final class GiftCardRedemptionCheckout {
 	 * @param array<string, mixed>|null $sc_applied
 	 */
 	private function render_store_credit_form( ?array $sc_applied, float $sc_balance, bool $cart_inline = false ): void {
-		echo '<div class="mp-cp-credit-accordion__section mp-cp-credit-accordion__section--wallet">';
+		$section_class = $cart_inline
+			? 'mp-cp-credit-cart-disclosure__wallet'
+			: 'mp-cp-credit-accordion__section mp-cp-credit-accordion__section--wallet';
+		echo '<div class="' . esc_attr( $section_class ) . '">';
 
 		if ( $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 ) {
 			if ( ! $cart_inline ) {
@@ -568,21 +609,29 @@ final class GiftCardRedemptionCheckout {
 			}
 		} elseif ( $sc_balance > 0 ) {
 			if ( $cart_inline ) {
-				echo '<div class="mp-cp-credit-accordion__form mp-cp-credit-form-row mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
+				echo '<input type="hidden" name="mp_cp_store_credit_action" value="apply" />';
+				wp_nonce_field( self::NONCE_SC, self::NONCE_SC_FIELD );
+				echo '<button type="submit" class="button button-link mp-cp-credit-cart-disclosure__wallet-apply">';
+				printf(
+					/* translators: %s: formatted wallet balance */
+					esc_html__( 'Apply available store credit (%s)', 'mp-commerce-promotions' ),
+					esc_html( $this->format_price( $sc_balance ) )
+				);
+				echo '</button>';
 			} else {
 				echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-form-row mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
+				echo '<input type="hidden" name="mp_cp_store_credit_action" value="apply" />';
+				wp_nonce_field( self::NONCE_SC, self::NONCE_SC_FIELD );
+				echo '<span class="mp-cp-credit-accordion__wallet-label">';
+				printf(
+					/* translators: %s: balance */
+					esc_html__( 'Wallet balance: %s', 'mp-commerce-promotions' ),
+					esc_html( $this->format_price( $sc_balance ) )
+				);
+				echo '</span>';
+				echo '<button type="submit" class="button">' . esc_html__( 'Apply store credit', 'mp-commerce-promotions' ) . '</button>';
+				echo '</form>';
 			}
-			echo '<input type="hidden" name="mp_cp_store_credit_action" value="apply" />';
-			wp_nonce_field( self::NONCE_SC, self::NONCE_SC_FIELD );
-			echo '<span class="mp-cp-credit-accordion__wallet-label">';
-			printf(
-				/* translators: %s: balance */
-				esc_html__( 'Wallet balance: %s', 'mp-commerce-promotions' ),
-				esc_html( $this->format_price( $sc_balance ) )
-			);
-			echo '</span>';
-			echo '<button type="submit" class="button">' . esc_html__( 'Apply store credit', 'mp-commerce-promotions' ) . '</button>';
-			echo $cart_inline ? '</div>' : '</form>';
 		}
 
 		echo '</div>';

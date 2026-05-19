@@ -1,5 +1,5 @@
 /**
- * Cart gift card / store credit — link-style disclosure (details/summary).
+ * Cart gift card / store credit — WooCommerce-style disclosure (details/summary).
  *
  * @package MP\CommercePromotions
  */
@@ -25,6 +25,7 @@
 
 		details.addEventListener( 'toggle', function () {
 			summary.setAttribute( 'aria-expanded', details.open ? 'true' : 'false' );
+			details.classList.toggle( 'mp-cp-credit-cart-disclosure__details--open', details.open );
 		} );
 	}
 
@@ -32,6 +33,9 @@
 		var nodes = document.querySelectorAll( '.mp-cp-credit-cart-disclosure__details' );
 		for ( var i = 0; i < nodes.length; i++ ) {
 			syncDetails( nodes[ i ] );
+			if ( nodes[ i ].open ) {
+				nodes[ i ].classList.add( 'mp-cp-credit-cart-disclosure__details--open' );
+			}
 		}
 	} );
 } )();
