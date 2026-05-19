@@ -82,6 +82,14 @@
 			return;
 		}
 
+		try {
+			refreshPreviewInner( wrap );
+		} catch ( err ) {
+			debugWarn( 'Preview update failed: ' + ( err && err.message ? err.message : String( err ) ) );
+		}
+	}
+
+	function refreshPreviewInner( wrap ) {
 		wrap.classList.add( 'mp-cp-gc-email-preview-frame--loading' );
 
 		var data = collectPayload();
@@ -113,6 +121,10 @@
 		}
 
 		Object.keys( fieldIds ).forEach( function ( key ) {
+			// Accent uses mp-cp-gift-card-accent-change only (avoids picker feedback loop).
+			if ( key === 'accent' ) {
+				return;
+			}
 			var node = document.getElementById( fieldIds[ key ] );
 			if ( ! node ) {
 				return;

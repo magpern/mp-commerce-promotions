@@ -16,7 +16,8 @@
 	var mediaNoticeShown = false;
 	var colorNoticeShown = false;
 	var mediaFrame = null;
-	var syncingAccent = false;
+	var isUpdatingColor = false;
+	var previewWarned = false;
 
 	function isDebug() {
 		return Boolean(
@@ -110,65 +111,136 @@
 		return normalizeHex( $field.attr( 'data-default-color' ) || '#2271b1' ) || '#2271b1';
 	}
 
-	function notifyAccentChange( node ) {
-		dispatchInput( node );
-		if ( typeof window.CustomEvent === 'function' ) {
-			document.dispatchEvent(
-				new CustomEvent( 'mp-cp-gift-card-accent-change', { bubbles: true } )
-			);
-		}
-	}
-
-	function applyAccentColor( $, color, options ) {
-		options = options || {};
-		var $field = $( '#' + ACCENT_INPUT_ID );
-		if ( ! $field.length || syncingAccent ) {
-			return;
-		}
-
-		var hex = normalizeHex( color );
-		if ( hex === '' && options.useDefaultOnEmpty ) {
-			hex = getAccentDefault( $field );
-		}
-
-		if ( hex === '' && ! options.allowEmpty ) {
-			return;
-		}
-
-		syncingAccent = true;
-
-		$field.val( hex );
-
-		if ( $field.hasClass( 'wp-color-picker' ) && $.fn.wpColorPicker ) {
-			try {
-				$field.wpColorPicker( 'color', hex || getAccentDefault( $field ) );
-			} catch ( e ) {
-				// Picker may not be fully initialized yet.
+	/**
+	 * Trigger live email preview only (no input/change events on accent field).
+	 */
+	function scheduleGiftCardPreview() {
+		try {
+			if ( typeof window.CustomEvent === 'function' ) {
+				document.dispatchEvent(
+					new CustomEvent( 'mp-cp-gift-card-accent-change', { bubbles: true } )
+				);
+			}
+		} catch ( err ) {
+			if ( isDebug() && ! previewWarned && window.console && window.console.warn ) {
+				previewWarned = true;
+				window.console.warn( '[mp-cp-gift-card-settings] Preview trigger failed', err );
 			}
 		}
-
-		syncingAccent = false;
-		notifyAccentChange( $field.get( 0 ) );
 	}
 
-	function onAccentPickerChange( $, source, ui ) {
-		var raw = colorFromUi( ui );
-		if ( raw === '' && source ) {
-			raw = $( source ).val();
+	function getAccentField( $ ) {
+		return $( '#' + ACCENT_INPUT_ID );
+	}
+
+	/**
+	 * Set hex input only when value differs (no picker, no DOM events).
+	 *
+	 * @return {string} normalized hex applied or current
+	 */
+	function setAccentInputValue( $field, hex ) {
+		var next = normalizeHex( hex );
+		if ( next === '' ) {
+			return normalizeHex( $field.val() );
 		}
-		applyAccentColor( $, raw );
+		var current = normalizeHex( $field.val() );
+		if ( current !== next ) {
+			$field.val( next );
+		}
+		return next;
 	}
 
-	function attachAccentIrisListeners( $, $field ) {
-		$field.off( 'irischange.mpCpAccent' );
-		$field.on( 'irischange.mpCpAccent', function ( event, ui ) {
-			onAccentPickerChange( $, $field.get( 0 ), ui );
-		} );
+	/**
+	 * Sync iris UI from manual typing only (guarded; never from picker callbacks).
+	 */
+	function syncPickerFromManualInput( $, $field, hex ) {
+		if ( isUpdatingColor || ! $field.hasClass( 'wp-color-picker' ) || ! $.fn.wpColorPicker ) {
+			return;
+		}
+		var target = normalizeHex( hex );
+		if ( target === '' ) {
+			return;
+		}
+		var current = normalizeHex( $field.val() );
+		if ( current !== target ) {
+			return;
+		}
+		try {
+			var pickerColor = normalizeHex( $field.wpColorPicker( 'color' ) );
+			if ( pickerColor === target ) {
+				return;
+			}
+			isUpdatingColor = true;
+			$field.wpColorPicker( 'color', target );
+		} catch ( e ) {
+			// Picker not ready.
+		} finally {
+			isUpdatingColor = false;
+		}
+	}
 
+	function handlePickerColorChange( $, ui ) {
+		if ( isUpdatingColor ) {
+			return;
+		}
+		isUpdatingColor = true;
+		try {
+			var $field = getAccentField( $ );
+			if ( ! $field.length ) {
+				return;
+			}
+			var hex = normalizeHex( colorFromUi( ui ) );
+			if ( hex === '' ) {
+				return;
+			}
+			setAccentInputValue( $field, hex );
+			scheduleGiftCardPreview();
+		} finally {
+			isUpdatingColor = false;
+		}
+	}
+
+	function handlePickerClear( $ ) {
+		if ( isUpdatingColor ) {
+			return;
+		}
+		isUpdatingColor = true;
+		try {
+			var $field = getAccentField( $ );
+			if ( ! $field.length ) {
+				return;
+			}
+			var fallback = getAccentDefault( $field );
+			setAccentInputValue( $field, fallback );
+			scheduleGiftCardPreview();
+		} finally {
+			isUpdatingColor = false;
+		}
+	}
+
+	function handleManualAccentInput( $, $field ) {
+		if ( isUpdatingColor ) {
+			return;
+		}
+		var hex = normalizeHex( $field.val() );
+		if ( hex === '' ) {
+			return;
+		}
+		isUpdatingColor = true;
+		try {
+			setAccentInputValue( $field, hex );
+			syncPickerFromManualInput( $, $field, hex );
+			scheduleGiftCardPreview();
+		} finally {
+			isUpdatingColor = false;
+		}
+	}
+
+	function bindAccentClearButton( $, $field ) {
 		$field.closest( '.wp-picker-container' ).off( 'click.mpCpAccent', '.wp-picker-clear' );
 		$field.closest( '.wp-picker-container' ).on( 'click.mpCpAccent', '.wp-picker-clear', function () {
 			window.setTimeout( function () {
-				applyAccentColor( $, '', { useDefaultOnEmpty: true } );
+				handlePickerClear( $ );
 			}, 10 );
 		} );
 	}
@@ -180,19 +252,18 @@
 		}
 
 		var handler = function () {
-			if ( syncingAccent ) {
+			if ( isUpdatingColor ) {
 				return;
 			}
-			var raw = $field && $field.length ? $field.val() : node.value;
-			var hex = normalizeHex( raw );
-			if ( hex !== '' && $ ) {
-				applyAccentColor( $, hex );
+			if ( $ && $field && $field.length ) {
+				handleManualAccentInput( $, $field );
 				return;
 			}
+			var hex = normalizeHex( node.value );
 			if ( hex !== '' ) {
 				node.value = hex;
 			}
-			notifyAccentChange( node );
+			scheduleGiftCardPreview();
 		};
 
 		if ( $ && $field && $field.length ) {
@@ -201,8 +272,6 @@
 			return;
 		}
 
-		node.removeEventListener( 'input', handler );
-		node.removeEventListener( 'change', handler );
 		node.addEventListener( 'input', handler );
 		node.addEventListener( 'change', handler );
 	}
@@ -330,28 +399,32 @@
 		var fallback = getAccentDefault( $field );
 		var alreadyWrapped = $field.closest( '.wp-picker-container' ).length > 0;
 
-		if ( alreadyWrapped ) {
-			attachAccentIrisListeners( $, $field );
-			bindAccentManualInput( $, $field );
-			return;
-		}
-
 		var current = normalizeHex( $field.val() );
 		if ( current !== '' ) {
 			$field.val( current );
 		}
 
+		if ( alreadyWrapped ) {
+			$field.off( 'irischange.mpCpAccent' );
+			$field.on( 'irischange.mpCpAccent', function ( event, ui ) {
+				handlePickerColorChange( $, ui );
+			} );
+			bindAccentClearButton( $, $field );
+			bindAccentManualInput( $, $field );
+			return;
+		}
+
 		$field.wpColorPicker( {
 			defaultColor: fallback,
 			change: function ( event, ui ) {
-				onAccentPickerChange( $, this, ui );
+				handlePickerColorChange( $, ui );
 			},
 			clear: function () {
-				applyAccentColor( $, '', { useDefaultOnEmpty: true } );
+				handlePickerClear( $ );
 			},
 		} );
 
-		attachAccentIrisListeners( $, $field );
+		bindAccentClearButton( $, $field );
 		bindAccentManualInput( $, $field );
 	}
 

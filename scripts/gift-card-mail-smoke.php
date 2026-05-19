@@ -203,7 +203,10 @@ if ( $controls_js !== '' && strpos( $controls_js, 'mp-cp-gc-choose-logo' ) !== f
 	&& strpos( $controls_js, 'initColorPicker' ) !== false
 	&& strpos( $controls_js, 'ui.color.toString' ) !== false
 	&& strpos( $controls_js, 'applyAccentColor' ) !== false
-	&& strpos( $controls_js, 'irischange.mpCpAccent' ) !== false ) {
+	&& strpos( $controls_js, 'isUpdatingColor' ) !== false
+	&& strpos( $controls_js, 'scheduleGiftCardPreview' ) !== false
+	&& strpos( $controls_js, 'handlePickerColorChange' ) !== false
+	&& strpos( $controls_js, 'notifyAccentChange' ) === false ) {
 	$pass( 'settings controls JS is independent and initializes logo/color' );
 } else {
 	$fail( 'settings controls JS is independent and initializes logo/color' );
@@ -229,7 +232,8 @@ $settings_persist->reset_gift_card_accent_color_to_default();
 $preview_js = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/gift-card-email-preview.js' );
 if ( $preview_js !== '' && strpos( $preview_js, 'initLogoPicker' ) === false
 	&& strpos( $preview_js, 'initColorPicker' ) === false
-	&& strpos( $preview_js, 'typeof $ === \'undefined\'' ) !== false ) {
+	&& strpos( $preview_js, 'typeof $ === \'undefined\'' ) !== false
+	&& strpos( $preview_js, "key === 'accent'" ) !== false ) {
 	$pass( 'preview JS does not duplicate logo/color init' );
 } else {
 	$fail( 'preview JS does not duplicate logo/color init' );
