@@ -202,7 +202,7 @@ if ( $controls_js !== '' && strpos( $controls_js, 'mp-cp-gc-choose-logo' ) !== f
 	&& strpos( $controls_js, 'initLogoPicker' ) !== false
 	&& strpos( $controls_js, 'initColorPicker' ) !== false
 	&& strpos( $controls_js, 'ui.color.toString' ) !== false
-	&& strpos( $controls_js, 'applyAccentColor' ) !== false
+	&& strpos( $controls_js, 'setAccentInputValue' ) !== false
 	&& strpos( $controls_js, 'isUpdatingColor' ) !== false
 	&& strpos( $controls_js, 'scheduleGiftCardPreview' ) !== false
 	&& strpos( $controls_js, 'handlePickerColorChange' ) !== false
