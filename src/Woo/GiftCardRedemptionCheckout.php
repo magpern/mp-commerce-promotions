@@ -58,9 +58,10 @@ final class GiftCardRedemptionCheckout {
 		foreach ( $post_hooks as $hook ) {
 			add_action( $hook, array( $this, 'maybe_handle_post' ), 5 );
 		}
-		// Outside woocommerce-cart-form: nested forms inside the cart table break DOM/grid layout.
-		add_action( 'woocommerce_before_cart_collaterals', array( $this, 'render_cart_form' ), 5 );
-		add_action( 'woocommerce_before_checkout_form', array( $this, 'render_form' ), 12 );
+		// Inside the cart form coupon/actions row (no nested <form>; uses parent cart form submit).
+		add_action( 'woocommerce_cart_coupon', array( $this, 'render_cart_inline' ), 20 );
+		add_action( 'woocommerce_cart_actions', array( $this, 'render_cart_inline_fallback' ), 5 );
+		add_action( 'woocommerce_before_checkout_form', array( $this, 'render_checkout_panel' ), 12 );
 	}
 
 	/**
@@ -243,23 +244,39 @@ final class GiftCardRedemptionCheckout {
 	}
 
 
-	public function render_cart_form(): void {
+	public function render_cart_inline(): void {
 		if ( ! function_exists( 'is_cart' ) || ! is_cart() ) {
 			return;
 		}
 
-		$this->render_form( true );
+		$this->render_panel( true );
 	}
 
-	public function render_form( bool $cart_collateral = false ): void {
-		if ( self::$panel_rendered || ! function_exists( 'WC' ) || ! CartSessionHelper::has_wc_session() ) {
+	/**
+	 * When coupons are disabled, {@see woocommerce_cart_coupon} does not run.
+	 */
+	public function render_cart_inline_fallback(): void {
+		if ( function_exists( 'wc_coupons_enabled' ) && wc_coupons_enabled() ) {
 			return;
 		}
 
-		if ( ! $cart_collateral ) {
-			if ( function_exists( 'is_checkout' ) && ! is_checkout() ) {
-				return;
-			}
+		$this->render_cart_inline();
+	}
+
+	public function render_checkout_panel(): void {
+		if ( ! function_exists( 'is_checkout' ) || ! is_checkout() ) {
+			return;
+		}
+
+		$this->render_panel( false );
+	}
+
+	/**
+	 * @param bool $cart_inline Render inside cart form (no nested forms).
+	 */
+	private function render_panel( bool $cart_inline ): void {
+		if ( self::$panel_rendered || ! function_exists( 'WC' ) || ! CartSessionHelper::has_wc_session() ) {
+			return;
 		}
 
 		self::$panel_rendered = true;
@@ -287,18 +304,17 @@ final class GiftCardRedemptionCheckout {
 
 		$body_id = 'mp-cp-credit-accordion-body';
 
-		$accordion_class = 'mp-cp-credit-accordion mp-cp-gift-card-checkout';
-		if ( $cart_collateral ) {
-			$accordion_class .= ' mp-cp-credit-accordion--cart-collateral';
+		if ( $cart_inline ) {
+			echo '<div class="mp-cp-credit-inline">';
 		}
 
-		echo '<details class="' . esc_attr( $accordion_class ) . '"' . ( $expand ? ' open' : '' ) . '>';
+		echo '<details class="mp-cp-credit-accordion mp-cp-gift-card-checkout"' . ( $expand ? ' open' : '' ) . '>';
 		$this->render_accordion_summary( $gift_applied, $sc_applied, $sc_balance, $can_sc );
 		echo '<div id="' . esc_attr( $body_id ) . '" class="mp-cp-credit-accordion__body">';
 		$this->render_applied_chips( $gift_applied, $sc_applied );
-		$this->render_gift_card_form( $gift_applied );
+		$this->render_gift_card_form( $gift_applied, $cart_inline );
 		if ( $can_sc ) {
-			$this->render_store_credit_form( $sc_applied, $sc_balance );
+			$this->render_store_credit_form( $sc_applied, $sc_balance, $cart_inline );
 		}
 		echo '<p class="mp-cp-credit-help">';
 		echo esc_html__( 'Enter a gift card code or use available store credit.', 'mp-commerce-promotions' );
@@ -307,6 +323,10 @@ final class GiftCardRedemptionCheckout {
 			. '">' . esc_html__( 'Partial payment is supported.', 'mp-commerce-promotions' ) . '</span>';
 		echo '</p>';
 		echo '</div></details>';
+
+		if ( $cart_inline ) {
+			echo '</div>';
+		}
 	}
 
 	/**
@@ -423,40 +443,59 @@ final class GiftCardRedemptionCheckout {
 	/**
 	 * @param array<string, mixed>|null $gift_applied
 	 */
-	private function render_gift_card_form( ?array $gift_applied ): void {
+	private function render_gift_card_form( ?array $gift_applied, bool $cart_inline = false ): void {
 		echo '<div class="mp-cp-credit-accordion__section">';
+
 		if ( $gift_applied !== null ) {
-			echo '<form method="post" class="mp-cp-credit-accordion__form">';
+			if ( ! $cart_inline ) {
+				echo '<form method="post" class="mp-cp-credit-accordion__form">';
+			}
 			wp_nonce_field( self::NONCE_GIFT, self::NONCE_GIFT_FIELD );
 			echo '<input type="hidden" name="mp_cp_gift_card_action" value="remove" />';
 			echo '<button type="submit" class="mp-cp-credit-link">' . esc_html__( 'Remove gift card', 'mp-commerce-promotions' ) . '</button>';
-			echo '</form>';
+			if ( ! $cart_inline ) {
+				echo '</form>';
+			}
 		} else {
-			echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form--inline">';
+			if ( ! $cart_inline ) {
+				echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form--inline">';
+			} else {
+				echo '<div class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form--inline">';
+			}
 			wp_nonce_field( self::NONCE_GIFT, self::NONCE_GIFT_FIELD );
 			echo '<input type="hidden" name="mp_cp_gift_card_action" value="apply" />';
 			echo '<label class="screen-reader-text" for="mp_cp_gift_card_code">' . esc_html__( 'Gift card code', 'mp-commerce-promotions' ) . '</label>';
 			echo '<input type="text" class="input-text" name="mp_cp_gift_card_code" id="mp_cp_gift_card_code" autocomplete="off" placeholder="'
 				. esc_attr__( 'Gift card code', 'mp-commerce-promotions' ) . '" />';
 			echo '<button type="submit" class="button">' . esc_html__( 'Apply gift card', 'mp-commerce-promotions' ) . '</button>';
-			echo '</form>';
+			echo $cart_inline ? '</div>' : '</form>';
 		}
+
 		echo '</div>';
 	}
 
 	/**
 	 * @param array<string, mixed>|null $sc_applied
 	 */
-	private function render_store_credit_form( ?array $sc_applied, float $sc_balance ): void {
+	private function render_store_credit_form( ?array $sc_applied, float $sc_balance, bool $cart_inline = false ): void {
 		echo '<div class="mp-cp-credit-accordion__section mp-cp-credit-accordion__section--wallet">';
+
 		if ( $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 ) {
-			echo '<form method="post" class="mp-cp-credit-accordion__form">';
+			if ( ! $cart_inline ) {
+				echo '<form method="post" class="mp-cp-credit-accordion__form">';
+			}
 			echo '<input type="hidden" name="mp_cp_store_credit_action" value="remove" />';
 			wp_nonce_field( self::NONCE_SC, self::NONCE_SC_FIELD );
 			echo '<button type="submit" class="mp-cp-credit-link">' . esc_html__( 'Remove store credit', 'mp-commerce-promotions' ) . '</button>';
-			echo '</form>';
+			if ( ! $cart_inline ) {
+				echo '</form>';
+			}
 		} elseif ( $sc_balance > 0 ) {
-			echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form--inline">';
+			if ( $cart_inline ) {
+				echo '<div class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form--inline">';
+			} else {
+				echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form--inline">';
+			}
 			echo '<input type="hidden" name="mp_cp_store_credit_action" value="apply" />';
 			wp_nonce_field( self::NONCE_SC, self::NONCE_SC_FIELD );
 			echo '<span class="mp-cp-credit-accordion__wallet-label">';
@@ -467,8 +506,9 @@ final class GiftCardRedemptionCheckout {
 			);
 			echo '</span>';
 			echo '<button type="submit" class="button">' . esc_html__( 'Apply store credit', 'mp-commerce-promotions' ) . '</button>';
-			echo '</form>';
+			echo $cart_inline ? '</div>' : '</form>';
 		}
+
 		echo '</div>';
 	}
 

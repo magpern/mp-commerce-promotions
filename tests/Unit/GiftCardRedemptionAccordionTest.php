@@ -71,12 +71,14 @@ final class GiftCardRedemptionAccordionTest extends TestCase {
 		$this->assertStringNotContainsString( 'mp-cp-gc-title', $src );
 	}
 
-	public function test_cart_uses_collaterals_hook_not_coupon_row(): void {
+	public function test_cart_uses_coupon_row_hook_not_collaterals(): void {
 		$src = (string) file_get_contents(
 			dirname( __DIR__, 2 ) . '/src/Woo/GiftCardRedemptionCheckout.php'
 		);
-		$this->assertStringContainsString( 'woocommerce_before_cart_collaterals', $src );
-		$this->assertStringContainsString( 'render_cart_form', $src );
-		$this->assertStringNotContainsString( 'woocommerce_cart_coupon', $src );
+		$this->assertStringContainsString( 'woocommerce_cart_coupon', $src );
+		$this->assertStringContainsString( 'mp-cp-credit-inline', $src );
+		$this->assertStringContainsString( 'render_cart_inline', $src );
+		$this->assertStringNotContainsString( 'woocommerce_before_cart_collaterals', $src );
+		$this->assertStringNotContainsString( 'mp-cp-credit-accordion--cart-collateral', $src );
 	}
 }

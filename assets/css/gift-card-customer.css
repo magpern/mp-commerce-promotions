@@ -17,9 +17,16 @@
 	background: #f9f9f9;
 }
 
-.mp-cp-credit-accordion--cart-collateral {
-	width: auto;
-	max-width: none;
+.mp-cp-credit-inline {
+	display: block;
+	clear: both;
+	width: 100%;
+	max-width: 420px;
+	margin-top: 12px;
+}
+
+.mp-cp-credit-inline .mp-cp-credit-accordion {
+	margin: 0;
 }
 
 .mp-cp-credit-accordion__toggle {

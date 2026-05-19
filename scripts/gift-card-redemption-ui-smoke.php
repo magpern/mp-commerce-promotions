@@ -32,8 +32,8 @@ $css_path = dirname( __DIR__ ) . '/assets/css/gift-card-customer.css';
 $css      = is_readable( $css_path ) ? (string) file_get_contents( $css_path ) : '';
 
 $required = array(
+	'mp-cp-credit-inline',
 	'mp-cp-credit-accordion',
-	'mp-cp-credit-accordion--cart-collateral',
 	'mp-cp-credit-accordion__toggle',
 	'mp-cp-credit-accordion__body',
 	'mp-cp-credit-chip',
@@ -41,8 +41,8 @@ $required = array(
 	'mp_cp_gift_card_nonce',
 	'mp_cp_gift_card_action',
 	'mp_cp_store_credit_nonce',
-	'woocommerce_before_cart_collaterals',
-	'render_cart_form',
+	'woocommerce_cart_coupon',
+	'render_cart_inline',
 );
 
 foreach ( $required as $needle ) {
@@ -59,10 +59,29 @@ if ( $src !== '' && strpos( $src, 'mp-cp-gc-title' ) === false ) {
 	$fail( 'legacy large panel title removed' );
 }
 
-if ( $src !== '' && strpos( $src, 'woocommerce_cart_coupon' ) === false ) {
-	$pass( 'cart accordion not hooked inside coupon row' );
+if ( $src !== '' && strpos( $src, 'woocommerce_before_cart_collaterals' ) === false ) {
+	$pass( 'cart accordion not hooked before collaterals' );
 } else {
-	$fail( 'cart accordion not hooked inside coupon row' );
+	$fail( 'cart accordion not hooked before collaterals' );
+}
+
+if ( $src !== '' && strpos( $src, 'mp-cp-credit-accordion--cart-collateral' ) === false ) {
+	$pass( 'cart collateral sidebar class removed' );
+} else {
+	$fail( 'cart collateral sidebar class removed' );
+}
+
+$unsafe_markup = array(
+	'cart-collaterals',
+	'cart_totals',
+	'woocommerce-cart-form',
+);
+foreach ( $unsafe_markup as $needle ) {
+	if ( $src !== '' && preg_match( '/class=["\'][^"\']*' . preg_quote( $needle, '/' ) . '/', $src ) ) {
+		$fail( 'markup must not use theme class ' . $needle );
+	} else {
+		$pass( 'markup does not use theme class ' . $needle );
+	}
 }
 
 $unsafe_css = array(
@@ -70,6 +89,7 @@ $unsafe_css = array(
 	'.cart_totals',
 	'.cart-collaterals',
 	'.woocommerce-cart-form__contents',
+	'.shop_table',
 );
 foreach ( $unsafe_css as $selector ) {
 	if ( $css !== '' && strpos( $css, $selector ) !== false ) {
@@ -77,6 +97,12 @@ foreach ( $unsafe_css as $selector ) {
 	} else {
 		$pass( 'css does not target ' . $selector );
 	}
+}
+
+if ( $css !== '' && strpos( $css, '.mp-cp-credit-inline' ) !== false && strpos( $css, 'max-width: 420px' ) !== false ) {
+	$pass( 'inline cart accordion css scoped' );
+} else {
+	$fail( 'inline cart accordion css scoped' );
 }
 
 if ( ! GiftCardRedemptionCheckout::should_expand_accordion( null, null, 0.0, false, false ) ) {
@@ -105,11 +131,12 @@ if ( GiftCardRedemptionCheckout::should_expand_accordion( null, null, 20.0, true
 	$fail( 'available store credit expands accordion' );
 }
 
-if ( $src !== '' && strpos( $src, 'nested forms inside the cart table' ) !== false ) {
+if ( $src !== '' && strpos( $src, 'nested <form>' ) !== false ) {
 	$pass( 'cart hook documents nested-form avoidance' );
 } else {
 	$fail( 'cart hook documents nested-form avoidance' );
 }
+
 if ( $css !== '' && strpos( $css, '.mp-cp-credit-accordion__toggle' ) !== false ) {
 	$pass( 'accordion styles present' );
 } else {
