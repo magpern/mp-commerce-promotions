@@ -40,7 +40,7 @@ Pilot: [GIFT_CARD_PILOT_CHECKLIST.md](GIFT_CARD_PILOT_CHECKLIST.md). If `/gift-c
 
 ## Checkout redemption
 
-Single **Gift card or store credit** section on cart and checkout (rendered once on cart and checkout pages). Partial payment explained; estimated amount still due when gift card and/or store credit are applied; combined gift card + store credit notice when both are active.
+Compact **Gift card or store credit** accordion on cart (near the coupon area) and checkout — collapsed by default, similar to “Apply coupon”. Expands when a gift card or store credit is applied, when WooCommerce success/error notices are present, or when a logged-in customer has store credit available. Collapsed summary shows masked `****{last4}` when applied and wallet balance when relevant. Ledger, session, and fee behavior are unchanged.
 
 ### WooCommerce Blocks
 
@@ -52,7 +52,7 @@ Gift card and store credit checkout adjustments use the **fee/session path** (sa
 
 ## Settings
 
-See **Gift cards & store credit** in Commerce Growth settings: templates, branding, balance checker, My Account, scheduled cron, sender, support footer.
+See **Gift Cards & Store Credit → Settings** for templates, branding, balance checker, My Account, scheduled cron, sender, and support footer.
 
 ## Security
 

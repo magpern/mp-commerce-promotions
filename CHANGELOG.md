@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Compact gift card redemption UI** — cart/checkout gift card and store credit use a collapsible accordion (coupon-style); applied chips, wallet summary in header; no ledger/session/fee changes; `gift-card-redemption-ui-smoke.php`.
+
+### Changed
+
 - **Gift card settings module** — gift card email, delivery, and storefront toggles moved from global **Commerce Growth → Settings** to **Gift Cards & Store Credit → Settings** (`gift_cards_section=settings`); dashboard sub-nav (`gift_cards_section`); same `mp_cp_*` option keys; backward-compatible save from legacy global POST; `GiftCardSettingsHandler`, `GiftCardModuleSections`.
 
 ### Changed

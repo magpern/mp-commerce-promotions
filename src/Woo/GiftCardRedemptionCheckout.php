@@ -58,8 +58,40 @@ final class GiftCardRedemptionCheckout {
 		foreach ( $post_hooks as $hook ) {
 			add_action( $hook, array( $this, 'maybe_handle_post' ), 5 );
 		}
-		add_action( 'woocommerce_before_cart', array( $this, 'render_form' ), 15 );
-		add_action( 'woocommerce_before_checkout_form', array( $this, 'render_form' ), 15 );
+		add_action( 'woocommerce_cart_coupon', array( $this, 'render_form' ), 12 );
+		add_action( 'woocommerce_before_checkout_form', array( $this, 'render_form' ), 12 );
+	}
+
+	/**
+	 * Whether the redemption accordion should render expanded on first paint.
+	 *
+	 * @param array<string, mixed>|null $gift_applied
+	 * @param array<string, mixed>|null $sc_applied
+	 */
+	public static function should_expand_accordion(
+		?array $gift_applied,
+		?array $sc_applied,
+		float $sc_balance,
+		bool $can_apply_store_credit,
+		bool $has_checkout_notices
+	): bool {
+		if ( $gift_applied !== null ) {
+			return true;
+		}
+
+		if ( $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 ) {
+			return true;
+		}
+
+		if ( $has_checkout_notices ) {
+			return true;
+		}
+
+		if ( $can_apply_store_credit && $sc_balance > 0 ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public function maybe_handle_post(): void {
@@ -209,112 +241,244 @@ final class GiftCardRedemptionCheckout {
 		$this->recalculate();
 	}
 
+
 	public function render_form(): void {
 		if ( self::$panel_rendered || ! function_exists( 'WC' ) || ! CartSessionHelper::has_wc_session() ) {
 			return;
 		}
+
+		if ( function_exists( 'is_cart' ) && function_exists( 'is_checkout' ) && ! is_cart() && ! is_checkout() ) {
+			return;
+		}
+
 		self::$panel_rendered = true;
 
 		GiftCardCustomerAssets::enqueue();
 
 		$gift_applied = GiftCardSession::get();
-		$sc_applied   = $this->store_credit->can_apply() ? $this->store_credit->get_applied_from_session() : null;
+		$can_sc       = $this->store_credit->can_apply();
+		$sc_applied   = $can_sc ? $this->store_credit->get_applied_from_session() : null;
 		$sc_balance   = 0.0;
-		if ( $this->store_credit->can_apply() ) {
+		if ( $can_sc ) {
 			$sc_balance = $this->store_credit->get_available_balance(
 				$this->store_credit->get_current_customer_id(),
 				function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'EUR'
 			);
 		}
 
-		echo '<div class="mp-cp-gift-card-checkout">';
-		echo '<h3 class="mp-cp-gc-title">' . esc_html__( 'Gift card or store credit', 'mp-commerce-promotions' ) . '</h3>';
-		echo '<p class="mp-cp-gc-help">' . esc_html__( 'Apply a gift card code from your email and/or your store credit wallet. Partial payment is supported — pay the remainder with another method. Full codes are not stored on this site after delivery.', 'mp-commerce-promotions' ) . '</p>';
+		$expand = self::should_expand_accordion(
+			$gift_applied,
+			$sc_applied,
+			$sc_balance,
+			$can_sc,
+			$this->has_checkout_notices()
+		);
+
+		$body_id = 'mp-cp-credit-accordion-body';
+
+		echo '<details class="mp-cp-credit-accordion mp-cp-gift-card-checkout"' . ( $expand ? ' open' : '' ) . '>';
+		$this->render_accordion_summary( $gift_applied, $sc_applied, $sc_balance, $can_sc );
+		echo '<div id="' . esc_attr( $body_id ) . '" class="mp-cp-credit-accordion__body">';
+		$this->render_applied_chips( $gift_applied, $sc_applied );
+		$this->render_gift_card_form( $gift_applied );
+		if ( $can_sc ) {
+			$this->render_store_credit_form( $sc_applied, $sc_balance );
+		}
+		echo '<p class="mp-cp-credit-help">';
+		echo esc_html__( 'Enter a gift card code or use available store credit.', 'mp-commerce-promotions' );
+		echo ' <span class="mp-cp-credit-help__hint" title="'
+			. esc_attr__( 'Full codes are not stored after delivery.', 'mp-commerce-promotions' )
+			. '">' . esc_html__( 'Partial payment is supported.', 'mp-commerce-promotions' ) . '</span>';
+		echo '</p>';
+		echo '</div></details>';
+	}
+
+	/**
+	 * @param array<string, mixed>|null $gift_applied
+	 * @param array<string, mixed>|null $sc_applied
+	 */
+	private function render_accordion_summary(
+		?array $gift_applied,
+		?array $sc_applied,
+		float $sc_balance,
+		bool $can_sc
+	): void {
+		echo '<summary class="mp-cp-credit-accordion__toggle">';
+		echo '<span class="mp-cp-credit-accordion__icon" aria-hidden="true">';
+		echo '<svg width="18" height="18" viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10zm-8-7c1.66 0 3-1.34 3-3S13.66 5 12 5 9 6.34 9 8s1.34 3 3 3z"/></svg>';
+		echo '</span>';
+		echo '<span class="mp-cp-credit-accordion__summary">';
+		echo '<span class="mp-cp-credit-accordion__title">' . esc_html__( 'Gift card or store credit', 'mp-commerce-promotions' ) . '</span>';
+		echo '<span class="mp-cp-credit-accordion__meta">';
+		$this->render_summary_meta( $gift_applied, $sc_applied, $sc_balance, $can_sc );
+		echo '</span></span>';
+		echo '<span class="mp-cp-credit-accordion__chevron" aria-hidden="true"></span>';
+		echo '</summary>';
+	}
+
+	/**
+	 * @param array<string, mixed>|null $gift_applied
+	 * @param array<string, mixed>|null $sc_applied
+	 */
+	private function render_summary_meta(
+		?array $gift_applied,
+		?array $sc_applied,
+		float $sc_balance,
+		bool $can_sc
+	): void {
+		$parts = array();
 
 		if ( $gift_applied !== null ) {
-			echo '<p><strong>' . esc_html__( 'Gift card', 'mp-commerce-promotions' ) . ':</strong> ****' . esc_html( $gift_applied['code_last4'] ) . ' — ';
-			echo esc_html(
-				function_exists( 'wc_price' )
-					? wp_strip_all_tags( wc_price( $gift_applied['applied_amount'] ) )
-					: (string) $gift_applied['applied_amount']
-			);
-			echo '</p>';
-			echo '<form method="post" style="margin:0 0 12px;">';
-			wp_nonce_field( self::NONCE_GIFT, self::NONCE_GIFT_FIELD );
-			echo '<input type="hidden" name="mp_cp_gift_card_action" value="remove" />';
-			echo '<button type="submit" class="button">' . esc_html__( 'Remove gift card', 'mp-commerce-promotions' ) . '</button></form>';
-		} else {
-			echo '<form method="post" style="margin:0 0 16px;">';
-			wp_nonce_field( self::NONCE_GIFT, self::NONCE_GIFT_FIELD );
-			echo '<input type="hidden" name="mp_cp_gift_card_action" value="apply" />';
-			echo '<p><label for="mp_cp_gift_card_code">' . esc_html__( 'Gift card code', 'mp-commerce-promotions' ) . '</label><br />';
-			echo '<input type="text" class="input-text" name="mp_cp_gift_card_code" id="mp_cp_gift_card_code" autocomplete="off" style="max-width:320px;" /></p>';
-			echo '<button type="submit" class="button">' . esc_html__( 'Apply gift card', 'mp-commerce-promotions' ) . '</button></form>';
-		}
-
-		if ( $this->store_credit->can_apply() ) {
-			echo '<hr style="margin:16px 0;border:0;border-top:1px solid #dcdcde;" />';
-			echo '<p><strong>' . esc_html__( 'Store credit wallet', 'mp-commerce-promotions' ) . '</strong> — ';
-			echo esc_html(
+			$parts[] = esc_html(
 				sprintf(
-					/* translators: %s: balance */
-					__( 'Available: %s', 'mp-commerce-promotions' ),
-					function_exists( 'wc_price' )
-						? wp_strip_all_tags( wc_price( $sc_balance ) )
-						: number_format( $sc_balance, 2 )
+					/* translators: %s: last four digits */
+					__( 'Gift card ****%s applied', 'mp-commerce-promotions' ),
+					(string) ( $gift_applied['code_last4'] ?? '' )
 				)
 			);
-			echo '</p>';
+		}
 
-			if ( $sc_applied !== null && $sc_applied['applied_amount'] > 0 ) {
-				echo '<form method="post"><input type="hidden" name="mp_cp_store_credit_action" value="remove" />';
-				wp_nonce_field( self::NONCE_SC, self::NONCE_SC_FIELD );
-				echo '<button type="submit" class="button">' . esc_html__( 'Remove store credit', 'mp-commerce-promotions' ) . '</button></form>';
-			} elseif ( $sc_balance > 0 ) {
-				echo '<form method="post"><input type="hidden" name="mp_cp_store_credit_action" value="apply" />';
-				wp_nonce_field( self::NONCE_SC, self::NONCE_SC_FIELD );
-				echo '<button type="submit" class="button">' . esc_html__( 'Apply store credit', 'mp-commerce-promotions' ) . '</button></form>';
+		if ( $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 ) {
+			$parts[] = esc_html__( 'Store credit applied', 'mp-commerce-promotions' );
+		} elseif ( $can_sc ) {
+			if ( $sc_balance > 0 ) {
+				$parts[] = esc_html(
+					sprintf(
+						/* translators: %s: formatted balance */
+						__( 'Available: %s', 'mp-commerce-promotions' ),
+						$this->format_price( $sc_balance )
+					)
+				);
+			} else {
+				$parts[] = '<span class="mp-cp-credit-accordion__meta-muted">' . esc_html__( 'No store credit balance', 'mp-commerce-promotions' ) . '</span>';
 			}
 		}
 
-		if ( $gift_applied !== null && $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 ) {
-			echo '<p class="mp-cp-gc-help">' . esc_html__(
-				'Both a gift card and store credit are applied. They reduce your order total before you choose a payment method for any remaining amount.',
-				'mp-commerce-promotions'
-			) . '</p>';
+		if ( $parts === array() ) {
+			echo esc_html__( 'Have a gift card?', 'mp-commerce-promotions' );
+			return;
 		}
 
-		$still_due = $this->estimate_amount_still_due();
-		if ( $still_due > 0 && ( $gift_applied !== null || ( $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 ) ) ) {
-			echo '<p class="mp-cp-gc-help"><strong>' . esc_html__( 'Estimated amount still due', 'mp-commerce-promotions' ) . ':</strong> ';
-			echo esc_html(
-				function_exists( 'wc_price' )
-					? wp_strip_all_tags( wc_price( $still_due ) )
-					: number_format( $still_due, 2 )
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- segments escaped above.
+		echo implode( '<span class="mp-cp-credit-accordion__meta-sep"> · </span>', $parts );
+	}
+
+	/**
+	 * @param array<string, mixed>|null $gift_applied
+	 * @param array<string, mixed>|null $sc_applied
+	 */
+	private function render_applied_chips( ?array $gift_applied, ?array $sc_applied ): void {
+		if ( $gift_applied !== null ) {
+			$amount = (float) ( $gift_applied['applied_amount'] ?? 0 );
+			echo '<div class="mp-cp-credit-chip mp-cp-credit-chip--gift">';
+			echo '<span class="mp-cp-credit-chip__label">';
+			printf(
+				/* translators: %s: last four digits */
+				esc_html__( 'Gift card ****%s applied', 'mp-commerce-promotions' ),
+				esc_html( (string) ( $gift_applied['code_last4'] ?? '' ) )
 			);
-			echo '</p>';
-		} elseif ( $still_due <= 0 && ( $gift_applied !== null || $sc_applied !== null ) ) {
-			echo '<p class="mp-cp-gc-help">' . esc_html__(
-				'Your gift card and/or store credit may cover this order in full. Complete checkout to confirm — no further payment may be required.',
-				'mp-commerce-promotions'
-			) . '</p>';
+			echo '</span>';
+			if ( $amount > 0 ) {
+				echo '<span class="mp-cp-credit-chip__amount">';
+				printf(
+					/* translators: %s: formatted amount */
+					esc_html__( 'Applying up to %s', 'mp-commerce-promotions' ),
+					esc_html( $this->format_price( $amount ) )
+				);
+				echo '</span>';
+			}
+			echo '</div>';
 		}
 
+		if ( $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 ) {
+			$sc_amount = (float) $sc_applied['applied_amount'];
+			echo '<div class="mp-cp-credit-chip mp-cp-credit-chip--store">';
+			echo '<span class="mp-cp-credit-chip__label">' . esc_html__( 'Store credit applied', 'mp-commerce-promotions' ) . '</span>';
+			echo '<span class="mp-cp-credit-chip__amount">';
+			printf(
+				/* translators: %s: formatted amount */
+				esc_html__( 'Applying up to %s', 'mp-commerce-promotions' ),
+				esc_html( $this->format_price( $sc_amount ) )
+			);
+			echo '</span></div>';
+		}
+	}
+
+	/**
+	 * @param array<string, mixed>|null $gift_applied
+	 */
+	private function render_gift_card_form( ?array $gift_applied ): void {
+		echo '<div class="mp-cp-credit-accordion__section">';
+		if ( $gift_applied !== null ) {
+			echo '<form method="post" class="mp-cp-credit-accordion__form">';
+			wp_nonce_field( self::NONCE_GIFT, self::NONCE_GIFT_FIELD );
+			echo '<input type="hidden" name="mp_cp_gift_card_action" value="remove" />';
+			echo '<button type="submit" class="mp-cp-credit-link">' . esc_html__( 'Remove gift card', 'mp-commerce-promotions' ) . '</button>';
+			echo '</form>';
+		} else {
+			echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form--inline">';
+			wp_nonce_field( self::NONCE_GIFT, self::NONCE_GIFT_FIELD );
+			echo '<input type="hidden" name="mp_cp_gift_card_action" value="apply" />';
+			echo '<label class="screen-reader-text" for="mp_cp_gift_card_code">' . esc_html__( 'Gift card code', 'mp-commerce-promotions' ) . '</label>';
+			echo '<input type="text" class="input-text" name="mp_cp_gift_card_code" id="mp_cp_gift_card_code" autocomplete="off" placeholder="'
+				. esc_attr__( 'Gift card code', 'mp-commerce-promotions' ) . '" />';
+			echo '<button type="submit" class="button">' . esc_html__( 'Apply gift card', 'mp-commerce-promotions' ) . '</button>';
+			echo '</form>';
+		}
 		echo '</div>';
 	}
 
-	private function estimate_amount_still_due(): float {
-		if ( ! function_exists( 'WC' ) || ! isset( WC()->cart ) || ! is_object( WC()->cart ) ) {
-			return 0.0;
+	/**
+	 * @param array<string, mixed>|null $sc_applied
+	 */
+	private function render_store_credit_form( ?array $sc_applied, float $sc_balance ): void {
+		echo '<div class="mp-cp-credit-accordion__section mp-cp-credit-accordion__section--wallet">';
+		if ( $sc_applied !== null && (float) ( $sc_applied['applied_amount'] ?? 0 ) > 0 ) {
+			echo '<form method="post" class="mp-cp-credit-accordion__form">';
+			echo '<input type="hidden" name="mp_cp_store_credit_action" value="remove" />';
+			wp_nonce_field( self::NONCE_SC, self::NONCE_SC_FIELD );
+			echo '<button type="submit" class="mp-cp-credit-link">' . esc_html__( 'Remove store credit', 'mp-commerce-promotions' ) . '</button>';
+			echo '</form>';
+		} elseif ( $sc_balance > 0 ) {
+			echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form--inline">';
+			echo '<input type="hidden" name="mp_cp_store_credit_action" value="apply" />';
+			wp_nonce_field( self::NONCE_SC, self::NONCE_SC_FIELD );
+			echo '<span class="mp-cp-credit-accordion__wallet-label">';
+			printf(
+				/* translators: %s: balance */
+				esc_html__( 'Wallet balance: %s', 'mp-commerce-promotions' ),
+				esc_html( $this->format_price( $sc_balance ) )
+			);
+			echo '</span>';
+			echo '<button type="submit" class="button">' . esc_html__( 'Apply store credit', 'mp-commerce-promotions' ) . '</button>';
+			echo '</form>';
 		}
-
-		$total = (float) WC()->cart->get_total( 'edit' );
-		if ( $total < 0 ) {
-			return 0.0;
-		}
-
-		return GiftCard::money( $total );
+		echo '</div>';
 	}
+
+	private function format_price( float $amount ): string {
+		if ( function_exists( 'wc_price' ) ) {
+			return wp_strip_all_tags( wc_price( $amount ) );
+		}
+
+		return number_format( $amount, 2 );
+	}
+
+	private function has_checkout_notices(): bool {
+		if ( ! function_exists( 'wc_get_notices' ) ) {
+			return false;
+		}
+
+		foreach ( array( 'error', 'success' ) as $type ) {
+			$notices = wc_get_notices( $type );
+			if ( is_array( $notices ) && $notices !== array() ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 
 	private function payable_total(): float {
 		if ( function_exists( 'WC' ) && isset( WC()->cart ) && is_object( WC()->cart ) ) {
