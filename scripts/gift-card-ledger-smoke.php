@@ -32,7 +32,7 @@ function gc_smoke_assert( bool $ok, string $label ): void {
 	WP_CLI::warning( 'FAIL: ' . $label );
 }
 
-gc_smoke_assert( Schema::SCHEMA_VERSION === '1.18.0', 'schema version 1.18.0' );
+gc_smoke_assert( Schema::SCHEMA_VERSION === '1.19.0', 'schema version 1.19.0' );
 
 global $wpdb;
 if ( ! $wpdb instanceof wpdb ) {
@@ -46,8 +46,8 @@ if ( $migration->needs_migration() ) {
 
 $stored_schema = get_option( MigrationRunner::OPTION_SCHEMA_VERSION, '' );
 gc_smoke_assert(
-	$stored_schema === '' || version_compare( (string) $stored_schema, '1.18.0', '>=' ),
-	'stored schema >= 1.18.0 after migration'
+	$stored_schema === '' || version_compare( (string) $stored_schema, '1.19.0', '>=' ),
+	'stored schema >= 1.19.0 after migration'
 );
 
 $repo   = new GiftCardRepository( $wpdb );

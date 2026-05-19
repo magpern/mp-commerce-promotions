@@ -51,7 +51,7 @@ final class GiftCardCartApplier {
 			}
 
 			$card = $this->ledger->find( $session['gift_card_id'] );
-			if ( $card === null || $card->is_store_credit_wallet() || ! $this->redemption->is_redeemable( $card ) ) {
+			if ( $card === null || $this->redemption->redeemability_error( $card ) !== null ) {
 				GiftCardSession::clear();
 				return;
 			}
@@ -73,7 +73,7 @@ final class GiftCardCartApplier {
 
 			$label = sprintf(
 				/* translators: %s: last four characters of the gift card code */
-				__( 'Store credit ****%s', 'mp-commerce-promotions' ),
+				__( 'Gift card ****%s', 'mp-commerce-promotions' ),
 				$card->get_code_last4()
 			);
 

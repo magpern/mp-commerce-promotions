@@ -111,8 +111,14 @@ final class GiftCardRedemptionCheckout {
 		}
 
 		$card = $this->ledger->find_by_plain_code( $plain );
-		if ( $card === null || $card->is_store_credit_wallet() || ! $this->redemption->is_redeemable( $card ) ) {
-			$this->notice( __( 'This gift card is not valid or cannot be used on this order.', 'mp-commerce-promotions' ), 'error' );
+		if ( $card === null ) {
+			$this->notice( __( 'We could not find a gift card with that code. Check the code from your email and try again.', 'mp-commerce-promotions' ), 'error' );
+			return;
+		}
+
+		$redeem_error = $this->redemption->redeemability_error( $card );
+		if ( $redeem_error !== null ) {
+			$this->notice( $redeem_error, 'error' );
 			return;
 		}
 
@@ -196,7 +202,7 @@ final class GiftCardRedemptionCheckout {
 			sprintf(
 				/* translators: %s: formatted amount */
 				__( 'Store credit applied: %s. Any unused balance stays in your wallet.', 'mp-commerce-promotions' ),
-				function_exists( 'wc_price' ) ? wp_price( $amount ) : (string) $amount
+				function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( $amount ) ) : (string) $amount
 			),
 			'success'
 		);
@@ -223,7 +229,7 @@ final class GiftCardRedemptionCheckout {
 
 		echo '<div class="mp-cp-gift-card-checkout">';
 		echo '<h3 class="mp-cp-gc-title">' . esc_html__( 'Gift card or store credit', 'mp-commerce-promotions' ) . '</h3>';
-		echo '<p class="mp-cp-gc-help">' . esc_html__( 'Apply a gift card code and/or your store credit wallet. Partial payment is supported — pay the remainder with another method.', 'mp-commerce-promotions' ) . '</p>';
+		echo '<p class="mp-cp-gc-help">' . esc_html__( 'Apply a gift card code from your email and/or your store credit wallet. Partial payment is supported — pay the remainder with another method. Full codes are not stored on this site after delivery.', 'mp-commerce-promotions' ) . '</p>';
 
 		if ( $gift_applied !== null ) {
 			echo '<p><strong>' . esc_html__( 'Gift card', 'mp-commerce-promotions' ) . ':</strong> ****' . esc_html( $gift_applied['code_last4'] ) . ' — ';

@@ -52,11 +52,22 @@ Use this before enabling gift card sales for real customers.
 
 ```bash
 composer run lint:php
-composer run test -- --filter GiftCardTransfer
-./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-setup.php
-./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-product-e2e-smoke.php
-./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-mail-smoke.php
-./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-transfer-smoke.php
+composer run test -- --filter 'GiftCard|StoreCredit'
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-module-smoke.php
 ```
 
+Optional deeper checks: `gift-card-product-e2e-smoke.php`, `gift-card-mail-smoke.php`.
+
 See also [GIFT_CARD_QA_EVIDENCE.md](GIFT_CARD_QA_EVIDENCE.md), [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md), [GIFT_CARD_EMAILS.md](GIFT_CARD_EMAILS.md).
+
+## Do not pilot until
+
+All of the following are checked:
+
+- [ ] **SMTP verified** — test email or real gift card delivery to a verified inbox.
+- [ ] **One send-now purchase verified** — paid order, card generated, email received, no `plain_code` in order meta.
+- [ ] **One scheduled delivery verified** — pending at checkout, fulfilled on date (cron or Diagnostics runner).
+- [ ] **One redemption verified** — gift card applied at cart/checkout; order completes; ledger debited.
+- [ ] **One reversal verified** — cancel/refund restores balance or voids unused product card.
+- [ ] **Balance checker verified** — valid code shows masked balance; invalid code is generic.
+- [ ] **My Account verified** — purchased, sent (matching email), store credit wallet if used.

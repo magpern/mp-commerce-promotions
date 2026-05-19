@@ -1879,6 +1879,15 @@ final class DiagnosticsPage {
 			. ( ! empty( $info['smtp_likely_working'] ) ? esc_html__( 'Yes', 'mp-commerce-promotions' ) : esc_html__( 'No', 'mp-commerce-promotions' ) ) . '</li>';
 		echo '<li>' . esc_html__( 'Recent delivery failures', 'mp-commerce-promotions' ) . ': '
 			. esc_html( (string) (int) ( $info['recent_delivery_failed'] ?? 0 ) ) . '</li>';
+		global $wpdb;
+		if ( $wpdb instanceof \wpdb ) {
+			$scheduled = ( new \MP\CommercePromotions\GiftCard\GiftCardScheduledDiagnostics( $wpdb ) )->analyze();
+			$pending_scheduled = count( $scheduled['overdue'] ) + count( $scheduled['unpaid_pending'] );
+			echo '<li>' . esc_html__( 'Pending scheduled deliveries (overdue + unpaid orders)', 'mp-commerce-promotions' ) . ': '
+				. esc_html( (string) $pending_scheduled ) . '</li>';
+			echo '<li>' . esc_html__( 'Failed scheduled email rows', 'mp-commerce-promotions' ) . ': '
+				. esc_html( (string) count( $scheduled['failed_scheduled'] ) ) . '</li>';
+		}
 		if ( ! empty( $info['last_mail_failure_at'] ) ) {
 			echo '<li>' . esc_html__( 'Last wp_mail failure (gift cards)', 'mp-commerce-promotions' ) . ': '
 				. esc_html( (string) $info['last_mail_failure_at'] ) . '</li>';

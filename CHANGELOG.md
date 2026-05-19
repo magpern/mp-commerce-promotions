@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Gift card & store credit stabilization** — clearer redemption errors (voided, expired, currency mismatch), cart fee label fix, admin nav copy, consolidated `gift-card-module-smoke.php`, diagnostics scheduled/mail summary, pilot checklist “do not pilot until”; [GIFT_CARD_QA_EVIDENCE.md](docs/GIFT_CARD_QA_EVIDENCE.md).
+
 ### Added
 
 - **Gift card email template settings** — Settings preview (`****SAMPLE`), test email with sample amount/currency, per-template logo/accent/footer/support, Commerce Growth vs WooCommerce email style (`GiftCardEmailRenderer`, `GiftCardWooEmailStyler`); diagnostics show template, style, SMTP status; [GIFT_CARD_EMAILS.md](docs/GIFT_CARD_EMAILS.md).

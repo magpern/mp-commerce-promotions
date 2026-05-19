@@ -108,7 +108,7 @@ final class AdminNavigation {
 			),
 			self::TAB_GIFT_CARDS       => array(
 				'label' => __( 'Gift Cards & Store Credit', 'mp-commerce-promotions' ),
-				'title' => __( 'Coming soon — gift cards and store credit ledger', 'mp-commerce-promotions' ),
+				'title' => __( 'Issue gift cards, store credit wallets, and delivery', 'mp-commerce-promotions' ),
 				'url'   => self::tab_url( self::TAB_GIFT_CARDS ),
 			),
 			self::TAB_REPORTS          => array(
