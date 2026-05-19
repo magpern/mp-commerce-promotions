@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace MP\CommercePromotions\Woo;
 
 use MP\CommercePromotions\Domain\Promotion;
+use MP\CommercePromotions\GiftCard\GiftCardPromotionExclusion;
 
 final class FreeGiftCartHandler {
 
@@ -140,6 +141,9 @@ final class FreeGiftCartHandler {
 				continue;
 			}
 			if ( ! empty( $cart_item[ self::CART_ITEM_META_FREE_GIFT ] ) && $cart_item[ self::CART_ITEM_META_FREE_GIFT ] === 'yes' ) {
+				continue;
+			}
+			if ( GiftCardPromotionExclusion::wc_cart_item_is_gift_card( $cart_item ) ) {
 				continue;
 			}
 			if ( isset( $cart_item['line_subtotal'] ) && is_numeric( $cart_item['line_subtotal'] ) ) {

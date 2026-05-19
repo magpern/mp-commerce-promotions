@@ -42,8 +42,11 @@ use MP\CommercePromotions\Engine\Condition\MinimumSubtotalCondition;
 use MP\CommercePromotions\Engine\Condition\ProductInCartCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
+use MP\CommercePromotions\GiftCard\GiftCardPromotionExclusion;
 
 final class PromotionEvaluator {
+
+	public const REASON_GIFT_CARD_PRODUCTS_EXCLUDED = 'gift_card_products_excluded';
 
 	private ?RedemptionRepository $redemptions;
 
@@ -536,10 +539,15 @@ final class PromotionEvaluator {
 	}
 
 	private function enrich_context_for_promotion( EvaluationContext $context, Promotion $promotion ): EvaluationContext {
-		$items = CartItemSelector::filter_items_for_promotion( $context->get_items(), $promotion );
+		$items = GiftCardPromotionExclusion::without_gift_card_products( $context->get_items() );
+		$items = CartItemSelector::filter_items_for_promotion( $items, $promotion );
 
 		$metadata                        = $context->get_metadata();
 		$metadata['cart_total_quantity'] = CartQuantityHelper::total_quantity_from_items( $items );
+
+		if ( $items === array() && (int) ( $metadata[ GiftCardPromotionExclusion::TRACE_COUNT_KEY ] ?? 0 ) > 0 ) {
+			$metadata['gift_card_promotion_exclusion'] = self::REASON_GIFT_CARD_PRODUCTS_EXCLUDED;
+		}
 
 		$customer_id  = $context->get_customer_id();
 		$promotion_id = $promotion->get_id();
@@ -558,7 +566,7 @@ final class PromotionEvaluator {
 
 		return new EvaluationContext(
 			$context->get_customer_id(),
-			$context->get_cart_subtotal(),
+			EligibleCartScope::subtotal( $items ),
 			$context->get_currency(),
 			$items,
 			$metadata

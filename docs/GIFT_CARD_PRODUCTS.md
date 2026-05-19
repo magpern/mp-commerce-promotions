@@ -44,6 +44,18 @@ Recipient fields appear under **Gift card delivery** at checkout (one field grou
 
 For `customer_amount`, the WooCommerce product price may be empty — the cart line price is set from the customer’s chosen amount. Quantity &gt; 1 issues multiple cards, each for the chosen per-unit amount.
 
+### Promotion discounts
+
+Gift card products (`_mp_cp_sells_gift_card=yes`) are **excluded from Commerce Growth promotion discounts** by default. They always sell at full stored value:
+
+- Percentage, fixed amount, cheapest-item/BOGO, and line-item/hybrid discounts skip gift card lines.
+- `minimum_subtotal` and `minimum_eligible_subtotal` use subtotal **without** gift card lines.
+- Mixed carts: discounts apply only to eligible non–gift-card products.
+
+```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-discount-exclusion-smoke.php
+```
+
 ```bash
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-customer-amount-smoke.php
 ```

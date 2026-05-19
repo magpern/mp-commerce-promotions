@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Gift card product admin fields** — restore WooCommerce `form-field` labels and descriptions (amount mode, fixed amount, expiry days, recipient mode); hide options until gift card is enabled; show fixed amount only for fixed mode; admin JS/CSS for layout.
 
+### Fixed
+
+- **Gift card products excluded from promotion discounts** — gift card lines skipped in EligibleCartScope, cart context eligible subtotal, allocation, and line-item mutation; trace metadata `gift_card_products_excluded_*`; `scripts/gift-card-discount-exclusion-smoke.php`.
+
 ### Added
 
 - **Customer-entered gift card amounts** — amount mode `customer_amount` with min/max/suggested/default product meta; product-page amount field; cart line pricing; order item meta; catalog **Choose amount** / **From {min}** price display; loop **Select amount** link; `GiftCardProductCustomerAmount`, `GiftCardCustomerAmountCart`, `GiftCardProductPriceDisplay`; `scripts/gift-card-customer-amount-smoke.php`; docs updated.

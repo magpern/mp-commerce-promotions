@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Engine;
 
+use MP\CommercePromotions\GiftCard\GiftCardPromotionExclusion;
+
 final class EligibleCartScope {
 
 	/**
@@ -60,6 +62,10 @@ final class EligibleCartScope {
 		$filtered = array();
 		foreach ( $items as $item ) {
 			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			if ( GiftCardPromotionExclusion::line_is_gift_card_product( $item ) ) {
 				continue;
 			}
 

@@ -2,6 +2,9 @@
 /**
  * Read-only validation of promotion conditions/actions against supported engine types.
  *
+ * Storefront note: WooCommerce products that sell gift cards are excluded from promotion
+ * discounts by default (see GiftCardPromotionExclusion).
+ *
  * @package MP\CommercePromotions
  */
 

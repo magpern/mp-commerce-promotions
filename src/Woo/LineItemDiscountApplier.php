@@ -19,6 +19,7 @@ use MP\CommercePromotions\Engine\LineDiscountAllocationResult;
 use MP\CommercePromotions\Engine\PromotionEvaluationDecision;
 use MP\CommercePromotions\Engine\PromotionEvaluationPlan;
 use MP\CommercePromotions\Engine\RuleTypes;
+use MP\CommercePromotions\GiftCard\GiftCardPromotionExclusion;
 use MP\CommercePromotions\Service\PromotionDryRunGuard;
 use MP\CommercePromotions\Service\Settings;
 
@@ -133,6 +134,10 @@ final class LineItemDiscountApplier {
 				}
 
 				if ( ! empty( $cart_item[ FreeGiftCartHandler::CART_ITEM_META_FREE_GIFT ] ) ) {
+					continue;
+				}
+
+				if ( GiftCardPromotionExclusion::wc_cart_item_is_gift_card( $cart_item ) ) {
 					continue;
 				}
 

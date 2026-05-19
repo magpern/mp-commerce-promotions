@@ -83,6 +83,7 @@ Operational playbooks for real merchant pilots using Commerce Promotions for Woo
 5. **Send now** — codes generate and email when the order reaches **Processing** or **Completed** (recipient or billing email).
 6. **Send on date** — no code at payment; generation and email run on the chosen date (hourly cron, Diagnostics, or order **Send due deliveries now**).
 7. On cancellation/refund, unused generated cards are voided; pending scheduled rows are cancelled; partially used cards need manual review (order note).
+8. **Promotions do not discount gift card products** — automatic percentage/fixed/BOGO and line-item discounts apply only to other cart lines; gift card value stays full (mixed carts discount the non–gift-card portion only).
 
 Full codes are never stored after delivery. See [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md) and [GIFT_CARD_CUSTOMER_EXPERIENCE.md](GIFT_CARD_CUSTOMER_EXPERIENCE.md).
 

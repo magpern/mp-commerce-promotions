@@ -12,6 +12,7 @@ namespace MP\CommercePromotions\Engine;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionAllocationMode;
 use MP\CommercePromotions\Engine\RuleTypes;
+use MP\CommercePromotions\GiftCard\GiftCardPromotionExclusion;
 use MP\CommercePromotions\Woo\CartItemSelector;
 use MP\CommercePromotions\Woo\TaxAwareDiscountCalculator;
 
@@ -152,6 +153,9 @@ final class DiscountAllocationEngine {
 		$lines = array();
 		foreach ( $items as $index => $item ) {
 			if ( ! is_array( $item ) ) {
+				continue;
+			}
+			if ( GiftCardPromotionExclusion::line_is_gift_card_product( $item ) ) {
 				continue;
 			}
 			$key = isset( $item['item_key'] ) ? (string) $item['item_key'] : 'line_' . $index;

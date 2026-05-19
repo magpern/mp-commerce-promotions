@@ -14,13 +14,11 @@ use InvalidArgumentException;
 final class GiftCardProductService {
 
 	public function is_gift_card_product( int $product_id ): bool {
-		if ( $product_id <= 0 ) {
-			return false;
-		}
+		return $this->product_sells_gift_card( $product_id, 0 );
+	}
 
-		$config = GiftCardProductMeta::read( $product_id );
-
-		return $config['sells'];
+	public function product_sells_gift_card( int $product_id, int $variation_id = 0 ): bool {
+		return $this->get_line_config( $product_id, $variation_id ) !== null;
 	}
 
 	/**

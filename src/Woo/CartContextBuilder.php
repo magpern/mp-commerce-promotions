@@ -13,6 +13,7 @@ use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\RedemptionRepository;
 use MP\CommercePromotions\Engine\CartQuantityHelper;
 use MP\CommercePromotions\Engine\EvaluationContext;
+use MP\CommercePromotions\GiftCard\GiftCardPromotionExclusion;
 use MP\CommercePromotions\Service\CustomerOrderStats;
 
 final class CartContextBuilder {
@@ -123,9 +124,16 @@ final class CartContextBuilder {
 			}
 		}
 
+		$items = GiftCardPromotionExclusion::mark_gift_card_lines( $items );
+		$stats = GiftCardPromotionExclusion::exclusion_stats( $items );
+
 		$metadata = array(
 			'source'              => 'woocommerce_cart',
 			'cart_total_quantity' => CartQuantityHelper::total_quantity_from_items( $items ),
+			'cart_subtotal_full'  => round( $subtotal, 4 ),
+			'promotion_eligible_subtotal' => $stats['eligible_subtotal'],
+			GiftCardPromotionExclusion::TRACE_COUNT_KEY    => $stats['count'],
+			GiftCardPromotionExclusion::TRACE_SUBTOTAL_KEY => $stats['subtotal'],
 		);
 
 		if ( $customer_id !== null && $customer_id > 0 ) {
@@ -135,7 +143,7 @@ final class CartContextBuilder {
 		$this->enrich_billing_metadata( $customer_id, $metadata );
 		$this->enrich_shipping_and_coupon_metadata( $cart, $metadata );
 
-		return new EvaluationContext( $customer_id, $subtotal, $currency, $items, $metadata );
+		return new EvaluationContext( $customer_id, $stats['eligible_subtotal'], $currency, $items, $metadata );
 	}
 
 	/**
