@@ -27,7 +27,24 @@ final class GiftCardEmailCopyDefaultsTest extends TestCase {
 
 	public function test_is_known_smoke_string(): void {
 		$this->assertTrue( GiftCardEmailCopyDefaults::is_known_smoke_string( 'Smoke persist support' ) );
+		$this->assertTrue( GiftCardEmailCopyDefaults::is_known_smoke_string( 'Merchant QA subject line' ) );
 		$this->assertFalse( GiftCardEmailCopyDefaults::is_known_smoke_string( 'Real support line' ) );
+	}
+
+	public function test_merchant_qa_strings_map_to_production_defaults(): void {
+		$this->assertSame(
+			GiftCardEmailPlaceholders::default_subject(),
+			GiftCardEmailCopyDefaults::replace_known_smoke_string( 'Merchant QA subject line' )
+		);
+		$this->assertSame(
+			GiftCardEmailPlaceholders::default_intro(),
+			GiftCardEmailCopyDefaults::replace_known_smoke_string( 'Custom preview intro text.' )
+		);
+	}
+
+	public function test_qa_accent_color_constant(): void {
+		$this->assertTrue( GiftCardEmailCopyDefaults::is_known_qa_accent_color( '#aa5500' ) );
+		$this->assertFalse( GiftCardEmailCopyDefaults::is_known_qa_accent_color( '#112233' ) );
 	}
 
 	public function test_sanitize_hex_color_normalizes_shorthand(): void {

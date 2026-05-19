@@ -657,21 +657,22 @@ final class Settings {
 	}
 
 	public function gift_card_accent_color(): string {
-		$not_set = '__mp_cp_option_not_set__';
-		$raw     = get_option( self::OPTION_GIFT_CARD_ACCENT_COLOR, $not_set );
-		if ( $raw === $not_set || ! is_string( $raw ) || trim( $raw ) === '' ) {
+		$saved = $this->gift_card_accent_color_saved();
+		if ( $saved === '' ) {
 			return self::resolve_default_gift_card_accent_color();
 		}
 
-		$sanitized = self::sanitize_hex_color( $raw );
-
-		return $sanitized !== '' ? $sanitized : self::resolve_default_gift_card_accent_color();
+		return $saved;
 	}
 
 	/**
-	 * Raw saved accent for the settings field (empty when unset).
+	 * Raw saved accent for the settings field (empty when unset or QA smoke color).
 	 */
 	public function gift_card_accent_color_saved(): string {
+		if ( ! function_exists( 'get_option' ) ) {
+			return '';
+		}
+
 		$not_set = '__mp_cp_option_not_set__';
 		$raw     = get_option( self::OPTION_GIFT_CARD_ACCENT_COLOR, $not_set );
 		if ( $raw === $not_set || ! is_string( $raw ) ) {
@@ -679,6 +680,15 @@ final class Settings {
 		}
 
 		$sanitized = self::sanitize_hex_color( trim( $raw ) );
+		if ( $sanitized === '' ) {
+			return '';
+		}
+
+		if ( \MP\CommercePromotions\GiftCard\GiftCardEmailCopyDefaults::is_known_qa_accent_color( $sanitized ) ) {
+			$this->reset_gift_card_accent_color_to_default();
+
+			return '';
+		}
 
 		return $sanitized;
 	}
@@ -686,9 +696,17 @@ final class Settings {
 	public function set_gift_card_accent_color( string $color ): void {
 		$sanitized = self::sanitize_hex_color( trim( $color ) );
 		if ( $sanitized === '' ) {
-			$sanitized = self::resolve_default_gift_card_accent_color();
+			$this->reset_gift_card_accent_color_to_default();
+
+			return;
 		}
 		update_option( self::OPTION_GIFT_CARD_ACCENT_COLOR, $sanitized, false );
+	}
+
+	public function reset_gift_card_accent_color_to_default(): void {
+		if ( function_exists( 'delete_option' ) ) {
+			delete_option( self::OPTION_GIFT_CARD_ACCENT_COLOR );
+		}
 	}
 
 	public function gift_card_sender_name(): string {

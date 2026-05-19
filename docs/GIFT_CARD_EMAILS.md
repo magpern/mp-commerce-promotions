@@ -38,10 +38,19 @@ Legacy template slugs (`birthday`, `holiday`, `minimal`) in the database are **n
 
 - **Gift card email** — subject, heading, intro, redeem text, footer, support, logo (media picker), accent (color picker)
 - **Email style** — Commerce Growth vs WooCommerce wrapper
+- **Reset gift card email template** — restores production default copy, clears logo, resets accent to WooCommerce email / theme / `#2271b1`, and Commerce Growth email style. Does **not** change sender mode, custom sender, reply-to, or delivery toggles.
 - **Live preview** — updates as you type; uses `****SAMPLE` only (never a real code)
-- **Send test gift card email** — uses current form values when possible; sends `****TEST` only
+- **Send test gift card email** — uses current form field values via AJAX (save not required)
 
-Known smoke/test strings from development (e.g. `Smoke persist subject`) are replaced automatically with production defaults when read; merchant-customized text is never changed.
+### Media picker and color picker
+
+On `?page=mp-commerce-promotions&tab=gift-cards&gift_cards_section=settings`:
+
+- **Choose logo** opens the WordPress media modal; selected image URL fills the logo field and updates the preview.
+- **Accent color** uses the WordPress color picker (`wp-color-picker`); invalid hex falls back to the resolved default.
+- If `wp.media` is unavailable, an inline admin notice explains that a manual URL can be used instead.
+
+Known smoke/test strings from development (e.g. `Merchant QA subject line`, `Smoke persist subject`, accent `#aa5500`) are replaced automatically with production defaults when read; merchant-customized text is never changed unless it exactly matches a known QA string.
 
 ## Email sender
 

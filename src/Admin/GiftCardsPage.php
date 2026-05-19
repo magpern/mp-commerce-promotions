@@ -95,6 +95,7 @@ final class GiftCardsPage {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mp-commerce-promotions' ) );
 		}
 
+		$this->gift_card_settings->handle_template_reset();
 		$this->gift_card_settings->handle_post_save();
 		$this->gift_card_settings->handle_settings_test_email();
 		$this->handle_post();

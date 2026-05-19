@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Gift card email settings controls** — media library logo picker and WordPress color picker on Gift Cards → Settings; production default copy cleanup for known QA/smoke strings; QA accent `#aa5500` fallback; **Reset gift card email template** button (copy/logo/accent/style only).
+
 ### Added
 
 - **Remove applied promotions from cart** — shoppers can remove a specific Commerce promotion fee from cart totals (session exclusion `mp_cp_excluded_promotion_ids`); **Restore** clears exclusions; code-linked promotions also drop the WooCommerce coupon when removed; does not pause or delete promotions globally; `promotion-remove-from-cart-smoke.php`.

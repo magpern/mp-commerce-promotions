@@ -7,7 +7,9 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Tests\Unit;
 
+use MP\CommercePromotions\Admin\GiftCardModuleSections;
 use MP\CommercePromotions\Admin\GiftCardSettingsHandler;
+use MP\CommercePromotions\GiftCard\GiftCardEmailPlaceholders;
 use MP\CommercePromotions\Service\Settings;
 use PHPUnit\Framework\TestCase;
 
@@ -89,5 +91,24 @@ final class GiftCardSettingsHandlerTest extends TestCase {
 		$this->assertSame( Settings::GIFT_CARD_SENDER_MODE_DEFAULT, $this->settings->gift_card_sender_mode() );
 
 		unset( $_POST['mp_cp_gift_card_sender_mode'], $_POST['mp_cp_gift_card_sender_email'] );
+	}
+
+	public function test_is_gift_card_settings_screen_matches_query(): void {
+		$_GET['page']               = 'mp-commerce-promotions';
+		$_GET['tab']                = 'gift-cards';
+		$_GET['gift_cards_section'] = GiftCardModuleSections::SECTION_SETTINGS;
+
+		$this->assertTrue( GiftCardSettingsHandler::is_gift_card_settings_screen() );
+
+		unset( $_GET['page'], $_GET['tab'], $_GET['gift_cards_section'] );
+	}
+
+	public function test_reset_template_submit_constant(): void {
+		$this->assertSame( 'mp_cp_reset_gift_card_email_template_submit', GiftCardSettingsHandler::SUBMIT_RESET_TEMPLATE );
+	}
+
+	public function test_production_default_subject_is_merchant_ready(): void {
+		$this->assertStringContainsString( '{site_title}', GiftCardEmailPlaceholders::default_subject() );
+		$this->assertStringNotContainsString( 'QA', GiftCardEmailPlaceholders::default_subject() );
 	}
 }

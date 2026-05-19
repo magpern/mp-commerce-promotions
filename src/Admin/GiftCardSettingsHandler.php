@@ -15,6 +15,7 @@ use MP\CommercePromotions\GiftCard\GiftCardEmailCopy;
 use MP\CommercePromotions\GiftCard\GiftCardEmailPlaceholders;
 use MP\CommercePromotions\GiftCard\GiftCardEmailPreview;
 use MP\CommercePromotions\GiftCard\GiftCardEmailSender;
+use MP\CommercePromotions\GiftCard\GiftCardEmailTemplateReset;
 use MP\CommercePromotions\GiftCard\GiftCardManualIssueDelivery;
 use MP\CommercePromotions\GiftCard\GiftCardManualDeliveryStore;
 use MP\CommercePromotions\GiftCard\GiftCardWooEmailStyler;
@@ -36,6 +37,10 @@ final class GiftCardSettingsHandler {
 
 	public const AJAX_ACTION_TEST = 'mp_cp_gift_card_email_test';
 
+	public const NONCE_RESET_TEMPLATE = 'mp_cp_reset_gift_card_email_template';
+
+	public const SUBMIT_RESET_TEMPLATE = 'mp_cp_reset_gift_card_email_template_submit';
+
 	/** Query args for admin notices after redirect. */
 	public const NOTICE_TYPE_QUERY = 'mp_cp_settings_notice';
 
@@ -51,13 +56,7 @@ final class GiftCardSettingsHandler {
 	}
 
 	public function enqueue_admin_assets( string $hook ): void {
-		unset( $hook );
-		if ( ! isset( $_GET['page'], $_GET['tab'], $_GET['gift_cards_section'] ) ) {
-			return;
-		}
-		if ( (string) $_GET['page'] !== 'mp-commerce-promotions'
-			|| (string) $_GET['tab'] !== 'gift-cards'
-			|| (string) $_GET['gift_cards_section'] !== GiftCardModuleSections::SECTION_SETTINGS ) {
+		if ( ! self::is_gift_card_settings_screen( $hook ) ) {
 			return;
 		}
 
@@ -78,7 +77,7 @@ final class GiftCardSettingsHandler {
 		wp_enqueue_script(
 			'mp-cp-gift-card-email-preview',
 			MP_COMMERCE_PROMOTIONS_URL . 'assets/js/gift-card-email-preview.js',
-			array( 'jquery', 'wp-color-picker', 'media-editor' ),
+			array( 'jquery', 'wp-color-picker' ),
 			MP_COMMERCE_PROMOTIONS_VERSION,
 			true
 		);
@@ -92,17 +91,40 @@ final class GiftCardSettingsHandler {
 				'testAction'    => self::AJAX_ACTION_TEST,
 				'placeholders'  => GiftCardEmailPlaceholders::supported_keys(),
 				'i18n'          => array(
-					'chooseLogo'   => __( 'Choose logo', 'mp-commerce-promotions' ),
-					'useLogo'      => __( 'Use image', 'mp-commerce-promotions' ),
-					'removeLogo'   => __( 'Remove logo', 'mp-commerce-promotions' ),
-					'sending'      => __( 'Sending…', 'mp-commerce-promotions' ),
-					'sendTest'     => __( 'Send test gift card email', 'mp-commerce-promotions' ),
-					'previewError' => __( 'Preview could not be updated.', 'mp-commerce-promotions' ),
-					'testSent'     => __( 'Test email sent (****TEST only).', 'mp-commerce-promotions' ),
-					'testFailed'   => __( 'Test email could not be sent.', 'mp-commerce-promotions' ),
+					'chooseLogo'        => __( 'Choose logo', 'mp-commerce-promotions' ),
+					'useLogo'           => __( 'Use image', 'mp-commerce-promotions' ),
+					'removeLogo'        => __( 'Remove logo', 'mp-commerce-promotions' ),
+					'sending'           => __( 'Sending…', 'mp-commerce-promotions' ),
+					'sendTest'          => __( 'Send test gift card email', 'mp-commerce-promotions' ),
+					'previewError'      => __( 'Preview could not be updated.', 'mp-commerce-promotions' ),
+					'testSent'          => __( 'Test email sent (****TEST only).', 'mp-commerce-promotions' ),
+					'testFailed'        => __( 'Test email could not be sent.', 'mp-commerce-promotions' ),
+					'mediaUnavailable'  => __( 'Media library is unavailable on this screen. Paste a logo URL instead, or reload the page.', 'mp-commerce-promotions' ),
 				),
 			)
 		);
+	}
+
+	/**
+	 * Whether gift card email settings assets should load (admin_enqueue_scripts).
+	 */
+	public static function is_gift_card_settings_screen( ?string $hook = null ): bool {
+		if ( isset( $_GET['page'], $_GET['tab'], $_GET['gift_cards_section'] ) ) {
+			if ( (string) $_GET['page'] === 'mp-commerce-promotions'
+				&& (string) $_GET['tab'] === 'gift-cards'
+				&& (string) $_GET['gift_cards_section'] === GiftCardModuleSections::SECTION_SETTINGS ) {
+				return true;
+			}
+		}
+
+		if ( $hook !== null && $hook !== '' ) {
+			return strpos( $hook, 'mp-commerce-promotions' ) !== false
+				&& isset( $_GET['tab'], $_GET['gift_cards_section'] )
+				&& (string) $_GET['tab'] === 'gift-cards'
+				&& (string) $_GET['gift_cards_section'] === GiftCardModuleSections::SECTION_SETTINGS;
+		}
+
+		return false;
 	}
 
 	public function render(): void {
@@ -261,7 +283,7 @@ final class GiftCardSettingsHandler {
 		$accent_display = $accent_saved !== '' ? $accent_saved : $appearance['accent_color'];
 		$accent_default = Settings::resolve_default_gift_card_accent_color();
 		echo '<tr><th scope="row"><label for="mp_cp_gift_card_accent_color">' . esc_html__( 'Accent color', 'mp-commerce-promotions' ) . '</label></th><td>';
-		echo '<input type="text" class="mp-cp-gc-accent-color-field regular-text" name="mp_cp_gift_card_accent_color" id="mp_cp_gift_card_accent_color" value="'
+		echo '<input type="text" class="mp-cp-gc-accent-color-field wp-color-picker regular-text" name="mp_cp_gift_card_accent_color" id="mp_cp_gift_card_accent_color" value="'
 			. esc_attr( $accent_display ) . '" data-default-color="' . esc_attr( $accent_default ) . '" />';
 		echo '<p class="description">' . esc_html__(
 			'Used for the email header and card accent border. Defaults to your store email or theme accent when unset.',
@@ -279,7 +301,17 @@ final class GiftCardSettingsHandler {
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- admin-only HTML from plugin templates.
 		echo GiftCardEmailPreview::render( $this->settings, null, $preview_amt, $preview_cur );
 		echo '</div></td></tr>';
-		echo '</tbody></table></div></div>';
+		echo '</tbody></table>';
+		$this->render_reset_template_row();
+		echo '</div></div>';
+	}
+
+	private function render_reset_template_row(): void {
+		echo '<p class="mp-cp-gc-reset-template-row">';
+		echo '<button type="submit" name="' . esc_attr( self::SUBMIT_RESET_TEMPLATE ) . '" value="1" class="button button-secondary"';
+		echo ' onclick="return confirm(\'' . esc_js( __( 'Reset gift card email copy, logo, accent, and style to production defaults? Sender and delivery settings are not changed.', 'mp-commerce-promotions' ) ) . '\');">';
+		echo esc_html__( 'Reset gift card email template', 'mp-commerce-promotions' );
+		echo '</button></p>';
 	}
 
 	private function render_placeholders_help(): void {
@@ -441,8 +473,38 @@ final class GiftCardSettingsHandler {
 		return $warning_code;
 	}
 
+	public function handle_template_reset(): void {
+		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( ! isset( $_POST[ self::SUBMIT_RESET_TEMPLATE ] ) ) {
+			return;
+		}
+
+		if ( ! isset( $_POST[ self::NONCE_FIELD ] ) ) {
+			$this->redirect_with_notice( 'error', 'missing_nonce' );
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_POST[ self::NONCE_FIELD ] ) );
+		if ( ! wp_verify_nonce( $nonce, self::NONCE_ACTION ) ) {
+			$this->redirect_with_notice( 'error', 'invalid_nonce' );
+		}
+
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You do not have permission to save these settings.', 'mp-commerce-promotions' ) );
+		}
+
+		( new GiftCardEmailTemplateReset() )->apply( $this->settings );
+		$this->redirect_with_notice( 'success', 'email_template_reset' );
+	}
+
 	public function handle_post_save(): void {
 		if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+			return;
+		}
+
+		if ( isset( $_POST[ self::SUBMIT_RESET_TEMPLATE ] ) ) {
 			return;
 		}
 
@@ -581,6 +643,8 @@ final class GiftCardSettingsHandler {
 				return __( 'Test gift card email could not be sent. Check SMTP and sender settings.', 'mp-commerce-promotions' );
 			case 'test_email_invalid':
 				return __( 'Enter a valid email address for the test message.', 'mp-commerce-promotions' );
+			case 'email_template_reset':
+				return __( 'Gift card email template reset to production defaults.', 'mp-commerce-promotions' );
 			default:
 				return '';
 		}

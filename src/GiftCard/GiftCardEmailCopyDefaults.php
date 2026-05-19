@@ -16,14 +16,27 @@ final class GiftCardEmailCopyDefaults {
 	 *
 	 * @return array<string, string>
 	 */
+	public const QA_ACCENT_COLOR = '#aa5500';
+
 	public static function known_smoke_replacements(): array {
 		return array(
+			'Merchant QA subject line'     => GiftCardEmailPlaceholders::default_subject(),
+			'Merchant QA heading'          => GiftCardEmailPlaceholders::default_heading(),
+			'Custom preview heading'       => GiftCardEmailPlaceholders::default_heading(),
+			'Custom preview intro text.'   => GiftCardEmailPlaceholders::default_intro(),
+			'Merchant QA support'          => GiftCardEmailPlaceholders::default_support_text(),
 			'Smoke persist subject'        => GiftCardEmailPlaceholders::default_subject(),
 			'Smoke persist heading'        => GiftCardEmailPlaceholders::default_heading(),
 			'Smoke heading {amount}'       => GiftCardEmailPlaceholders::default_heading(),
 			'Smoke body with sample only.' => GiftCardEmailPlaceholders::default_intro(),
 			'Smoke persist support'        => GiftCardEmailPlaceholders::default_support_text(),
 		);
+	}
+
+	public static function is_known_qa_accent_color( string $color ): bool {
+		$normalized = strtolower( trim( $color ) );
+
+		return $normalized === self::QA_ACCENT_COLOR;
 	}
 
 	/**

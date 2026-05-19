@@ -21,6 +21,7 @@
 	};
 
 	var previewTimer = null;
+	var mediaNoticeShown = false;
 
 	function fieldValue( id ) {
 		var node = document.getElementById( id );
@@ -107,6 +108,28 @@
 		} );
 	}
 
+	function showMediaUnavailableNotice() {
+		if ( mediaNoticeShown ) {
+			return;
+		}
+		mediaNoticeShown = true;
+
+		var message = ( cfg.i18n && cfg.i18n.mediaUnavailable )
+			? cfg.i18n.mediaUnavailable
+			: 'Media library is unavailable. Paste a logo URL instead.';
+
+		var logoField = document.querySelector( '.mp-cp-gc-logo-field' );
+		if ( ! logoField ) {
+			return;
+		}
+
+		var notice = document.createElement( 'div' );
+		notice.className = 'notice notice-warning inline mp-cp-gc-media-unavailable-notice';
+		notice.setAttribute( 'role', 'status' );
+		notice.innerHTML = '<p>' + message + '</p>';
+		logoField.parentNode.insertBefore( notice, logoField );
+	}
+
 	function initLogoPicker() {
 		var chooseBtn = document.getElementById( 'mp-cp-gc-choose-logo' );
 		var removeBtn = document.getElementById( 'mp-cp-gc-remove-logo' );
@@ -121,6 +144,7 @@
 			e.preventDefault();
 
 			if ( typeof wp === 'undefined' || ! wp.media ) {
+				showMediaUnavailableNotice();
 				return;
 			}
 
@@ -166,21 +190,29 @@
 
 	function initColorPicker() {
 		var input = document.getElementById( fieldIds.accent );
-		if ( ! input || ! $.fn.wpColorPicker ) {
+		if ( ! input ) {
+			return;
+		}
+
+		if ( ! $.fn.wpColorPicker ) {
 			return;
 		}
 
 		var $input = $( input );
+		var fallback = input.getAttribute( 'data-default-color' ) || '#2271b1';
+
 		$input.wpColorPicker( {
+			defaultColor: fallback,
 			change: function () {
 				schedulePreview();
 			},
 			clear: function () {
-				var fallback = input.getAttribute( 'data-default-color' ) || '#2271b1';
 				input.value = fallback;
 				schedulePreview();
 			},
 		} );
+
+		$input.on( 'input', schedulePreview );
 	}
 
 	function updateLogoThumb( url ) {
