@@ -84,7 +84,7 @@ Operational playbooks for real merchant pilots using Commerce Promotions for Woo
 6. **Send on date** — no code at payment; generation and email run on the chosen date (hourly cron, Diagnostics, or order **Send due deliveries now**).
 7. On cancellation/refund, unused generated cards are voided; pending scheduled rows are cancelled; partially used cards need manual review (order note).
 8. **Promotions do not discount gift card products** — automatic percentage/fixed/BOGO and line-item discounts apply only to other cart lines; gift card value stays full (mixed carts discount the non–gift-card portion only).
-9. **Free shipping ignores gift cards** — cart progress and Commerce Growth `free_shipping` use qualifying shippable subtotal only; gift-card-only carts hide progress; virtual products without shipping do not count.
+9. **Free shipping uses paid shippable merchandise** — cart progress and `free_shipping` promotions use `ShippingQualifiedSubtotalCalculator` (not raw cart subtotal). Gift cards, virtual/non-shippable lines, free gifts, and promotional free/BOGO units are excluded; fee-based cart discounts count only when line allocations exist or the cart line subtotal already reflects a line discount.
 
 Full codes are never stored after delivery. See [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md) and [GIFT_CARD_CUSTOMER_EXPERIENCE.md](GIFT_CARD_CUSTOMER_EXPERIENCE.md).
 

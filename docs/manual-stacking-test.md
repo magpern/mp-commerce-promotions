@@ -17,7 +17,9 @@ Use this checklist to verify **stackable** promotion fees, **subtotal cap**, **e
 
 **Cheapest item discount:** stackable promotions can combine a `cheapest_item_discount` fee with other discount fees (subtotal cap applies). See [manual-cheapest-item-test.md](manual-cheapest-item-test.md).
 
-**Free gift product:** `free_gift_product` adds a cart line at zero price and does not consume the discount-fee subtotal cap. See [manual-free-gift-test.md](manual-free-gift-test.md).
+**Free gift product:** `free_gift_product` adds a cart line at zero price and does not consume the discount-fee subtotal cap. Free gift lines are excluded from **free shipping qualification** subtotal. See [manual-free-gift-test.md](manual-free-gift-test.md).
+
+**Free shipping thresholds:** `minimum_subtotal` on `free_shipping` promotions uses paid shippable merchandise only (gift cards, free gifts, and BOGO free units excluded). See [manual-free-shipping-test.md](manual-free-shipping-test.md).
 
 **Usage limits:** global `usage_limit` and per-customer `customer_usage_limit` are enforced in the evaluator before conditions. See [manual-redemption-limits-test.md](manual-redemption-limits-test.md).
 

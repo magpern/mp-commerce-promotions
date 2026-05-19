@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Non-payable items excluded from free shipping qualification** — `ShippingQualifiedSubtotalCalculator` uses paid shippable merchandise only (gift cards, virtual/non-shippable, free gifts, BOGO/cheapest-item free units, line discount allocations); trace `shipping_exclusion_reasons`; `scripts/shipping-qualified-subtotal-smoke.php`.
+
+### Fixed
+
 - **Gift cards excluded from free shipping qualification** — `CartShippingEligibilitySubtotal` excludes gift card and non-shippable lines; free shipping promotions and Biopentra cart progress use qualifying shipping subtotal; progress hidden when no shippable items; trace metadata `gift_card_products_excluded_from_shipping_*` and `qualifying_shipping_subtotal`; `scripts/gift-card-shipping-exclusion-smoke.php`.
 
 ### Fixed

@@ -163,7 +163,7 @@ class CartItemSelector {
 
 			$unit_count = (int) floor( $quantity );
 			for ( $i = 0; $i < $unit_count; ++$i ) {
-				$units[] = array(
+				$unit = array(
 					'product_id'   => $product_id,
 					'variation_id' => $variation_id,
 					'unit_price'   => $unit_price,
@@ -171,6 +171,10 @@ class CartItemSelector {
 					'on_sale'      => self::item_is_on_sale( $item ),
 					'source_item'  => $item,
 				);
+				if ( isset( $item['item_key'] ) && is_string( $item['item_key'] ) && $item['item_key'] !== '' ) {
+					$unit['item_key'] = $item['item_key'];
+				}
+				$units[] = $unit;
 			}
 		}
 

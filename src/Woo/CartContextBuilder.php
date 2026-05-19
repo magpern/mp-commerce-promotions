@@ -116,6 +116,9 @@ final class CartContextBuilder {
 					$row['item_key'] = $cart_item_key;
 				}
 
+				$row['is_free_gift'] = ! empty( $cart_item[ FreeGiftCartHandler::CART_ITEM_META_FREE_GIFT ] )
+					&& $cart_item[ FreeGiftCartHandler::CART_ITEM_META_FREE_GIFT ] === 'yes';
+
 				$product_name = $this->product_name_for_cart_item( $product_id, $cart_item );
 				if ( $product_name !== null && $product_name !== '' ) {
 					$row['product_name'] = $product_name;
@@ -127,7 +130,7 @@ final class CartContextBuilder {
 
 		$items = GiftCardPromotionExclusion::mark_gift_card_lines( $items );
 		$stats = GiftCardPromotionExclusion::exclusion_stats( $items );
-		$shipping_stats = CartShippingEligibilitySubtotal::stats( $items );
+		$shipping_stats = ShippingQualifiedSubtotalCalculator::calculate( $items );
 
 		$metadata = array(
 			'source'              => 'woocommerce_cart',
@@ -138,7 +141,10 @@ final class CartContextBuilder {
 			GiftCardPromotionExclusion::TRACE_SUBTOTAL_KEY => $stats['subtotal'],
 			CartShippingEligibilitySubtotal::TRACE_GIFT_COUNT_KEY    => $shipping_stats[ CartShippingEligibilitySubtotal::TRACE_GIFT_COUNT_KEY ],
 			CartShippingEligibilitySubtotal::TRACE_GIFT_SUBTOTAL_KEY => $shipping_stats[ CartShippingEligibilitySubtotal::TRACE_GIFT_SUBTOTAL_KEY ],
-			CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY    => $shipping_stats[ CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY ],
+			ShippingQualifiedSubtotalCalculator::TRACE_QUALIFYING    => $shipping_stats[ ShippingQualifiedSubtotalCalculator::TRACE_QUALIFYING ],
+			ShippingQualifiedSubtotalCalculator::TRACE_EXCLUDED        => $shipping_stats[ ShippingQualifiedSubtotalCalculator::TRACE_EXCLUDED ],
+			ShippingQualifiedSubtotalCalculator::TRACE_EXCLUDED_COUNT  => $shipping_stats[ ShippingQualifiedSubtotalCalculator::TRACE_EXCLUDED_COUNT ],
+			ShippingQualifiedSubtotalCalculator::TRACE_REASONS         => $shipping_stats[ ShippingQualifiedSubtotalCalculator::TRACE_REASONS ],
 		);
 
 		if ( $customer_id !== null && $customer_id > 0 ) {

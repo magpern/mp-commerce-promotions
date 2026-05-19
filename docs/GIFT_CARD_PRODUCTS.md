@@ -58,16 +58,22 @@ Gift card products (`_mp_cp_sells_gift_card=yes`) are **excluded from Commerce G
 
 ### Free shipping and shipping promotions
 
-Gift card products do **not** count toward free-shipping thresholds or Commerce Growth `free_shipping` promotions:
+Free shipping progress and Commerce Growth `free_shipping` promotions use **paid shippable merchandise subtotal** (`ShippingQualifiedSubtotalCalculator`), not raw cart subtotal.
 
-- **Qualifying shipping subtotal** includes only shippable merchandise (WooCommerce `needs_shipping()`), excluding gift card lines.
-- Virtual non–gift-card products follow WooCommerce shipping rules (excluded when `needs_shipping` is false).
-- Gift-card-only carts: storefront free-shipping progress is hidden; qualifying subtotal is €0.
-- Mixed carts: only physical/eligible lines count (e.g. gift €100 + physical €50 → qualifying €50).
-- Trace metadata on cart context: `gift_card_products_excluded_from_shipping_count`, `gift_card_products_excluded_from_shipping_subtotal`, `qualifying_shipping_subtotal`.
-- Storefront filter: `mp_cp_qualifying_shipping_subtotal`; Biopentra progress uses `biopentra_header_auth_cart_free_shipping_subtotal`.
+**Excluded from qualification:**
+
+- Gift card / stored-value product lines
+- Virtual or non-shippable products (`needs_shipping` false)
+- Promotion free gift lines (`mp_cp_free_gift=yes`)
+- BOGO / cheapest-item free or discounted units (fee-based preview)
+- Line-item discount allocations when session `mp_cp_line_allocations` is present
+
+**Examples:** gift-card-only cart → qualifying €0 (progress hidden); gift €100 + physical €50 → qualifying €50; buy 3 get 1 free on €10 items → qualifying €30 not €40.
+
+Trace metadata: `qualifying_shipping_subtotal`, `shipping_excluded_subtotal`, `shipping_excluded_items_count`, `shipping_exclusion_reasons` (keys: `gift_card_product`, `non_shippable`, `free_gift`, `free_promotional_unit`, `fully_discounted_unit`, `discount_allocation`).
 
 ```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/shipping-qualified-subtotal-smoke.php
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-shipping-exclusion-smoke.php
 ```
 

@@ -44,6 +44,7 @@ use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
 use MP\CommercePromotions\GiftCard\GiftCardPromotionExclusion;
 use MP\CommercePromotions\Woo\CartShippingEligibilitySubtotal;
+use MP\CommercePromotions\Woo\ShippingQualifiedSubtotalCalculator;
 
 final class PromotionEvaluator {
 
@@ -563,10 +564,13 @@ final class PromotionEvaluator {
 			$metadata['gift_card_promotion_exclusion'] = self::REASON_GIFT_CARD_PRODUCTS_EXCLUDED;
 		}
 
-		$shipping_stats = CartShippingEligibilitySubtotal::stats( $context->get_items() );
+		$shipping_stats = ShippingQualifiedSubtotalCalculator::calculate( $context->get_items(), $context );
 		$metadata[ CartShippingEligibilitySubtotal::TRACE_GIFT_COUNT_KEY ]    = $shipping_stats[ CartShippingEligibilitySubtotal::TRACE_GIFT_COUNT_KEY ];
 		$metadata[ CartShippingEligibilitySubtotal::TRACE_GIFT_SUBTOTAL_KEY ] = $shipping_stats[ CartShippingEligibilitySubtotal::TRACE_GIFT_SUBTOTAL_KEY ];
-		$metadata[ CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY ]    = $shipping_stats[ CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY ];
+		$metadata[ ShippingQualifiedSubtotalCalculator::TRACE_QUALIFYING ]    = $shipping_stats[ ShippingQualifiedSubtotalCalculator::TRACE_QUALIFYING ];
+		$metadata[ ShippingQualifiedSubtotalCalculator::TRACE_EXCLUDED ]      = $shipping_stats[ ShippingQualifiedSubtotalCalculator::TRACE_EXCLUDED ];
+		$metadata[ ShippingQualifiedSubtotalCalculator::TRACE_EXCLUDED_COUNT ] = $shipping_stats[ ShippingQualifiedSubtotalCalculator::TRACE_EXCLUDED_COUNT ];
+		$metadata[ ShippingQualifiedSubtotalCalculator::TRACE_REASONS ]       = $shipping_stats[ ShippingQualifiedSubtotalCalculator::TRACE_REASONS ];
 
 		$customer_id  = $context->get_customer_id();
 		$promotion_id = $promotion->get_id();
@@ -585,7 +589,7 @@ final class PromotionEvaluator {
 
 		$subtotal = EligibleCartScope::subtotal( $items );
 		if ( $this->promotion_has_free_shipping_action( $promotion ) ) {
-			$subtotal = CartShippingEligibilitySubtotal::qualifying_subtotal( $items );
+			$subtotal = ShippingQualifiedSubtotalCalculator::calculate( $context->get_items(), $context )[ ShippingQualifiedSubtotalCalculator::TRACE_QUALIFYING ];
 		}
 
 		return new EvaluationContext(
@@ -618,11 +622,11 @@ final class PromotionEvaluator {
 
 	private function qualifying_shipping_subtotal_for_context( EvaluationContext $context ): float {
 		$metadata = $context->get_metadata();
-		if ( isset( $metadata[ CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY ] ) && is_numeric( $metadata[ CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY ] ) ) {
-			return max( 0.0, (float) $metadata[ CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY ] );
+		if ( isset( $metadata[ ShippingQualifiedSubtotalCalculator::TRACE_QUALIFYING ] ) && is_numeric( $metadata[ ShippingQualifiedSubtotalCalculator::TRACE_QUALIFYING ] ) ) {
+			return max( 0.0, (float) $metadata[ ShippingQualifiedSubtotalCalculator::TRACE_QUALIFYING ] );
 		}
 
-		return CartShippingEligibilitySubtotal::qualifying_subtotal( $context->get_items() );
+		return ShippingQualifiedSubtotalCalculator::calculate( $context->get_items(), $context )[ ShippingQualifiedSubtotalCalculator::TRACE_QUALIFYING ];
 	}
 
 	/**
