@@ -102,13 +102,14 @@ final class CartContextBuilder {
 				$categories = $this->category_term_ids_for_product( $product_id );
 
 				$row = array(
-					'product_id'    => $product_id,
-					'variation_id'  => $variation,
-					'quantity'      => $quantity,
-					'line_subtotal' => $line_subtotal,
-					'unit_price'    => $unit_price,
-					'categories'    => $categories,
-					'on_sale'       => $this->cart_item_is_on_sale( $cart_item, $product_id, $variation ),
+					'product_id'     => $product_id,
+					'variation_id'   => $variation,
+					'quantity'       => $quantity,
+					'line_subtotal'  => $line_subtotal,
+					'unit_price'     => $unit_price,
+					'categories'     => $categories,
+					'on_sale'        => $this->cart_item_is_on_sale( $cart_item, $product_id, $variation ),
+					'needs_shipping' => CartShippingEligibilitySubtotal::wc_cart_item_needs_shipping( $cart_item ),
 				);
 
 				if ( is_string( $cart_item_key ) && $cart_item_key !== '' ) {
@@ -126,6 +127,7 @@ final class CartContextBuilder {
 
 		$items = GiftCardPromotionExclusion::mark_gift_card_lines( $items );
 		$stats = GiftCardPromotionExclusion::exclusion_stats( $items );
+		$shipping_stats = CartShippingEligibilitySubtotal::stats( $items );
 
 		$metadata = array(
 			'source'              => 'woocommerce_cart',
@@ -134,6 +136,9 @@ final class CartContextBuilder {
 			'promotion_eligible_subtotal' => $stats['eligible_subtotal'],
 			GiftCardPromotionExclusion::TRACE_COUNT_KEY    => $stats['count'],
 			GiftCardPromotionExclusion::TRACE_SUBTOTAL_KEY => $stats['subtotal'],
+			CartShippingEligibilitySubtotal::TRACE_GIFT_COUNT_KEY    => $shipping_stats[ CartShippingEligibilitySubtotal::TRACE_GIFT_COUNT_KEY ],
+			CartShippingEligibilitySubtotal::TRACE_GIFT_SUBTOTAL_KEY => $shipping_stats[ CartShippingEligibilitySubtotal::TRACE_GIFT_SUBTOTAL_KEY ],
+			CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY    => $shipping_stats[ CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY ],
 		);
 
 		if ( $customer_id !== null && $customer_id > 0 ) {

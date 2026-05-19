@@ -905,6 +905,11 @@ final class CartPromotionApplier {
 		$cart,
 		?PromotionCode $promotion_code
 	) {
+		$shipping_stats = CartShippingEligibilitySubtotal::stats_from_cart();
+		if ( ! $shipping_stats['has_qualifying_shipping_items'] ) {
+			return false;
+		}
+
 		$shipping_total = $this->resolve_cart_shipping_total( $cart );
 		if ( $shipping_total === null || $shipping_total <= 0 ) {
 			return false;

@@ -4,7 +4,7 @@
 
 Gift cards are **stored-value credit** with an append-only ledger. They are **not** promotion rules, promotion codes, or `PromotionEvaluator` actions.
 
-**Selling gift cards via WooCommerce products:** lines marked `_mp_cp_sells_gift_card=yes` are excluded from Commerce Growth promotion discounts (percentage, fixed, BOGO/cheapest item, line-item mutation). Mixed carts discount only non–gift-card products. See [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md).
+**Selling gift cards via WooCommerce products:** lines marked `_mp_cp_sells_gift_card=yes` are excluded from Commerce Growth promotion discounts (percentage, fixed, BOGO/cheapest item, line-item mutation) and from **free shipping** thresholds / `free_shipping` promotions (only shippable merchandise counts). Mixed carts discount and qualify shipping on non–gift-card physical lines only. See [GIFT_CARD_PRODUCTS.md](GIFT_CARD_PRODUCTS.md).
 
 ## Merchant admin
 

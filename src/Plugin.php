@@ -84,6 +84,7 @@ use MP\CommercePromotions\Woo\GiftCardBalanceCheckerShortcode;
 use MP\CommercePromotions\Woo\GiftCardCustomerAssets;
 use MP\CommercePromotions\Woo\GiftCardMyAccount;
 use MP\CommercePromotions\Woo\GiftCardCustomerAmountCart;
+use MP\CommercePromotions\Woo\CartShippingEligibilityHooks;
 use MP\CommercePromotions\Woo\GiftCardProductDisplay;
 use MP\CommercePromotions\Woo\GiftCardProductPriceDisplay;
 use MP\CommercePromotions\Woo\GiftCardRedemptionCheckout;
@@ -242,6 +243,7 @@ final class Plugin {
 				GiftCardCustomerAssets::register();
 				( new GiftCardBalanceCheckerShortcode( new GiftCardBalanceChecker( $gift_ledger ), $this->settings ) )->register();
 				( new GiftCardProductDisplay( $gift_product_service, $this->settings ) )->register();
+				( new CartShippingEligibilityHooks() )->register();
 				( new GiftCardCustomerAmountCart( $gift_product_service ) )->register();
 				( new GiftCardProductPriceDisplay( $gift_product_service ) )->register();
 				$gift_customer = new GiftCardCustomerService( $gift_card_repo, $wpdb );

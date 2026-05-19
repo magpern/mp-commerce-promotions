@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Gift cards excluded from free shipping qualification** — `CartShippingEligibilitySubtotal` excludes gift card and non-shippable lines; free shipping promotions and Biopentra cart progress use qualifying shipping subtotal; progress hidden when no shippable items; trace metadata `gift_card_products_excluded_from_shipping_*` and `qualifying_shipping_subtotal`; `scripts/gift-card-shipping-exclusion-smoke.php`.
+
+### Fixed
+
 - **Gift card product admin fields** — restore WooCommerce `form-field` labels and descriptions (amount mode, fixed amount, expiry days, recipient mode); hide options until gift card is enabled; show fixed amount only for fixed mode; admin JS/CSS for layout.
 
 ### Fixed

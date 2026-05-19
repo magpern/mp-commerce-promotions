@@ -43,10 +43,13 @@ use MP\CommercePromotions\Engine\Condition\ProductInCartCondition;
 use MP\CommercePromotions\Engine\Condition\ProductQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\QuantityComparator;
 use MP\CommercePromotions\GiftCard\GiftCardPromotionExclusion;
+use MP\CommercePromotions\Woo\CartShippingEligibilitySubtotal;
 
 final class PromotionEvaluator {
 
 	public const REASON_GIFT_CARD_PRODUCTS_EXCLUDED = 'gift_card_products_excluded';
+
+	public const REASON_NO_SHIPPABLE_QUALIFYING_ITEMS = 'no_shippable_qualifying_items';
 
 	private ?RedemptionRepository $redemptions;
 
@@ -160,6 +163,17 @@ final class PromotionEvaluator {
 
 				return EvaluationResult::ineligible(
 					array( $msg !== null && $msg !== '' ? $msg : 'A condition did not pass.' ),
+					$condition_traces,
+					$this->build_action_not_reached_traces( $actions )
+				);
+			}
+		}
+
+		if ( $this->promotion_has_free_shipping_action( $promotion ) ) {
+			$qualifying = $this->qualifying_shipping_subtotal_for_context( $context );
+			if ( $qualifying <= 0.0 ) {
+				return EvaluationResult::ineligible(
+					array( 'Cart has no shippable qualifying merchandise for free shipping.' ),
 					$condition_traces,
 					$this->build_action_not_reached_traces( $actions )
 				);
@@ -549,6 +563,11 @@ final class PromotionEvaluator {
 			$metadata['gift_card_promotion_exclusion'] = self::REASON_GIFT_CARD_PRODUCTS_EXCLUDED;
 		}
 
+		$shipping_stats = CartShippingEligibilitySubtotal::stats( $context->get_items() );
+		$metadata[ CartShippingEligibilitySubtotal::TRACE_GIFT_COUNT_KEY ]    = $shipping_stats[ CartShippingEligibilitySubtotal::TRACE_GIFT_COUNT_KEY ];
+		$metadata[ CartShippingEligibilitySubtotal::TRACE_GIFT_SUBTOTAL_KEY ] = $shipping_stats[ CartShippingEligibilitySubtotal::TRACE_GIFT_SUBTOTAL_KEY ];
+		$metadata[ CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY ]    = $shipping_stats[ CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY ];
+
 		$customer_id  = $context->get_customer_id();
 		$promotion_id = $promotion->get_id();
 		if (
@@ -564,13 +583,46 @@ final class PromotionEvaluator {
 			);
 		}
 
+		$subtotal = EligibleCartScope::subtotal( $items );
+		if ( $this->promotion_has_free_shipping_action( $promotion ) ) {
+			$subtotal = CartShippingEligibilitySubtotal::qualifying_subtotal( $items );
+		}
+
 		return new EvaluationContext(
 			$context->get_customer_id(),
-			EligibleCartScope::subtotal( $items ),
+			$subtotal,
 			$context->get_currency(),
 			$items,
 			$metadata
 		);
+	}
+
+	private function promotion_has_free_shipping_action( Promotion $promotion ): bool {
+		$actions = $promotion->get_actions();
+		if ( ! is_array( $actions ) ) {
+			return false;
+		}
+
+		foreach ( $actions as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+			$type = isset( $raw['type'] ) ? trim( (string) $raw['type'] ) : '';
+			if ( $type === RuleTypes::ACTION_FREE_SHIPPING ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private function qualifying_shipping_subtotal_for_context( EvaluationContext $context ): float {
+		$metadata = $context->get_metadata();
+		if ( isset( $metadata[ CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY ] ) && is_numeric( $metadata[ CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY ] ) ) {
+			return max( 0.0, (float) $metadata[ CartShippingEligibilitySubtotal::TRACE_QUALIFYING_KEY ] );
+		}
+
+		return CartShippingEligibilitySubtotal::qualifying_subtotal( $context->get_items() );
 	}
 
 	/**

@@ -56,6 +56,21 @@ Gift card products (`_mp_cp_sells_gift_card=yes`) are **excluded from Commerce G
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-discount-exclusion-smoke.php
 ```
 
+### Free shipping and shipping promotions
+
+Gift card products do **not** count toward free-shipping thresholds or Commerce Growth `free_shipping` promotions:
+
+- **Qualifying shipping subtotal** includes only shippable merchandise (WooCommerce `needs_shipping()`), excluding gift card lines.
+- Virtual non–gift-card products follow WooCommerce shipping rules (excluded when `needs_shipping` is false).
+- Gift-card-only carts: storefront free-shipping progress is hidden; qualifying subtotal is €0.
+- Mixed carts: only physical/eligible lines count (e.g. gift €100 + physical €50 → qualifying €50).
+- Trace metadata on cart context: `gift_card_products_excluded_from_shipping_count`, `gift_card_products_excluded_from_shipping_subtotal`, `qualifying_shipping_subtotal`.
+- Storefront filter: `mp_cp_qualifying_shipping_subtotal`; Biopentra progress uses `biopentra_header_auth_cart_free_shipping_subtotal`.
+
+```bash
+./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-shipping-exclusion-smoke.php
+```
+
 ```bash
 ./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/gift-card-customer-amount-smoke.php
 ```
