@@ -80,6 +80,8 @@ final class GiftCardRedemptionAccordionTest extends TestCase {
 		);
 		$this->assertStringContainsString( 'woocommerce_cart_coupon', $src );
 		$this->assertStringContainsString( 'mp-cp-credit-inline', $src );
+		$this->assertStringContainsString( 'mp-cp-credit-cart-row', $src );
+		$this->assertStringContainsString( 'mp-cp-credit-form-row', $src );
 		$this->assertStringContainsString( 'render_cart_inline', $src );
 		$this->assertStringNotContainsString( 'woocommerce_before_cart_collaterals', $src );
 		$this->assertStringNotContainsString( 'mp-cp-credit-accordion--cart-collateral', $src );

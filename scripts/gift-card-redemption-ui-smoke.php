@@ -33,6 +33,8 @@ $css      = is_readable( $css_path ) ? (string) file_get_contents( $css_path ) :
 
 $required = array(
 	'mp-cp-credit-inline',
+	'mp-cp-credit-cart-row',
+	'mp-cp-credit-form-row',
 	'mp-cp-credit-accordion',
 	'mp-cp-credit-accordion__toggle',
 	'mp-cp-credit-accordion__header-main',
@@ -116,10 +118,19 @@ foreach ( $unsafe_css as $selector ) {
 	}
 }
 
-if ( $css !== '' && strpos( $css, '.mp-cp-credit-inline' ) !== false && strpos( $css, '.mp-cp-credit-accordion__form-row' ) !== false ) {
-	$pass( 'coupon-row form styles present' );
+if ( $css !== '' && strpos( $css, '.mp-cp-credit-cart-row' ) !== false
+	&& strpos( $css, 'flex: 0 0 100%' ) !== false
+	&& strpos( $css, '.mp-cp-credit-form-row' ) !== false ) {
+	$pass( 'cart row + form-row layout styles present' );
 } else {
-	$fail( 'coupon-row form styles present' );
+	$fail( 'cart row + form-row layout styles present' );
+}
+
+if ( $css !== '' && strpos( $css, '.woocommerce .coupon' ) === false
+	&& strpos( $css, '.coupon ' ) === false ) {
+	$pass( 'css does not target woocommerce coupon row classes' );
+} else {
+	$fail( 'css does not target woocommerce coupon row classes' );
 }
 
 if ( ! GiftCardRedemptionCheckout::should_expand_accordion( null, null, 0.0, false, false ) ) {

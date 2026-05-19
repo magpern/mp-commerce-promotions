@@ -40,7 +40,7 @@ Pilot: [GIFT_CARD_PILOT_CHECKLIST.md](GIFT_CARD_PILOT_CHECKLIST.md). If `/gift-c
 
 ## Checkout redemption
 
-Compact **Gift card or store credit** accordion on **cart** (right column above cart totals; outside the cart table so the two-column layout is preserved) and on **checkout** before the checkout form — collapsed by default, coupon-style. Expands when a gift card or store credit is applied, when WooCommerce success/error notices are present, or when a logged-in customer has store credit available. Collapsed summary shows masked `****{last4}` when applied and wallet balance when relevant. Ledger, session, and fee behavior are unchanged.
+Compact **Gift card or store credit** accordion on **cart** (inside the cart form, on its own row **below** the coupon code field and **Apply coupon** button; update cart stays on the actions row) and on **checkout** before the checkout form — collapsed by default, coupon-style. Expanded gift card input uses a full-width flex row (input left, **Apply gift card** right; stacks on narrow screens). Expands when a gift card or store credit is applied, when WooCommerce success/error notices are present, or when a logged-in customer has store credit available. Collapsed summary shows masked `****{last4}` when applied and wallet balance when relevant. Ledger, session, and fee behavior are unchanged.
 
 ### WooCommerce Blocks
 

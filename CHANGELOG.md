@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Cart gift card row layout** — gift card accordion on its own row below coupon input/Apply coupon; coupon button sizing preserved; expanded gift card form uses full-width input + button row (`mp-cp-credit-cart-row`, `mp-cp-credit-form-row`).
 - **Gift card email settings controls** — media library logo picker and WordPress color picker on Gift Cards → Settings; production default copy cleanup for known QA/smoke strings; QA accent `#aa5500` fallback; **Reset gift card email template** button (copy/logo/accent/style only).
 
 ### Added

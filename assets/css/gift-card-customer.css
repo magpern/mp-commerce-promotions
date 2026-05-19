@@ -26,19 +26,46 @@
 	border-top: 1px solid #e8e8e8;
 }
 
-.mp-cp-credit-inline {
+/* Own row below coupon input/button inside cart form (plugin classes only). */
+.mp-cp-credit-inline,
+.mp-cp-credit-cart-row {
 	display: block;
 	clear: both;
+	flex: 0 0 100%;
 	width: 100%;
 	max-width: 100%;
-	margin-top: 0.5em;
+	margin: 0.5em 0 0;
+	align-self: flex-start;
+	box-sizing: border-box;
 }
 
-.mp-cp-credit-inline .mp-cp-credit-accordion {
+.mp-cp-credit-inline .mp-cp-credit-accordion,
+.mp-cp-credit-cart-row .mp-cp-credit-accordion {
 	margin: 0;
 	border: 0;
 	border-radius: 0;
 	background: transparent;
+	width: 100%;
+	max-width: 36em;
+}
+
+.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__toggle {
+	padding: 0.35em 0;
+}
+
+.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__header {
+	flex-wrap: nowrap;
+	gap: 0.5rem 1rem;
+}
+
+.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__header-main {
+	flex: 0 1 auto;
+}
+
+.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__summary-text {
+	flex: 1 1 auto;
+	min-width: 0;
+	text-align: right;
 }
 
 .mp-cp-credit-accordion__toggle {
@@ -187,33 +214,46 @@
 	margin: 0;
 }
 
+.mp-cp-credit-form-row,
 .mp-cp-credit-accordion__form-row,
 .mp-cp-credit-accordion__form--inline {
 	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 0.5em;
+	flex-wrap: nowrap;
+	align-items: stretch;
+	gap: 12px;
+	width: 100%;
 }
 
-.mp-cp-credit-inline .mp-cp-credit-accordion__form-row .input-text {
+.mp-cp-credit-accordion--cart .mp-cp-credit-form-row .input-text,
+.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__form-row .input-text {
+	flex: 1 1 auto;
+	min-width: 0;
 	width: auto;
-	min-width: 8em;
-	max-width: 14em;
+	max-width: none;
 	margin: 0;
-	vertical-align: middle;
 }
 
-.mp-cp-credit-inline .mp-cp-credit-accordion__form-row .button {
+.mp-cp-credit-accordion--cart .mp-cp-credit-form-row .button,
+.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__form-row .button {
+	flex: 0 0 auto;
 	margin: 0;
-	vertical-align: middle;
 	white-space: nowrap;
+	align-self: auto;
+	height: auto;
+	min-height: 0;
 }
 
-.mp-cp-credit-accordion__form--inline .input-text {
+.mp-cp-credit-accordion:not(.mp-cp-credit-accordion--cart) .mp-cp-credit-accordion__form-row .input-text,
+.mp-cp-credit-accordion:not(.mp-cp-credit-accordion--cart) .mp-cp-credit-accordion__form--inline .input-text {
 	flex: 0 1 auto;
 	min-width: 8em;
 	max-width: 16em;
 	margin: 0;
+}
+
+.mp-cp-credit-accordion--cart .mp-cp-credit-help {
+	width: 100%;
+	margin-top: 0.65em;
 }
 
 .mp-cp-credit-accordion__wallet-label {
@@ -426,16 +466,27 @@
 		white-space: normal;
 	}
 
+	.mp-cp-credit-form-row,
 	.mp-cp-credit-accordion__form-row,
 	.mp-cp-credit-accordion__form--inline {
 		flex-direction: column;
 		align-items: stretch;
 	}
 
+	.mp-cp-credit-form-row .input-text,
 	.mp-cp-credit-accordion__form-row .input-text,
 	.mp-cp-credit-accordion__form--inline .input-text,
-	.mp-cp-credit-inline .mp-cp-credit-accordion__form-row .input-text {
+	.mp-cp-credit-accordion--cart .mp-cp-credit-form-row .input-text {
 		max-width: none;
+		width: 100%;
+	}
+
+	.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__header {
+		flex-wrap: wrap;
+	}
+
+	.mp-cp-credit-accordion--cart .mp-cp-credit-form-row .button,
+	.mp-cp-credit-accordion--cart .mp-cp-credit-accordion__form-row .button {
 		width: 100%;
 	}
 }

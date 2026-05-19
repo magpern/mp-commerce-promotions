@@ -305,7 +305,7 @@ final class GiftCardRedemptionCheckout {
 		$body_id = 'mp-cp-credit-accordion-body';
 
 		if ( $cart_inline ) {
-			echo '<div class="mp-cp-credit-inline">';
+			echo '<div class="mp-cp-credit-inline mp-cp-credit-cart-row">';
 		}
 
 		$accordion_class = 'mp-cp-credit-accordion mp-cp-gift-card-checkout';
@@ -467,9 +467,9 @@ final class GiftCardRedemptionCheckout {
 			}
 		} else {
 			if ( ! $cart_inline ) {
-				echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
+				echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-form-row mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
 			} else {
-				echo '<div class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
+				echo '<div class="mp-cp-credit-accordion__form mp-cp-credit-form-row mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
 			}
 			wp_nonce_field( self::NONCE_GIFT, self::NONCE_GIFT_FIELD );
 			echo '<input type="hidden" name="mp_cp_gift_card_action" value="apply" />';
@@ -501,9 +501,9 @@ final class GiftCardRedemptionCheckout {
 			}
 		} elseif ( $sc_balance > 0 ) {
 			if ( $cart_inline ) {
-				echo '<div class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
+				echo '<div class="mp-cp-credit-accordion__form mp-cp-credit-form-row mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
 			} else {
-				echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
+				echo '<form method="post" class="mp-cp-credit-accordion__form mp-cp-credit-form-row mp-cp-credit-accordion__form-row mp-cp-credit-accordion__form--inline">';
 			}
 			echo '<input type="hidden" name="mp_cp_store_credit_action" value="apply" />';
 			wp_nonce_field( self::NONCE_SC, self::NONCE_SC_FIELD );
