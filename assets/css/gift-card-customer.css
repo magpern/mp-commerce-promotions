@@ -9,14 +9,17 @@
 	background: #fff;
 }
 
-/* Cart / checkout: compact gift card + store credit accordion */
-.mp-cp-credit-accordion,
-.mp-cp-gift-card-checkout.mp-cp-credit-accordion {
-	max-width: 100%;
+/* Cart / checkout: compact gift card + store credit accordion (plugin classes only) */
+.mp-cp-credit-accordion {
 	margin: 0 0 1em;
 	border: 1px solid #dcdcde;
 	border-radius: 4px;
 	background: #f9f9f9;
+}
+
+.mp-cp-credit-accordion--cart-collateral {
+	width: auto;
+	max-width: none;
 }
 
 .mp-cp-credit-accordion__toggle {

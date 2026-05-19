@@ -28,9 +28,12 @@ echo "=== Gift card redemption UI smoke ===\n";
 
 $src_path = dirname( __DIR__ ) . '/src/Woo/GiftCardRedemptionCheckout.php';
 $src      = is_readable( $src_path ) ? (string) file_get_contents( $src_path ) : '';
+$css_path = dirname( __DIR__ ) . '/assets/css/gift-card-customer.css';
+$css      = is_readable( $css_path ) ? (string) file_get_contents( $css_path ) : '';
 
 $required = array(
 	'mp-cp-credit-accordion',
+	'mp-cp-credit-accordion--cart-collateral',
 	'mp-cp-credit-accordion__toggle',
 	'mp-cp-credit-accordion__body',
 	'mp-cp-credit-chip',
@@ -38,6 +41,8 @@ $required = array(
 	'mp_cp_gift_card_nonce',
 	'mp_cp_gift_card_action',
 	'mp_cp_store_credit_nonce',
+	'woocommerce_before_cart_collaterals',
+	'render_cart_form',
 );
 
 foreach ( $required as $needle ) {
@@ -52,6 +57,26 @@ if ( $src !== '' && strpos( $src, 'mp-cp-gc-title' ) === false ) {
 	$pass( 'legacy large panel title removed' );
 } else {
 	$fail( 'legacy large panel title removed' );
+}
+
+if ( $src !== '' && strpos( $src, 'woocommerce_cart_coupon' ) === false ) {
+	$pass( 'cart accordion not hooked inside coupon row' );
+} else {
+	$fail( 'cart accordion not hooked inside coupon row' );
+}
+
+$unsafe_css = array(
+	'.woocommerce-cart-form',
+	'.cart_totals',
+	'.cart-collaterals',
+	'.woocommerce-cart-form__contents',
+);
+foreach ( $unsafe_css as $selector ) {
+	if ( $css !== '' && strpos( $css, $selector ) !== false ) {
+		$fail( 'css must not target ' . $selector );
+	} else {
+		$pass( 'css does not target ' . $selector );
+	}
 }
 
 if ( ! GiftCardRedemptionCheckout::should_expand_accordion( null, null, 0.0, false, false ) ) {
@@ -80,8 +105,11 @@ if ( GiftCardRedemptionCheckout::should_expand_accordion( null, null, 20.0, true
 	$fail( 'available store credit expands accordion' );
 }
 
-$css_path = dirname( __DIR__ ) . '/assets/css/gift-card-customer.css';
-$css      = is_readable( $css_path ) ? (string) file_get_contents( $css_path ) : '';
+if ( $src !== '' && strpos( $src, 'nested forms inside the cart table' ) !== false ) {
+	$pass( 'cart hook documents nested-form avoidance' );
+} else {
+	$fail( 'cart hook documents nested-form avoidance' );
+}
 if ( $css !== '' && strpos( $css, '.mp-cp-credit-accordion__toggle' ) !== false ) {
 	$pass( 'accordion styles present' );
 } else {

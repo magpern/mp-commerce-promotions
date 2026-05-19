@@ -18,7 +18,7 @@ Sub-navigation (`gift_cards_section`): **Dashboard** (default), **Gift cards**, 
 
 ## Checkout MVP (storefront)
 
-- Customer enters a gift card code on **cart** or **classic checkout** via a compact accordion (coupon-style); store credit apply/remove when logged in.
+- Customer enters a gift card code on **cart** (accordion above cart totals in the sidebar) or **classic checkout** via a compact accordion; store credit apply/remove when logged in.
 - Credit applies as a **negative cart fee** labeled `Store credit ****{last4}`.
 - **Partial payment** — applied amount is `min(card balance, cart payable)`; remaining total is due via the payment gateway.
 - Balance is **not** deducted during cart preview; ledger **redeem** runs when the order is processed (`woocommerce_checkout_order_processed` / `woocommerce_payment_complete`).

@@ -58,7 +58,8 @@ final class GiftCardRedemptionCheckout {
 		foreach ( $post_hooks as $hook ) {
 			add_action( $hook, array( $this, 'maybe_handle_post' ), 5 );
 		}
-		add_action( 'woocommerce_cart_coupon', array( $this, 'render_form' ), 12 );
+		// Outside woocommerce-cart-form: nested forms inside the cart table break DOM/grid layout.
+		add_action( 'woocommerce_before_cart_collaterals', array( $this, 'render_cart_form' ), 5 );
 		add_action( 'woocommerce_before_checkout_form', array( $this, 'render_form' ), 12 );
 	}
 
@@ -242,13 +243,23 @@ final class GiftCardRedemptionCheckout {
 	}
 
 
-	public function render_form(): void {
+	public function render_cart_form(): void {
+		if ( ! function_exists( 'is_cart' ) || ! is_cart() ) {
+			return;
+		}
+
+		$this->render_form( true );
+	}
+
+	public function render_form( bool $cart_collateral = false ): void {
 		if ( self::$panel_rendered || ! function_exists( 'WC' ) || ! CartSessionHelper::has_wc_session() ) {
 			return;
 		}
 
-		if ( function_exists( 'is_cart' ) && function_exists( 'is_checkout' ) && ! is_cart() && ! is_checkout() ) {
-			return;
+		if ( ! $cart_collateral ) {
+			if ( function_exists( 'is_checkout' ) && ! is_checkout() ) {
+				return;
+			}
 		}
 
 		self::$panel_rendered = true;
@@ -276,7 +287,12 @@ final class GiftCardRedemptionCheckout {
 
 		$body_id = 'mp-cp-credit-accordion-body';
 
-		echo '<details class="mp-cp-credit-accordion mp-cp-gift-card-checkout"' . ( $expand ? ' open' : '' ) . '>';
+		$accordion_class = 'mp-cp-credit-accordion mp-cp-gift-card-checkout';
+		if ( $cart_collateral ) {
+			$accordion_class .= ' mp-cp-credit-accordion--cart-collateral';
+		}
+
+		echo '<details class="' . esc_attr( $accordion_class ) . '"' . ( $expand ? ' open' : '' ) . '>';
 		$this->render_accordion_summary( $gift_applied, $sc_applied, $sc_balance, $can_sc );
 		echo '<div id="' . esc_attr( $body_id ) . '" class="mp-cp-credit-accordion__body">';
 		$this->render_applied_chips( $gift_applied, $sc_applied );
