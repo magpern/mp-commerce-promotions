@@ -376,7 +376,6 @@ final class Plugin {
 			);
 		}
 
-		$settings_page        = new SettingsPage( $this->settings );
 		$getting_started_page = new GettingStartedPage( $this->settings );
 		global $wpdb;
 		$gift_card_repo  = new GiftCardRepository( $wpdb );
@@ -397,6 +396,7 @@ final class Plugin {
 			$this->audit_logger
 		);
 		$gift_card_settings_handler = new \MP\CommercePromotions\Admin\GiftCardSettingsHandler( $this->settings );
+		$settings_page              = new SettingsPage( $this->settings, $gift_card_settings_handler );
 		$gift_cards_page            = new GiftCardsPage(
 			$gift_ledger,
 			$gift_card_repo,

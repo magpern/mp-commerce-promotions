@@ -1,13 +1,10 @@
 /**
- * Gift card email settings: server-rendered live preview, AJAX test email, media logo picker.
+ * Gift card email settings: live preview, AJAX test email, media logo picker, color picker.
  */
 ( function ( $ ) {
 	'use strict';
 
-	var cfg = window.mpCpGiftCardEmailPreview;
-	if ( ! cfg || ! cfg.ajaxUrl ) {
-		return;
-	}
+	var cfg = window.mpCpGiftCardEmailPreview || {};
 
 	var fieldIds = {
 		subject: 'mp_cp_gift_card_email_subject',
@@ -23,6 +20,18 @@
 	var previewTimer = null;
 	var mediaNoticeShown = false;
 
+	function hasPreviewAjax() {
+		return Boolean( cfg.ajaxUrl && cfg.nonce && cfg.previewAction );
+	}
+
+	function debugWarn( message ) {
+		var debug = document.documentElement.classList.contains( 'wp-debug' )
+			|| document.documentElement.classList.contains( 'wp-debug-log' );
+		if ( debug && window.console && window.console.warn ) {
+			window.console.warn( '[mp-cp-gift-card-email]', message );
+		}
+	}
+
 	function fieldValue( id ) {
 		var node = document.getElementById( id );
 		return node ? node.value : '';
@@ -30,8 +39,7 @@
 
 	function collectPayload() {
 		var payload = {
-			action: cfg.previewAction,
-			nonce: cfg.nonce,
+			nonce: cfg.nonce || '',
 			preview_amount: fieldValue( 'mp_cp_gc_settings_test_amount' ) || '25',
 			preview_currency: fieldValue( 'mp_cp_gc_settings_test_currency' ) || 'EUR',
 		};
@@ -49,6 +57,10 @@
 	}
 
 	function schedulePreview() {
+		if ( ! hasPreviewAjax() ) {
+			return;
+		}
+
 		if ( previewTimer ) {
 			window.clearTimeout( previewTimer );
 		}
@@ -56,6 +68,10 @@
 	}
 
 	function refreshPreview() {
+		if ( ! hasPreviewAjax() ) {
+			return;
+		}
+
 		var wrap = document.getElementById( 'mp-cp-gc-email-preview-wrap' );
 		if ( ! wrap ) {
 			return;
@@ -86,6 +102,11 @@
 	}
 
 	function bindPreviewFields() {
+		if ( ! hasPreviewAjax() ) {
+			debugWarn( 'Preview AJAX config missing; logo and color picker still work.' );
+			return;
+		}
+
 		Object.keys( fieldIds ).forEach( function ( key ) {
 			var node = document.getElementById( fieldIds[ key ] );
 			if ( ! node ) {
@@ -144,6 +165,7 @@
 			e.preventDefault();
 
 			if ( typeof wp === 'undefined' || ! wp.media ) {
+				debugWarn( 'wp.media is not available on this screen.' );
 				showMediaUnavailableNotice();
 				return;
 			}
@@ -195,6 +217,11 @@
 		}
 
 		if ( ! $.fn.wpColorPicker ) {
+			debugWarn( 'wpColorPicker is not available; accent field stays a plain text input.' );
+			return;
+		}
+
+		if ( $( input ).closest( '.wp-picker-container' ).length ) {
 			return;
 		}
 
@@ -212,7 +239,7 @@
 			},
 		} );
 
-		$input.on( 'input', schedulePreview );
+		$input.on( 'input change', schedulePreview );
 	}
 
 	function updateLogoThumb( url ) {
@@ -236,6 +263,10 @@
 	}
 
 	function initTestEmail() {
+		if ( ! cfg.ajaxUrl || ! cfg.testAction ) {
+			return;
+		}
+
 		var btn = document.getElementById( 'mp-cp-gc-send-test-email' );
 		var notice = document.getElementById( 'mp-cp-gc-test-email-notice' );
 		if ( ! btn ) {
@@ -280,9 +311,9 @@
 	}
 
 	$( function () {
-		bindPreviewFields();
 		initColorPicker();
 		initLogoPicker();
+		bindPreviewFields();
 		initTestEmail();
 	} );
 }( jQuery ) );

@@ -158,10 +158,47 @@ $handler_src = (string) file_get_contents(
 if ( strpos( $handler_src, 'wp_enqueue_media' ) !== false
 	&& strpos( $handler_src, 'wp-color-picker' ) !== false
 	&& strpos( $handler_src, 'is_gift_card_settings_screen' ) !== false
-	&& strpos( $handler_src, 'wp-color-picker regular-text' ) !== false ) {
+	&& strpos( $handler_src, 'load-' ) !== false
+	&& strpos( $handler_src, 'ADMIN_PAGE_HOOK' ) !== false
+	&& strpos( $handler_src, 'media-views' ) !== false
+	&& strpos( $handler_src, 'mp-cp-color-field' ) !== false ) {
 	$pass( 'settings screen enqueues media and color picker assets' );
 } else {
 	$fail( 'settings screen enqueues media and color picker assets' );
+}
+
+$_GET['page']               = 'mp-commerce-promotions';
+$_GET['tab']                = 'gift-cards';
+$_GET['gift_cards_section'] = 'settings';
+if ( GiftCardSettingsHandler::is_gift_card_settings_screen( GiftCardSettingsHandler::ADMIN_PAGE_HOOK ) ) {
+	$pass( 'gift card settings route detection matches live URL' );
+} else {
+	$fail( 'gift card settings route detection matches live URL' );
+}
+
+$asset_settings = new Settings();
+$asset_handler  = new GiftCardSettingsHandler( $asset_settings );
+$asset_handler->on_admin_page_load();
+$asset_handler->enqueue_admin_assets( GiftCardSettingsHandler::ADMIN_PAGE_HOOK );
+$asset_ok = true;
+foreach ( GiftCardSettingsHandler::required_asset_handles() as $handle ) {
+	if ( ! wp_script_is( $handle, 'enqueued' ) && ! wp_script_is( $handle, 'registered' ) ) {
+		$asset_ok = false;
+		$fail( 'asset handle enqueued: ' . $handle );
+	}
+}
+if ( $asset_ok ) {
+	$pass( 'gift card settings asset handles enqueued on route' );
+}
+
+$js_src = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/gift-card-email-preview.js' );
+if ( $js_src !== '' && strpos( $js_src, 'mp-cp-gc-choose-logo' ) !== false
+	&& strpos( $js_src, 'wpColorPicker' ) !== false
+	&& strpos( $js_src, 'wp.media' ) !== false
+	&& strpos( $js_src, 'if ( ! cfg || ! cfg.ajaxUrl )' ) === false ) {
+	$pass( 'settings JS initializes logo and color picker without hard exit' );
+} else {
+	$fail( 'settings JS initializes logo and color picker without hard exit' );
 }
 
 if ( strpos( $handler_src, 'SUBMIT_RESET_TEMPLATE' ) !== false

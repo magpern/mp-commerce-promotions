@@ -99,6 +99,48 @@ final class GiftCardSettingsHandlerTest extends TestCase {
 		$_GET['gift_cards_section'] = GiftCardModuleSections::SECTION_SETTINGS;
 
 		$this->assertTrue( GiftCardSettingsHandler::is_gift_card_settings_screen() );
+		$this->assertTrue(
+			GiftCardSettingsHandler::is_gift_card_settings_screen( GiftCardSettingsHandler::ADMIN_PAGE_HOOK )
+		);
+
+		$_GET['tab'] = 'settings';
+		$this->assertFalse( GiftCardSettingsHandler::is_gift_card_settings_screen() );
+
+		unset( $_GET['page'], $_GET['tab'], $_GET['gift_cards_section'] );
+	}
+
+	public function test_global_settings_tab_does_not_match_gift_card_settings_screen(): void {
+		$_GET['page'] = 'mp-commerce-promotions';
+		$_GET['tab']  = 'settings';
+
+		$this->assertFalse( GiftCardSettingsHandler::is_gift_card_settings_screen() );
+
+		unset( $_GET['page'], $_GET['tab'] );
+	}
+
+	public function test_enqueue_registers_required_handles(): void {
+		if ( ! function_exists( 'wp_enqueue_script' ) ) {
+			$this->markTestSkipped( 'WordPress script API not loaded.' );
+		}
+
+		$_GET['page']               = 'mp-commerce-promotions';
+		$_GET['tab']                = 'gift-cards';
+		$_GET['gift_cards_section'] = GiftCardModuleSections::SECTION_SETTINGS;
+
+		$handler = new GiftCardSettingsHandler( $this->settings );
+		$handler->on_admin_page_load();
+		$handler->enqueue_admin_assets( GiftCardSettingsHandler::ADMIN_PAGE_HOOK );
+
+		if ( function_exists( 'wp_script_is' ) ) {
+			foreach ( GiftCardSettingsHandler::required_asset_handles() as $handle ) {
+				$this->assertTrue(
+					wp_script_is( $handle, 'enqueued' ) || wp_script_is( $handle, 'registered' ),
+					'Expected handle: ' . $handle
+				);
+			}
+		} else {
+			$this->assertNotEmpty( GiftCardSettingsHandler::required_asset_handles() );
+		}
 
 		unset( $_GET['page'], $_GET['tab'], $_GET['gift_cards_section'] );
 	}

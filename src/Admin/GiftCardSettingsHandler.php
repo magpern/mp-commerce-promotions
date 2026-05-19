@@ -41,6 +41,12 @@ final class GiftCardSettingsHandler {
 
 	public const SUBMIT_RESET_TEMPLATE = 'mp_cp_reset_gift_card_email_template_submit';
 
+	/** WooCommerce submenu admin page hook suffix. */
+	public const ADMIN_PAGE_HOOK = 'woocommerce_page_mp-commerce-promotions';
+
+	/** Script handle for gift card email settings UI. */
+	public const SCRIPT_HANDLE = 'mp-cp-gift-card-email-preview';
+
 	/** Query args for admin notices after redirect. */
 	public const NOTICE_TYPE_QUERY = 'mp_cp_settings_notice';
 
@@ -48,17 +54,35 @@ final class GiftCardSettingsHandler {
 
 	private Settings $settings;
 
+	private static bool $admin_hooks_registered = false;
+
+	private static bool $should_enqueue_assets = false;
+
 	public function __construct( Settings $settings ) {
 		$this->settings = $settings;
+		if ( self::$admin_hooks_registered ) {
+			return;
+		}
+		self::$admin_hooks_registered = true;
+
+		add_action( 'load-' . self::ADMIN_PAGE_HOOK, array( $this, 'on_admin_page_load' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'wp_ajax_' . self::AJAX_ACTION_PREVIEW, array( $this, 'ajax_email_preview' ) );
 		add_action( 'wp_ajax_' . self::AJAX_ACTION_TEST, array( $this, 'ajax_email_test' ) );
 	}
 
+	public function on_admin_page_load(): void {
+		if ( self::is_gift_card_settings_screen() ) {
+			self::$should_enqueue_assets = true;
+		}
+	}
+
 	public function enqueue_admin_assets( string $hook ): void {
-		if ( ! self::is_gift_card_settings_screen( $hook ) ) {
+		if ( ! self::$should_enqueue_assets && ! self::is_gift_card_settings_screen( $hook ) ) {
 			return;
 		}
+
+		self::$should_enqueue_assets = false;
 
 		if ( ! defined( 'MP_COMMERCE_PROMOTIONS_URL' ) || ! defined( 'MP_COMMERCE_PROMOTIONS_VERSION' ) ) {
 			return;
@@ -75,14 +99,14 @@ final class GiftCardSettingsHandler {
 		wp_enqueue_media();
 		wp_enqueue_script( 'wp-color-picker' );
 		wp_enqueue_script(
-			'mp-cp-gift-card-email-preview',
+			self::SCRIPT_HANDLE,
 			MP_COMMERCE_PROMOTIONS_URL . 'assets/js/gift-card-email-preview.js',
-			array( 'jquery', 'wp-color-picker' ),
+			array( 'jquery', 'wp-color-picker', 'media-models', 'media-views' ),
 			MP_COMMERCE_PROMOTIONS_VERSION,
 			true
 		);
 		wp_localize_script(
-			'mp-cp-gift-card-email-preview',
+			self::SCRIPT_HANDLE,
 			'mpCpGiftCardEmailPreview',
 			array(
 				'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
@@ -109,22 +133,45 @@ final class GiftCardSettingsHandler {
 	 * Whether gift card email settings assets should load (admin_enqueue_scripts).
 	 */
 	public static function is_gift_card_settings_screen( ?string $hook = null ): bool {
-		if ( isset( $_GET['page'], $_GET['tab'], $_GET['gift_cards_section'] ) ) {
-			if ( (string) $_GET['page'] === 'mp-commerce-promotions'
-				&& (string) $_GET['tab'] === 'gift-cards'
-				&& (string) $_GET['gift_cards_section'] === GiftCardModuleSections::SECTION_SETTINGS ) {
-				return true;
-			}
+		$page = isset( $_GET['page'] )
+			? sanitize_text_field( wp_unslash( (string) $_GET['page'] ) )
+			: '';
+		if ( $page !== AdminNavigation::PAGE_SLUG ) {
+			return false;
 		}
 
-		if ( $hook !== null && $hook !== '' ) {
-			return strpos( $hook, 'mp-commerce-promotions' ) !== false
-				&& isset( $_GET['tab'], $_GET['gift_cards_section'] )
-				&& (string) $_GET['tab'] === 'gift-cards'
-				&& (string) $_GET['gift_cards_section'] === GiftCardModuleSections::SECTION_SETTINGS;
+		$tab = isset( $_GET['tab'] )
+			? sanitize_key( wp_unslash( (string) $_GET['tab'] ) )
+			: '';
+		if ( $tab !== AdminNavigation::TAB_GIFT_CARDS ) {
+			return false;
 		}
 
-		return false;
+		$section = isset( $_GET[ GiftCardModuleSections::QUERY_ARG ] )
+			? GiftCardModuleSections::normalize_section( wp_unslash( (string) $_GET[ GiftCardModuleSections::QUERY_ARG ] ) )
+			: GiftCardModuleSections::SECTION_DASHBOARD;
+
+		if ( $section !== GiftCardModuleSections::SECTION_SETTINGS ) {
+			return false;
+		}
+
+		if ( $hook !== null && $hook !== '' && strpos( $hook, AdminNavigation::PAGE_SLUG ) === false ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	public static function required_asset_handles(): array {
+		return array(
+			self::SCRIPT_HANDLE,
+			'wp-color-picker',
+			'media-views',
+			'media-models',
+		);
 	}
 
 	public function render(): void {
@@ -283,7 +330,7 @@ final class GiftCardSettingsHandler {
 		$accent_display = $accent_saved !== '' ? $accent_saved : $appearance['accent_color'];
 		$accent_default = Settings::resolve_default_gift_card_accent_color();
 		echo '<tr><th scope="row"><label for="mp_cp_gift_card_accent_color">' . esc_html__( 'Accent color', 'mp-commerce-promotions' ) . '</label></th><td>';
-		echo '<input type="text" class="mp-cp-gc-accent-color-field wp-color-picker regular-text" name="mp_cp_gift_card_accent_color" id="mp_cp_gift_card_accent_color" value="'
+		echo '<input type="text" class="mp-cp-gc-accent-color-field mp-cp-color-field wp-color-picker regular-text" name="mp_cp_gift_card_accent_color" id="mp_cp_gift_card_accent_color" value="'
 			. esc_attr( $accent_display ) . '" data-default-color="' . esc_attr( $accent_default ) . '" />';
 		echo '<p class="description">' . esc_html__(
 			'Used for the email header and card accent border. Defaults to your store email or theme accent when unset.',

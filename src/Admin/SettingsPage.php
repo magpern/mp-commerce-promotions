@@ -22,9 +22,9 @@ final class SettingsPage {
 
 	private GiftCardSettingsHandler $gift_card_settings;
 
-	public function __construct( Settings $settings ) {
+	public function __construct( Settings $settings, ?GiftCardSettingsHandler $gift_card_settings = null ) {
 		$this->settings           = $settings;
-		$this->gift_card_settings = new GiftCardSettingsHandler( $settings );
+		$this->gift_card_settings = $gift_card_settings ?? new GiftCardSettingsHandler( $settings );
 	}
 
 	public function render(): void {
