@@ -17,9 +17,13 @@ final class CartPromotionRemovalController {
 
 	public const NONCE_RESTORE = 'mp_cp_restore_promotions';
 
+	public const NONCE_DISABLE_AUTOMATIC = 'mp_cp_disable_automatic_promotions';
+
 	public const QUERY_REMOVE = 'mp_cp_remove_promotion';
 
 	public const QUERY_RESTORE = 'mp_cp_restore_promotions';
+
+	public const QUERY_DISABLE_AUTOMATIC = 'mp_cp_disable_automatic_promotions';
 
 	private PromotionCodeRepository $promotion_codes;
 
@@ -62,6 +66,12 @@ final class CartPromotionRemovalController {
 			return;
 		}
 
+		if ( isset( $_GET[ self::QUERY_DISABLE_AUTOMATIC ] ) ) {
+			$this->handle_disable_automatic_request();
+
+			return;
+		}
+
 		if ( ! isset( $_GET[ self::QUERY_REMOVE ] ) ) {
 			return;
 		}
@@ -88,6 +98,34 @@ final class CartPromotionRemovalController {
 
 		if ( function_exists( 'wc_add_notice' ) ) {
 			wc_add_notice( __( 'Removed promotions were restored for this cart.', 'mp-commerce-promotions' ), 'success' );
+		}
+
+		$this->recalculate_cart();
+		$this->redirect_to_cart();
+	}
+
+	private function handle_disable_automatic_request(): void {
+		if ( ! isset( $_GET['_wpnonce'] ) ) {
+			return;
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( (string) $_GET['_wpnonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, self::NONCE_DISABLE_AUTOMATIC ) ) {
+			if ( function_exists( 'wc_add_notice' ) ) {
+				wc_add_notice( __( 'Security check failed. Please try again.', 'mp-commerce-promotions' ), 'error' );
+			}
+			$this->redirect_to_cart();
+
+			return;
+		}
+
+		PromotionCartExclusionSession::disable_automatic_promotions();
+
+		if ( function_exists( 'wc_add_notice' ) ) {
+			wc_add_notice(
+				__( 'Automatic promotions are disabled for this cart.', 'mp-commerce-promotions' ),
+				'success'
+			);
 		}
 
 		$this->recalculate_cart();
@@ -124,7 +162,39 @@ final class CartPromotionRemovalController {
 		}
 
 		$this->recalculate_cart();
+
+		if ( function_exists( 'wc_add_notice' ) && $this->another_promotion_applied_after_remove( $promotion_id ) ) {
+			$disable_url = wp_nonce_url(
+				add_query_arg( self::QUERY_DISABLE_AUTOMATIC, '1', wc_get_cart_url() ),
+				self::NONCE_DISABLE_AUTOMATIC
+			);
+			$message     = sprintf(
+				/* translators: %s: URL to disable automatic promotions for this cart session. */
+				__( 'Another eligible promotion was applied. <a href="%s">Disable all automatic promotions for this cart.</a>', 'mp-commerce-promotions' ),
+				esc_url( $disable_url )
+			);
+			wc_add_notice( $message, 'notice' );
+		}
+
 		$this->redirect_to_cart();
+	}
+
+	private function another_promotion_applied_after_remove( int $removed_id ): bool {
+		$entries = AppliedPromotionSession::entries_from_session(
+			CartSessionHelper::get_applied_promotion()
+		);
+		foreach ( $entries as $entry ) {
+			if ( ! AppliedPromotionSession::is_valid_entry( $entry ) ) {
+				continue;
+			}
+
+			$pid = (int) ( $entry['promotion_id'] ?? 0 );
+			if ( $pid > 0 && $pid !== $removed_id ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private function remove_linked_coupons_for_promotion( int $promotion_id ): void {
@@ -199,7 +269,7 @@ final class CartPromotionRemovalController {
 	}
 
 	public function render_restore_notice(): void {
-		if ( ! PromotionCartExclusionSession::has_exclusions() ) {
+		if ( ! PromotionCartExclusionSession::has_cart_promotion_adjustments() ) {
 			return;
 		}
 
@@ -209,9 +279,13 @@ final class CartPromotionRemovalController {
 		);
 
 		echo '<p class="mp-cp-cart-promotion-restore-notice">';
-		echo esc_html__( 'Some promotions were removed from this cart.', 'mp-commerce-promotions' );
+		if ( PromotionCartExclusionSession::is_automatic_disabled() ) {
+			echo esc_html__( 'Automatic promotions are disabled for this cart.', 'mp-commerce-promotions' );
+		} else {
+			echo esc_html__( 'Some promotions were removed from this cart.', 'mp-commerce-promotions' );
+		}
 		echo ' <a href="' . esc_url( $url ) . '" class="mp-cp-cart-promotion-restore-link">';
-		echo esc_html__( 'Restore', 'mp-commerce-promotions' );
+		echo esc_html__( 'Restore promotions', 'mp-commerce-promotions' );
 		echo '</a></p>';
 	}
 

@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Cart gift card disclosure** — cart redemption is a link-style disclosure after the cart table (`woocommerce_after_cart_table`); no bordered accordion in the coupon row; checkout keeps the compact accordion panel.
+- **Cart gift card disclosure** — WooCommerce-native cart UI: chevron + link row, collapsed helper/meta, coupon-style expanded panel, lightweight store-credit action; checkout accordion unchanged.
+- **Cart gift card disclosure placement** — renders after the cart table (`woocommerce_after_cart_table`), outside the coupon flex row.
 
 ### Fixed
 
@@ -21,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Remove applied promotions from cart** — shoppers can remove a specific Commerce promotion fee from cart totals (session exclusion `mp_cp_excluded_promotion_ids`); **Restore** clears exclusions; code-linked promotions also drop the WooCommerce coupon when removed; does not pause or delete promotions globally; `promotion-remove-from-cart-smoke.php`.
+- **Remove applied promotions from cart** — shoppers can remove a specific Commerce promotion fee from cart totals (session exclusion `mp_cp_excluded_promotion_ids`); **Restore promotions** clears exclusions and the automatic-disable flag; **Disable all automatic promotions** (`mp_cp_disable_automatic_promotions=yes`) skips automatic planner/fees for the session while code-entered promotion coupons still apply; notices when another promotion replaces a removed one; does not pause or delete promotions globally; `promotion-remove-from-cart-smoke.php`.
 
 ### Fixed
 

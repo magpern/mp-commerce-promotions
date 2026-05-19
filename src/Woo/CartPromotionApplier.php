@@ -118,7 +118,8 @@ final class CartPromotionApplier {
 		LineDiscountPlanCache::reset();
 		LinePriceMutationGuard::begin_cycle();
 
-		if ( ! $this->settings->automatic_promotions_enabled() ) {
+		if ( ! $this->settings->automatic_promotions_enabled()
+			|| PromotionCartExclusionSession::is_automatic_disabled() ) {
 			CartSessionHelper::clear_line_allocations();
 			return;
 		}
@@ -233,7 +234,8 @@ final class CartPromotionApplier {
 			return;
 		}
 
-		if ( ! $this->settings->automatic_promotions_enabled() ) {
+		if ( ! $this->settings->automatic_promotions_enabled()
+			|| PromotionCartExclusionSession::is_automatic_disabled() ) {
 			$this->clear_applied_promotion_session();
 			$this->gift_synchronizer->sync( $cart, array() );
 			return;

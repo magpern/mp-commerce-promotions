@@ -65,6 +65,11 @@ final class PromotionCartExclusionSessionTest extends TestCase {
 		$this->assertSame( 42, PromotionFeeLabelResolver::promotion_id_from_fee_label( (string) $label, array( $entry ) ) );
 	}
 
+	public function test_disable_automatic_session_constants(): void {
+		$this->assertSame( 'mp_cp_disable_automatic_promotions', PromotionCartExclusionSession::DISABLE_AUTOMATIC_KEY );
+		$this->assertSame( 'yes', PromotionCartExclusionSession::DISABLE_AUTOMATIC_VALUE );
+	}
+
 	public function test_fee_label_does_not_concatenate_title_and_summary(): void {
 		$entry = array(
 			'promotion_id'    => 7,

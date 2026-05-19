@@ -52,11 +52,13 @@ Operational playbooks for real merchant pilots using Commerce Promotions for Woo
 ## Shopper removes a promotion from cart
 
 1. On **cart**, each Commerce promotion fee can show **Remove** (session-only; promotion stays active in admin).
-2. Excluded promotion IDs live in session (`mp_cp_excluded_promotion_ids`) until **Restore** or cart/session reset.
-3. **Code-linked** promotions: removing also drops the WooCommerce coupon; customer must re-enter the code to re-apply.
-4. **Automatic** promotions: restore or new session re-applies when still eligible.
-5. Removed promotions are **not** recorded on the order; unrelated promotions still apply.
-6. Smoke: `./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/promotion-remove-from-cart-smoke.php`
+2. Excluded promotion IDs live in session (`mp_cp_excluded_promotion_ids`) until **Restore promotions** or cart/session reset.
+3. If another automatic promotion applies after a remove, the shopper sees a notice with **Disable all automatic promotions for this cart** (`mp_cp_disable_automatic_promotions=yes`).
+4. While automatic promotions are disabled for the session, the cart shows **Automatic promotions are disabled for this cart. Restore promotions.**
+5. **Code-linked** promotions: removing also drops the WooCommerce coupon; customer must re-enter the code to re-apply. Disabling automatic promotions does **not** block manually entered promotion codes.
+6. **Restore promotions** clears exclusions and the automatic-disable flag; automatic promotions can apply again when eligible.
+7. Removed or session-disabled promotions are **not** recorded on the order; only promotions still applied in the cart session at checkout are recorded.
+8. Smoke: `./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/promotion-remove-from-cart-smoke.php`
 
 ## Stackable orchestration strategy
 

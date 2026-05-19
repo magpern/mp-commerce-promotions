@@ -15,6 +15,10 @@ final class PromotionCartExclusionSession {
 
 	public const SESSION_KEY = 'mp_cp_excluded_promotion_ids';
 
+	public const DISABLE_AUTOMATIC_KEY = 'mp_cp_disable_automatic_promotions';
+
+	public const DISABLE_AUTOMATIC_VALUE = 'yes';
+
 	/**
 	 * @return list<int>
 	 */
@@ -51,10 +55,32 @@ final class PromotionCartExclusionSession {
 
 	public static function clear_all(): void {
 		CartSessionHelper::clear( self::SESSION_KEY );
+		self::clear_automatic_disabled();
 	}
 
 	public static function has_exclusions(): bool {
 		return self::get_excluded_ids() !== array();
+	}
+
+	public static function is_automatic_disabled(): bool {
+		$raw = CartSessionHelper::get( self::DISABLE_AUTOMATIC_KEY );
+		if ( ! is_string( $raw ) ) {
+			return false;
+		}
+
+		return $raw === self::DISABLE_AUTOMATIC_VALUE;
+	}
+
+	public static function disable_automatic_promotions(): void {
+		CartSessionHelper::set( self::DISABLE_AUTOMATIC_KEY, self::DISABLE_AUTOMATIC_VALUE );
+	}
+
+	public static function clear_automatic_disabled(): void {
+		CartSessionHelper::clear( self::DISABLE_AUTOMATIC_KEY );
+	}
+
+	public static function has_cart_promotion_adjustments(): bool {
+		return self::has_exclusions() || self::is_automatic_disabled();
 	}
 
 	/**

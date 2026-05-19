@@ -1,6 +1,6 @@
 <?php
 /**
- * Smoke: shopper remove / restore Commerce promotions in cart.
+ * Smoke: shopper remove / restore / disable automatic Commerce promotions in cart.
  *
  * Run: wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/promotion-remove-from-cart-smoke.php
  *
@@ -49,6 +49,19 @@ if ( strpos( $src, 'PromotionCartExclusionSession::is_excluded' ) !== false ) {
 	$fail( 'cart applier skips excluded decisions' );
 }
 
+if ( strpos( $src, 'PromotionCartExclusionSession::is_automatic_disabled' ) !== false
+	&& strpos( $src, 'apply_automatic_promotions' ) !== false ) {
+	$pass( 'cart applier skips automatic promotions when session disabled' );
+} else {
+	$fail( 'cart applier skips automatic promotions when session disabled' );
+}
+
+if ( strpos( $src, 'try_apply_via_applied_coupon_codes' ) !== false ) {
+	$pass( 'coupon-linked promotions still evaluated before automatic path' );
+} else {
+	$fail( 'coupon-linked promotions still evaluated before automatic path' );
+}
+
 if ( strpos( $controller_src, 'woocommerce_cart_totals_fee_html' ) !== false
 	&& strpos( $controller_src, 'mp-cp-cart-promotion-remove' ) !== false ) {
 	$pass( 'cart totals fee remove link hook present' );
@@ -60,10 +73,11 @@ $exclusion_src = (string) file_get_contents(
 	dirname( __DIR__ ) . '/src/Woo/PromotionCartExclusionSession.php'
 );
 if ( strpos( $exclusion_src, PromotionCartExclusionSession::SESSION_KEY ) !== false
+	&& strpos( $exclusion_src, PromotionCartExclusionSession::DISABLE_AUTOMATIC_KEY ) !== false
 	&& strpos( $controller_src, 'PromotionCartExclusionSession' ) !== false ) {
-	$pass( 'session exclusion key defined' );
+	$pass( 'session exclusion and disable-automatic keys defined' );
 } else {
-	$fail( 'session exclusion key defined' );
+	$fail( 'session exclusion and disable-automatic keys defined' );
 }
 
 $entry = array(
@@ -109,11 +123,19 @@ if ( CartSessionHelper::has_wc_session() ) {
 		$fail( 'applied promotion session still readable after exclude' );
 	}
 
-	PromotionCartExclusionSession::clear_all();
-	if ( ! PromotionCartExclusionSession::has_exclusions() ) {
-		$pass( 'restore clears session exclusions' );
+	PromotionCartExclusionSession::disable_automatic_promotions();
+	if ( PromotionCartExclusionSession::is_automatic_disabled() ) {
+		$pass( 'disable automatic promotions stores session flag' );
 	} else {
-		$fail( 'restore clears session exclusions' );
+		$fail( 'disable automatic promotions stores session flag' );
+	}
+
+	PromotionCartExclusionSession::clear_all();
+	if ( ! PromotionCartExclusionSession::has_exclusions()
+		&& ! PromotionCartExclusionSession::is_automatic_disabled() ) {
+		$pass( 'restore clears session exclusions and automatic disable' );
+	} else {
+		$fail( 'restore clears session exclusions and automatic disable' );
 	}
 } else {
 	$pass( 'wc session unavailable — skip live session checks' );
@@ -129,6 +151,37 @@ if ( CartPromotionRemovalController::NONCE_REMOVE === 'mp_cp_remove_promotion' )
 	$pass( 'remove nonce action constant' );
 } else {
 	$fail( 'remove nonce action constant' );
+}
+
+if ( CartPromotionRemovalController::NONCE_DISABLE_AUTOMATIC === 'mp_cp_disable_automatic_promotions' ) {
+	$pass( 'disable automatic nonce action constant' );
+} else {
+	$fail( 'disable automatic nonce action constant' );
+}
+
+if ( CartPromotionRemovalController::NONCE_RESTORE === 'mp_cp_restore_promotions' ) {
+	$pass( 'restore nonce action constant' );
+} else {
+	$fail( 'restore nonce action constant' );
+}
+
+if ( strpos( $controller_src, 'Promotion removed from this cart.' ) !== false
+	&& strpos( $controller_src, 'Another eligible promotion was applied' ) !== false
+	&& strpos( $controller_src, 'Restore promotions' ) !== false
+	&& strpos( $controller_src, 'Automatic promotions are disabled for this cart.' ) !== false ) {
+	$pass( 'shopper notices and restore copy present' );
+} else {
+	$fail( 'shopper notices and restore copy present' );
+}
+
+$recorder_src = (string) file_get_contents(
+	dirname( __DIR__ ) . '/src/Woo/OrderPromotionRecorder.php'
+);
+if ( strpos( $recorder_src, 'CartSessionHelper::get_applied_promotion' ) !== false
+	&& strpos( $recorder_src, 'AppliedPromotionSession::is_valid_entry' ) !== false ) {
+	$pass( 'order recording reads applied session entries only' );
+} else {
+	$fail( 'order recording reads applied session entries only' );
 }
 
 echo "=== Done; failures: {$failures} ===\n";

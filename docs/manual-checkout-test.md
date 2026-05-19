@@ -77,8 +77,11 @@ On the **storefront** (not wp-admin), in a browser session with a cart:
 
 - [ ] With an automatic promotion fee visible, confirm a subtle **Remove** link appears on that fee row (cart totals)
 - [ ] Click **Remove** — fee disappears after cart recalculates; promotion is **not** deleted in admin
-- [ ] Confirm notice: **Some promotions were removed from this cart.** with **Restore**
-- [ ] Click **Restore** — promotion fee returns (if still eligible)
+- [ ] Confirm notice: **Promotion removed from this cart.**
+- [ ] If another automatic promotion applies, confirm notice with link: **Disable all automatic promotions for this cart.**
+- [ ] Above cart totals, confirm **Restore promotions** (or **Automatic promotions are disabled for this cart. Restore promotions.** after disable)
+- [ ] Click **Disable all automatic promotions** — automatic Commerce fees disappear; promotion codes still work when entered
+- [ ] Click **Restore promotions** — exclusions and automatic-disable cleared; eligible automatic promotions can return
 - [ ] **Code-linked promotion:** apply via promotion code, remove from cart — fee gone and WooCommerce coupon removed from cart; re-enter code to re-apply
 - [ ] WP-CLI smoke: `./wp eval-file wp-content/plugins/mp-commerce-promotions/scripts/promotion-remove-from-cart-smoke.php`
 
