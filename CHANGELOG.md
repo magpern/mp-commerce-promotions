@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Cart layout with gift card accordion** — cart redemption UI renders on `woocommerce_before_cart_collaterals` (outside the cart form) so Blocksy/Woo two-column cart + totals layout is preserved; avoids invalid nested forms inside `woocommerce_cart_coupon`.
+- **Gift card email settings UX** — settings save persists all email fields (no nested test form); AJAX live preview and test email from current form state; amount/currency without `&nbsp;` entities; media library logo picker; production default copy.
 
 ### Changed
 

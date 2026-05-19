@@ -39,15 +39,35 @@ final class GiftCardEmailPlaceholders {
 	}
 
 	public static function default_intro(): string {
-		return __( 'A gift card has been sent to you.', 'mp-commerce-promotions' );
+		return __( 'A gift card has been sent to you and can be used on any eligible products in our store.', 'mp-commerce-promotions' );
 	}
 
 	public static function default_redeem_instructions(): string {
-		return __( 'Enter your gift card code in the “Gift card or store credit” section at checkout.', 'mp-commerce-promotions' );
+		return __( 'Enter your gift card code during checkout in the “Gift card or store credit” section.', 'mp-commerce-promotions' );
 	}
 
 	public static function default_footer_text(): string {
 		return __( 'Keep this email safe. The full code is required at checkout and is not stored after delivery.', 'mp-commerce-promotions' );
+	}
+
+	public static function default_support_text(): string {
+		return __( 'Questions? Contact our support team.', 'mp-commerce-promotions' );
+	}
+
+	/**
+	 * Plain-text price for emails and placeholders (no HTML entities).
+	 */
+	public static function format_amount_display( float $amount, string $currency ): string {
+		if ( function_exists( 'wc_price' ) ) {
+			$html  = wc_price( $amount, array( 'currency' => $currency ) );
+			$plain = wp_strip_all_tags( (string) $html );
+
+			return html_entity_decode( $plain, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		}
+
+		$formatted = number_format( $amount, 2, ',', ' ' );
+
+		return $currency !== '' ? $formatted . ' ' . $currency : $formatted;
 	}
 
 	/**
@@ -87,9 +107,7 @@ final class GiftCardEmailPlaceholders {
 			? (string) ( $card['masked_code'] ?? GiftCardEmailPreview::SAMPLE_MASKED_CODE )
 			: ( $is_test ? GiftCardManualIssueDelivery::TEST_SAMPLE_CODE : (string) ( $card['plain_code'] ?? '' ) );
 
-		$amount_display = function_exists( 'wc_price' )
-			? wp_strip_all_tags( wc_price( $amount, array( 'currency' => $currency ) ) )
-			: number_format( $amount, 2 ) . ( $currency !== '' ? ' ' . $currency : '' );
+		$amount_display = self::format_amount_display( $amount, $currency );
 
 		return array(
 			'site_title'      => $site_title,

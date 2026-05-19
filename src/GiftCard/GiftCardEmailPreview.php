@@ -40,6 +40,17 @@ final class GiftCardEmailPreview {
 		$slug       = Settings::GIFT_CARD_TEMPLATE_CLASSIC;
 		$appearance = $settings->resolve_gift_card_email_appearance( $slug );
 
+		$accent  = $appearance['accent_color'];
+		$logo    = $appearance['logo_url'];
+		if ( $copy_overrides !== null ) {
+			if ( isset( $copy_overrides['accent_color'] ) && $copy_overrides['accent_color'] !== '' ) {
+				$accent = (string) $copy_overrides['accent_color'];
+			}
+			if ( isset( $copy_overrides['logo_url'] ) && $copy_overrides['logo_url'] !== '' ) {
+				$logo = (string) $copy_overrides['logo_url'];
+			}
+		}
+
 		$sample = GiftCardEmailPlaceholders::preview_variables( $settings, $amount, $currency );
 
 		return GiftCardEmailRenderer::render(
@@ -61,8 +72,8 @@ final class GiftCardEmailPreview {
 				'preview'        => true,
 				'is_test'        => false,
 				'manual_issue'   => false,
-				'accent'         => $appearance['accent_color'],
-				'logo_url'       => $appearance['logo_url'],
+				'accent'         => $accent,
+				'logo_url'       => $logo,
 				'copy_overrides' => $copy_overrides,
 				'email_style'    => isset( $copy_overrides['email_style'] )
 					? (string) $copy_overrides['email_style']

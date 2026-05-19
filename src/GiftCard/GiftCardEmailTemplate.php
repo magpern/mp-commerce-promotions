@@ -105,32 +105,20 @@ final class GiftCardEmailTemplate {
 	private static function render_body_content( array $context, string $accent, bool $use_woo_colors ): string {
 		$text    = $use_woo_colors ? GiftCardWooEmailStyler::woo_colors()['text'] : '#1d2327';
 		$muted   = '#646970';
-		$support = \esc_html( (string) ( $context['support_text'] ?? '' ) );
-		$footer  = \esc_html( (string) ( $context['footer_text'] ?? '' ) );
-
 		$cards_html = '';
 		foreach ( (array) ( $context['cards'] ?? array() ) as $card ) {
 			$cards_html .= self::card_block_html( $card, $accent, ! empty( $context['preview'] ) );
 		}
 
-		$intro = nl2br( \esc_html( self::intro_text( $context ) ), false );
-		$redeem = nl2br( \esc_html( self::redeem_text( $context ) ), false );
+		$intro  = self::paragraph_html( self::intro_text( $context ), 'intro', $text );
+		$redeem = self::paragraph_html( self::redeem_text( $context ), 'redeem', $text, '14px' );
 
-		$footer_html = '';
-		if ( $footer !== '' ) {
-			$footer_html .= '<p data-mp-cp-email="footer" style="margin:16px 0 0;font-size:13px;color:' . \esc_attr( $muted ) . ';">' . nl2br( $footer, false ) . '</p>';
-		} else {
-			$footer_html .= '<p data-mp-cp-email="footer" style="margin:16px 0 0;font-size:13px;color:' . \esc_attr( $muted ) . ';display:none;"></p>';
-		}
-		if ( $support !== '' ) {
-			$footer_html .= '<p data-mp-cp-email="support" style="margin:8px 0 0;font-size:13px;color:' . \esc_attr( $muted ) . ';">' . nl2br( $support, false ) . '</p>';
-		} else {
-			$footer_html .= '<p data-mp-cp-email="support" style="margin:8px 0 0;font-size:13px;color:' . \esc_attr( $muted ) . ';display:none;"></p>';
-		}
+		$footer_html  = self::paragraph_html( (string) ( $context['footer_text'] ?? '' ), 'footer', $muted, '13px', true );
+		$footer_html .= self::paragraph_html( (string) ( $context['support_text'] ?? '' ), 'support', $muted, '13px', true, '8px 0 0' );
 
-		return '<p data-mp-cp-email="intro" style="margin:0 0 16px;font-size:15px;line-height:1.5;color:' . \esc_attr( $text ) . ';">' . $intro . '</p>'
+		return $intro
 			. $cards_html
-			. '<p data-mp-cp-email="redeem" style="margin:16px 0 0;font-size:14px;line-height:1.5;color:' . \esc_attr( $text ) . ';">' . $redeem . '</p>'
+			. $redeem
 			. $footer_html;
 	}
 
@@ -175,9 +163,10 @@ final class GiftCardEmailTemplate {
 			$code = GiftCardEmailPreview::SAMPLE_MASKED_CODE;
 		}
 
-		$amount_str = function_exists( 'wc_price' )
-			? wp_strip_all_tags( wc_price( (float) ( $card['amount'] ?? 0 ), array( 'currency' => (string) ( $card['currency'] ?? '' ) ) ) )
-			: number_format( (float) ( $card['amount'] ?? 0 ), 2 ) . ' ' . \esc_html( (string) ( $card['currency'] ?? '' ) );
+		$amount_str = GiftCardEmailPlaceholders::format_amount_display(
+			(float) ( $card['amount'] ?? 0 ),
+			(string) ( $card['currency'] ?? '' )
+		);
 
 		$bits = array();
 		$recipient = trim( (string) ( $card['recipient_name'] ?? '' ) );
@@ -209,6 +198,31 @@ final class GiftCardEmailTemplate {
 
 	public static function normalize_slug( string $slug ): string {
 		return Settings::normalize_gift_card_email_template_slug( $slug );
+	}
+
+	private static function paragraph_html(
+		string $text,
+		string $data_attr,
+		string $color,
+		string $font_size = '15px',
+		bool $allow_empty_hidden = false,
+		string $margin = '16px 0 0'
+	): string {
+		$trimmed = trim( $text );
+		if ( $trimmed === '' ) {
+			if ( ! $allow_empty_hidden ) {
+				return '';
+			}
+
+			return '<p data-mp-cp-email="' . \esc_attr( $data_attr ) . '" style="margin:' . \esc_attr( $margin )
+				. ';font-size:' . \esc_attr( $font_size ) . ';line-height:1.5;color:' . \esc_attr( $color ) . ';display:none;"></p>';
+		}
+
+		$margin_attr = $data_attr === 'intro' ? 'margin:0 0 16px' : 'margin:' . $margin;
+
+		return '<p data-mp-cp-email="' . \esc_attr( $data_attr ) . '" style="' . \esc_attr( $margin_attr )
+			. ';font-size:' . \esc_attr( $font_size ) . ';line-height:1.5;color:' . \esc_attr( $color ) . ';">'
+			. nl2br( \esc_html( $trimmed ), false ) . '</p>';
 	}
 
 	private static function sanitize_color( string $color ): string {

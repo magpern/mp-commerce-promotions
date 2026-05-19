@@ -12,8 +12,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit( 1 );
 }
 
+use MP\CommercePromotions\Admin\GiftCardSettingsHandler;
 use MP\CommercePromotions\GiftCard\GiftCardDeliveryStatus;
 use MP\CommercePromotions\GiftCard\GiftCardDeliveryMailer;
+use MP\CommercePromotions\GiftCard\GiftCardEmailCopy;
+use MP\CommercePromotions\GiftCard\GiftCardEmailPlaceholders;
 use MP\CommercePromotions\GiftCard\GiftCardEmailPreview;
 use MP\CommercePromotions\GiftCard\GiftCardEmailSender;
 use MP\CommercePromotions\GiftCard\GiftCardEmailTemplate;
@@ -70,6 +73,57 @@ if ( strpos( $preview_html, GiftCardEmailPreview::SAMPLE_MASKED_CODE ) !== false
 	$pass( 'email preview uses sample code only' );
 } else {
 	$fail( 'email preview uses sample code only' );
+}
+
+$amount_display = GiftCardEmailPlaceholders::format_amount_display( 25.0, 'EUR' );
+if ( $amount_display !== '' && strpos( $amount_display, '&nbsp;' ) === false ) {
+	$pass( 'amount display has no nbsp entities' );
+} else {
+	$fail( 'amount display has no nbsp entities', $amount_display );
+}
+
+$entity_preview = GiftCardEmailPreview::render( $settings, null, 25.0, 'EUR' );
+if ( strpos( $entity_preview, '&nbsp;' ) === false && strpos( $entity_preview, '&#160;' ) === false ) {
+	$pass( 'preview html has no escaped nbsp entities' );
+} else {
+	$fail( 'preview html has no escaped nbsp entities' );
+}
+
+if ( $amount_display !== '' && strpos( $entity_preview, $amount_display ) !== false ) {
+	$pass( 'preview includes formatted amount' );
+} else {
+	$fail( 'preview includes formatted amount', $amount_display );
+}
+
+$ajax_preview_hook = 'wp_ajax_' . GiftCardSettingsHandler::AJAX_ACTION_PREVIEW;
+$ajax_test_hook    = 'wp_ajax_' . GiftCardSettingsHandler::AJAX_ACTION_TEST;
+if ( has_action( $ajax_preview_hook ) && has_action( $ajax_test_hook ) ) {
+	$pass( 'gift card email ajax handlers registered' );
+} else {
+	$fail( 'gift card email ajax handlers registered' );
+}
+
+$overrides = GiftCardEmailCopy::sanitize_overrides_from_array(
+	array(
+		'mp_cp_gift_card_email_heading' => 'Smoke unsaved heading',
+	)
+);
+$unsaved_preview = GiftCardEmailPreview::render( $settings, null, 25.0, 'EUR', $overrides );
+if ( is_array( $overrides ) && strpos( $unsaved_preview, 'Smoke unsaved heading' ) !== false ) {
+	$pass( 'preview supports unsaved copy overrides' );
+} else {
+	$fail( 'preview supports unsaved copy overrides' );
+}
+
+$settings->set_gift_card_email_subject( 'Smoke persist subject' );
+$settings->set_gift_card_email_heading( 'Smoke persist heading' );
+$settings->set_gift_card_support_email_text( 'Smoke persist support' );
+if ( $settings->gift_card_email_subject() === 'Smoke persist subject'
+	&& $settings->gift_card_email_heading() === 'Smoke persist heading'
+	&& $settings->gift_card_support_email_text() === 'Smoke persist support' ) {
+	$pass( 'email settings persist via Settings API' );
+} else {
+	$fail( 'email settings persist via Settings API' );
 }
 
 $invalid_tpl = GiftCardEmailTemplate::normalize_slug( 'invalid-template-slug' );

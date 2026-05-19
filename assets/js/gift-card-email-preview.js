@@ -1,11 +1,11 @@
 /**
- * Live gift card email preview on Gift Cards → Settings (sample data only).
+ * Gift card email settings: server-rendered live preview, AJAX test email, media logo picker.
  */
-( function () {
+( function ( $ ) {
 	'use strict';
 
 	var cfg = window.mpCpGiftCardEmailPreview;
-	if ( ! cfg || ! cfg.sample ) {
+	if ( ! cfg || ! cfg.ajaxUrl ) {
 		return;
 	}
 
@@ -20,173 +20,202 @@
 		accent: 'mp_cp_gift_card_accent_color',
 	};
 
-	function el( id ) {
-		return document.getElementById( id );
-	}
+	var previewTimer = null;
 
 	function fieldValue( id ) {
-		var node = el( id );
+		var node = document.getElementById( id );
 		return node ? node.value : '';
 	}
 
-	function replacePlaceholders( text ) {
-		if ( ! text ) {
-			return '';
-		}
-		var out = text;
-		( cfg.placeholders || [] ).forEach( function ( key ) {
-			var token = '{' + key + '}';
-			var val = cfg.sample[ key ] != null ? String( cfg.sample[ key ] ) : '';
-			out = out.split( token ).join( val );
+	function collectPayload() {
+		var payload = {
+			action: cfg.previewAction,
+			nonce: cfg.nonce,
+			preview_amount: fieldValue( 'mp_cp_gc_settings_test_amount' ) || '25',
+			preview_currency: fieldValue( 'mp_cp_gc_settings_test_currency' ) || 'EUR',
+		};
+
+		Object.keys( fieldIds ).forEach( function ( key ) {
+			payload[ fieldIds[ key ] ] = fieldValue( fieldIds[ key ] );
 		} );
-		return out;
+
+		var styleChecked = document.querySelector( 'input[name="mp_cp_gift_card_email_style"]:checked' );
+		if ( styleChecked ) {
+			payload.mp_cp_gift_card_email_style = styleChecked.value;
+		}
+
+		return payload;
 	}
 
-	function escapeHtml( str ) {
-		return String( str )
-			.replace( /&/g, '&amp;' )
-			.replace( /</g, '&lt;' )
-			.replace( />/g, '&gt;' )
-			.replace( /"/g, '&quot;' );
+	function schedulePreview() {
+		if ( previewTimer ) {
+			window.clearTimeout( previewTimer );
+		}
+		previewTimer = window.setTimeout( refreshPreview, 350 );
 	}
 
-	function nl2brEscaped( str ) {
-		return escapeHtml( str ).replace( /\r?\n/g, '<br />' );
-	}
-
-	function sanitizeColor( color ) {
-		color = String( color || '' ).trim();
-		return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test( color ) ? color : '#2271b1';
-	}
-
-	function updatePreview() {
-		var wrap = el( 'mp-cp-gc-email-preview-wrap' );
+	function refreshPreview() {
+		var wrap = document.getElementById( 'mp-cp-gc-email-preview-wrap' );
 		if ( ! wrap ) {
 			return;
 		}
 
-		var accent = sanitizeColor( fieldValue( fieldIds.accent ) );
-		var heading = replacePlaceholders( fieldValue( fieldIds.heading ) );
-		var intro = replacePlaceholders( fieldValue( fieldIds.intro ) );
-		var redeem = replacePlaceholders( fieldValue( fieldIds.redeem ) );
-		var footer = replacePlaceholders( fieldValue( fieldIds.footer ) );
-		var support = replacePlaceholders( fieldValue( fieldIds.support ) );
-		var logo = fieldValue( fieldIds.logo );
+		wrap.classList.add( 'mp-cp-gc-email-preview-frame--loading' );
 
-		var subjectEl = el( 'mp-cp-gc-email-subject-preview' );
-		if ( subjectEl ) {
-			subjectEl.textContent = replacePlaceholders( fieldValue( fieldIds.subject ) );
-		}
+		var data = collectPayload();
+		data.action = cfg.previewAction;
 
-		var headingNode = wrap.querySelector( '[data-mp-cp-email="heading"]' );
-		if ( headingNode ) {
-			headingNode.textContent = heading;
-		}
-
-		var introNode = wrap.querySelector( '[data-mp-cp-email="intro"]' );
-		if ( introNode ) {
-			introNode.innerHTML = nl2brEscaped( intro );
-		}
-
-		var redeemNode = wrap.querySelector( '[data-mp-cp-email="redeem"]' );
-		if ( redeemNode ) {
-			redeemNode.innerHTML = nl2brEscaped( redeem );
-		}
-
-		var footerNode = wrap.querySelector( '[data-mp-cp-email="footer"]' );
-		if ( footerNode ) {
-			if ( footer ) {
-				footerNode.style.display = '';
-				footerNode.innerHTML = nl2brEscaped( footer );
-			} else {
-				footerNode.style.display = 'none';
-				footerNode.innerHTML = '';
-			}
-		}
-
-		var supportNode = wrap.querySelector( '[data-mp-cp-email="support"]' );
-		if ( supportNode ) {
-			if ( support ) {
-				supportNode.style.display = '';
-				supportNode.innerHTML = nl2brEscaped( support );
-			} else {
-				supportNode.style.display = 'none';
-				supportNode.innerHTML = '';
-			}
-		}
-
-		var logoNode = wrap.querySelector( '[data-mp-cp-email="logo"]' );
-		if ( logoNode ) {
-			if ( logo ) {
-				logoNode.src = logo;
-				logoNode.style.display = '';
-			} else {
-				logoNode.removeAttribute( 'src' );
-				logoNode.style.display = 'none';
-			}
-		}
-
-		wrap.querySelectorAll( '[data-mp-cp-email-accent="header"]' ).forEach( function ( node ) {
-			node.style.background = accent;
-		} );
-
-		var card = wrap.querySelector( '[data-mp-cp-email="card"]' );
-		if ( card ) {
-			card.style.borderLeftColor = accent;
-		}
-	}
-
-	function bindField( id ) {
-		var node = el( id );
-		if ( ! node ) {
-			return;
-		}
-		node.addEventListener( 'input', updatePreview );
-		node.addEventListener( 'change', updatePreview );
-	}
-
-	Object.keys( fieldIds ).forEach( function ( key ) {
-		bindField( fieldIds[ key ] );
-	} );
-
-	document.querySelectorAll( 'input[name="mp_cp_gift_card_email_style"]' ).forEach( function ( radio ) {
-		radio.addEventListener( 'change', updatePreview );
-	} );
-
-	var testForm = el( 'mp-cp-gc-test-email-form' );
-	if ( testForm ) {
-		testForm.addEventListener( 'submit', function () {
-			var names = [
-				fieldIds.subject,
-				fieldIds.heading,
-				fieldIds.intro,
-				fieldIds.redeem,
-				fieldIds.footer,
-				fieldIds.support,
-				fieldIds.logo,
-				fieldIds.accent,
-			];
-			names.forEach( function ( name ) {
-				var source = el( name );
-				if ( ! source ) {
+		$.post( cfg.ajaxUrl, data )
+			.done( function ( response ) {
+				if ( ! response || ! response.success || ! response.data ) {
 					return;
 				}
-				var hidden = document.createElement( 'input' );
-				hidden.type = 'hidden';
-				hidden.name = name;
-				hidden.value = source.value;
-				testForm.appendChild( hidden );
+				wrap.innerHTML = response.data.html || '';
+				var subjectEl = document.getElementById( 'mp-cp-gc-email-subject-preview' );
+				if ( subjectEl && response.data.subject ) {
+					subjectEl.textContent = response.data.subject;
+				}
+			} )
+			.fail( function () {
+				// Keep last good preview on transient errors.
+			} )
+			.always( function () {
+				wrap.classList.remove( 'mp-cp-gc-email-preview-frame--loading' );
 			} );
-			var styleChecked = document.querySelector( 'input[name="mp_cp_gift_card_email_style"]:checked' );
-			if ( styleChecked ) {
-				var styleInput = document.createElement( 'input' );
-				styleInput.type = 'hidden';
-				styleInput.name = 'mp_cp_gift_card_email_style';
-				styleInput.value = styleChecked.value;
-				testForm.appendChild( styleInput );
+	}
+
+	function bindPreviewFields() {
+		Object.keys( fieldIds ).forEach( function ( key ) {
+			var node = document.getElementById( fieldIds[ key ] );
+			if ( ! node ) {
+				return;
+			}
+			node.addEventListener( 'input', schedulePreview );
+			node.addEventListener( 'change', schedulePreview );
+		} );
+
+		document.querySelectorAll( 'input[name="mp_cp_gift_card_email_style"]' ).forEach( function ( radio ) {
+			radio.addEventListener( 'change', schedulePreview );
+		} );
+
+		[ 'mp_cp_gc_settings_test_amount', 'mp_cp_gc_settings_test_currency' ].forEach( function ( id ) {
+			var node = document.getElementById( id );
+			if ( node ) {
+				node.addEventListener( 'input', schedulePreview );
+				node.addEventListener( 'change', schedulePreview );
 			}
 		} );
 	}
 
-	updatePreview();
-}() );
+	function initLogoPicker() {
+		var chooseBtn = document.getElementById( 'mp-cp-gc-choose-logo' );
+		var removeBtn = document.getElementById( 'mp-cp-gc-remove-logo' );
+		var input = document.getElementById( fieldIds.logo );
+		if ( ! chooseBtn || ! input || typeof wp === 'undefined' || ! wp.media ) {
+			return;
+		}
+
+		var frame;
+
+		chooseBtn.addEventListener( 'click', function ( e ) {
+			e.preventDefault();
+			if ( frame ) {
+				frame.open();
+				return;
+			}
+			frame = wp.media( {
+				title: cfg.i18n && cfg.i18n.chooseLogo ? cfg.i18n.chooseLogo : 'Choose logo',
+				button: { text: cfg.i18n && cfg.i18n.chooseLogo ? cfg.i18n.chooseLogo : 'Use image' },
+				library: { type: 'image' },
+				multiple: false,
+			} );
+			frame.on( 'select', function () {
+				var attachment = frame.state().get( 'selection' ).first().toJSON();
+				if ( attachment && attachment.url ) {
+					input.value = attachment.url;
+					updateLogoThumb( attachment.url );
+					schedulePreview();
+				}
+			} );
+			frame.open();
+		} );
+
+		if ( removeBtn ) {
+			removeBtn.addEventListener( 'click', function ( e ) {
+				e.preventDefault();
+				input.value = '';
+				updateLogoThumb( '' );
+				schedulePreview();
+			} );
+		}
+
+		input.addEventListener( 'input', function () {
+			updateLogoThumb( input.value );
+		} );
+	}
+
+	function updateLogoThumb( url ) {
+		var wrap = document.querySelector( '.mp-cp-gc-logo-thumb-wrap' );
+		var img = document.getElementById( 'mp-cp-gc-logo-thumb' );
+		if ( ! wrap || ! img ) {
+			return;
+		}
+		if ( url ) {
+			img.src = url;
+			wrap.style.display = '';
+		} else {
+			img.removeAttribute( 'src' );
+			wrap.style.display = 'none';
+		}
+	}
+
+	function initTestEmail() {
+		var btn = document.getElementById( 'mp-cp-gc-send-test-email' );
+		var notice = document.getElementById( 'mp-cp-gc-test-email-notice' );
+		if ( ! btn ) {
+			return;
+		}
+
+		btn.addEventListener( 'click', function () {
+			var data = collectPayload();
+			data.action = cfg.testAction;
+			data.mp_cp_gc_settings_test_to = fieldValue( 'mp_cp_gc_settings_test_to' );
+			data.mp_cp_gc_settings_test_amount = fieldValue( 'mp_cp_gc_settings_test_amount' );
+			data.mp_cp_gc_settings_test_currency = fieldValue( 'mp_cp_gc_settings_test_currency' );
+
+			btn.disabled = true;
+			if ( notice ) {
+				notice.textContent = cfg.i18n && cfg.i18n.sending ? cfg.i18n.sending : 'Sending…';
+				notice.className = 'mp-cp-gc-test-email-notice mp-cp-gc-test-email-notice--pending';
+			}
+
+			$.post( cfg.ajaxUrl, data )
+				.done( function ( response ) {
+					if ( notice ) {
+						if ( response && response.success ) {
+							notice.textContent = ( response.data && response.data.message ) || ( cfg.i18n && cfg.i18n.testSent );
+							notice.className = 'mp-cp-gc-test-email-notice mp-cp-gc-test-email-notice--success';
+						} else {
+							notice.textContent = ( response && response.data && response.data.message ) || ( cfg.i18n && cfg.i18n.testFailed );
+							notice.className = 'mp-cp-gc-test-email-notice mp-cp-gc-test-email-notice--error';
+						}
+					}
+				} )
+				.fail( function () {
+					if ( notice ) {
+						notice.textContent = cfg.i18n && cfg.i18n.testFailed ? cfg.i18n.testFailed : 'Test email failed.';
+						notice.className = 'mp-cp-gc-test-email-notice mp-cp-gc-test-email-notice--error';
+					}
+				} )
+				.always( function () {
+					btn.disabled = false;
+				} );
+		} );
+	}
+
+	$( function () {
+		bindPreviewFields();
+		initLogoPicker();
+		initTestEmail();
+	} );
+}( jQuery ) );

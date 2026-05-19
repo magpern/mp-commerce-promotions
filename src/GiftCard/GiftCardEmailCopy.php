@@ -60,7 +60,7 @@ final class GiftCardEmailCopy {
 			$overrides,
 			'support_text',
 			$settings->gift_card_support_email_text(),
-			''
+			GiftCardEmailPlaceholders::default_support_text()
 		);
 
 		return array(
@@ -79,6 +79,15 @@ final class GiftCardEmailCopy {
 	 * @return array<string, string>|null
 	 */
 	public static function overrides_from_post(): ?array {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- caller verifies nonce.
+		return self::sanitize_overrides_from_array( $_POST );
+	}
+
+	/**
+	 * @param array<string, mixed> $data
+	 * @return array<string, string>|null
+	 */
+	public static function sanitize_overrides_from_array( array $data ): ?array {
 		$map = array(
 			'subject'             => 'mp_cp_gift_card_email_subject',
 			'heading'             => 'mp_cp_gift_card_email_heading',
@@ -93,10 +102,10 @@ final class GiftCardEmailCopy {
 
 		$out = array();
 		foreach ( $map as $key => $field ) {
-			if ( ! isset( $_POST[ $field ] ) ) {
+			if ( ! array_key_exists( $field, $data ) ) {
 				continue;
 			}
-			$raw = wp_unslash( (string) $_POST[ $field ] );
+			$raw = wp_unslash( (string) $data[ $field ] );
 			if ( $key === 'logo_url' ) {
 				$out[ $key ] = esc_url_raw( $raw );
 			} elseif ( $key === 'accent_color' || $key === 'email_style' ) {

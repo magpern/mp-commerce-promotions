@@ -141,6 +141,47 @@ final class GiftCardEmailConfigurationTest extends TestCase {
 		$this->assertSame( '#ff00ff', $resolved['accent_color'] );
 	}
 
+	public function test_format_amount_display_decodes_nbsp_entities(): void {
+		$display = GiftCardEmailPlaceholders::format_amount_display( 25.0, 'EUR' );
+
+		$this->assertNotSame( '', $display );
+		$this->assertStringNotContainsString( '&nbsp;', $display );
+		$this->assertStringNotContainsString( '&#160;', $display );
+	}
+
+	public function test_preview_html_does_not_show_escaped_entities(): void {
+		$html = GiftCardEmailPreview::render( $this->settings, null, 25.0, 'EUR' );
+
+		$this->assertStringNotContainsString( '&nbsp;', $html );
+		$this->assertStringNotContainsString( '&#160;', $html );
+		$amount_display = GiftCardEmailPlaceholders::format_amount_display( 25.0, 'EUR' );
+		if ( $amount_display !== '' ) {
+			$this->assertStringContainsString( $amount_display, $html );
+		}
+	}
+
+	public function test_sanitize_overrides_from_array_for_ajax_preview(): void {
+		$data = array(
+			'mp_cp_gift_card_email_heading' => 'Ajax preview heading',
+			'mp_cp_gift_card_accent_color'  => '#abcdef',
+		);
+		$overrides = GiftCardEmailCopy::sanitize_overrides_from_array( $data );
+
+		$this->assertIsArray( $overrides );
+		$this->assertSame( 'Ajax preview heading', $overrides['heading'] ?? '' );
+		$this->assertSame( '#abcdef', $overrides['accent_color'] ?? '' );
+
+		$html = GiftCardEmailPreview::render( $this->settings, null, 25.0, 'EUR', $overrides );
+		$this->assertStringContainsString( 'Ajax preview heading', $html );
+		$this->assertStringContainsString( '#abcdef', $html );
+	}
+
+	public function test_default_copy_strings_are_production_ready(): void {
+		$this->assertStringContainsString( '{site_title}', GiftCardEmailPlaceholders::default_subject() );
+		$this->assertStringContainsString( 'gift card', strtolower( GiftCardEmailPlaceholders::default_heading() ) );
+		$this->assertStringContainsString( 'checkout', strtolower( GiftCardEmailPlaceholders::default_redeem_instructions() ) );
+	}
+
 	public function test_custom_subject_via_renderer(): void {
 		$this->settings->set_gift_card_email_subject( 'Card for {recipient_name}' );
 		$subject = GiftCardEmailRenderer::resolve_subject(

@@ -553,9 +553,17 @@ final class Settings {
 	}
 
 	private function gift_card_email_text_option( string $option, string $default ): string {
-		$raw = get_option( $option, '' );
+		if ( ! function_exists( 'get_option' ) ) {
+			return $default;
+		}
 
-		return is_string( $raw ) && trim( $raw ) !== '' ? sanitize_textarea_field( $raw ) : $default;
+		$not_set = '__mp_cp_option_not_set__';
+		$raw     = get_option( $option, $not_set );
+		if ( $raw === $not_set ) {
+			return $default;
+		}
+
+		return is_string( $raw ) ? sanitize_textarea_field( $raw ) : $default;
 	}
 
 	private function set_gift_card_email_text_option( string $option, string $text ): void {
@@ -720,13 +728,14 @@ final class Settings {
 	}
 
 	public function gift_card_support_email_text(): string {
-		$raw = get_option( self::OPTION_GIFT_CARD_SUPPORT_TEXT, '' );
-
-		return is_string( $raw ) ? sanitize_textarea_field( $raw ) : '';
+		return $this->gift_card_email_text_option(
+			self::OPTION_GIFT_CARD_SUPPORT_TEXT,
+			\MP\CommercePromotions\GiftCard\GiftCardEmailPlaceholders::default_support_text()
+		);
 	}
 
 	public function set_gift_card_support_email_text( string $text ): void {
-		update_option( self::OPTION_GIFT_CARD_SUPPORT_TEXT, sanitize_textarea_field( $text ), false );
+		$this->set_gift_card_email_text_option( self::OPTION_GIFT_CARD_SUPPORT_TEXT, $text );
 	}
 
 	public function gift_card_balance_page_id(): int {

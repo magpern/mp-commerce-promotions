@@ -38,6 +38,46 @@ final class GiftCardSettingsHandlerTest extends TestCase {
 		unset( $_POST['mp_cp_gift_card_sender_mode'] );
 	}
 
+	public function test_save_gift_card_options_persists_email_copy_fields(): void {
+		$_POST['mp_cp_gift_card_email_subject']             = 'Persisted subject {site_title}';
+		$_POST['mp_cp_gift_card_email_heading']             = 'Persisted heading';
+		$_POST['mp_cp_gift_card_email_intro']                = 'Persisted intro';
+		$_POST['mp_cp_gift_card_email_redeem_instructions']  = 'Persisted redeem';
+		$_POST['mp_cp_gift_card_email_footer_text']          = 'Persisted footer';
+		$_POST['mp_cp_gift_card_support_email_text']         = 'Persisted support';
+		$_POST['mp_cp_gift_card_logo_url']                   = 'https://example.com/logo.png';
+		$_POST['mp_cp_gift_card_accent_color']               = '#112233';
+		$_POST['mp_cp_gift_card_email_style']                = Settings::GIFT_CARD_EMAIL_STYLE_COMMERCE_GROWTH;
+
+		$handler = new GiftCardSettingsHandler( $this->settings );
+		$handler->save_gift_card_options_from_post();
+
+		$this->assertSame( 'Persisted subject {site_title}', $this->settings->gift_card_email_subject() );
+		$this->assertSame( 'Persisted heading', $this->settings->gift_card_email_heading() );
+		$this->assertSame( 'Persisted intro', $this->settings->gift_card_email_intro() );
+		$this->assertSame( 'Persisted redeem', $this->settings->gift_card_email_redeem_instructions() );
+		$this->assertSame( 'Persisted footer', $this->settings->gift_card_email_footer_text() );
+		$this->assertSame( 'Persisted support', $this->settings->gift_card_support_email_text() );
+		$this->assertSame( 'https://example.com/logo.png', $this->settings->gift_card_logo_url() );
+		$this->assertSame( '#112233', $this->settings->gift_card_accent_color() );
+
+		foreach (
+			array(
+				'mp_cp_gift_card_email_subject',
+				'mp_cp_gift_card_email_heading',
+				'mp_cp_gift_card_email_intro',
+				'mp_cp_gift_card_email_redeem_instructions',
+				'mp_cp_gift_card_email_footer_text',
+				'mp_cp_gift_card_support_email_text',
+				'mp_cp_gift_card_logo_url',
+				'mp_cp_gift_card_accent_color',
+				'mp_cp_gift_card_email_style',
+			) as $key
+		) {
+			unset( $_POST[ $key ] );
+		}
+	}
+
 	public function test_invalid_custom_sender_falls_back_to_default(): void {
 		$_POST['mp_cp_gift_card_sender_mode']  = Settings::GIFT_CARD_SENDER_MODE_CUSTOM;
 		$_POST['mp_cp_gift_card_sender_email'] = 'not-an-email';
