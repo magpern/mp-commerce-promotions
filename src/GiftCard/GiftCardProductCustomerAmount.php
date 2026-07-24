@@ -182,7 +182,7 @@ final class GiftCardProductCustomerAmount {
 			return sprintf(
 				/* translators: %s: formatted minimum amount */
 				__( 'Gift card amount must be at least %s.', 'mp-commerce-promotions' ),
-				self::format_money( $min )
+				self::format_display_money( $min )
 			);
 		}
 
@@ -193,7 +193,7 @@ final class GiftCardProductCustomerAmount {
 				return sprintf(
 					/* translators: %s: formatted maximum amount */
 					__( 'Gift card amount must not exceed %s.', 'mp-commerce-promotions' ),
-					self::format_money( $max_val )
+					self::format_display_money( $max_val )
 				);
 			}
 		}
@@ -221,7 +221,7 @@ final class GiftCardProductCustomerAmount {
 			return sprintf(
 				/* translators: %s: formatted minimum price */
 				__( 'From %s', 'mp-commerce-promotions' ),
-				self::format_money( $min )
+				self::format_display_money( $min )
 			);
 		}
 
@@ -229,6 +229,24 @@ final class GiftCardProductCustomerAmount {
 	}
 
 	public static function format_money( float $amount ): string {
+		if ( function_exists( 'wc_price' ) ) {
+			return wp_strip_all_tags( wc_price( $amount ) );
+		}
+
+		return number_format( $amount, 2 );
+	}
+
+	/**
+	 * Format an amount already expressed in the active storefront currency.
+	 *
+	 * WOOCS treats wc_price() inputs as base currency and converts again; use this
+	 * for gift card bounds/chips after GiftCardStorefrontAmounts has converted them.
+	 */
+	public static function format_display_money( float $amount ): string {
+		if ( isset( $GLOBALS['WOOCS'] ) && is_object( $GLOBALS['WOOCS'] ) && method_exists( $GLOBALS['WOOCS'], 'wc_price' ) ) {
+			return wp_strip_all_tags( (string) $GLOBALS['WOOCS']->wc_price( $amount, false ) );
+		}
+
 		if ( function_exists( 'wc_price' ) ) {
 			return wp_strip_all_tags( wc_price( $amount ) );
 		}

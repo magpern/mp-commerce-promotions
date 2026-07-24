@@ -57,7 +57,7 @@ final class GiftCardProductDisplay {
 
 		$default = $config['default_amount'] ?? null;
 		$value   = $default !== null && $default > 0 ? (string) $default : '';
-		$min     = GiftCardProductCustomerAmount::format_money( max( 0.01, (float) ( $config['min_amount'] ?? 0 ) ) );
+		$min     = GiftCardProductCustomerAmount::format_display_money( max( 0.01, (float) ( $config['min_amount'] ?? 0 ) ) );
 		$max     = $config['max_amount'] ?? null;
 
 		echo '<div class="mp-cp-gc-customer-amount">';
@@ -75,7 +75,7 @@ final class GiftCardProductDisplay {
 					/* translators: 1: minimum amount, 2: maximum amount */
 					__( 'Enter an amount between %1$s and %2$s.', 'mp-commerce-promotions' ),
 					$min,
-					GiftCardProductCustomerAmount::format_money( (float) $max )
+					GiftCardProductCustomerAmount::format_display_money( (float) $max )
 				)
 			);
 		} else {
@@ -93,7 +93,7 @@ final class GiftCardProductDisplay {
 			echo '<p class="mp-cp-gc-suggested-label">' . esc_html__( 'Suggested amounts', 'mp-commerce-promotions' ) . '</p>';
 			echo '<p class="mp-cp-gc-suggested-amounts">';
 			foreach ( $config['suggested_amounts'] as $suggested ) {
-				$label = GiftCardProductCustomerAmount::format_money( (float) $suggested );
+				$label = GiftCardProductCustomerAmount::format_display_money( (float) $suggested );
 				echo '<button type="button" class="button mp-cp-gc-suggested-amount" data-amount="' . esc_attr( (string) $suggested ) . '">' . esc_html( $label ) . '</button> ';
 			}
 			echo '</p>';

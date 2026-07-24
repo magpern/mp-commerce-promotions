@@ -165,7 +165,7 @@ final class GiftCardCustomerAmountCart {
 
 		$item_data[] = array(
 			'key'   => __( 'Gift card amount', 'mp-commerce-promotions' ),
-			'value' => GiftCardProductCustomerAmount::format_money( $display_amount ),
+			'value' => GiftCardProductCustomerAmount::format_display_money( $display_amount ),
 		);
 
 		return $item_data;
