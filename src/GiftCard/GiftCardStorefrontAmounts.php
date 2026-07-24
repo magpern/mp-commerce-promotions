@@ -79,30 +79,14 @@ final class GiftCardStorefrontAmounts {
 			return $display_amount;
 		}
 
-		if ( function_exists( 'apply_filters' ) ) {
-			/** @var mixed $converted */
-			$converted = apply_filters( 'woocs_back_convert_price', $display_amount, false );
-			if ( is_numeric( $converted ) ) {
-				return GiftCard::money( (float) $converted );
-			}
+		$rate = self::display_currency_rate();
+		if ( $rate <= 0 ) {
+			return $display_amount;
 		}
 
-		$woocs = self::woocs_instance();
-		if ( $woocs !== null && method_exists( $woocs, 'back_convert' ) && method_exists( $woocs, 'get_currencies' ) ) {
-			$currencies = $woocs->get_currencies();
-			$currency   = self::display_currency();
-			if ( isset( $currencies[ $currency ]['rate'] ) && is_numeric( $currencies[ $currency ]['rate'] ) ) {
-				$decimals = isset( $currencies[ $currency ]['decimals'] ) && is_numeric( $currencies[ $currency ]['decimals'] )
-					? (int) $currencies[ $currency ]['decimals']
-					: null;
-
-				return GiftCard::money(
-					(float) $woocs->back_convert( $display_amount, (float) $currencies[ $currency ]['rate'], $decimals )
-				);
-			}
-		}
-
-		return $display_amount;
+		// Keep extra precision for WC line prices — GiftCard::money() would truncate
+		// (e.g. 10.4348 → 10.43) and WOOCS would show 119.95 kr instead of 120 kr.
+		return round( $display_amount / $rate, self::base_price_precision() );
 	}
 
 	public static function display_min( float $base_min ): float {
@@ -192,5 +176,39 @@ final class GiftCardStorefrontAmounts {
 		}
 
 		return null;
+	}
+
+	private static function display_currency_rate(): float {
+		$woocs = self::woocs_instance();
+		if ( $woocs !== null && method_exists( $woocs, 'get_currencies' ) ) {
+			$currencies = $woocs->get_currencies();
+			$currency   = self::display_currency();
+			if ( isset( $currencies[ $currency ]['rate'] ) && is_numeric( $currencies[ $currency ]['rate'] ) ) {
+				return (float) $currencies[ $currency ]['rate'];
+			}
+		}
+
+		return 0.0;
+	}
+
+	/**
+	 * Decimals for storing gift card line prices in base currency before WOOCS converts them back for display.
+	 */
+	private static function base_price_precision(): int {
+		$woocs = self::woocs_instance();
+		if ( $woocs !== null && method_exists( $woocs, 'get_currency_price_num_decimals' ) ) {
+			$display_decimals = (int) $woocs->get_currency_price_num_decimals(
+				self::display_currency(),
+				function_exists( 'wc_get_price_decimals' ) ? (int) wc_get_price_decimals() : 2
+			);
+
+			return max( 4, $display_decimals + 2 );
+		}
+
+		if ( function_exists( 'wc_get_price_decimals' ) ) {
+			return max( 4, (int) wc_get_price_decimals() + 2 );
+		}
+
+		return 4;
 	}
 }
