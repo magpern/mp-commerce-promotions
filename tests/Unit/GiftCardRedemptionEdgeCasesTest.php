@@ -54,13 +54,13 @@ final class GiftCardRedemptionEdgeCasesTest extends TestCase {
 	}
 
 	public function test_currency_mismatch_blocks_redeem(): void {
-		$issued = $this->ledger->issue( 10.0, 'USD' );
+		$issued = $this->ledger->issue( 10.0, 'SEK' );
 		$error  = $this->redemption->redeemability_error( $issued->get_card() );
-		if ( $this->redemption->cart_currency() === 'USD' ) {
+		if ( $this->redemption->cart_currency() === 'SEK' ) {
 			$this->assertNull( $error );
 		} else {
 			$this->assertNotNull( $error );
-			$this->assertStringContainsString( 'USD', $error );
+			$this->assertStringContainsString( 'SEK', $error );
 		}
 	}
 

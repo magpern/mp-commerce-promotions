@@ -57,17 +57,19 @@ final class GiftCardStorefrontAmounts {
 			return $base_amount;
 		}
 
-		if ( function_exists( 'apply_filters' ) ) {
-			/** @var mixed $converted */
-			$converted = apply_filters( 'woocs_convert_price', $base_amount, false );
-			if ( is_numeric( $converted ) ) {
-				return GiftCard::money( (float) $converted );
-			}
-		}
-
 		$woocs = self::woocs_instance();
 		if ( $woocs !== null && method_exists( $woocs, 'woocs_exchange_value' ) ) {
 			return GiftCard::money( (float) $woocs->woocs_exchange_value( $base_amount ) );
+		}
+
+		// Only trust the filter when it actually changes the amount. Test stubs for
+		// apply_filters return the input unchanged, which would skip WOOCS conversion.
+		if ( function_exists( 'apply_filters' ) ) {
+			/** @var mixed $converted */
+			$converted = apply_filters( 'woocs_convert_price', $base_amount, false );
+			if ( is_numeric( $converted ) && GiftCard::money( (float) $converted ) !== $base_amount ) {
+				return GiftCard::money( (float) $converted );
+			}
 		}
 
 		return $base_amount;

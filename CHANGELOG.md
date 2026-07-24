@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Maturity:** Early MVP. Suitable for testing and staged rollouts — not a stable, production-complete, or marketplace-certified release without your own review.
 
+## [0.5.0] - 2026-07-24
+
+**Gift card multi-currency** — browse/display in the active WOOCS currency; store and charge gift card face value in shop base currency. **Schema 1.19.0** unchanged.
+
+### Added
+
+- `GiftCardStorefrontAmounts` — convert base bounds to storefront currency, round min/suggested up to nearest 10, convert display input back to base for cart/order storage.
+- Unit coverage in `tests/Unit/GiftCardStorefrontAmountsTest.php`.
+
+### Fixed
+
+- Gift card checkout crash when persisting order line item meta (`GiftCardRecipientCheckout` / cart amount path).
+- Cart totals when WOOCS currency decimals are missing (avoid truncated back-convert).
+- Double WOOCS conversion on gift card display amounts (`format_display_money` via `$WOOCS->wc_price( $amount, false )`).
+- Missing `GiftCard` import in `GiftCardCustomerAmountCart` that caused HTTP 500 on add-to-cart.
+
+### Changed
+
+- Customer-entered gift card amounts are always stored in shop base currency; cart/order labels show the active storefront currency.
+
 ## [0.4.0] - 2026-05-19
 
 **First stable release** — GitHub Release updater for production ZIP deployments. **Schema 1.19.0** unchanged.

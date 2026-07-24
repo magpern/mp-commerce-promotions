@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Woo;
 
+use MP\CommercePromotions\GiftCard\GiftCard;
 use MP\CommercePromotions\GiftCard\GiftCardProductCustomerAmount;
 use MP\CommercePromotions\GiftCard\GiftCardStorefrontAmounts;
 use MP\CommercePromotions\GiftCard\GiftCardProductMeta;

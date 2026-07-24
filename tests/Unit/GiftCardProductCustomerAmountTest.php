@@ -52,7 +52,8 @@ final class GiftCardProductCustomerAmountTest extends TestCase {
 
 	public function test_catalog_price_html_from_min(): void {
 		$html = GiftCardProductCustomerAmount::catalog_price_html( $this->customer_config( 25.0, null ) );
-		$this->assertStringContainsString( '25', $html );
+		// Storefront rounding lifts min 25 → 30 when displaying "From …".
+		$this->assertStringContainsString( '30', $html );
 		$this->assertStringContainsString( 'From', $html );
 	}
 
