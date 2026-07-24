@@ -89,6 +89,24 @@ final class GiftCardStorefrontAmounts {
 		return round( $display_amount / $rate, self::base_price_precision() );
 	}
 
+	/**
+	 * Storefront input (e.g. 120 SEK) → ledger/base amount (e.g. 10.43 EUR).
+	 */
+	public static function base_amount_from_display( float $display_amount ): float {
+		return GiftCard::money( self::convert_display_to_base( $display_amount ) );
+	}
+
+	/**
+	 * Ledger/base amount formatted for the active storefront currency label.
+	 */
+	public static function display_amount_from_base( float $base_amount ): float {
+		if ( ! self::needs_conversion() ) {
+			return GiftCard::money( $base_amount );
+		}
+
+		return GiftCard::money( self::convert_base_to_display( $base_amount ) );
+	}
+
 	public static function display_min( float $base_min ): float {
 		if ( $base_min <= 0 ) {
 			return 0.0;

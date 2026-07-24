@@ -66,6 +66,13 @@ final class GiftCardStorefrontAmountsTest extends TestCase {
 		$this->assertSame( array( 290.0, 580.0, 1150.0 ), $result['suggested_amounts'] );
 	}
 
+	public function test_base_amount_from_display(): void {
+		$GLOBALS['mp_cp_test_display_currency'] = 'SEK';
+		$GLOBALS['WOOCS']                       = new WoocsRateStub( 11.5 );
+
+		$this->assertSame( 10.43, GiftCardStorefrontAmounts::base_amount_from_display( 120.0 ) );
+	}
+
 	public function test_convert_display_to_base_round_trips_through_woocs(): void {
 		$GLOBALS['mp_cp_test_display_currency'] = 'SEK';
 		$GLOBALS['WOOCS']                       = new WoocsRateStub( 11.5 );

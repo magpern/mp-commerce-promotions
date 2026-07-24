@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Woo;
 
-use MP\CommercePromotions\GiftCard\GiftCard;
 use MP\CommercePromotions\GiftCard\GiftCardProductCustomerAmount;
 use MP\CommercePromotions\GiftCard\GiftCardStorefrontAmounts;
 use MP\CommercePromotions\GiftCard\GiftCardProductMeta;
@@ -95,8 +94,8 @@ final class GiftCardCustomerAmountCart {
 			return is_array( $cart_item_data ) ? $cart_item_data : array();
 		}
 
-		$amount = GiftCard::money( (float) $raw );
-		$error  = GiftCardProductCustomerAmount::validate_customer_amount( $amount, $config, true );
+		$display_amount = GiftCard::money( (float) $raw );
+		$error          = GiftCardProductCustomerAmount::validate_customer_amount( $display_amount, $config, true );
 		if ( $error !== null ) {
 			return is_array( $cart_item_data ) ? $cart_item_data : array();
 		}
@@ -105,7 +104,8 @@ final class GiftCardCustomerAmountCart {
 			$cart_item_data = array();
 		}
 
-		$cart_item_data[ GiftCardProductCustomerAmount::CART_ITEM_KEY ] = $amount;
+		// Always store the gift card face value in shop base currency (EUR).
+		$cart_item_data[ GiftCardProductCustomerAmount::CART_ITEM_KEY ] = GiftCardStorefrontAmounts::base_amount_from_display( $display_amount );
 
 		return $cart_item_data;
 	}
@@ -138,8 +138,7 @@ final class GiftCardCustomerAmountCart {
 
 			$product = $cart_item['data'];
 			if ( $product instanceof WC_Product && method_exists( $product, 'set_price' ) ) {
-				$line_price = GiftCardStorefrontAmounts::convert_display_to_base( $amount );
-				$product->set_price( (string) $line_price );
+				$product->set_price( (string) $amount );
 			}
 		}
 	}
@@ -162,9 +161,11 @@ final class GiftCardCustomerAmountCart {
 			return $item_data;
 		}
 
+		$display_amount = GiftCardStorefrontAmounts::display_amount_from_base( $amount );
+
 		$item_data[] = array(
 			'key'   => __( 'Gift card amount', 'mp-commerce-promotions' ),
-			'value' => GiftCardProductCustomerAmount::format_money( $amount ),
+			'value' => GiftCardProductCustomerAmount::format_money( $display_amount ),
 		);
 
 		return $item_data;
