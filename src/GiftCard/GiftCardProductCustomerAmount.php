@@ -159,7 +159,19 @@ final class GiftCardProductCustomerAmount {
 	 *   default_amount: ?float
 	 * } $config
 	 */
-	public static function validate_customer_amount( float $amount, array $config ): ?string {
+	/**
+	 * @param array<string, mixed> $config
+	 * @return array<string, mixed>
+	 */
+	public static function storefront_config( array $config ): array {
+		return GiftCardStorefrontAmounts::storefront_config( $config );
+	}
+
+	public static function validate_customer_amount( float $amount, array $config, bool $use_storefront_bounds = true ): ?string {
+		if ( $use_storefront_bounds ) {
+			$config = self::storefront_config( $config );
+		}
+
 		$amount = GiftCard::money( $amount );
 		if ( $amount <= 0 ) {
 			return __( 'Please enter a gift card amount greater than zero.', 'mp-commerce-promotions' );
@@ -203,7 +215,8 @@ final class GiftCardProductCustomerAmount {
 	 * } $config
 	 */
 	public static function catalog_price_html( array $config ): string {
-		$min = GiftCard::money( (float) ( $config['min_amount'] ?? 0 ) );
+		$config = self::storefront_config( $config );
+		$min    = GiftCard::money( (float) ( $config['min_amount'] ?? 0 ) );
 		if ( $min > 0 ) {
 			return sprintf(
 				/* translators: %s: formatted minimum price */

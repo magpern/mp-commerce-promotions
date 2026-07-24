@@ -42,6 +42,8 @@ final class GiftCardProductDisplay {
 			return;
 		}
 
+		$config = GiftCardProductCustomerAmount::storefront_config( $config );
+
 		GiftCardCustomerAssets::enqueue();
 		if ( defined( 'MP_COMMERCE_PROMOTIONS_URL' ) && defined( 'MP_COMMERCE_PROMOTIONS_VERSION' ) ) {
 			wp_enqueue_script(
@@ -136,7 +138,7 @@ final class GiftCardProductDisplay {
 		echo '<summary class="mp-cp-gc-email-preview__summary">' . esc_html__( 'Preview sample email (masked code)', 'mp-commerce-promotions' ) . '</summary>';
 		echo '<div class="mp-cp-gc-email-preview__frame">';
 		$preview_amount = $this->preview_amount( $config, $product );
-		$currency       = function_exists( 'get_woocommerce_currency' ) ? (string) get_woocommerce_currency() : 'EUR';
+		$currency       = \MP\CommercePromotions\GiftCard\GiftCardStorefrontAmounts::display_currency();
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- storefront preview HTML from plugin templates.
 		echo \MP\CommercePromotions\GiftCard\GiftCardEmailPreview::render( $this->settings, null, $preview_amount, $currency );
 		echo '</div></details></div>';
@@ -148,6 +150,7 @@ final class GiftCardProductDisplay {
 	 */
 	private function preview_amount( array $config, $product ): float {
 		if ( GiftCardProductCustomerAmount::is_customer_amount_mode( $config ) ) {
+			$config = GiftCardProductCustomerAmount::storefront_config( $config );
 			$default = $config['default_amount'] ?? null;
 			if ( $default !== null && $default > 0 ) {
 				return (float) $default;

@@ -548,6 +548,29 @@ if ( ! class_exists( 'wpdb', false ) ) {
 	}
 }
 
+if ( ! function_exists( 'get_woocommerce_currency' ) ) {
+	function get_woocommerce_currency() {
+		if ( isset( $GLOBALS['mp_cp_test_display_currency'] ) && is_string( $GLOBALS['mp_cp_test_display_currency'] ) ) {
+			return $GLOBALS['mp_cp_test_display_currency'];
+		}
+
+		$base = get_option( 'woocommerce_currency', 'EUR' );
+		return is_string( $base ) && $base !== '' ? $base : 'EUR';
+	}
+}
+
+if ( ! function_exists( 'get_woocommerce_currencies' ) ) {
+	/**
+	 * @return array<string, string>
+	 */
+	function get_woocommerce_currencies() {
+		return array(
+			'EUR' => 'Euro',
+			'SEK' => 'Swedish Krona',
+		);
+	}
+}
+
 require $plugin_root . 'src/autoload.php';
 require $plugin_root . 'tests/Support/PromotionTestFixtures.php';
 require $plugin_root . 'tests/Support/InMemoryGiftCardStore.php';

@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Woo;
 
+use MP\CommercePromotions\GiftCard\GiftCard;
 use MP\CommercePromotions\GiftCard\GiftCardProductCustomerAmount;
+use MP\CommercePromotions\GiftCard\GiftCardStorefrontAmounts;
 use MP\CommercePromotions\GiftCard\GiftCardProductMeta;
 use MP\CommercePromotions\GiftCard\GiftCardProductService;
 use WC_Product;
@@ -93,8 +95,8 @@ final class GiftCardCustomerAmountCart {
 			return is_array( $cart_item_data ) ? $cart_item_data : array();
 		}
 
-		$amount = \MP\CommercePromotions\GiftCard\GiftCard::money( (float) $raw );
-		$error  = GiftCardProductCustomerAmount::validate_customer_amount( $amount, $config );
+		$amount = GiftCard::money( (float) $raw );
+		$error  = GiftCardProductCustomerAmount::validate_customer_amount( $amount, $config, true );
 		if ( $error !== null ) {
 			return is_array( $cart_item_data ) ? $cart_item_data : array();
 		}
@@ -136,7 +138,8 @@ final class GiftCardCustomerAmountCart {
 
 			$product = $cart_item['data'];
 			if ( $product instanceof WC_Product && method_exists( $product, 'set_price' ) ) {
-				$product->set_price( (string) $amount );
+				$line_price = GiftCardStorefrontAmounts::convert_display_to_base( $amount );
+				$product->set_price( (string) $line_price );
 			}
 		}
 	}
