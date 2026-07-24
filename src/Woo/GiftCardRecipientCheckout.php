@@ -143,7 +143,7 @@ final class GiftCardRecipientCheckout {
 	 * @param \WC_Order              $order
 	 */
 	public function persist_line_item_meta( $item, $cart_item_key, $values, $order ): void {
-		unset( $values, $order );
+		unset( $values );
 
 		if ( ! is_object( $item ) || ! is_a( $item, 'WC_Order_Item_Product', false ) ) {
 			return;
