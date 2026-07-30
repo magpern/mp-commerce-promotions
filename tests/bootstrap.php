@@ -120,6 +120,15 @@ if ( ! function_exists( 'remove_filter' ) ) {
 	}
 }
 
+if ( ! function_exists( 'remove_all_filters' ) ) {
+	/**
+	 * @param string $hook
+	 */
+	function remove_all_filters( $hook ) {
+		unset( $GLOBALS['mp_cp_test_filters'][ $hook ] );
+	}
+}
+
 if ( ! function_exists( 'apply_filters' ) ) {
 	/**
 	 * @param string $hook
