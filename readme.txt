@@ -4,11 +4,11 @@ Tags: woocommerce, promotions, discounts, coupons, vouchers
 Requires at least: 6.5
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 0.5.1
+Stable tag: 0.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Stable 0.5.1** — production ZIP installs and GitHub Release updates on production sites.
+Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Stable 0.5.2** — production ZIP installs and GitHub Release updates on production sites.
 
 == Description ==
 
@@ -115,6 +115,9 @@ No. Full codes are displayed once after generation. Download the CSV before leav
 3. Generated code batch show-once screen (placeholder).
 
 == Changelog ==
+
+= 0.5.2 =
+* Fix: gift card customer-entered amount showing as 0 in mini-cart/live price displays whenever the cart was restored from session without a full `calculate_totals()` run (e.g. right after a currency switch). The price is now reapplied via `woocommerce_get_cart_item_from_session` on every request instead of relying solely on `woocommerce_before_calculate_totals`. Schema 1.19.0 unchanged. See docs/GITHUB_RELEASE_NOTES_0.5.2.md.
 
 = 0.5.1 =
 * Gift card multi-currency: Universal Multicurrency adapter plus converter-agnostic filters (`mp_cp_gift_card_convert_base_to_display`, `mp_cp_gift_card_convert_display_to_base`). WOOCS behavior unchanged. Schema 1.19.0 unchanged. See docs/GITHUB_RELEASE_NOTES_0.5.1.md.

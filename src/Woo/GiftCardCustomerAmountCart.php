@@ -27,6 +27,7 @@ final class GiftCardCustomerAmountCart {
 	public function register(): void {
 		add_filter( 'woocommerce_add_to_cart_validation', array( $this, 'validate_add_to_cart' ), 10, 5 );
 		add_filter( 'woocommerce_add_cart_item_data', array( $this, 'add_cart_item_data' ), 10, 3 );
+		add_filter( 'woocommerce_get_cart_item_from_session', array( $this, 'apply_price_from_session' ), 10, 2 );
 		add_action( 'woocommerce_before_calculate_totals', array( $this, 'apply_cart_line_prices' ), 20, 1 );
 		add_filter( 'woocommerce_get_item_data', array( $this, 'display_cart_item_data' ), 10, 2 );
 		add_action( 'woocommerce_checkout_create_order_line_item', array( $this, 'persist_order_line_item' ), 10, 4 );
@@ -124,23 +125,57 @@ final class GiftCardCustomerAmountCart {
 		}
 
 		foreach ( $cart->get_cart() as $cart_item ) {
-			if ( ! is_array( $cart_item ) ) {
-				continue;
-			}
+			$this->set_customer_amount_price( $cart_item );
+		}
+	}
 
-			$amount = GiftCardProductCustomerAmount::read_amount_from_cart_item( $cart_item );
-			if ( $amount === null ) {
-				continue;
-			}
+	/**
+	 * Reapplies the customer-entered amount onto the product object the moment
+	 * the cart item is restored from session, on every request.
+	 *
+	 * The `set_price()` override below only ever lives in memory on that one
+	 * product object; it is never persisted, so a fresh page load always starts
+	 * from the product's real (empty/zero) price. Relying solely on
+	 * {@see apply_cart_line_prices()} left any live per-item price display
+	 * (e.g. a mini-cart that calls `WC_Cart::get_product_subtotal()` directly)
+	 * showing 0 whenever `calculate_totals()` happened not to run that request.
+	 *
+	 * @param array<string, mixed> $cart_item Cart item, merged with the product object.
+	 * @param array<string, mixed> $values    Raw session values for this item, without the product object.
+	 * @return array<string, mixed>
+	 */
+	public function apply_price_from_session( $cart_item, $values ): array {
+		unset( $values );
 
-			if ( ! isset( $cart_item['data'] ) || ! is_object( $cart_item['data'] ) ) {
-				continue;
-			}
+		if ( ! is_array( $cart_item ) ) {
+			return array();
+		}
 
-			$product = $cart_item['data'];
-			if ( $product instanceof WC_Product && method_exists( $product, 'set_price' ) ) {
-				$product->set_price( (string) $amount );
-			}
+		$this->set_customer_amount_price( $cart_item );
+
+		return $cart_item;
+	}
+
+	/**
+	 * @param mixed $cart_item Cart item, expected to carry a 'data' product object.
+	 */
+	private function set_customer_amount_price( $cart_item ): void {
+		if ( ! is_array( $cart_item ) ) {
+			return;
+		}
+
+		$amount = GiftCardProductCustomerAmount::read_amount_from_cart_item( $cart_item );
+		if ( $amount === null ) {
+			return;
+		}
+
+		if ( ! isset( $cart_item['data'] ) || ! is_object( $cart_item['data'] ) ) {
+			return;
+		}
+
+		$product = $cart_item['data'];
+		if ( $product instanceof WC_Product && method_exists( $product, 'set_price' ) ) {
+			$product->set_price( (string) $amount );
 		}
 	}
 

@@ -439,6 +439,32 @@ if ( ! class_exists( 'WC_Order', false ) ) {
 	}
 }
 
+if ( ! class_exists( 'WC_Product', false ) ) {
+	/**
+	 * Minimal WC_Product stub: only the price accessors the plugin touches.
+	 */
+	class WC_Product {
+		/** @var string */
+		private $price = '';
+
+		/**
+		 * @param string|int|float $price
+		 */
+		public function set_price( $price ): void {
+			$this->price = (string) $price;
+		}
+
+		/**
+		 * @param string $context
+		 * @return string
+		 */
+		public function get_price( $context = 'view' ) {
+			unset( $context );
+			return $this->price;
+		}
+	}
+}
+
 if ( ! class_exists( 'WC_Order_Item_Product', false ) ) {
 	class WC_Order_Item_Product {
 	}
@@ -572,6 +598,18 @@ if ( ! function_exists( 'wp_generate_password' ) ) {
 if ( ! function_exists( 'wp_using_ext_object_cache' ) ) {
 	function wp_using_ext_object_cache(): bool {
 		return false;
+	}
+}
+
+if ( ! function_exists( 'is_admin' ) ) {
+	function is_admin(): bool {
+		return (bool) ( $GLOBALS['mp_cp_test_is_admin'] ?? false );
+	}
+}
+
+if ( ! function_exists( 'wp_doing_ajax' ) ) {
+	function wp_doing_ajax(): bool {
+		return (bool) ( $GLOBALS['mp_cp_test_doing_ajax'] ?? false );
 	}
 }
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Maturity:** Early MVP. Suitable for testing and staged rollouts — not a stable, production-complete, or marketplace-certified release without your own review.
 
+## [0.5.2] - 2026-07-31
+
+**Gift card price display fix** — customer-entered amount was showing as 0 whenever the cart loaded from session without a full recalculation. **Schema 1.19.0** unchanged.
+
+### Fixed
+
+- `GiftCardCustomerAmountCart` reapplies the customer-entered price via `woocommerce_get_cart_item_from_session` when the cart item is restored from session, on every request. Previously the price override was only reapplied inside `woocommerce_before_calculate_totals`, which is not guaranteed to run on every page view — a live per-item price display (e.g. a mini-cart calling `WC_Cart::get_product_subtotal()` directly) could show 0 for a gift card whenever nothing else forced a cart recalculation that request. Most visible right after a currency switch, since the switch's redirect hop is what "consumes" the one thing that otherwise forced a recalculation.
+
 ## [0.5.1] - 2026-07-30
 
 **Gift card multi-currency** — Universal Multicurrency support and converter-agnostic filter hooks. **Schema 1.19.0** unchanged.
