@@ -79,6 +79,47 @@ if ( ! function_exists( 'esc_html__' ) ) {
 	}
 }
 
+if ( ! isset( $GLOBALS['mp_cp_test_filters'] ) ) {
+	$GLOBALS['mp_cp_test_filters'] = array();
+}
+
+if ( ! function_exists( 'add_filter' ) ) {
+	/**
+	 * @param string   $hook
+	 * @param callable $callback
+	 * @param int      $priority
+	 * @param int      $accepted_args
+	 */
+	function add_filter( $hook, $callback, $priority = 10, $accepted_args = 1 ) {
+		$GLOBALS['mp_cp_test_filters'][ $hook ][ (int) $priority ][] = array(
+			'callback'      => $callback,
+			'accepted_args' => (int) $accepted_args,
+		);
+	}
+}
+
+if ( ! function_exists( 'remove_filter' ) ) {
+	/**
+	 * @param string   $hook
+	 * @param callable $callback
+	 * @param int      $priority
+	 */
+	function remove_filter( $hook, $callback, $priority = 10 ) {
+		if ( ! isset( $GLOBALS['mp_cp_test_filters'][ $hook ][ (int) $priority ] ) ) {
+			return false;
+		}
+
+		foreach ( $GLOBALS['mp_cp_test_filters'][ $hook ][ (int) $priority ] as $index => $entry ) {
+			if ( $entry['callback'] === $callback ) {
+				unset( $GLOBALS['mp_cp_test_filters'][ $hook ][ (int) $priority ][ $index ] );
+				return true;
+			}
+		}
+
+		return false;
+	}
+}
+
 if ( ! function_exists( 'apply_filters' ) ) {
 	/**
 	 * @param string $hook
@@ -87,7 +128,21 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	 * @return mixed
 	 */
 	function apply_filters( $hook, $value, ...$args ) {
-		unset( $hook, $args );
+		if ( ! isset( $GLOBALS['mp_cp_test_filters'][ $hook ] ) ) {
+			return $value;
+		}
+
+		$priorities = array_keys( $GLOBALS['mp_cp_test_filters'][ $hook ] );
+		sort( $priorities, SORT_NUMERIC );
+
+		foreach ( $priorities as $priority ) {
+			foreach ( $GLOBALS['mp_cp_test_filters'][ $hook ][ $priority ] as $entry ) {
+				$accepted = max( 1, (int) $entry['accepted_args'] );
+				$params   = array_merge( array( $value ), array_slice( $args, 0, $accepted - 1 ) );
+				$value    = $entry['callback']( ...$params );
+			}
+		}
+
 		return $value;
 	}
 }

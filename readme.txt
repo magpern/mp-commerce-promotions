@@ -4,11 +4,11 @@ Tags: woocommerce, promotions, discounts, coupons, vouchers
 Requires at least: 6.5
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 0.5.0
+Stable tag: 0.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Stable 0.5.0** — production ZIP installs and GitHub Release updates on production sites.
+Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Stable 0.5.1** — production ZIP installs and GitHub Release updates on production sites.
 
 == Description ==
 
@@ -115,6 +115,9 @@ No. Full codes are displayed once after generation. Download the CSV before leav
 3. Generated code batch show-once screen (placeholder).
 
 == Changelog ==
+
+= 0.5.1 =
+* Gift card multi-currency: Universal Multicurrency adapter plus converter-agnostic filters (`mp_cp_gift_card_convert_base_to_display`, `mp_cp_gift_card_convert_display_to_base`). WOOCS behavior unchanged. Schema 1.19.0 unchanged. See docs/GITHUB_RELEASE_NOTES_0.5.1.md.
 
 = 0.5.0 =
 * Gift card multi-currency: display amounts in the active WOOCS currency; store face value in shop base currency. Fixes add-to-cart fatal, double conversion, and cart total rounding. Schema 1.19.0 unchanged. See docs/GITHUB_RELEASE_NOTES_0.5.0.md.

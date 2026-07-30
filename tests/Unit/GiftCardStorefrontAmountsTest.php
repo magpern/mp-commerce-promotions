@@ -83,6 +83,53 @@ final class GiftCardStorefrontAmountsTest extends TestCase {
 		$this->assertSame( 10.4348, $base );
 		$this->assertSame( 120.0, $display );
 	}
+
+	public function test_storefront_config_converts_with_universal_multicurrency_rate(): void {
+		if ( ! class_exists( \UMC\Settings::class ) ) {
+			$this->markTestSkipped( 'Universal Multicurrency is not loaded in the unit test bootstrap.' );
+		}
+
+		$GLOBALS['mp_cp_test_display_currency'] = 'SEK';
+		unset( $GLOBALS['WOOCS'] );
+
+		$result = GiftCardStorefrontAmounts::storefront_config(
+			array(
+				'min_amount'        => 10.0,
+				'max_amount'        => 500.0,
+				'suggested_amounts' => array( 25.0, 50.0, 100.0 ),
+				'default_amount'    => 50.0,
+			)
+		);
+
+		$this->assertGreaterThan( 10.0, (float) $result['min_amount'] );
+		$this->assertGreaterThan( 100.0, (float) $result['default_amount'] );
+		$this->assertNotSame( 10.0, (float) $result['min_amount'] );
+	}
+
+	public function test_conversion_filters_override_builtin_adapters(): void {
+		$GLOBALS['mp_cp_test_display_currency'] = 'SEK';
+		unset( $GLOBALS['WOOCS'] );
+
+		$to_display = static function ( $converted, float $base_amount ): ?float {
+			unset( $converted );
+			return $base_amount * 10.0;
+		};
+		$to_base    = static function ( $base_amount, float $display_amount ): ?float {
+			unset( $base_amount );
+			return $display_amount / 10.0;
+		};
+
+		add_filter( GiftCardStorefrontAmounts::FILTER_CONVERT_BASE_TO_DISPLAY, $to_display, 10, 2 );
+		add_filter( GiftCardStorefrontAmounts::FILTER_CONVERT_DISPLAY_TO_BASE, $to_base, 10, 2 );
+
+		try {
+			$this->assertSame( 100.0, GiftCardStorefrontAmounts::convert_base_to_display( 10.0 ) );
+			$this->assertSame( 10.0, GiftCardStorefrontAmounts::base_amount_from_display( 100.0 ) );
+		} finally {
+			remove_filter( GiftCardStorefrontAmounts::FILTER_CONVERT_BASE_TO_DISPLAY, $to_display, 10 );
+			remove_filter( GiftCardStorefrontAmounts::FILTER_CONVERT_DISPLAY_TO_BASE, $to_base, 10 );
+		}
+	}
 }
 
 final class WoocsRateStub {

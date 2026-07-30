@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Maturity:** Early MVP. Suitable for testing and staged rollouts — not a stable, production-complete, or marketplace-certified release without your own review.
 
+## [0.5.1] - 2026-07-30
+
+**Gift card multi-currency** — Universal Multicurrency support and converter-agnostic filter hooks. **Schema 1.19.0** unchanged.
+
+### Added
+
+- Built-in **Universal Multicurrency** adapter in `GiftCardStorefrontAmounts` (rates, decimals, base↔display conversion).
+- Filters `mp_cp_gift_card_convert_base_to_display` and `mp_cp_gift_card_convert_display_to_base` — third-party currency switchers can override conversion without modifying this plugin.
+- Unit tests for filter overrides and UMC (skipped when UMC classes are not loaded).
+- PHPUnit bootstrap: minimal `add_filter` / `remove_filter` / `apply_filters` implementation for filter tests.
+
+### Notes
+
+- Resolution order: custom filters first, then WOOCS, then Universal Multicurrency, then passthrough (no conversion).
+- Product meta and ledger amounts remain in shop base currency; storefront display uses the active currency from WooCommerce.
+
 ## [0.5.0] - 2026-07-24
 
 **Gift card multi-currency** — browse/display in the active WOOCS currency; store and charge gift card face value in shop base currency. **Schema 1.19.0** unchanged.
