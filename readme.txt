@@ -4,11 +4,11 @@ Tags: woocommerce, promotions, discounts, coupons, vouchers
 Requires at least: 6.5
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 0.5.2
+Stable tag: 0.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Stable 0.5.2** — production ZIP installs and GitHub Release updates on production sites.
+Rule-driven promotion engine for WooCommerce with conditions, actions, promotion codes, and operational admin tools. **Stable 0.5.3** — production ZIP installs and GitHub Release updates on production sites.
 
 == Description ==
 

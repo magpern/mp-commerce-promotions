@@ -314,6 +314,18 @@ if ( ! function_exists( 'admin_url' ) ) {
 	}
 }
 
+if ( ! function_exists( 'current_user_can' ) ) {
+	/**
+	 * @param string $capability
+	 */
+	function current_user_can( $capability ) {
+		unset( $capability );
+		return isset( $GLOBALS['mp_cp_test_current_user_can'] )
+			? (bool) $GLOBALS['mp_cp_test_current_user_can']
+			: true;
+	}
+}
+
 if ( ! function_exists( 'add_query_arg' ) ) {
 	/**
 	 * @param array<string, scalar|null>|string $key

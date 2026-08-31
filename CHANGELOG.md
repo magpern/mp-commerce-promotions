@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Maturity:** Early MVP. Suitable for testing and staged rollouts — not a stable, production-complete, or marketplace-certified release without your own review.
 
+## [0.5.3] - 2026-08-31
+
+**Plugin discoverability** — quick links from the Plugins screen. **Schema 1.19.0** unchanged.
+
+### Added
+
+- **Plugins screen links** — **Promotions** (Advanced Promotions list) and **Settings** action links on the plugin row for users with `manage_woocommerce`.
+
 ## [0.5.2] - 2026-07-31
 
 **Gift card price display fix** — customer-entered amount was showing as 0 whenever the cart loaded from session without a full recalculation. **Schema 1.19.0** unchanged.

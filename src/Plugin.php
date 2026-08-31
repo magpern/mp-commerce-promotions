@@ -11,6 +11,7 @@ namespace MP\CommercePromotions;
 
 use MP\CommercePromotions\Admin\AdminMenu;
 use MP\CommercePromotions\Admin\AdminRouter;
+use MP\CommercePromotions\Admin\PluginActionLinks;
 use MP\CommercePromotions\Admin\CampaignBuilderAjax;
 use MP\CommercePromotions\Admin\CampaignBuilderPage;
 use MP\CommercePromotions\Admin\DiagnosticsPage;
@@ -583,6 +584,7 @@ final class Plugin {
 
 		if ( is_admin() && $this->admin_menu !== null ) {
 			$this->admin_menu->register();
+			( new PluginActionLinks() )->register();
 		}
 	}
 }
