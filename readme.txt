@@ -4,7 +4,7 @@ Tags: woocommerce, promotions, discounts, coupons, vouchers
 Requires at least: 6.5
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 0.5.3
+Stable tag: 0.5.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -115,6 +115,12 @@ No. Full codes are displayed once after generation. Download the CSV before leav
 3. Generated code batch show-once screen (placeholder).
 
 == Changelog ==
+
+= 0.5.4 =
+* Automatic updates now come from a private update server via the bundled Plugin Update Checker library; the previous direct GitHub-release updater has been removed. Update checks are inert unless the PRIVATE_UPDATE_SERVER constant is defined.
+
+= 0.5.3 =
+* Maintenance release.
 
 = 0.5.2 =
 * Fix: gift card customer-entered amount showing as 0 in mini-cart/live price displays whenever the cart was restored from session without a full `calculate_totals()` run (e.g. right after a currency switch). The price is now reapplied via `woocommerce_get_cart_item_from_session` on every request instead of relying solely on `woocommerce_before_calculate_totals`. Schema 1.19.0 unchanged. See docs/GITHUB_RELEASE_NOTES_0.5.2.md.

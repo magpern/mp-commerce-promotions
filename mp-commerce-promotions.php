@@ -3,7 +3,7 @@
  * Plugin Name:       Commerce Promotions for WooCommerce
  * Plugin URI:        https://github.com/magpern/mp-commerce-promotions
  * Description:       Generic WooCommerce promotion engine for discounts, promotion codes, and voucher workflows.
- * Version:           0.5.3
+ * Version:           0.5.4
  * Requires at least: 6.5
  * Requires PHP:      8.1
  * Author:            Magpern
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MP_COMMERCE_PROMOTIONS_VERSION', '0.5.3' );
+define( 'MP_COMMERCE_PROMOTIONS_VERSION', '0.5.4' );
 define( 'MP_COMMERCE_PROMOTIONS_FILE', __FILE__ );
 define( 'MP_COMMERCE_PROMOTIONS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MP_COMMERCE_PROMOTIONS_URL', plugin_dir_url( __FILE__ ) );
@@ -75,18 +75,26 @@ function mp_commerce_promotions_bootstrap(): void {
 }
 
 /**
- * GitHub Release updater (admin / cron only — no frontend HTTP).
+ * Automatic updates via the private update server (admin / cron only — no
+ * frontend HTTP). Define PRIVATE_UPDATE_SERVER (scheme + host, no trailing
+ * slash) in wp-config.php to enable; when it is not defined the plugin does
+ * not check for updates.
  */
 function mp_commerce_promotions_init_github_updater(): void {
 	if ( ! is_admin() && ! ( function_exists( 'wp_doing_cron' ) && wp_doing_cron() ) ) {
 		return;
 	}
 
-	if ( ! class_exists( \MP\CommercePromotions\Infrastructure\GithubUpdater::class, true ) ) {
+	if ( ! defined( 'PRIVATE_UPDATE_SERVER' ) || ! PRIVATE_UPDATE_SERVER ) {
 		return;
 	}
 
-	\MP\CommercePromotions\Infrastructure\GithubUpdater::maybe_init();
+	require_once MP_COMMERCE_PROMOTIONS_PATH . 'lib/plugin-update-checker/plugin-update-checker.php';
+	\YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+		rtrim( (string) PRIVATE_UPDATE_SERVER, '/' ) . '/?action=get_metadata&slug=mp-commerce-promotions',
+		MP_COMMERCE_PROMOTIONS_FILE,
+		'mp-commerce-promotions'
+	);
 }
 
 add_action( 'plugins_loaded', 'mp_commerce_promotions_load_textdomain', 0 );
