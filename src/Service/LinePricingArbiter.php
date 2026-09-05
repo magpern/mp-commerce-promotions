@@ -159,7 +159,7 @@ final class LinePricingArbiter {
 		$unit_minor = (int) round( $winner_minor / max( 1, $quantity ) );
 		$this->apply_unit_price( $cart, $cart_item_key, $cart_item, $snapshot, $unit_minor );
 
-		if ( method_exists( $cart, 'cart_contents' ) && is_array( $cart->cart_contents ) ) {
+		if ( isset( $cart->cart_contents ) && is_array( $cart->cart_contents ) ) {
 			$cart->cart_contents[ $cart_item_key ][ LinePricingSource::CART_META_SOURCE ]        = $winner;
 			$cart->cart_contents[ $cart_item_key ][ LinePricingSource::CART_META_BASE_SNAPSHOT ] = wp_json_encode( $snapshot->to_array() );
 			if ( $tier_min !== null ) {
@@ -206,7 +206,7 @@ final class LinePricingArbiter {
 
 		$product->set_price( (string) $base_unit );
 
-		if ( method_exists( $cart, 'cart_contents' ) && is_array( $cart->cart_contents ) ) {
+		if ( isset( $cart->cart_contents ) && is_array( $cart->cart_contents ) ) {
 			$cart->cart_contents[ $cart_item_key ]['data'] = $product;
 		}
 	}

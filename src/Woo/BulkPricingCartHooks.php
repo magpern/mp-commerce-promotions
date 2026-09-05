@@ -39,6 +39,29 @@ final class BulkPricingCartHooks {
 		add_action( 'woocommerce_before_calculate_totals', array( $this, 'arbitrate_and_commit' ), 18, 1 );
 		add_action( 'woocommerce_checkout_create_order_line_item', array( $this, 'persist_order_line_item' ), 12, 4 );
 		add_filter( 'mp_cp_bulk_pricing_storefront_v1', array( BulkPricingStorefront::class, 'filter_contract' ), 10, 2 );
+		add_filter( 'woocommerce_get_cart_item_from_session', array( $this, 'restore_cart_item_from_session' ), 10, 2 );
+	}
+
+	/**
+	 * @param array<string, mixed> $cart_item
+	 * @param array<string, mixed> $values
+	 * @return array<string, mixed>
+	 */
+	public function restore_cart_item_from_session( array $cart_item, array $values ): array {
+		foreach (
+			array(
+				LinePricingSource::CART_META_SOURCE,
+				LinePricingSource::CART_META_TIER_MIN,
+				LinePricingSource::CART_META_TIER_PCT,
+				LinePricingSource::CART_META_BASE_SNAPSHOT,
+			) as $key
+		) {
+			if ( isset( $values[ $key ] ) ) {
+				$cart_item[ $key ] = $values[ $key ];
+			}
+		}
+
+		return $cart_item;
 	}
 
 	/**
