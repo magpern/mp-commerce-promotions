@@ -482,6 +482,164 @@ if ( ! class_exists( 'WC_Order_Item_Product', false ) ) {
 	}
 }
 
+if ( ! class_exists( 'WC_Cart', false ) ) {
+	/**
+	 * Minimal WC_Cart stub: only what CartContextBuilder::build_from_cart()
+	 * touches, so ADR-0001's UCB component-exclusion guard is exercised
+	 * through the real method instead of a hand-built EvaluationContext.
+	 */
+	class WC_Cart {
+		/** @var array<string, array<string, mixed>> */
+		public $cart_contents = array();
+
+		/** @var float */
+		private $subtotal = 0.0;
+
+		/** @var float */
+		private $shipping_total = 0.0;
+
+		/** @var list<string> */
+		private $applied_coupons = array();
+
+		/**
+		 * @param array<string, array<string, mixed>> $items Keyed by cart item key.
+		 */
+		public function set_test_cart( array $items, float $subtotal = 0.0, float $shipping_total = 0.0 ): void {
+			$this->cart_contents  = $items;
+			$this->subtotal       = $subtotal;
+			$this->shipping_total = $shipping_total;
+		}
+
+		/**
+		 * @return array<string, array<string, mixed>>
+		 */
+		public function get_cart() {
+			return $this->cart_contents;
+		}
+
+		/**
+		 * @return float
+		 */
+		public function get_subtotal() {
+			return $this->subtotal;
+		}
+
+		/**
+		 * @return float
+		 */
+		public function get_shipping_total() {
+			return $this->shipping_total;
+		}
+
+		/**
+		 * @return list<string>
+		 */
+		public function get_applied_coupons() {
+			return $this->applied_coupons;
+		}
+	}
+}
+
+if ( ! class_exists( 'WC_Customer', false ) ) {
+	/**
+	 * Minimal WC_Customer stub for CartContextBuilder's billing lookups.
+	 */
+	class WC_Customer {
+		/**
+		 * @return string
+		 */
+		public function get_billing_country() {
+			return '';
+		}
+
+		/**
+		 * @return string
+		 */
+		public function get_billing_email() {
+			return '';
+		}
+	}
+}
+
+if ( ! class_exists( 'MpCpTestWc', false ) ) {
+	/**
+	 * Singleton returned by the WC() stub below. Any method this class does
+	 * not implement falls through __call() to null rather than a fatal
+	 * "undefined method" error, so code elsewhere that guards on
+	 * `! WC()->payment_gateways()` (etc.) keeps behaving as if WooCommerce
+	 * were inactive/incomplete unless a test explicitly wires that method —
+	 * defining WC() at all here must not change the outcome of tests that
+	 * predate this stub and never call it.
+	 */
+	class MpCpTestWc {
+		/** @var WC_Cart */
+		public $cart;
+
+		/** @var WC_Customer */
+		public $customer;
+
+		public function __construct() {
+			$this->cart     = new WC_Cart();
+			$this->customer = new WC_Customer();
+		}
+
+		/**
+		 * @param string       $name
+		 * @param array<mixed> $arguments
+		 * @return mixed
+		 */
+		public function __call( $name, $arguments ) {
+			unset( $name, $arguments );
+			return null;
+		}
+	}
+}
+
+if ( ! function_exists( 'WC' ) ) {
+	/**
+	 * Minimal WC() stub returning a singleton carrying a WC_Cart/WC_Customer
+	 * test double. Tests reset it via $GLOBALS['mp_cp_test_wc'] = null
+	 * between cases (see tests/Unit/UcbComponentExclusionTest.php).
+	 *
+	 * @return MpCpTestWc
+	 */
+	function WC() {
+		if ( ! isset( $GLOBALS['mp_cp_test_wc'] ) || ! is_object( $GLOBALS['mp_cp_test_wc'] ) ) {
+			$GLOBALS['mp_cp_test_wc'] = new MpCpTestWc();
+		}
+
+		return $GLOBALS['mp_cp_test_wc'];
+	}
+}
+
+/** @var array<int, list<int>> $mp_cp_test_product_categories */
+$GLOBALS['mp_cp_test_product_categories'] = array();
+
+if ( ! function_exists( 'get_the_terms' ) ) {
+	/**
+	 * @param int    $post_id
+	 * @param string $taxonomy
+	 * @return list<object>|false
+	 */
+	function get_the_terms( $post_id, $taxonomy ) {
+		unset( $taxonomy );
+		global $mp_cp_test_product_categories;
+		$ids = $mp_cp_test_product_categories[ (int) $post_id ] ?? array();
+		if ( $ids === array() ) {
+			return false;
+		}
+
+		return array_map(
+			static function ( $id ) {
+				$term            = new stdClass();
+				$term->term_id   = (int) $id;
+				return $term;
+			},
+			$ids
+		);
+	}
+}
+
 /** @var array<int, array<string, mixed>> $mp_cp_test_post_meta */
 $GLOBALS['mp_cp_test_post_meta'] = array();
 

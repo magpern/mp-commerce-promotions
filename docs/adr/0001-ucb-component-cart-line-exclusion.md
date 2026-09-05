@@ -6,8 +6,14 @@ Accepted — Product Owner approved, ordinary roadmap process. This
 repository has no active Pilot Stabilization Policy or feature freeze; this
 is `v1.1` roadmap work, not an exception to a frozen-pilot line. This is
 also this repository's first ADR (`docs/adr/` did not previously exist
-here). Implementation is a separate, subsequent PR; see
-`docs/UNIVERSAL_COMMERCE_BUNDLES_COMPONENT_EXCLUSION.md` for the frozen
+here).
+
+**Implementation status:** the production guard (Decision §1) and the
+required PHPUnit builder-level tests are implemented on
+`feature/ucb-component-cart-exclusion` — see that branch's pull request.
+The mandatory live Store API/Blocks acceptance gate (Decision §8) has
+**not** been run; the implementation PR is not merge-ready until it is.
+See `docs/UNIVERSAL_COMMERCE_BUNDLES_COMPONENT_EXCLUSION.md` for the frozen
 plan, full evidence table, and required tests.
 
 ## Context

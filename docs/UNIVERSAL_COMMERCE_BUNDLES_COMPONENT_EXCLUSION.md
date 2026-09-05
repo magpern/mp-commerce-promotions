@@ -2,6 +2,7 @@
 
 **Plugin:** MP Commerce Promotions `0.5.3` · **Status:** Frozen — Accepted per [ADR-0001](adr/0001-ucb-component-cart-line-exclusion.md)
 **Scope:** planning + one narrow future implementation work package (this document does not implement anything)
+**Implementation status:** production guard + PHPUnit builder-level tests implemented on `feature/ucb-component-cart-exclusion` (see that branch's PR); the mandatory live Store API/Blocks acceptance gate below has **not** been run — the implementation PR is not merge-ready until it is.
 
 This repository has no active Pilot Stabilization Policy today (unlike the
 sibling `mp-commerce-fulfillment` repository, which does). This is ordinary
@@ -168,14 +169,19 @@ this change would invalidate.
 
 Explicitly limited to:
 
-1. The single guard in `CartContextBuilder::build_from_cart()` (above).
-2. A minimal `WC()`/`WC_Cart` test stub added to `tests/bootstrap.php` (or a
-   dedicated stub file), sufficient to exercise `build_from_cart()`'s real
-   code path in `tests/Unit` — this repository has no `WC()` function, no
-   `WC_Cart`-shaped stub, and no separate WP/WooCommerce integration test
-   suite today (`phpunit.xml.dist` covers `tests/Unit` only).
-3. The automated tests below.
-4. The mandatory live Store API/Blocks acceptance gate below.
+1. ✅ The single guard in `CartContextBuilder::build_from_cart()` (above) —
+   implemented.
+2. ✅ A minimal `WC()`/`WC_Cart`/`WC_Customer` test stub added to
+   `tests/bootstrap.php`, sufficient to exercise `build_from_cart()`'s real
+   code path in `tests/Unit` — implemented. The stub's `WC()` singleton
+   falls through unimplemented method calls to `null` via `__call()`
+   rather than raising a fatal error, so introducing it does not change
+   the outcome of pre-existing tests that use `function_exists('WC')` as a
+   "WooCommerce inactive" signal.
+3. ✅ The automated tests below — implemented in
+   `tests/Unit/UcbComponentExclusionTest.php`.
+4. ⬜ The mandatory live Store API/Blocks acceptance gate below — **not yet
+   run.**
 
 **Explicitly not in scope:** any change to `LineItemDiscountApplier`, any
 new condition type or extension API, any change to free-gift/gift-card
