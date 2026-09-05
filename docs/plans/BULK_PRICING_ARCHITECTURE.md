@@ -1,6 +1,7 @@
 # Bulk Pricing — Planning & Architecture (rev 3, frozen)
 
 **Status:** Frozen — binding for implementation  
+**DEV milestone:** Closed — see [BULK_PRICING_V1_DEV_CLOSURE.md](../BULK_PRICING_V1_DEV_CLOSURE.md)  
 **Freeze branch:** `docs/bulk-pricing-architecture-freeze`  
 **Related ADR:** [ADR-0001](../adr/0001-bulk-pricing-ownership-and-pricing-model.md)
 
