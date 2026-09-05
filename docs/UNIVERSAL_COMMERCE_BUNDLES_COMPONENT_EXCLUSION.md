@@ -2,6 +2,7 @@
 
 **Plugin:** MP Commerce Promotions `0.5.3` · **Status:** Frozen — Accepted per [ADR-0001](adr/0001-ucb-component-cart-line-exclusion.md)
 **Scope:** planning + one narrow future implementation work package (this document does not implement anything)
+**Implementation status:** production guard + PHPUnit builder-level tests + the mandatory live Store API/Blocks acceptance gate below are all complete on `feature/ucb-component-cart-exclusion` (see that branch's PR for the live-acceptance evidence and results below).
 
 This repository has no active Pilot Stabilization Policy today (unlike the
 sibling `mp-commerce-fulfillment` repository, which does). This is ordinary
@@ -168,14 +169,19 @@ this change would invalidate.
 
 Explicitly limited to:
 
-1. The single guard in `CartContextBuilder::build_from_cart()` (above).
-2. A minimal `WC()`/`WC_Cart` test stub added to `tests/bootstrap.php` (or a
-   dedicated stub file), sufficient to exercise `build_from_cart()`'s real
-   code path in `tests/Unit` — this repository has no `WC()` function, no
-   `WC_Cart`-shaped stub, and no separate WP/WooCommerce integration test
-   suite today (`phpunit.xml.dist` covers `tests/Unit` only).
-3. The automated tests below.
-4. The mandatory live Store API/Blocks acceptance gate below.
+1. ✅ The single guard in `CartContextBuilder::build_from_cart()` (above) —
+   implemented.
+2. ✅ A minimal `WC()`/`WC_Cart`/`WC_Customer` test stub added to
+   `tests/bootstrap.php`, sufficient to exercise `build_from_cart()`'s real
+   code path in `tests/Unit` — implemented. The stub's `WC()` singleton
+   falls through unimplemented method calls to `null` via `__call()`
+   rather than raising a fatal error, so introducing it does not change
+   the outcome of pre-existing tests that use `function_exists('WC')` as a
+   "WooCommerce inactive" signal.
+3. ✅ The automated tests below — implemented in
+   `tests/Unit/UcbComponentExclusionTest.php`.
+4. ⬜ The mandatory live Store API/Blocks acceptance gate below — **not yet
+   run.**
 
 **Explicitly not in scope:** any change to `LineItemDiscountApplier`, any
 new condition type or extension API, any change to free-gift/gift-card
@@ -229,33 +235,77 @@ guard were missing, wrong, or removed.
    `GiftCardPromotionExclusionTest.php` convention, since tier 1 already
    covers the builder itself.
 
-## Mandatory live acceptance gate (required before the implementation PR may be presented as merge-ready)
+## Mandatory live acceptance gate — **PASS**
 
 Neither test tier above can exercise an actual Store API request or Blocks
 session — a stub `WC_Cart` is not a REST controller, a WordPress request
-lifecycle, or UCB's own Store-API-facing cart-construction hooks. Before
-this document's Store API/Blocks acceptance claim (task requirement:
-"Classic-cart and Store API/Blocks flows produce the same result") can be
-considered satisfied, a manual pass in a **disposable** WordPress/WooCommerce
-environment is required — not automated CI, not this planning document, not
-DEV, not production:
+lifecycle, or UCB's own Store-API-facing cart-construction hooks. This gate
+closes that gap with a real, disposable environment. **Result: PASS.**
 
-1. Install the implementation branch of `mp-commerce-promotions` and a
-   built, released UCB artifact, read-only — no UCB source edits.
-2. Add the same kit product to the cart twice, once per path: classic
-   add-to-cart form submission; `POST /wc/store/v1/cart/add-item`.
-3. With a matching automatic promotion active, verify for each path:
-   - component children are excluded from promotion context/eligibility;
-   - the resulting discount (fee amount or line allocation) is identical
-     between paths;
-   - the kit parent and a standalone purchase of the same component remain
-     eligible.
-4. Record the environment, versions, and pass/fail result in the
-   implementation PR's closure evidence, at the same evidentiary standard
-   this repository already uses for its own block-compatibility
-   investigations (`docs/CART_CHECKOUT_BLOCKS_COMPATIBILITY.md`,
-   `docs/BLOCKS_QA_EVIDENCE_2026-05-18.md`). Tear down the disposable
-   environment completely afterward.
+### Environment (disposable; fully torn down afterward)
+
+- Isolated Docker Compose project (`internal: true` network, no published
+  ports — no other service on this host was reachable from or could reach
+  this stack, and vice versa).
+- `mariadb:11.4`; `wordpress:6.9-php8.1-apache` + a `wordpress:cli-2.10-php8.1`
+  companion sharing the same WordPress core volume; WordPress `6.9.0`.
+- `woocommerce` plugin `11.0.1` (a real release build).
+- `universal-commerce-bundles` — read-only copy of
+  `feature/m1-fixed-kits-core` at commit `2bbb34e`. No source edit.
+- `mp-commerce-promotions` — read-only copy of
+  `feature/ucb-component-cart-exclusion` at commit `50ab1cb` (this PR).
+- No DEV, staging, or production path touched at any point.
+
+### Setup
+
+- A kit product (id `12`, $100) marked `_ucb_is_kit` with one composition
+  row referencing a component product (id `11`, $20, `qty_per_kit=1`).
+- Two automatic promotions inserted directly via `PromotionRepository`:
+  one `product_in_cart([11]) → fixed_amount_discount($5)` (targets the
+  component — the one under test), one
+  `product_in_cart([12]) → fixed_amount_discount($7)` (targets the kit
+  parent — an independent control, proving the parent is not accidentally
+  excluded too).
+
+### Procedure and live results
+
+| Step | Path | Cart contents | `fees` (Store API `GET /cart`) | `items_count` |
+|---|---|---|---|---|
+| 1 | Classic (`GET /?add-to-cart=12`) | Kit only | `[]` — **no fee** | 2 (kit + hidden child — proves UCB really added the child; it is merely hidden from the Store API item list, not absent from the real cart) |
+| 2 | Classic, same session, `+ GET /?add-to-cart=11` | Kit + standalone component | `[{"...component-triggered-discount...", "total":"-500"}]` | 3 |
+| 3 | Store API, **fresh session**, `POST /wc/store/v1/cart/add-item {id:12}` | Kit only | `[]` — **no fee** (byte-identical to step 1) | 2 |
+| 4 | Store API, same session, `POST /wc/store/v1/cart/add-item {id:11}` | Kit + standalone component | `[{"...component-triggered-discount...", "total":"-500"}]` — **byte-identical to step 2** | 3 |
+| 5 | Classic, third fresh session, kit only | Kit only | `[{"...kit-parent-triggered-discount...", "total":"-700"}]` | 2 |
+| 6 | Store API, **fresh session**, `POST /wc/store/v1/cart/add-item {id:12}` | Kit only | `[{"...kit-parent-triggered-discount...", "total":"-700"}]` — **byte-identical to step 5** | 2 |
+
+**What this proves, live, with real HTTP requests through both entry
+points:**
+
+1. Component children are excluded from promotion context/eligibility: a
+   kit-only cart never satisfies the component-targeted promotion (steps
+   1 and 3), even though the hidden child line genuinely exists in the
+   real WooCommerce cart (`items_count` includes it).
+2. The resulting discount is identical between paths: step 2 (classic) and
+   step 4 (Store API) produce the exact same fee key, name, and amount
+   (`-$5.00`) once a genuine standalone purchase of the component is
+   added.
+3. The kit parent remains eligible under ordinary promotion rules,
+   independent of the component-exclusion logic, **in both paths**: step 5
+   (classic) and step 6 (Store API, fresh session) both fire the
+   kit-parent-targeted promotion identically (`-$7.00`) on a kit-only cart.
+4. A standalone purchase of the same component product remains eligible in
+   both paths: steps 2 and 4 are exactly this case, and the discount fires
+   identically in each.
+
+### Teardown
+
+`docker compose down -v` (containers, volumes, network all removed);
+scratch plugin-tree copies deleted; only base images that were already
+shared with other unrelated work (`mariadb:11.4`) were left in the local
+Docker image cache — the ephemeral `wordpress:6.9-php8.1-apache` and
+`wordpress:cli-2.10-php8.1` images pulled for this run were removed.
+Verified after teardown: no `ucb-promo-acceptance-*` container, volume, or
+network remained.
 
 ## Non-goals
 

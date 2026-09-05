@@ -83,6 +83,16 @@ final class CartContextBuilder {
 					continue;
 				}
 
+				// Universal Commerce Bundles component-child cart line (ADR-0001):
+				// a hidden, zero-priced child of a kit purchase. Never a genuine,
+				// independent customer selection — excluded here, the single shared
+				// source of evaluation-context items, so no condition or discount
+				// path downstream can see it. Presence-only check on this literal
+				// array key; no UCB class, hook, constant, or autoloader reference.
+				if ( ! empty( $cart_item['_ucb_component'] ) ) {
+					continue;
+				}
+
 				$product_id = isset( $cart_item['product_id'] ) ? (int) $cart_item['product_id'] : 0;
 				$var_raw    = isset( $cart_item['variation_id'] ) ? (int) $cart_item['variation_id'] : 0;
 				$variation  = $var_raw > 0 ? $var_raw : null;

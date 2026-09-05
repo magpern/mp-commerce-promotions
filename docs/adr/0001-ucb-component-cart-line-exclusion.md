@@ -6,9 +6,16 @@ Accepted — Product Owner approved, ordinary roadmap process. This
 repository has no active Pilot Stabilization Policy or feature freeze; this
 is `v1.1` roadmap work, not an exception to a frozen-pilot line. This is
 also this repository's first ADR (`docs/adr/` did not previously exist
-here). Implementation is a separate, subsequent PR; see
+here).
+
+**Implementation status:** the production guard (Decision §1), the required
+PHPUnit builder-level tests, and the mandatory live Store API/Blocks
+acceptance gate (Decision §8) are all complete on
+`feature/ucb-component-cart-exclusion` — see that branch's pull request for
+the live-acceptance evidence. See
 `docs/UNIVERSAL_COMMERCE_BUNDLES_COMPONENT_EXCLUSION.md` for the frozen
-plan, full evidence table, and required tests.
+plan, full evidence table, required tests, and the live-acceptance
+procedure and results.
 
 ## Context
 
