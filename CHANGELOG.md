@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Maturity:** Early MVP. Suitable for testing and staged rollouts — not a stable, production-complete, or marketplace-certified release without your own review.
 
+## [0.6.0] - 2026-09-06
+
+**Bulk Pricing v1 + UCB component cart exclusion.** Schema **1.19.0** unchanged.
+
+### Added
+
+- **Bulk Pricing v1** — per-product percentage quantity brackets; `LinePricingArbiter` sole `set_price()` committer; admin product config; storefront contract for PDP selectors.
+- **UCB Architecture B compatibility** — cart lines with `_ucb_component` are excluded from promotion eligibility context in `CartContextBuilder` (presence-only; kit parents remain ordinarily eligible).
+
+### Notes
+
+- Coordinated DEV release with Universal Commerce Bundles and Commerce Fulfillment. No live SKU enablement in this packaging cut.
+- DEV closure evidence: `docs/BULK_PRICING_V1_DEV_CLOSURE.md`.
+
+## [0.5.4] - 2026-09-01
+
+**Private update server** via bundled Plugin Update Checker v5. Schema **1.19.0** unchanged. See `docs/GITHUB_RELEASE_NOTES_0.5.4.md`.
+
 ## [0.5.3] - 2026-08-31
 
 **Plugin discoverability** — quick links from the Plugins screen. **Schema 1.19.0** unchanged.
