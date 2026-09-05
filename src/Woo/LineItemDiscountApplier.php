@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace MP\CommercePromotions\Woo;
 
+use MP\CommercePromotions\BulkPricing\CatalogBasePriceResolver;
 use MP\CommercePromotions\Domain\Promotion;
 use MP\CommercePromotions\Domain\PromotionCouponBehavior;
 use MP\CommercePromotions\Domain\PromotionDiscountApplicationMode;
@@ -42,11 +43,29 @@ final class LineItemDiscountApplier {
 	}
 
 	/**
+	 * Quote line-capable promotions without mutating cart prices (A0).
+	 *
+	 * @param object $cart WooCommerce cart.
+	 * @param list<PromotionEvaluationDecision> $decisions
+	 * @return LineDiscountAllocationResult
+	 */
+	public function quote_for_plan( $cart, PromotionEvaluationPlan $plan, EvaluationContext $context ): LineDiscountAllocationResult {
+		return $this->process_plan( $cart, $plan, $context, false );
+	}
+
+	/**
 	 * @param object $cart WooCommerce cart.
 	 * @param list<PromotionEvaluationDecision> $decisions
 	 * @return LineDiscountAllocationResult
 	 */
 	public function apply_for_plan( $cart, PromotionEvaluationPlan $plan, EvaluationContext $context ): LineDiscountAllocationResult {
+		return $this->process_plan( $cart, $plan, $context, true );
+	}
+
+	/**
+	 * @param object $cart WooCommerce cart.
+	 */
+	private function process_plan( $cart, PromotionEvaluationPlan $plan, EvaluationContext $context, bool $mutate_prices ): LineDiscountAllocationResult {
 		$selected = array();
 		foreach ( $plan->get_selected_decisions() as $decision ) {
 			if ( $decision->is_selected() ) {
@@ -155,6 +174,8 @@ final class LineItemDiscountApplier {
 					continue;
 				}
 
+				$quantity = isset( $cart_item['quantity'] ) ? max( 1, (int) $cart_item['quantity'] ) : 1;
+
 				if ( LinePriceMutationGuard::was_mutated_this_cycle( $cart_item_key ) ) {
 					$fallback_events[] = $this->fallback_event(
 						$pid,
@@ -166,6 +187,51 @@ final class LineItemDiscountApplier {
 						$pid,
 						$cart_item_key
 					);
+					continue;
+				}
+
+				// Snapshotted simple lines are committed by LinePricingArbiter only.
+				if ( CatalogBasePriceResolver::get_snapshot( $cart_item_key ) !== null ) {
+					$applied_lines[] = new AppliedLineDiscount(
+						$cart_item_key,
+						isset( $cart_item['product_id'] ) ? (int) $cart_item['product_id'] : 0,
+						isset( $cart_item['variation_id'] ) && (int) $cart_item['variation_id'] > 0
+							? (int) $cart_item['variation_id']
+							: null,
+						$quantity,
+						$discount_amount,
+						$pid,
+						$action_type,
+						$tax_mode,
+						array(
+							'application_mode' => $promotion->get_discount_application_mode(),
+							'quoted_only'      => true,
+						)
+					);
+					$total += $discount_amount;
+					LineDiscountPlanCache::record_line_applied( $pid, $discount_amount );
+					continue;
+				}
+
+				if ( ! $mutate_prices ) {
+					$applied_lines[] = new AppliedLineDiscount(
+						$cart_item_key,
+						isset( $cart_item['product_id'] ) ? (int) $cart_item['product_id'] : 0,
+						isset( $cart_item['variation_id'] ) && (int) $cart_item['variation_id'] > 0
+							? (int) $cart_item['variation_id']
+							: null,
+						$quantity,
+						$discount_amount,
+						$pid,
+						$action_type,
+						$tax_mode,
+						array(
+							'application_mode' => $promotion->get_discount_application_mode(),
+							'quoted_only'      => true,
+						)
+					);
+					$total += $discount_amount;
+					LineDiscountPlanCache::record_line_applied( $pid, $discount_amount );
 					continue;
 				}
 
@@ -195,7 +261,6 @@ final class LineItemDiscountApplier {
 				$variation_id = isset( $cart_item['variation_id'] ) && (int) $cart_item['variation_id'] > 0
 					? (int) $cart_item['variation_id']
 					: null;
-				$quantity     = isset( $cart_item['quantity'] ) ? (int) $cart_item['quantity'] : 1;
 
 				$applied_lines[] = new AppliedLineDiscount(
 					$cart_item_key,

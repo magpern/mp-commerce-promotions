@@ -148,7 +148,8 @@ final class CartPromotionApplier {
 		$signature = LineDiscountPlanCache::signature_for_cart( $cart );
 		LineDiscountPlanCache::store( $plan, $context, null, $signature );
 
-		$allocation = $this->line_discount_applier->apply_for_plan( $cart, $plan, $context );
+		// Quote-only: line price mutation is deferred to LinePricingArbiter for snapshotted lines.
+		$allocation = $this->line_discount_applier->quote_for_plan( $cart, $plan, $context );
 		LineDiscountPlanCache::store( $plan, $context, $allocation, $signature );
 		CartSessionHelper::set_line_allocations( $allocation->to_array() );
 	}
