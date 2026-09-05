@@ -62,6 +62,12 @@ final class SettingsPage {
 			__( 'When disabled, free_shipping actions do not apply shipping fee offsets.', 'mp-commerce-promotions' ),
 			$this->settings->free_shipping_enabled()
 		);
+		$this->checkbox_row(
+			'mp_cp_bulk_pricing_enabled',
+			__( 'Enable bulk pricing', 'mp-commerce-promotions' ),
+			__( 'When enabled, per-product quantity brackets can apply on simple products. Independent of cart promotions.', 'mp-commerce-promotions' ),
+			$this->settings->bulk_pricing_enabled()
+		);
 		echo '</tbody></table>';
 
 		echo '<h2 class="title">' . esc_html__( 'Admin & reporting', 'mp-commerce-promotions' ) . '</h2>';
@@ -223,6 +229,11 @@ final class SettingsPage {
 		}
 
 		$this->settings->set_cart_discounts_enabled( $this->post_yes( 'mp_cp_cart_discounts_enabled' ) );
+		$bulk_was_enabled = $this->settings->bulk_pricing_enabled();
+		$this->settings->set_bulk_pricing_enabled( $this->post_yes( 'mp_cp_bulk_pricing_enabled' ) );
+		if ( $bulk_was_enabled !== $this->settings->bulk_pricing_enabled() ) {
+			( new \MP\CommercePromotions\BulkPricing\BulkPricingCacheInvalidator( $this->settings ) )->bump_epoch();
+		}
 		$this->settings->set_free_gift_enabled( $this->post_yes( 'mp_cp_free_gift_enabled' ) );
 		$this->settings->set_free_shipping_enabled( $this->post_yes( 'mp_cp_free_shipping_enabled' ) );
 		$this->settings->set_planner_telemetry_enabled( $this->post_yes( 'mp_cp_planner_telemetry_enabled' ) );

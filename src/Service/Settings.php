@@ -51,6 +51,8 @@ final class Settings {
 
 	public const OPTION_LINE_ITEM_MODE_DISABLED = 'mp_cp_line_item_mode_disabled';
 
+	public const OPTION_BULK_PRICING_ENABLED = 'mp_cp_bulk_pricing_enabled';
+
 	public const OPTION_PLANNER_TRACE_VERBOSE = 'mp_cp_planner_trace_verbose';
 
 	public const OPTION_GIFT_CARD_DELIVERY_EMAIL = 'mp_cp_gift_card_delivery_email_enabled';
@@ -287,6 +289,14 @@ final class Settings {
 
 	public function set_line_item_mode_disabled( bool $disabled ): void {
 		$this->set_enabled( self::OPTION_LINE_ITEM_MODE_DISABLED, $disabled );
+	}
+
+	public function bulk_pricing_enabled(): bool {
+		return $this->is_enabled( self::OPTION_BULK_PRICING_ENABLED, false );
+	}
+
+	public function set_bulk_pricing_enabled( bool $enabled ): void {
+		$this->set_enabled( self::OPTION_BULK_PRICING_ENABLED, $enabled );
 	}
 
 	public function planner_trace_verbose(): bool {

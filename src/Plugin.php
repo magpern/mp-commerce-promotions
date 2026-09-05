@@ -85,6 +85,8 @@ use MP\CommercePromotions\Woo\GiftCardBalanceCheckerShortcode;
 use MP\CommercePromotions\Woo\GiftCardCustomerAssets;
 use MP\CommercePromotions\Woo\GiftCardMyAccount;
 use MP\CommercePromotions\Woo\GiftCardCustomerAmountCart;
+use MP\CommercePromotions\Woo\BulkPricingCartHooks;
+use MP\CommercePromotions\Woo\BulkPricingProductAdmin;
 use MP\CommercePromotions\Woo\CartShippingEligibilityHooks;
 use MP\CommercePromotions\Woo\GiftCardProductDisplay;
 use MP\CommercePromotions\Woo\GiftCardProductPriceDisplay;
@@ -191,6 +193,8 @@ final class Plugin {
 			);
 			$this->woo_bridge->set_cart_promotion_applier( $cart_applier );
 
+			( new BulkPricingCartHooks() )->register();
+
 			( new CartPromotionRemovalController( $this->promotion_code_repository ) )->register();
 
 			add_action(
@@ -277,6 +281,7 @@ final class Plugin {
 
 				if ( is_admin() ) {
 					( new GiftCardProductAdmin() )->register();
+					( new BulkPricingProductAdmin() )->register();
 					( new GiftCardOrderAdmin(
 						$gift_card_repo,
 						$gift_ledger,
