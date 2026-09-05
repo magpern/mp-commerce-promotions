@@ -276,6 +276,7 @@ closes that gap with a real, disposable environment. **Result: PASS.**
 | 3 | Store API, **fresh session**, `POST /wc/store/v1/cart/add-item {id:12}` | Kit only | `[]` — **no fee** (byte-identical to step 1) | 2 |
 | 4 | Store API, same session, `POST /wc/store/v1/cart/add-item {id:11}` | Kit + standalone component | `[{"...component-triggered-discount...", "total":"-500"}]` — **byte-identical to step 2** | 3 |
 | 5 | Classic, third fresh session, kit only | Kit only | `[{"...kit-parent-triggered-discount...", "total":"-700"}]` | 2 |
+| 6 | Store API, **fresh session**, `POST /wc/store/v1/cart/add-item {id:12}` | Kit only | `[{"...kit-parent-triggered-discount...", "total":"-700"}]` — **byte-identical to step 5** | 2 |
 
 **What this proves, live, with real HTTP requests through both entry
 points:**
@@ -289,11 +290,12 @@ points:**
    (`-$5.00`) once a genuine standalone purchase of the component is
    added.
 3. The kit parent remains eligible under ordinary promotion rules,
-   independent of the component-exclusion logic: step 5 shows a
-   kit-parent-targeted promotion firing correctly (`-$7.00`) on a kit-only
-   cart, live.
-4. A standalone purchase of the same component product remains eligible:
-   steps 2 and 4 are exactly this case, and the discount fires.
+   independent of the component-exclusion logic, **in both paths**: step 5
+   (classic) and step 6 (Store API, fresh session) both fire the
+   kit-parent-targeted promotion identically (`-$7.00`) on a kit-only cart.
+4. A standalone purchase of the same component product remains eligible in
+   both paths: steps 2 and 4 are exactly this case, and the discount fires
+   identically in each.
 
 ### Teardown
 
