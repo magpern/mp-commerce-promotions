@@ -162,6 +162,7 @@ final class CartContextBuilder {
 		}
 
 		$this->enrich_billing_metadata( $customer_id, $metadata );
+		$this->enrich_geo_metadata( $metadata );
 		$this->enrich_shipping_and_coupon_metadata( $cart, $metadata );
 
 		return new EvaluationContext( $customer_id, $stats['eligible_subtotal'], $currency, $items, $metadata );
@@ -287,6 +288,28 @@ final class CartContextBuilder {
 		$email = $this->resolve_customer_email( $customer_id );
 		if ( $email !== null && $email !== '' ) {
 			$metadata['customer_email'] = $email;
+		}
+	}
+
+	/**
+	 * Populates metadata['geo_country'] from Universal Geo Context's public
+	 * API, when that plugin is active. This is the only place in this plugin
+	 * permitted to call universal_geo_get_country_code() — conditions and the
+	 * evaluator stay pure functions of EvaluationContext. No fallback to
+	 * billing/shipping/customer country: if UGC is unavailable or unresolved,
+	 * geo_country is simply omitted and any geo_country condition fails closed.
+	 *
+	 * @param array<string, mixed> $metadata
+	 */
+	private function enrich_geo_metadata( array &$metadata ): void {
+		if ( ! function_exists( 'universal_geo_get_country_code' ) ) {
+			return;
+		}
+
+		$country = universal_geo_get_country_code();
+
+		if ( is_string( $country ) && trim( $country ) !== '' ) {
+			$metadata['geo_country'] = strtoupper( trim( $country ) );
 		}
 	}
 

@@ -282,6 +282,7 @@ logged_in
 first_order
 customer_role
 billing_country
+geo_country
 customer_email_domain
 customer_redemption_count
 ```
@@ -293,6 +294,8 @@ customer_redemption_count
 `customer_role` passes when any configured WordPress **role slug** in the condition JSON matches a slug in metadata `customer_roles` (case-insensitive comparison). `CartContextBuilder` populates `customer_roles` from the logged-in user object when available.
 
 `billing_country` passes when metadata `billing_country` (ISO code) is in the configured `countries` list (uppercase comparison). `CartContextBuilder` sets this from `WC()->customer->get_billing_country()` or user meta `billing_country` when available (logged-in or guest session).
+
+`geo_country` passes when metadata `geo_country` (ISO code) is in the configured `countries` list (uppercase comparison). This is the visitor's request-time detected location, not the billing address — `CartContextBuilder` sets it from the separate Universal Geo Context plugin's public API (`universal_geo_get_country_code()`) when that plugin is active, via a `function_exists()` guard. No hard dependency: if Universal Geo Context is inactive or cannot resolve a country, `geo_country` metadata is simply omitted and the condition fails closed. There is no fallback to `billing_country` or any other location source — the two conditions are independent.
 
 `customer_email_domain` passes when the domain part of metadata `customer_email` matches a configured domain (case-insensitive). `CartContextBuilder` sets email from the user account or `WC()->customer->get_billing_email()` when available.
 

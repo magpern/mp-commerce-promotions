@@ -214,6 +214,32 @@ final class SimpleRuleBuilderTest extends TestCase {
 		$this->assertSame( array( 'SE', 'NO' ), $built['conditions'][0]['countries'] );
 	}
 
+	public function test_builds_geo_country_from_comma_list(): void {
+		$built = SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type' => RuleTypes::CONDITION_GEO_COUNTRY,
+				'mp_cp_builder_geo_countries'  => 'DE, AT',
+				'mp_cp_builder_action_type'    => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'mp_cp_builder_percentage'     => '20',
+			)
+		);
+
+		$this->assertSame( RuleTypes::CONDITION_GEO_COUNTRY, $built['conditions'][0]['type'] );
+		$this->assertSame( array( 'DE', 'AT' ), $built['conditions'][0]['countries'] );
+	}
+
+	public function test_builds_geo_country_rejects_empty_countries(): void {
+		$this->expectException( InvalidArgumentException::class );
+		SimpleRuleBuilder::build_from_post(
+			array(
+				'mp_cp_builder_condition_type' => RuleTypes::CONDITION_GEO_COUNTRY,
+				'mp_cp_builder_geo_countries'  => '',
+				'mp_cp_builder_action_type'    => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+				'mp_cp_builder_percentage'     => '20',
+			)
+		);
+	}
+
 	public function test_builds_customer_email_domain_from_comma_list(): void {
 		$built = SimpleRuleBuilder::build_from_post(
 			array(

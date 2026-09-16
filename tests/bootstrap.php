@@ -612,6 +612,27 @@ if ( ! function_exists( 'WC' ) ) {
 	}
 }
 
+/**
+ * Mutable stub double for Universal Geo Context's guarded public API, mirroring
+ * the WC() stub pattern above: tests set $GLOBALS['mp_cp_test_geo_country']
+ * to control the return value and reset it (= null) between cases, rather
+ * than redefining the function itself (PHP cannot redeclare a global function
+ * mid-process). Default null means "unresolved", exercising the same
+ * fail-closed metadata-omission path as the function being entirely absent.
+ */
+$GLOBALS['mp_cp_test_geo_country'] = null;
+
+if ( ! function_exists( 'universal_geo_get_country_code' ) ) {
+	/**
+	 * @return string|null|int Deliberately loosely typed so tests can also
+	 *                          exercise CartContextBuilder's is_string() guard
+	 *                          against an unexpected non-string return value.
+	 */
+	function universal_geo_get_country_code() {
+		return $GLOBALS['mp_cp_test_geo_country'];
+	}
+}
+
 /** @var array<int, list<int>> $mp_cp_test_product_categories */
 $GLOBALS['mp_cp_test_product_categories'] = array();
 

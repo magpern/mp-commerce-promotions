@@ -280,6 +280,71 @@ final class PromotionRuleValidatorTest extends TestCase {
 		$this->assertTrue( $this->has_error_containing( $this->messages( $this->validator->validate( $invalid ) ), 'billing_country' ) );
 	}
 
+	public function test_geo_country_validates_and_rejects_invalid(): void {
+		$valid = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'      => RuleTypes::CONDITION_GEO_COUNTRY,
+					'countries' => array( 'DE' ),
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 10.0,
+				),
+			)
+		);
+		$this->assertSame( array(), $this->validator->validate( $valid ) );
+
+		$missing_countries_key = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type' => RuleTypes::CONDITION_GEO_COUNTRY,
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 10.0,
+				),
+			)
+		);
+		$this->assertTrue( $this->has_error_containing( $this->messages( $this->validator->validate( $missing_countries_key ) ), 'geo_country' ) );
+
+		$non_array_countries = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'      => RuleTypes::CONDITION_GEO_COUNTRY,
+					'countries' => 'DE',
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 10.0,
+				),
+			)
+		);
+		$this->assertTrue( $this->has_error_containing( $this->messages( $this->validator->validate( $non_array_countries ) ), 'geo_country' ) );
+
+		$empty_countries = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'      => RuleTypes::CONDITION_GEO_COUNTRY,
+					'countries' => array(),
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 10.0,
+				),
+			)
+		);
+		$this->assertTrue( $this->has_error_containing( $this->messages( $this->validator->validate( $empty_countries ) ), 'geo_country' ) );
+	}
+
 	public function test_cheapest_item_discount_validates_and_rejects_invalid(): void {
 		$valid = PromotionTestFixtures::active_promotion(
 			array(

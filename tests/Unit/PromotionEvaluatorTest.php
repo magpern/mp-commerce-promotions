@@ -398,6 +398,45 @@ final class PromotionEvaluatorTest extends TestCase {
 		);
 	}
 
+	public function test_geo_country_condition_is_independent_of_billing_country(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'      => RuleTypes::CONDITION_GEO_COUNTRY,
+					'countries' => array( 'DE' ),
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 20.0,
+				),
+			)
+		);
+
+		$this->assertTrue(
+			$this->evaluator->evaluate(
+				$promotion,
+				PromotionTestFixtures::cart_context( null, 10.0, array(), array( 'geo_country' => 'DE' ) )
+			)->is_eligible()
+		);
+
+		$this->assertFalse(
+			$this->evaluator->evaluate(
+				$promotion,
+				PromotionTestFixtures::cart_context( null, 10.0, array(), array( 'geo_country' => 'FR' ) )
+			)->is_eligible()
+		);
+
+		// A matching billing_country must not substitute for a missing geo_country: no fallback.
+		$this->assertFalse(
+			$this->evaluator->evaluate(
+				$promotion,
+				PromotionTestFixtures::cart_context( null, 10.0, array(), array( 'billing_country' => 'DE' ) )
+			)->is_eligible()
+		);
+	}
+
 	public function test_failed_minimum_subtotal_includes_cart_value_trace(): void {
 		$promotion = PromotionTestFixtures::active_promotion(
 			array(
@@ -557,6 +596,59 @@ final class PromotionEvaluatorTest extends TestCase {
 		);
 
 		$trace = $this->find_condition_trace( $result->get_condition_traces(), RuleTypes::CONDITION_BILLING_COUNTRY );
+		$this->assertNotNull( $trace );
+		$this->assertSame( ConditionTrace::REASON_COUNTRY_NOT_MATCHED, $trace['reason_code'] );
+	}
+
+	public function test_geo_country_malformed_countries_resolves_as_invalid(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type' => RuleTypes::CONDITION_GEO_COUNTRY,
+					// 'countries' deliberately omitted.
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 5.0,
+				),
+			)
+		);
+
+		$result = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( null, 10.0, array(), array( 'geo_country' => 'DE' ) )
+		);
+
+		$this->assertFalse( $result->is_eligible() );
+		$trace = $this->find_condition_trace( $result->get_condition_traces(), RuleTypes::CONDITION_GEO_COUNTRY );
+		$this->assertNotNull( $trace );
+		$this->assertSame( ConditionTrace::REASON_INVALID, $trace['reason_code'] );
+	}
+
+	public function test_geo_country_failure_includes_country_not_matched_trace(): void {
+		$promotion = PromotionTestFixtures::active_promotion(
+			array(
+				array(
+					'type'      => RuleTypes::CONDITION_GEO_COUNTRY,
+					'countries' => array( 'DE' ),
+				),
+			),
+			array(
+				array(
+					'type'       => RuleTypes::ACTION_PERCENTAGE_DISCOUNT,
+					'percentage' => 5.0,
+				),
+			)
+		);
+
+		$result = $this->evaluator->evaluate(
+			$promotion,
+			PromotionTestFixtures::cart_context( null, 10.0, array(), array( 'geo_country' => 'FR' ) )
+		);
+
+		$trace = $this->find_condition_trace( $result->get_condition_traces(), RuleTypes::CONDITION_GEO_COUNTRY );
 		$this->assertNotNull( $trace );
 		$this->assertSame( ConditionTrace::REASON_COUNTRY_NOT_MATCHED, $trace['reason_code'] );
 	}
