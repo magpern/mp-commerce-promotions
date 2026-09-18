@@ -47,10 +47,16 @@ other native coupon) was never an intended outcome.
 
 ## How it was applied (DEV)
 
-Via the plugin's own admin UI: **Promotions → "New Customer Welcome
-Discount" → Coupon behavior → "Block when native coupon applied" → Save**
-(`src/Admin/PromotionEditPage.php`, POST handler ~line 1488, validated
-through `PromotionCouponBehavior::is_valid()`). Not applied via raw SQL.
+Applied headlessly via `wp eval`, using the plugin's own validated domain
+layer rather than the browser admin UI or raw SQL: loaded promotion `id=1`
+through `PromotionRepository::find(1)`, produced an updated copy via
+`Promotion::with_pricing_fields(null, 'block_native', null, null)` — which
+normalizes/validates the new value through `PromotionCouponBehavior::normalize()`,
+the same validation the admin UI's POST handler (`src/Admin/PromotionEditPage.php`,
+~line 1488, `PromotionCouponBehavior::is_valid()`) applies — and persisted it
+with `PromotionRepository::update()`. Confirmed afterward with a direct
+`wp db query` read (see Before/After below). **Not** applied via raw SQL,
+and **not** applied by clicking through the browser admin UI.
 
 ### Before/after (DEV), captured via `wp db query`
 
@@ -60,12 +66,7 @@ id=1, name="New Customer Welcome Discount", status=active,
 coupon_behavior=coexist, conditions=[{"type":"logged_in"},{"type":"first_order"}]
 ```
 
-**After** (applied on DEV via `PromotionRepository::update()` after loading
-the promotion through `PromotionRepository::find(1)` and calling
-`Promotion::with_pricing_fields(null, 'block_native', null, null)` — the
-same validated/normalized path the admin UI's POST handler uses, run
-headlessly via `wp eval` rather than through raw SQL, then confirmed with a
-direct `wp db query` read):
+**After** (per the procedure above):
 ```
 id=1, name="New Customer Welcome Discount", status=active,
 coupon_behavior=block_native
