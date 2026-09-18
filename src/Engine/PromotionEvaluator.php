@@ -31,6 +31,7 @@ use MP\CommercePromotions\Engine\Condition\CustomerOrderCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
 use MP\CommercePromotions\Engine\Condition\FirstOrderCondition;
+use MP\CommercePromotions\Engine\Condition\GeoCountryCondition;
 use MP\CommercePromotions\Engine\Condition\LoggedInCondition;
 use MP\CommercePromotions\Engine\Condition\MaximumCartQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\MaximumEligibleSubtotalCondition;
@@ -315,6 +316,9 @@ final class PromotionEvaluator {
 		if ( $type === RuleTypes::CONDITION_BILLING_COUNTRY ) {
 			return 'Invalid billing_country condition configuration.';
 		}
+		if ( $type === RuleTypes::CONDITION_GEO_COUNTRY ) {
+			return 'Invalid geo_country condition configuration.';
+		}
 		if ( $type === RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN ) {
 			return 'Invalid customer_email_domain condition configuration.';
 		}
@@ -430,6 +434,20 @@ final class PromotionEvaluator {
 			try {
 				return array(
 					'condition' => new BillingCountryCondition( $raw['countries'] ),
+					'error'     => null,
+				);
+			} catch ( \InvalidArgumentException $e ) {
+				return array( 'condition' => null, 'error' => 'invalid' );
+			}
+		}
+
+		if ( $type === RuleTypes::CONDITION_GEO_COUNTRY ) {
+			if ( ! isset( $raw['countries'] ) || ! is_array( $raw['countries'] ) ) {
+				return array( 'condition' => null, 'error' => 'invalid' );
+			}
+			try {
+				return array(
+					'condition' => new GeoCountryCondition( $raw['countries'] ),
 					'error'     => null,
 				);
 			} catch ( \InvalidArgumentException $e ) {

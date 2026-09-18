@@ -25,6 +25,8 @@ final class RuleTypes {
 
 	public const CONDITION_BILLING_COUNTRY = 'billing_country';
 
+	public const CONDITION_GEO_COUNTRY = 'geo_country';
+
 	public const CONDITION_CUSTOMER_EMAIL_DOMAIN = 'customer_email_domain';
 
 	public const CONDITION_CUSTOMER_REDEMPTION_COUNT = 'customer_redemption_count';

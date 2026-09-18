@@ -23,6 +23,7 @@ use MP\CommercePromotions\Engine\Condition\CustomerLifetimeSpendCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerOrderCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
+use MP\CommercePromotions\Engine\Condition\GeoCountryCondition;
 use MP\CommercePromotions\Engine\Condition\MaximumCartQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\MinimumCartQuantityCondition;
 use MP\CommercePromotions\Engine\Condition\MaximumEligibleSubtotalCondition;
@@ -104,6 +105,16 @@ final class SimpleRuleBuilder {
 
 			return array(
 				'type'      => RuleTypes::CONDITION_BILLING_COUNTRY,
+				'countries' => $countries,
+			);
+		}
+
+		if ( $type === RuleTypes::CONDITION_GEO_COUNTRY ) {
+			$countries = self::parse_comma_list( $post, 'mp_cp_builder_geo_countries', 'invalid_countries' );
+			new GeoCountryCondition( $countries );
+
+			return array(
+				'type'      => RuleTypes::CONDITION_GEO_COUNTRY,
 				'countries' => $countries,
 			);
 		}

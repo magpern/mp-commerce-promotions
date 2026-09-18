@@ -31,6 +31,7 @@ use MP\CommercePromotions\Engine\Condition\CustomerAverageOrderValueCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerLifetimeSpendCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerOrderCountCondition;
 use MP\CommercePromotions\Engine\Condition\BillingCountryCondition;
+use MP\CommercePromotions\Engine\Condition\GeoCountryCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerEmailDomainCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRedemptionCountCondition;
 use MP\CommercePromotions\Engine\Condition\CustomerRoleCondition;
@@ -778,6 +779,11 @@ final class PromotionRuleValidator {
 			return;
 		}
 
+		if ( $type === RuleTypes::CONDITION_GEO_COUNTRY ) {
+			$this->validate_geo_country( $index, $raw, $issues );
+			return;
+		}
+
 		if ( $type === RuleTypes::CONDITION_CUSTOMER_EMAIL_DOMAIN ) {
 			$this->validate_customer_email_domain( $index, $raw, $issues );
 			return;
@@ -934,6 +940,31 @@ final class PromotionRuleValidator {
 				sprintf(
 					/* translators: %s: zero-based condition index */
 					__( 'billing_country at index %s has invalid countries.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+		}
+	}
+
+	private function validate_geo_country( int $index, array $raw, array &$issues ): void {
+		if ( ! isset( $raw['countries'] ) || ! is_array( $raw['countries'] ) ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based condition index */
+					__( 'geo_country at index %s is missing a countries array.', 'mp-commerce-promotions' ),
+					(string) $index
+				)
+			);
+			return;
+		}
+
+		try {
+			new GeoCountryCondition( $raw['countries'] );
+		} catch ( InvalidArgumentException $e ) {
+			$issues[] = $this->error(
+				sprintf(
+					/* translators: %s: zero-based condition index */
+					__( 'geo_country at index %s has invalid countries.', 'mp-commerce-promotions' ),
 					(string) $index
 				)
 			);

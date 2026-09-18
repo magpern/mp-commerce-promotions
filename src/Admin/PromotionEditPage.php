@@ -1043,6 +1043,9 @@ final class PromotionEditPage {
 			'mp_cp_builder_countries'      => isset( $_POST['mp_cp_builder_countries'] )
 				? wp_unslash( (string) $_POST['mp_cp_builder_countries'] )
 				: '',
+			'mp_cp_builder_geo_countries'  => isset( $_POST['mp_cp_builder_geo_countries'] )
+				? wp_unslash( (string) $_POST['mp_cp_builder_geo_countries'] )
+				: '',
 			'mp_cp_builder_domains'        => isset( $_POST['mp_cp_builder_domains'] )
 				? wp_unslash( (string) $_POST['mp_cp_builder_domains'] )
 				: '',
@@ -3172,6 +3175,7 @@ final class PromotionEditPage {
 		echo '<option value="first_order">' . esc_html__( 'First order', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="customer_role">' . esc_html__( 'Customer role', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="billing_country">' . esc_html__( 'Billing country', 'mp-commerce-promotions' ) . '</option>';
+		echo '<option value="geo_country">' . esc_html__( 'Geo country', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="customer_email_domain">' . esc_html__( 'Customer email domain', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="customer_redemption_count">' . esc_html__( 'Customer redemption count', 'mp-commerce-promotions' ) . '</option>';
 		echo '<option value="minimum_cart_quantity">' . esc_html__( 'Minimum cart quantity', 'mp-commerce-promotions' ) . '</option>';
@@ -3255,6 +3259,10 @@ final class PromotionEditPage {
 		echo '<tr><th scope="row"><label for="mp_cp_builder_countries">' . esc_html__( 'Billing countries', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="text" class="regular-text" id="mp_cp_builder_countries" name="mp_cp_builder_countries" placeholder="SE, NO, DK" />';
 		echo '<p class="description">' . esc_html__( 'Comma-separated ISO country codes (billing_country condition).', 'mp-commerce-promotions' ) . '</p></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp_cp_builder_geo_countries">' . esc_html__( 'Geo countries', 'mp-commerce-promotions' ) . '</label></th><td>';
+		echo '<input type="text" class="regular-text" id="mp_cp_builder_geo_countries" name="mp_cp_builder_geo_countries" placeholder="SE, NO, DK" />';
+		echo '<p class="description">' . esc_html__( 'Comma-separated ISO country codes (geo_country condition). Detected visitor location, not the billing address - requires Universal Geo Context at runtime. If visitor geography cannot be resolved, this condition does not match.', 'mp-commerce-promotions' ) . '</p></td></tr>';
 
 		echo '<tr><th scope="row"><label for="mp_cp_builder_domains">' . esc_html__( 'Email domains', 'mp-commerce-promotions' ) . '</label></th><td>';
 		echo '<input type="text" class="regular-text" id="mp_cp_builder_domains" name="mp_cp_builder_domains" placeholder="example.com, company.com" />';
@@ -3614,6 +3622,10 @@ final class PromotionEditPage {
 				$this->render_rule_template_readonly(
 					__( 'Billing country', 'mp-commerce-promotions' ),
 					"[\n  {\"type\":\"billing_country\",\"countries\":[\"SE\",\"NO\",\"DK\"]}\n]"
+				);
+				$this->render_rule_template_readonly(
+					__( 'Geo country', 'mp-commerce-promotions' ),
+					"[\n  {\"type\":\"geo_country\",\"countries\":[\"DE\"]}\n]"
 				);
 				$this->render_rule_template_readonly(
 					__( 'Customer email domain', 'mp-commerce-promotions' ),
