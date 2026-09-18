@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Maturity:** Early MVP. Suitable for testing and staged rollouts — not a stable, production-complete, or marketplace-certified release without your own review.
 
+## [0.7.0] - 2026-09-18
+
+**`geo_country` promotion condition + email-capture coexistence contract.**
+Schema **1.19.0** unchanged.
+
+### Added
+
+- **`geo_country` promotion condition** — restricts a promotion to a
+  request-time visitor country supplied by Universal Geo Context, via a
+  guarded function-call integration boundary (no runtime dependency on
+  Universal Geo Context's classes). Independent of `billing_country` — no
+  fallback between the two. Fails closed if the visitor's country cannot be
+  resolved. Includes admin Simple Rule Builder support.
+
+### Documented (no code/behavior change)
+
+- **Email-capture coupon coexistence contract**: the automatic "New
+  Customer Welcome Discount" registration promotion is configured with
+  `coupon_behavior = block_native`, so it never stacks with any native
+  WooCommerce coupon. This is DEV database configuration, not code shipped
+  in this release — see `docs/EMAIL_CAPTURE_COUPON_COEXISTENCE.md`. PROD's
+  `coupon_behavior` is unchanged by this release and remains a separate,
+  explicit rollout step.
+
+### Notes
+
+- Git tag: **`v0.7.0`**. Rollback baseline: **`v0.6.0`**.
+
+---
+
 ## [0.6.0] - 2026-09-06
 
 **Bulk Pricing v1 + UCB component cart exclusion.** Schema **1.19.0** unchanged.
