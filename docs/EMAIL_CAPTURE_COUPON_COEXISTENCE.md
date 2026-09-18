@@ -60,11 +60,15 @@ id=1, name="New Customer Welcome Discount", status=active,
 coupon_behavior=coexist, conditions=[{"type":"logged_in"},{"type":"first_order"}]
 ```
 
-**After:** (recorded once the admin-UI change is applied on DEV — see the
-`biopentra-custom-plugins` feature branch / freeze doc for the DEV
-deployment log entry marking when this was actually flipped)
+**After** (applied on DEV via `PromotionRepository::update()` after loading
+the promotion through `PromotionRepository::find(1)` and calling
+`Promotion::with_pricing_fields(null, 'block_native', null, null)` — the
+same validated/normalized path the admin UI's POST handler uses, run
+headlessly via `wp eval` rather than through raw SQL, then confirmed with a
+direct `wp db query` read):
 ```
-id=1, ..., coupon_behavior=block_native, conditions unchanged
+id=1, name="New Customer Welcome Discount", status=active,
+coupon_behavior=block_native
 ```
 
 ## PROD configuration procedure (not yet applied)
